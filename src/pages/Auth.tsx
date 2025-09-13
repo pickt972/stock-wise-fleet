@@ -144,6 +144,11 @@ export default function Auth() {
                   try {
                     const { data, error } = await supabase.functions.invoke('seed-users');
                     if (error) throw error;
+                    if (!data?.ok) {
+                      const firstErr = data?.results?.find((r: any) => r.status !== 'ok')?.error || 'Initialisation partielle ou échouée';
+                      toast({ title: 'Erreur', description: firstErr, variant: 'destructive' });
+                      return;
+                    }
                     toast({ title: 'Comptes initialisés', description: 'Réessayez la connexion.' });
                   } catch (e: any) {
                     toast({ title: 'Erreur', description: e.message, variant: 'destructive' });

@@ -44,54 +44,84 @@ serve(async (req) => {
 
   try {
     const results: any[] = [];
+    let anySuccess = false;
 
     for (const acc of accounts) {
-      let userId: string | null = await findUserIdByEmail(acc.email);
+      const entry: any = { email: acc.email, status: "pending" };
+      try {
+        let userId: string | null = await findUserIdByEmail(acc.email);
 
-      if (!userId) {
-        const { data, error } = await admin.auth.admin.createUser({
-          email: acc.email,
-          password: acc.password,
-          email_confirm: true,
-          user_metadata: { first_name: acc.first_name, last_name: acc.last_name },
-        });
-        if (error) throw error;
-        userId = data.user?.id ?? null;
-      } else {
-        // Update password and metadata to ensure consistency
-        const { error } = await admin.auth.admin.updateUserById(userId, {
-          password: acc.password,
-          user_metadata: { first_name: acc.first_name, last_name: acc.last_name },
-        });
-        if (error) throw error;
+        if (!userId) {
+          console.log("[seed-users] Creating user:", acc.email);
+          const { data, error } = await admin.auth.admin.createUser({
+            email: acc.email,
+            password: acc.password,
+            email_confirm: true,
+            user_metadata: { first_name: acc.first_name, last_name: acc.last_name },
+          });
+
+          if (error) {
+            console.error("[seed-users] createUser error:", acc.email, error);
+            // Re-check in case the user was created despite the reported error
+            userId = await findUserIdByEmail(acc.email);
+            if (!userId) {
+              entry.status = "error";
+              entry.error = (error as any)?.message ?? String(error);
+              results.push(entry);
+              continue;
+            }
+          } else {
+            userId = data.user?.id ?? null;
+          }
+        } else {
+          const { error } = await admin.auth.admin.updateUserById(userId, {
+            password: acc.password,
+            user_metadata: { first_name: acc.first_name, last_name: acc.last_name },
+          });
+          if (error) console.warn("[seed-users] updateUserById warning:", acc.email, error);
+        }
+
+        if (!userId) {
+          entry.status = "error";
+          entry.error = "User ID not available after creation/update";
+          results.push(entry);
+          continue;
+        }
+
+        // Ensure profile exists and set username
+        const { error: upsertProfileError } = await admin
+          .from("profiles")
+          .upsert(
+            { id: userId, first_name: acc.first_name, last_name: acc.last_name, username: acc.username },
+            { onConflict: "id" }
+          );
+        if (upsertProfileError) console.error("[seed-users] upsert profile error:", acc.email, upsertProfileError);
+
+        // Ensure single role
+        const { error: delRolesError } = await admin.from("user_roles").delete().eq("user_id", userId);
+        if (delRolesError) console.error("[seed-users] delete roles error:", acc.email, delRolesError);
+        const { error: insertRoleError } = await admin.from("user_roles").insert({ user_id: userId, role: acc.role });
+        if (insertRoleError) console.error("[seed-users] insert role error:", acc.email, insertRoleError);
+
+        entry.status = "ok";
+        entry.userId = userId;
+        anySuccess = true;
+        results.push(entry);
+      } catch (err: any) {
+        console.error("[seed-users] account processing error:", acc.email, err);
+        results.push({ email: acc.email, status: "error", error: err?.message ?? String(err) });
       }
-
-      if (!userId) throw new Error("User ID not available after creation/update");
-
-      // Ensure profile exists and set username
-      const { error: upsertProfileError } = await admin
-        .from("profiles")
-        .upsert({ id: userId, first_name: acc.first_name, last_name: acc.last_name, username: acc.username }, { onConflict: "id" });
-      if (upsertProfileError) throw upsertProfileError;
-
-      // Ensure single role
-      const { error: delRolesError } = await admin.from("user_roles").delete().eq("user_id", userId);
-      if (delRolesError) throw delRolesError;
-      const { error: insertRoleError } = await admin.from("user_roles").insert({ user_id: userId, role: acc.role });
-      if (insertRoleError) throw insertRoleError;
-
-      results.push({ email: acc.email, userId, status: "ok" });
     }
 
-    return new Response(JSON.stringify({ ok: true, results }), {
+    return new Response(JSON.stringify({ ok: anySuccess, results }), {
       headers: { "Content-Type": "application/json", ...corsHeaders },
       status: 200,
     });
   } catch (e: any) {
-    console.error("seed-users error", e);
+    console.error("[seed-users] fatal error", e);
     return new Response(JSON.stringify({ ok: false, error: e.message }), {
       headers: { "Content-Type": "application/json", ...corsHeaders },
-      status: 500,
+      status: 200,
     });
   }
 });
