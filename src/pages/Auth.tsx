@@ -8,7 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Car } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
@@ -141,8 +142,8 @@ export default function Auth() {
         {/* Logo et titre */}
         <div className="text-center space-y-2">
           <div className="flex justify-center">
-            <div className="bg-gradient-primary p-3 rounded-xl shadow-elegant">
-              <Car className="h-8 w-8 text-white" />
+            <div className="bg-white p-2 rounded-xl shadow-elegant">
+              <img src={logo} alt="StockAuto Logo" className="h-12 w-12" />
             </div>
           </div>
           <h1 className="text-3xl font-bold text-foreground">StockAuto</h1>
