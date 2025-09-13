@@ -66,7 +66,7 @@ export default function LandingPage() {
               Stock<span className="text-primary">Auto</span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Solution complète de gestion des stocks pour votre entreprise de location automobile
+              Solution complète de gestion des stocks pour votre entreprise automobile
             </p>
           </div>
 
