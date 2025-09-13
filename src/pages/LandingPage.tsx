@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, Car, Package, TrendingUp, Users } from "lucide-react";
+import logo from "@/assets/logo.png";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function LandingPage() {
@@ -57,8 +58,8 @@ export default function LandingPage() {
           {/* Logo et titre principal */}
           <div className="space-y-4">
             <div className="flex justify-center">
-              <div className="bg-gradient-primary p-4 rounded-2xl shadow-elegant">
-                <Car className="h-12 w-12 text-white" />
+              <div className="bg-white p-4 rounded-2xl shadow-elegant">
+                <img src={logo} alt="StockAuto Logo" className="h-12 w-12" />
               </div>
             </div>
             <h1 className="text-5xl font-bold text-foreground">
