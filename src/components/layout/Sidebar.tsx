@@ -88,34 +88,39 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               </NavLink>
             ))}
             
-            {/* Navigation admin */}
+            {/* Navigation admin - Section séparée */}
             {userRole === 'admin' && (
-              <>
-                <div className={cn(
-                  "h-px bg-border my-4",
-                  isCollapsed && "mx-2"
-                )} />
-                {adminNavigation.map((item) => (
-                  <NavLink
-                    key={item.name}
-                    to={item.href}
-                    onClick={() => window.innerWidth < 768 && onClose()}
-                    className={({ isActive }) =>
-                      cn(
-                        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                        "hover:bg-accent hover:text-accent-foreground",
-                        isActive 
-                          ? "bg-primary text-primary-foreground shadow-soft" 
-                          : "text-muted-foreground",
-                        isCollapsed && "justify-center"
-                      )
-                    }
-                  >
-                    <item.icon className="h-4 w-4 flex-shrink-0" />
-                    {!isCollapsed && <span>{item.name}</span>}
-                  </NavLink>
-                ))}
-              </>
+              <div className="pt-4">
+                {!isCollapsed && (
+                  <div className="px-3 py-2">
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Administration
+                    </h3>
+                  </div>
+                )}
+                <div className="space-y-1">
+                  {adminNavigation.map((item) => (
+                    <NavLink
+                      key={item.name}
+                      to={item.href}
+                      onClick={() => window.innerWidth < 768 && onClose()}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                          "hover:bg-accent hover:text-accent-foreground",
+                          isActive 
+                            ? "bg-primary text-primary-foreground shadow-soft" 
+                            : "text-muted-foreground",
+                          isCollapsed && "justify-center"
+                        )
+                      }
+                    >
+                      <item.icon className="h-4 w-4 flex-shrink-0" />
+                      {!isCollapsed && <span>{item.name}</span>}
+                    </NavLink>
+                  ))}
+                </div>
+              </div>
             )}
           </nav>
         </div>
