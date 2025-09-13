@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import DashboardLayout from "./DashboardLayout";
 
 const articles = [
   {
@@ -80,7 +81,8 @@ export default function Articles() {
   );
 
   return (
-    <div className="p-6 space-y-6">
+    <DashboardLayout>
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Gestion des Articles</h1>
@@ -176,6 +178,7 @@ export default function Articles() {
           </Table>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
