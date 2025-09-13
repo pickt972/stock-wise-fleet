@@ -49,67 +49,28 @@ export default function Auth() {
 
     setIsLoading(true);
     try {
-      // Debug: afficher les valeurs saisies
-      console.log("Tentative de connexion avec:", { username, password: "***" });
-      
-      // Chercher l'utilisateur par nom d'utilisateur pour obtenir son email
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, username')
-        .eq('username', username)
-        .maybeSingle();
+      // Construire directement l'email à partir du nom d'utilisateur (en minuscules)
+      const email = `${username.trim().toLowerCase()}@stock-wise.local`;
+      console.log("Connexion avec email dérivé:", email);
 
-      console.log("Résultat recherche profil:", { profile, profileError });
-
-      if (profileError) {
-        console.error("Erreur profil:", profileError);
-        toast({
-          title: "Erreur de connexion",
-          description: "Erreur lors de la recherche du profil.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      if (!profile) {
-        console.log("Aucun profil trouvé pour:", username);
-        toast({
-          title: "Erreur de connexion",
-          description: "Nom d'utilisateur ou mot de passe incorrect.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      // Utiliser l'email associé au profil pour la connexion
-      const email = `${username}@stock-wise.local`;
-      console.log("Tentative avec email:", email);
-      
-      const { error, data } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      console.log("Résultat auth:", { error, user: data?.user?.id });
-
       if (error) {
-        console.error("Erreur auth:", error);
         toast({
           title: "Erreur de connexion",
           description: "Nom d'utilisateur ou mot de passe incorrect.",
           variant: "destructive",
         });
       } else {
-        console.log("Connexion réussie!");
         toast({
           title: "Connexion réussie",
           description: "Bienvenue dans StockAuto !",
         });
       }
     } catch (error) {
-      console.error("Erreur catch:", error);
       toast({
         title: "Erreur",
         description: "Une erreur inattendue s'est produite.",
