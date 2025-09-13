@@ -137,25 +137,22 @@ export default function Auth() {
               </Button>
             </div>
 
-            {typeof window !== 'undefined' && window.location.search.includes('init=1') && (
-              <div className="mt-4 text-center">
-                <Button
-                  variant="outline"
-                  onClick={async () => {
-                    try {
-                      const res = await fetch('/functions/v1/seed-users', { method: 'POST' });
-                      const json = await res.json();
-                      if (!res.ok) throw new Error(json.error || 'Erreur inconnue');
-                      toast({ title: 'Comptes initialisés', description: 'Réessayez la connexion.' });
-                    } catch (e: any) {
-                      toast({ title: 'Erreur', description: e.message, variant: 'destructive' });
-                    }
-                  }}
-                >
-                  Initialiser les comptes
-                </Button>
-              </div>
-            )}
+            <div className="mt-4 text-center">
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    const { data, error } = await supabase.functions.invoke('seed-users');
+                    if (error) throw error;
+                    toast({ title: 'Comptes initialisés', description: 'Réessayez la connexion.' });
+                  } catch (e: any) {
+                    toast({ title: 'Erreur', description: e.message, variant: 'destructive' });
+                  }
+                }}
+              >
+                Initialiser les comptes
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
