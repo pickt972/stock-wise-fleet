@@ -89,6 +89,47 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_movements: {
+        Row: {
+          article_id: string
+          created_at: string
+          id: string
+          motif: string
+          quantity: number
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          id?: string
+          motif: string
+          quantity: number
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          id?: string
+          motif?: string
+          quantity?: number
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -129,6 +170,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      update_article_stock: {
+        Args: { article_id: string; quantity_change: number }
+        Returns: undefined
       }
     }
     Enums: {

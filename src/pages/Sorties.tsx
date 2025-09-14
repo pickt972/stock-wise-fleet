@@ -73,14 +73,36 @@ export default function Sorties() {
           quantity,
           motif,
           created_at,
-          articles!inner(id, reference, designation, marque, stock),
-          profiles!inner(first_name, last_name)
+          user_id
         `)
         .eq('type', 'sortie')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setExits(data || []);
+
+      // Récupérer les informations des articles et utilisateurs séparément
+      if (data && data.length > 0) {
+        const articleIds = [...new Set(data.map(exit => exit.article_id))];
+        const userIds = [...new Set(data.map(exit => exit.user_id))];
+
+        const [articlesResponse, profilesResponse] = await Promise.all([
+          supabase.from('articles').select('id, reference, designation, marque, stock').in('id', articleIds),
+          supabase.from('profiles').select('id, first_name, last_name').in('id', userIds)
+        ]);
+
+        const articlesMap = new Map(articlesResponse.data?.map(a => [a.id, a]) || []);
+        const profilesMap = new Map(profilesResponse.data?.map(p => [p.id, p]) || []);
+
+        const enrichedExits = data.map(exit => ({
+          ...exit,
+          articles: articlesMap.get(exit.article_id) || { reference: '', designation: '', marque: '', stock: 0 },
+          profiles: profilesMap.get(exit.user_id) || { first_name: '', last_name: '' }
+        }));
+
+        setExits(enrichedExits as StockExit[]);
+      } else {
+        setExits([]);
+      }
     } catch (error: any) {
       console.error('Erreur lors du chargement des sorties:', error);
       toast({
@@ -143,12 +165,27 @@ export default function Sorties() {
 
       if (exitError) throw exitError;
 
-      // Mettre à jour le stock de l'article (soustraire)
+      // Récupérer le stock actuel et le mettre à jour
+      const { data: currentArticle, error: fetchError } = await supabase
+        .from('articles')
+        .select('stock')
+        .eq('id', formData.articleId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const newStock = currentArticle.stock - formData.quantity;
+      if (newStock < 0) {
+        throw new Error(`Stock insuffisant. Stock disponible: ${currentArticle.stock}`);
+      }
+
       const { error: updateError } = await supabase
-        .rpc('update_article_stock', {
-          article_id: formData.articleId,
-          quantity_change: -formData.quantity
-        });
+        .from('articles')
+        .update({ 
+          stock: newStock,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', formData.articleId);
 
       if (updateError) throw updateError;
 
