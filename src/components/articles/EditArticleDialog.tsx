@@ -65,6 +65,22 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
     emplacement: article.emplacement || "",
     fournisseur_id: article.fournisseur_id || "",
   });
+
+  // Mettre à jour le formData quand l'article change
+  useEffect(() => {
+    setFormData({
+      reference: article.reference,
+      designation: article.designation,
+      marque: article.marque,
+      categorie: article.categorie,
+      stock: article.stock,
+      stock_min: article.stock_min,
+      stock_max: article.stock_max,
+      prix_achat: article.prix_achat,
+      emplacement: article.emplacement || "",
+      fournisseur_id: article.fournisseur_id || "",
+    });
+  }, [article]);
   const { toast } = useToast();
 
   const fetchFournisseurs = async () => {
