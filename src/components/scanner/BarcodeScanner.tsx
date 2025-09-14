@@ -39,10 +39,10 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
       const reader = new BrowserMultiFormatReader();
       setCodeReader(reader);
 
-      // Demander les permissions de caméra
+      // Demander les permissions de caméra avec contrainte stricte pour la caméra arrière
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
-          facingMode: { ideal: 'environment' } // Caméra arrière par défaut
+          facingMode: 'environment' // Force l'utilisation de la caméra arrière
         } 
       });
       
@@ -53,17 +53,21 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
 
       // Obtenir la liste des caméras disponibles
       const videoDevices = await reader.listVideoInputDevices();
-      setDevices(videoDevices);
       
-      if (videoDevices.length > 0) {
-        // Privilégier la caméra arrière si disponible
-        const backCamera = videoDevices.find(device => 
-          device.label.toLowerCase().includes('back') || 
-          device.label.toLowerCase().includes('rear') ||
-          device.label.toLowerCase().includes('environment')
-        );
-        
-        const deviceId = backCamera?.deviceId || videoDevices[0].deviceId;
+      // Filtrer pour ne garder que les caméras arrière
+      const backCameras = videoDevices.filter(device => 
+        device.label.toLowerCase().includes('back') || 
+        device.label.toLowerCase().includes('rear') ||
+        device.label.toLowerCase().includes('environment') ||
+        !device.label.toLowerCase().includes('front')
+      );
+      
+      // Si aucune caméra arrière détectée, utiliser la première disponible
+      const camerasToUse = backCameras.length > 0 ? backCameras : videoDevices;
+      setDevices(camerasToUse);
+      
+      if (camerasToUse.length > 0) {
+        const deviceId = camerasToUse[0].deviceId;
         setSelectedDeviceId(deviceId);
         startScanning(reader, deviceId);
       }
@@ -72,7 +76,7 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
       setHasPermission(false);
       toast({
         title: "Erreur de caméra",
-        description: "Impossible d'accéder à la caméra. Vérifiez les permissions.",
+        description: "Impossible d'accéder à la caméra arrière. Vérifiez les permissions.",
         variant: "destructive",
       });
     }
@@ -218,18 +222,6 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
                   Relancer
                 </Button>
                 
-                {devices.length > 1 && (
-                  <Button
-                    onClick={switchCamera}
-                    disabled={!isScanning}
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                  >
-                    <Camera className="h-4 w-4 mr-2" />
-                    Changer
-                  </Button>
-                )}
               </div>
 
               <div className="text-center">
