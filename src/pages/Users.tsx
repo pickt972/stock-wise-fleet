@@ -43,27 +43,6 @@ export default function Users() {
   const { toast } = useToast();
   const { userRole } = useAuth();
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  // Vérifier que l'utilisateur est admin
-  if (userRole !== 'admin') {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <Card>
-            <CardContent className="p-6">
-              <p className="text-center text-muted-foreground">
-                Accès restreint aux administrateurs
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
   const fetchUsers = async () => {
     try {
       // Récupérer d'abord tous les profils
@@ -108,6 +87,28 @@ export default function Users() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  // Vérifier que l'utilisateur est admin
+  if (userRole !== 'admin') {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-96">
+          <Card>
+            <CardContent className="p-6">
+              <p className="text-center text-muted-foreground">
+                Accès restreint aux administrateurs
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
 
   const createUser = async () => {
     if (!formData.username || !formData.firstName || !formData.lastName || !formData.password) {
