@@ -7,6 +7,8 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Articles from "./pages/Articles";
+import Entrees from "./pages/Entrees";
+import Sorties from "./pages/Sorties";
 import Auth from "./pages/Auth";
 import Users from "./pages/Users";
 import NotFound from "./pages/NotFound";
@@ -32,6 +34,16 @@ const App = () => (
             <Route path="/articles" element={
               <ProtectedRoute>
                 <Articles />
+              </ProtectedRoute>
+            } />
+            <Route path="/entrees" element={
+              <ProtectedRoute>
+                <Entrees />
+              </ProtectedRoute>
+            } />
+            <Route path="/sorties" element={
+              <ProtectedRoute>
+                <Sorties />
               </ProtectedRoute>
             } />
             <Route path="/users" element={
