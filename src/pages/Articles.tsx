@@ -39,6 +39,11 @@ interface Article {
   emplacement: string;
   created_at: string;
   updated_at: string;
+  fournisseur_id?: string;
+  fournisseurs?: {
+    id: string;
+    nom: string;
+  };
 }
 
 export default function Articles() {
@@ -61,7 +66,13 @@ export default function Articles() {
     try {
       const { data, error } = await supabase
         .from('articles')
-        .select('*')
+        .select(`
+          *,
+          fournisseurs (
+            id,
+            nom
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -293,6 +304,7 @@ export default function Articles() {
                   <TableHead className="w-32 sm:w-40">Désignation</TableHead>
                   <TableHead className="hidden md:table-cell w-24 sm:w-28">Marque</TableHead>
                   <TableHead className="hidden lg:table-cell w-28">Catégorie</TableHead>
+                  <TableHead className="hidden xl:table-cell w-28">Fournisseur</TableHead>
                   <TableHead className="w-16 sm:w-20">Stock</TableHead>
                   <TableHead className="hidden sm:table-cell w-20 sm:w-24">Statut</TableHead>
                   <TableHead className="hidden lg:table-cell w-20 sm:w-24">Prix (€)</TableHead>
@@ -316,6 +328,15 @@ export default function Articles() {
                       <TableCell className="hidden md:table-cell text-sm">{article.marque}</TableCell>
                       <TableCell className="hidden lg:table-cell">
                         <Badge variant="outline" className="text-xs">{article.categorie}</Badge>
+                      </TableCell>
+                      <TableCell className="hidden xl:table-cell text-sm">
+                        {article.fournisseurs ? (
+                          <Badge variant="secondary" className="text-xs">
+                            {article.fournisseurs.nom}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
@@ -345,7 +366,7 @@ export default function Articles() {
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                     {hasActiveFilters ? "Aucun article ne correspond aux filtres sélectionnés" : "Aucun article disponible"}
                   </TableCell>
                 </TableRow>

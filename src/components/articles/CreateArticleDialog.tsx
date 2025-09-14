@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +29,7 @@ export function CreateArticleDialog({ onArticleCreated }: CreateArticleDialogPro
   const [open, setOpen] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [fournisseurs, setFournisseurs] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     reference: "",
     designation: "",
@@ -39,9 +40,31 @@ export function CreateArticleDialog({ onArticleCreated }: CreateArticleDialogPro
     stockMax: 100,
     prixAchat: 0,
     emplacement: "",
+    fournisseurId: "",
   });
 
   const { toast } = useToast();
+
+  const fetchFournisseurs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('fournisseurs')
+        .select('id, nom')
+        .eq('actif', true)
+        .order('nom');
+
+      if (error) throw error;
+      setFournisseurs(data || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des fournisseurs:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (open) {
+      fetchFournisseurs();
+    }
+  }, [open]);
 
   const categories = [
     "Consommables",
@@ -77,6 +100,7 @@ export function CreateArticleDialog({ onArticleCreated }: CreateArticleDialogPro
           stock_max: formData.stockMax,
           prix_achat: formData.prixAchat,
           emplacement: formData.emplacement,
+          fournisseur_id: formData.fournisseurId || null,
           user_id: (await supabase.auth.getUser()).data.user?.id
         }]);
 
@@ -97,6 +121,7 @@ export function CreateArticleDialog({ onArticleCreated }: CreateArticleDialogPro
         stockMax: 100,
         prixAchat: 0,
         emplacement: "",
+        fournisseurId: "",
       });
 
       setOpen(false);
@@ -191,6 +216,28 @@ export function CreateArticleDialog({ onArticleCreated }: CreateArticleDialogPro
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="fournisseur">Fournisseur</Label>
+              <Select
+                value={formData.fournisseurId}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, fournisseurId: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un fournisseur" />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50">
+                  <SelectItem value="">Aucun fournisseur</SelectItem>
+                  {fournisseurs.map((fournisseur) => (
+                    <SelectItem key={fournisseur.id} value={fournisseur.id}>
+                      {fournisseur.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="emplacement">Emplacement</Label>
               <Input

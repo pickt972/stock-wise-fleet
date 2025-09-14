@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -32,6 +32,7 @@ interface Article {
   stock_max: number;
   prix_achat: number;
   emplacement: string;
+  fournisseur_id?: string;
 }
 
 interface EditArticleDialogProps {
@@ -51,6 +52,7 @@ const categories = [
 export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [fournisseurs, setFournisseurs] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     reference: article.reference,
     designation: article.designation,
@@ -61,8 +63,30 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
     stock_max: article.stock_max,
     prix_achat: article.prix_achat,
     emplacement: article.emplacement || "",
+    fournisseur_id: article.fournisseur_id || "",
   });
   const { toast } = useToast();
+
+  const fetchFournisseurs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('fournisseurs')
+        .select('id, nom')
+        .eq('actif', true)
+        .order('nom');
+
+      if (error) throw error;
+      setFournisseurs(data || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des fournisseurs:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (open) {
+      fetchFournisseurs();
+    }
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,6 +105,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
           stock_max: formData.stock_max,
           prix_achat: formData.prix_achat,
           emplacement: formData.emplacement,
+          fournisseur_id: formData.fournisseur_id || null,
         })
         .eq('id', article.id);
 
@@ -170,6 +195,28 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
               </Select>
             </div>
             <div className="space-y-2">
+              <Label htmlFor="fournisseur">Fournisseur</Label>
+              <Select
+                value={formData.fournisseur_id}
+                onValueChange={(value) => setFormData({ ...formData, fournisseur_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un fournisseur" />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50">
+                  <SelectItem value="">Aucun fournisseur</SelectItem>
+                  {fournisseurs.map((fournisseur) => (
+                    <SelectItem key={fournisseur.id} value={fournisseur.id}>
+                      {fournisseur.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
               <Label htmlFor="emplacement">Emplacement</Label>
               <Input
                 id="emplacement"
@@ -177,9 +224,6 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
                 onChange={(e) => setFormData({ ...formData, emplacement: e.target.value })}
               />
             </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="stock">Stock actuel</Label>
               <Input
