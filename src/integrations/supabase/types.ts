@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      article_fournisseurs: {
+        Row: {
+          actif: boolean | null
+          article_id: string
+          created_at: string
+          delai_livraison: number | null
+          est_principal: boolean | null
+          fournisseur_id: string
+          id: string
+          notes: string | null
+          prix_fournisseur: number | null
+          quantite_minimum: number | null
+          reference_fournisseur: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          actif?: boolean | null
+          article_id: string
+          created_at?: string
+          delai_livraison?: number | null
+          est_principal?: boolean | null
+          fournisseur_id: string
+          id?: string
+          notes?: string | null
+          prix_fournisseur?: number | null
+          quantite_minimum?: number | null
+          reference_fournisseur?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          actif?: boolean | null
+          article_id?: string
+          created_at?: string
+          delai_livraison?: number | null
+          est_principal?: boolean | null
+          fournisseur_id?: string
+          id?: string
+          notes?: string | null
+          prix_fournisseur?: number | null
+          quantite_minimum?: number | null
+          reference_fournisseur?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_fournisseurs_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_fournisseurs_fournisseur_id_fkey"
+            columns: ["fournisseur_id"]
+            isOneToOne: false
+            referencedRelation: "fournisseurs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       articles: {
         Row: {
           categorie: string

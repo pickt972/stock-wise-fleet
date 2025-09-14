@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Filter, Edit, Trash2, AlertTriangle, X } from "lucide-react";
+import { Search, Filter, Edit, Trash2, AlertTriangle, X, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,10 +30,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import DashboardLayout from "./DashboardLayout";
 import { CreateArticleDialog } from "@/components/articles/CreateArticleDialog";
 import { EditArticleDialog } from "@/components/articles/EditArticleDialog";
 import { ArticleScanner } from "@/components/scanner/ArticleScanner";
+import { ArticleFournisseursManagement } from "@/components/articles/ArticleFournisseursManagement";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -55,6 +63,16 @@ interface Article {
     id: string;
     nom: string;
   };
+  article_fournisseurs?: Array<{
+    id: string;
+    fournisseur_id: string;
+    est_principal: boolean;
+    prix_fournisseur?: number;
+    fournisseurs: {
+      id: string;
+      nom: string;
+    };
+  }>;
 }
 
 export default function Articles() {
@@ -63,6 +81,7 @@ export default function Articles() {
   const [isLoading, setIsLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [deletingArticleId, setDeletingArticleId] = useState<string | null>(null);
+  const [selectedArticleForFournisseurs, setSelectedArticleForFournisseurs] = useState<Article | null>(null);
   
   // États des filtres
   const [filters, setFilters] = useState({
@@ -83,8 +102,20 @@ export default function Articles() {
           fournisseurs (
             id,
             nom
+          ),
+          article_fournisseurs!inner (
+            id,
+            fournisseur_id,
+            est_principal,
+            prix_fournisseur,
+            actif,
+            fournisseurs (
+              id,
+              nom
+            )
           )
         `)
+        .eq('article_fournisseurs.actif', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -138,6 +169,22 @@ export default function Articles() {
     if (stock === 0) return { variant: "destructive" as const, label: "Rupture" };
     if (stock <= stockMin) return { variant: "secondary" as const, label: "Faible" };
     return { variant: "default" as const, label: "OK" };
+  };
+
+  const getPrincipalFournisseur = (article: Article) => {
+    if (article.article_fournisseurs) {
+      const principal = article.article_fournisseurs.find(af => af.est_principal);
+      return principal?.fournisseurs.nom || article.article_fournisseurs[0]?.fournisseurs.nom;
+    }
+    return article.fournisseurs?.nom;
+  };
+
+  const getPrincipalPrice = (article: Article) => {
+    if (article.article_fournisseurs) {
+      const principal = article.article_fournisseurs.find(af => af.est_principal);
+      return principal?.prix_fournisseur ?? article.article_fournisseurs[0]?.prix_fournisseur ?? article.prix_achat;
+    }
+    return article.prix_achat;
   };
 
   const filteredArticles = articles.filter(article => {
@@ -354,6 +401,10 @@ export default function Articles() {
               {filteredArticles.length > 0 ? (
                 filteredArticles.map((article) => {
                   const stockStatus = getStockStatus(article.stock, article.stock_min);
+                  const principalFournisseur = getPrincipalFournisseur(article);
+                  const principalPrice = getPrincipalPrice(article);
+                  const hasMultipleFournisseurs = article.article_fournisseurs && article.article_fournisseurs.length > 1;
+                  
                   return (
                     <TableRow key={article.id}>
                       <TableCell className="font-medium text-xs md:text-sm">{article.reference}</TableCell>
@@ -368,13 +419,20 @@ export default function Articles() {
                         <Badge variant="outline" className="text-xs">{article.categorie}</Badge>
                       </TableCell>
                       <TableCell className="hidden xl:table-cell text-sm">
-                        {article.fournisseurs ? (
-                          <Badge variant="secondary" className="text-xs">
-                            {article.fournisseurs.nom}
-                          </Badge>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">-</span>
-                        )}
+                        <div className="flex items-center gap-1">
+                          {principalFournisseur ? (
+                            <Badge variant="secondary" className="text-xs">
+                              {principalFournisseur}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                          {hasMultipleFournisseurs && (
+                            <Badge variant="outline" className="text-xs">
+                              +{article.article_fournisseurs!.length - 1}
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
@@ -389,10 +447,33 @@ export default function Articles() {
                           {stockStatus.label}
                         </Badge>
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell text-sm whitespace-nowrap">€{Number(article.prix_achat ?? 0).toFixed(2)}</TableCell>
+                      <TableCell className="hidden lg:table-cell text-sm whitespace-nowrap">€{Number(principalPrice ?? 0).toFixed(2)}</TableCell>
                       <TableCell className="hidden xl:table-cell text-sm">{article.emplacement}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0"
+                                onClick={() => setSelectedArticleForFournisseurs(article)}
+                              >
+                                <Layers className="h-3 w-3 md:h-4 md:w-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                              <DialogHeader>
+                                <DialogTitle>Gestion des fournisseurs</DialogTitle>
+                              </DialogHeader>
+                              {selectedArticleForFournisseurs && (
+                                <ArticleFournisseursManagement
+                                  articleId={selectedArticleForFournisseurs.id}
+                                  articleNom={selectedArticleForFournisseurs.designation}
+                                />
+                              )}
+                            </DialogContent>
+                          </Dialog>
                           <EditArticleDialog article={article} onArticleUpdated={fetchArticles} />
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
