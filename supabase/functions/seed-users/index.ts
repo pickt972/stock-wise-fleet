@@ -51,6 +51,16 @@ async function findUserIdByEmail(email: string): Promise<string | null> {
   }
 }
 
+const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
+async function waitForUserAbsence(email: string, attempts = 12, delayMs = 500): Promise<boolean> {
+  for (let i = 0; i < attempts; i++) {
+    const id = await findUserIdByEmail(email);
+    if (!id) return true;
+    await sleep(delayMs);
+  }
+  return false;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -73,32 +83,55 @@ serve(async (req) => {
           const { error: delProfileErr } = await admin.from("profiles").delete().eq("id", userId);
           if (delProfileErr) console.warn("[seed-users] cleanup profile error:", acc.email, delProfileErr);
           const { error: delUserErr } = await admin.auth.admin.deleteUser(userId);
-          if (delUserErr) console.warn("[seed-users] delete user error:", acc.email, delUserErr);
-          // ensure we start fresh
-          userId = null;
+
+          let shouldCreate = true;
+          if (delUserErr) {
+            console.warn("[seed-users] delete user error:", acc.email, delUserErr);
+            shouldCreate = false; // fall back to updating existing user
+          } else {
+            const removed = await waitForUserAbsence(acc.email, 12, 500);
+            if (!removed) console.warn("[seed-users] user still visible after delete (continuing)", acc.email);
+            userId = null; // ensure fresh create
+          }
+
+          if (!shouldCreate) {
+            const { error: updErr } = await admin.auth.admin.updateUserById(userId!, {
+              password: acc.password,
+              user_metadata: { first_name: acc.first_name, last_name: acc.last_name },
+            });
+            if (updErr) console.error("[seed-users] updateUserById after failed delete:", acc.email, updErr);
+          }
         }
 
-        // Create fresh user
-        console.log("[seed-users] Creating user:", acc.email);
-        const { data: created, error: createErr } = await admin.auth.admin.createUser({
-          email: acc.email,
-          password: acc.password,
-          email_confirm: true,
-          user_metadata: { first_name: acc.first_name, last_name: acc.last_name },
-        });
+        // Create fresh user only if no existing userId remains
+        if (!userId) {
+          console.log("[seed-users] Creating user:", acc.email);
+          const { data: created, error: createErr } = await admin.auth.admin.createUser({
+            email: acc.email,
+            password: acc.password,
+            email_confirm: true,
+            user_metadata: { first_name: acc.first_name, last_name: acc.last_name },
+          });
 
-        if (createErr) {
-          console.error("[seed-users] createUser error:", acc.email, createErr);
-          // Try to recover by locating the user (in case create returned 500 but actually created)
-          userId = await findUserIdByEmail(acc.email);
-          if (!userId) {
-            entry.status = "error";
-            entry.error = (createErr as any)?.message ?? String(createErr);
-            results.push(entry);
-            continue;
+          if (createErr) {
+            console.error("[seed-users] createUser error:", acc.email, createErr);
+            // Try to recover by locating the user and forcing an update
+            userId = await findUserIdByEmail(acc.email);
+            if (userId) {
+              const { error: updErr } = await admin.auth.admin.updateUserById(userId, {
+                password: acc.password,
+                user_metadata: { first_name: acc.first_name, last_name: acc.last_name },
+              });
+              if (updErr) console.warn("[seed-users] updateUserById after create error:", acc.email, updErr);
+            } else {
+              entry.status = "error";
+              entry.error = (createErr as any)?.message ?? String(createErr);
+              results.push(entry);
+              continue;
+            }
+          } else {
+            userId = created.user?.id ?? null;
           }
-        } else {
-          userId = created.user?.id ?? null;
         }
 
         // If we reach here, we have a userId (freshly created or recovered)
