@@ -152,7 +152,7 @@ export const PurchaseOrderDialog = ({ isOpen, onClose, commande, items }: Purcha
       return;
     }
 
-    if (!commande.email_fournisseur) {
+    if (!commande?.email_fournisseur) {
       toast({
         title: "Erreur",
         description: "L'email du fournisseur n'est pas renseigné.",
@@ -179,7 +179,7 @@ export const PurchaseOrderDialog = ({ isOpen, onClose, commande, items }: Purcha
 
       toast({
         title: "Email envoyé",
-        description: `Le bon de commande a été envoyé à ${commande.email_fournisseur}`,
+        description: `Le bon de commande a été envoyé à ${commande?.email_fournisseur}`,
       });
       
       onClose();
@@ -199,7 +199,7 @@ export const PurchaseOrderDialog = ({ isOpen, onClose, commande, items }: Purcha
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Bon de Commande {commande.numero_commande}</DialogTitle>
+          <DialogTitle>Bon de Commande {commande?.numero_commande || 'N/A'}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
@@ -225,9 +225,9 @@ export const PurchaseOrderDialog = ({ isOpen, onClose, commande, items }: Purcha
           </div>
           
           <div className="text-sm text-muted-foreground">
-            <p><strong>Fournisseur :</strong> {commande.fournisseur}</p>
-            <p><strong>Email :</strong> {commande.email_fournisseur || "Non renseigné"}</p>
-            <p><strong>Total :</strong> {commande.total_ttc.toFixed(2)} €</p>
+            <p><strong>Fournisseur :</strong> {commande?.fournisseur || 'Non renseigné'}</p>
+            <p><strong>Email :</strong> {commande?.email_fournisseur || "Non renseigné"}</p>
+            <p><strong>Total :</strong> {(commande?.total_ttc || 0).toFixed(2)} €</p>
           </div>
           
           <div className="flex gap-2">
@@ -242,7 +242,7 @@ export const PurchaseOrderDialog = ({ isOpen, onClose, commande, items }: Purcha
             
             <Button
               onClick={sendEmail}
-              disabled={isLoading || !commande.email_fournisseur}
+              disabled={isLoading || !commande?.email_fournisseur}
               className="flex-1"
             >
               <Mail className="w-4 h-4 mr-2" />

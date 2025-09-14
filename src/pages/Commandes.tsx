@@ -49,6 +49,7 @@ interface Commande {
 export default function Commandes() {
   const [commandes, setCommandes] = useState<(Commande & { items: CommandeItem[] })[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [editingCommande, setEditingCommande] = useState<(Commande & { items: CommandeItem[] }) | null>(null);
   const [currentCommande, setCurrentCommande] = useState<Commande>({
@@ -71,8 +72,12 @@ export default function Commandes() {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchCommandes();
-    fetchArticles();
+    const loadData = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchCommandes(), fetchArticles()]);
+      setIsLoading(false);
+    };
+    loadData();
   }, []);
 
   const fetchCommandes = async () => {
@@ -84,25 +89,34 @@ export default function Commandes() {
 
       if (commandesError) throw commandesError;
 
-      // Récupérer les items pour chaque commande
-      const commandesWithItems = await Promise.all(
-        commandesData.map(async (commande) => {
-          const { data: itemsData, error: itemsError } = await supabase
-            .from('commande_items')
-            .select('*')
-            .eq('commande_id', commande.id);
+      if (commandesData && commandesData.length > 0) {
+        // Récupérer les items pour chaque commande
+        const commandesWithItems = await Promise.all(
+          commandesData.map(async (commande) => {
+            const { data: itemsData, error: itemsError } = await supabase
+              .from('commande_items')
+              .select('*')
+              .eq('commande_id', commande.id);
 
-          if (itemsError) throw itemsError;
+            if (itemsError) {
+              console.error('Error fetching items:', itemsError);
+              return { ...commande, items: [] };
+            }
 
-          return {
-            ...commande,
-            items: itemsData || []
-          };
-        })
-      );
+            return {
+              ...commande,
+              items: itemsData || []
+            };
+          })
+        );
 
-      setCommandes(commandesWithItems);
+        setCommandes(commandesWithItems);
+      } else {
+        setCommandes([]);
+      }
     } catch (error: any) {
+      console.error('Error in fetchCommandes:', error);
+      setCommandes([]);
       toast({
         title: "Erreur",
         description: error.message,
@@ -586,20 +600,26 @@ export default function Commandes() {
           </Button>
         </div>
 
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="text-muted-foreground">Chargement des commandes...</div>
+          </div>
+        ) : (
+
         <div className="grid gap-6">
-          {commandes.map((commande) => (
+          {commandes.length > 0 ? commandes.map((commande) => (
             <Card key={commande.id}>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2">
-                      {commande.numero_commande}
-                      <Badge variant={getStatusColor(commande.status) as any}>
-                        {getStatusLabel(commande.status)}
+                      {commande?.numero_commande || 'N/A'}
+                      <Badge variant={getStatusColor(commande?.status || 'brouillon') as any}>
+                        {getStatusLabel(commande?.status || 'brouillon')}
                       </Badge>
                     </CardTitle>
                     <p className="text-muted-foreground">
-                      {commande.fournisseur} • {commande.items.length} article(s)
+                      {commande?.fournisseur || 'Fournisseur non renseigné'} • {commande?.items?.length || 0} article(s)
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -628,35 +648,33 @@ export default function Commandes() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <h4 className="font-medium text-sm text-muted-foreground">Informations</h4>
-                    <p className="text-sm">Email: {commande.email_fournisseur || "Non renseigné"}</p>
-                    <p className="text-sm">Tél: {commande.telephone_fournisseur || "Non renseigné"}</p>
-                    <p className="text-sm">Date: {new Date(commande.date_creation || '').toLocaleDateString('fr-FR')}</p>
+                    <p className="text-sm">Email: {commande?.email_fournisseur || "Non renseigné"}</p>
+                    <p className="text-sm">Tél: {commande?.telephone_fournisseur || "Non renseigné"}</p>
+                    <p className="text-sm">Date: {commande?.date_creation ? new Date(commande.date_creation).toLocaleDateString('fr-FR') : 'N/A'}</p>
                   </div>
                   <div>
                     <h4 className="font-medium text-sm text-muted-foreground">Totaux</h4>
-                    <p className="text-sm">Total HT: {commande.total_ht.toFixed(2)} €</p>
-                    <p className="text-sm">TVA: {(commande.total_ttc - commande.total_ht).toFixed(2)} €</p>
-                    <p className="font-medium">Total TTC: {commande.total_ttc.toFixed(2)} €</p>
+                    <p className="text-sm">Total HT: {(commande?.total_ht || 0).toFixed(2)} €</p>
+                    <p className="text-sm">TVA: {((commande?.total_ttc || 0) - (commande?.total_ht || 0)).toFixed(2)} €</p>
+                    <p className="font-medium">Total TTC: {(commande?.total_ttc || 0).toFixed(2)} €</p>
                   </div>
                   <div>
                     <h4 className="font-medium text-sm text-muted-foreground">Articles</h4>
-                    {commande.items.slice(0, 3).map((item, idx) => (
+                    {(commande?.items || []).slice(0, 3).map((item, idx) => (
                       <p key={idx} className="text-sm truncate">
-                        {item.designation} × {item.quantite_commandee}
+                        {item?.designation || 'Article sans nom'} × {item?.quantite_commandee || 0}
                       </p>
                     ))}
-                    {commande.items.length > 3 && (
+                    {(commande?.items?.length || 0) > 3 && (
                       <p className="text-sm text-muted-foreground">
-                        +{commande.items.length - 3} autre(s)
+                        +{(commande?.items?.length || 0) - 3} autre(s)
                       </p>
                     )}
                   </div>
                 </div>
               </CardContent>
             </Card>
-          ))}
-
-          {commandes.length === 0 && (
+          )) : (
             <Card>
               <CardContent className="text-center py-12">
                 <ShoppingCart className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
@@ -672,6 +690,7 @@ export default function Commandes() {
             </Card>
           )}
         </div>
+        )}
       </div>
 
       {/* Purchase Order Dialog */}
