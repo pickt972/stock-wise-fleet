@@ -30,11 +30,25 @@ const accounts: SeedAccount[] = [
 ];
 
 async function findUserIdByEmail(email: string): Promise<string | null> {
-  // listUsers doesn't filter by email; fetch first 1000 and filter
-  const { data, error } = await admin.auth.admin.listUsers({ perPage: 1000, page: 1 });
-  if (error) return null;
-  const user = data.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
-  return user?.id ?? null;
+  try {
+    const perPage = 200;
+    let page = 1;
+    while (true) {
+      const { data, error } = await admin.auth.admin.listUsers({ perPage, page });
+      if (error) {
+        console.error("[seed-users] listUsers error while searching:", error);
+        return null;
+      }
+      const found = data.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+      if (found) return found.id;
+      if (data.users.length < perPage) return null; // no more pages
+      page += 1;
+      if (page > 50) return null; // safety cap (10k users)
+    }
+  } catch (e) {
+    console.error("[seed-users] findUserIdByEmail fatal:", e);
+    return null;
+  }
 }
 
 serve(async (req) => {
