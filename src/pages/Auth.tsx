@@ -103,8 +103,8 @@ export default function Auth() {
         {/* Logo et titre */}
         <div className="text-center space-y-2">
           <div className="flex justify-center">
-            <div className="bg-white p-2 rounded-xl shadow-elegant">
-              <img src={logo} alt="StockAuto Logo" className="h-10 w-10 md:h-12 md:w-12" />
+            <div className="bg-white p-3 rounded-xl shadow-elegant">
+              <img src={logo} alt="StockAuto Logo" className="h-16 w-16 md:h-20 md:w-20" />
             </div>
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">StockAuto</h1>

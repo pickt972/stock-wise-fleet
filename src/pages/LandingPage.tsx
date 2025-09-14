@@ -58,8 +58,8 @@ export default function LandingPage() {
           {/* Logo et titre principal */}
           <div className="space-y-3 md:space-y-4">
             <div className="flex justify-center">
-              <div className="bg-white p-2 rounded-2xl shadow-elegant">
-                <img src={logo} alt="StockAuto Logo" className="h-24 w-24 md:h-48 md:w-48" />
+              <div className="bg-white p-3 rounded-2xl shadow-elegant">
+                <img src={logo} alt="StockAuto Logo" className="h-32 w-32 md:h-64 md:w-64" />
               </div>
             </div>
             <h1 className="text-3xl md:text-5xl font-bold text-foreground">

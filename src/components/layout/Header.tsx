@@ -57,7 +57,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             <Menu className="h-4 w-4" />
           </Button>
           <div className="flex items-center gap-2">
-            <img src={logo} alt="StockAuto Logo" className="h-8 w-8" />
+            <img src={logo} alt="StockAuto Logo" className="h-10 w-10" />
             <div>
               <h1 className="text-xl font-bold text-foreground">StockAuto</h1>
               <p className="text-xs text-muted-foreground">Gestion des stocks</p>
