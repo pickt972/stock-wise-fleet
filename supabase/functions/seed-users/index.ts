@@ -65,39 +65,46 @@ serve(async (req) => {
       try {
         let userId: string | null = await findUserIdByEmail(acc.email);
 
-        if (!userId) {
-          console.log("[seed-users] Creating user:", acc.email);
-          const { data, error } = await admin.auth.admin.createUser({
-            email: acc.email,
-            password: acc.password,
-            email_confirm: true,
-            user_metadata: { first_name: acc.first_name, last_name: acc.last_name },
-          });
-
-          if (error) {
-            console.error("[seed-users] createUser error:", acc.email, error);
-            // Re-check in case the user was created despite the reported error
-            userId = await findUserIdByEmail(acc.email);
-            if (!userId) {
-              entry.status = "error";
-              entry.error = (error as any)?.message ?? String(error);
-              results.push(entry);
-              continue;
-            }
-          } else {
-            userId = data.user?.id ?? null;
-          }
-        } else {
-          const { error } = await admin.auth.admin.updateUserById(userId, {
-            password: acc.password,
-            user_metadata: { first_name: acc.first_name, last_name: acc.last_name },
-          });
-          if (error) console.warn("[seed-users] updateUserById warning:", acc.email, error);
+        // If a user already exists with this email, fully reset it (delete user + cleanup orphans)
+        if (userId) {
+          console.log("[seed-users] Existing user found, resetting:", acc.email, userId);
+          const { error: delRolesErr } = await admin.from("user_roles").delete().eq("user_id", userId);
+          if (delRolesErr) console.warn("[seed-users] cleanup roles error:", acc.email, delRolesErr);
+          const { error: delProfileErr } = await admin.from("profiles").delete().eq("id", userId);
+          if (delProfileErr) console.warn("[seed-users] cleanup profile error:", acc.email, delProfileErr);
+          const { error: delUserErr } = await admin.auth.admin.deleteUser(userId);
+          if (delUserErr) console.warn("[seed-users] delete user error:", acc.email, delUserErr);
+          // ensure we start fresh
+          userId = null;
         }
 
+        // Create fresh user
+        console.log("[seed-users] Creating user:", acc.email);
+        const { data: created, error: createErr } = await admin.auth.admin.createUser({
+          email: acc.email,
+          password: acc.password,
+          email_confirm: true,
+          user_metadata: { first_name: acc.first_name, last_name: acc.last_name },
+        });
+
+        if (createErr) {
+          console.error("[seed-users] createUser error:", acc.email, createErr);
+          // Try to recover by locating the user (in case create returned 500 but actually created)
+          userId = await findUserIdByEmail(acc.email);
+          if (!userId) {
+            entry.status = "error";
+            entry.error = (createErr as any)?.message ?? String(createErr);
+            results.push(entry);
+            continue;
+          }
+        } else {
+          userId = created.user?.id ?? null;
+        }
+
+        // If we reach here, we have a userId (freshly created or recovered)
         if (!userId) {
           entry.status = "error";
-          entry.error = "User ID not available after creation/update";
+          entry.error = "User ID not available after creation";
           results.push(entry);
           continue;
         }
@@ -126,6 +133,7 @@ serve(async (req) => {
         results.push({ email: acc.email, status: "error", error: err?.message ?? String(err) });
       }
     }
+
 
     return new Response(JSON.stringify({ ok: anySuccess, results }), {
       headers: { "Content-Type": "application/json", ...corsHeaders },
