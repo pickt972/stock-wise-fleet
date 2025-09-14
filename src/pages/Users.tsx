@@ -228,7 +228,7 @@ export default function Users() {
 
   return (
     <DashboardLayout>
-      <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <div className="p-4 md:p-6 space-y-4 md:space-y-6 max-w-full overflow-x-auto">
         <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">Gestion des utilisateurs</h1>
