@@ -389,7 +389,7 @@ export default function Articles() {
                           {stockStatus.label}
                         </Badge>
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell text-sm whitespace-nowrap">€{article.prix_achat.toFixed(2)}</TableCell>
+                      <TableCell className="hidden lg:table-cell text-sm whitespace-nowrap">€{Number(article.prix_achat ?? 0).toFixed(2)}</TableCell>
                       <TableCell className="hidden xl:table-cell text-sm">{article.emplacement}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
