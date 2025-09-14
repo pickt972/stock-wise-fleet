@@ -232,6 +232,60 @@ export type Database = {
         }
         Relationships: []
       }
+      mail_settings: {
+        Row: {
+          created_at: string
+          id: string
+          imap_host: string | null
+          imap_password: string | null
+          imap_port: number | null
+          imap_username: string | null
+          is_active: boolean
+          name: string
+          smtp_host: string
+          smtp_password: string | null
+          smtp_port: number
+          smtp_username: string
+          updated_at: string
+          use_tls: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          imap_host?: string | null
+          imap_password?: string | null
+          imap_port?: number | null
+          imap_username?: string | null
+          is_active?: boolean
+          name: string
+          smtp_host: string
+          smtp_password?: string | null
+          smtp_port?: number
+          smtp_username: string
+          updated_at?: string
+          use_tls?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          imap_host?: string | null
+          imap_password?: string | null
+          imap_port?: number | null
+          imap_username?: string | null
+          is_active?: boolean
+          name?: string
+          smtp_host?: string
+          smtp_password?: string | null
+          smtp_port?: number
+          smtp_username?: string
+          updated_at?: string
+          use_tls?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
