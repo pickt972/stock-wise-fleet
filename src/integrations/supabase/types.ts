@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      articles: {
+        Row: {
+          categorie: string
+          created_at: string
+          designation: string
+          emplacement: string | null
+          id: string
+          marque: string
+          prix_achat: number
+          reference: string
+          stock: number
+          stock_max: number
+          stock_min: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          categorie: string
+          created_at?: string
+          designation: string
+          emplacement?: string | null
+          id?: string
+          marque: string
+          prix_achat?: number
+          reference: string
+          stock?: number
+          stock_max?: number
+          stock_min?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          categorie?: string
+          created_at?: string
+          designation?: string
+          emplacement?: string | null
+          id?: string
+          marque?: string
+          prix_achat?: number
+          reference?: string
+          stock?: number
+          stock_max?: number
+          stock_min?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { Plus, Search, Filter, Edit, Trash2, AlertTriangle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Filter, Edit, Trash2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -13,60 +13,58 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import DashboardLayout from "./DashboardLayout";
+import { CreateArticleDialog } from "@/components/articles/CreateArticleDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
-const articles = [
-  {
-    id: "1",
-    reference: "HM-530",
-    designation: "Huile moteur 5W30",
-    marque: "Castrol",
-    categorie: "Consommables",
-    stock: 0,
-    stockMin: 5,
-    stockMax: 50,
-    prixAchat: 8.50,
-    emplacement: "A1-B2"
-  },
-  {
-    id: "2", 
-    reference: "PF-001",
-    designation: "Plaquettes frein avant",
-    marque: "Brembo",
-    categorie: "Freinage",
-    stock: 2,
-    stockMin: 3,
-    stockMax: 20,
-    prixAchat: 45.00,
-    emplacement: "B2-C1"
-  },
-  {
-    id: "3",
-    reference: "AF-001", 
-    designation: "Filtre à air",
-    marque: "Mann",
-    categorie: "Filtration",
-    stock: 15,
-    stockMin: 5,
-    stockMax: 30,
-    prixAchat: 12.30,
-    emplacement: "C1-D2"
-  },
-  {
-    id: "4",
-    reference: "BAT-12V",
-    designation: "Batterie 12V 60Ah", 
-    marque: "Varta",
-    categorie: "Électrique",
-    stock: 3,
-    stockMin: 2,
-    stockMax: 15,
-    prixAchat: 89.90,
-    emplacement: "D2-E1"
-  }
-];
+interface Article {
+  id: string;
+  reference: string;
+  designation: string;
+  marque: string;
+  categorie: string;
+  stock: number;
+  stock_min: number;
+  stock_max: number;
+  prix_achat: number;
+  emplacement: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export default function Articles() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  const fetchArticles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('articles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setArticles(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les articles",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchArticles();
+  }, []);
+
+  const handleArticleCreated = () => {
+    fetchArticles();
+  };
 
   const getStockStatus = (stock: number, stockMin: number) => {
     if (stock === 0) return { variant: "destructive" as const, label: "Rupture" };
@@ -80,6 +78,16 @@ export default function Articles() {
     article.marque.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg text-muted-foreground">Chargement des articles...</div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-4 lg:space-y-6 w-full max-w-full overflow-x-hidden">
@@ -88,10 +96,7 @@ export default function Articles() {
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Articles</h1>
           <p className="text-sm lg:text-base text-muted-foreground">Gérez votre inventaire d'articles</p>
         </div>
-        <Button className="bg-primary hover:bg-primary/90 w-full lg:w-auto flex-shrink-0">
-          <Plus className="mr-2 h-4 w-4" />
-          Nouvel Article
-        </Button>
+        <CreateArticleDialog onArticleCreated={handleArticleCreated} />
       </div>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:gap-4">
@@ -129,7 +134,7 @@ export default function Articles() {
               </TableHeader>
             <TableBody>
               {filteredArticles.map((article) => {
-                const stockStatus = getStockStatus(article.stock, article.stockMin);
+                const stockStatus = getStockStatus(article.stock, article.stock_min);
                 return (
                   <TableRow key={article.id}>
                     <TableCell className="font-medium text-xs md:text-sm">{article.reference}</TableCell>
@@ -146,7 +151,7 @@ export default function Articles() {
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <span className="font-medium text-sm">{article.stock}</span>
-                        {article.stock <= article.stockMin && (
+                        {article.stock <= article.stock_min && (
                           <AlertTriangle className="h-3 w-3 md:h-4 md:w-4 text-warning" />
                         )}
                       </div>
@@ -156,7 +161,7 @@ export default function Articles() {
                         {stockStatus.label}
                       </Badge>
                     </TableCell>
-                    <TableCell className="hidden lg:table-cell text-sm whitespace-nowrap">€{article.prixAchat.toFixed(2)}</TableCell>
+                    <TableCell className="hidden lg:table-cell text-sm whitespace-nowrap">€{article.prix_achat.toFixed(2)}</TableCell>
                     <TableCell className="hidden xl:table-cell text-sm">{article.emplacement}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
