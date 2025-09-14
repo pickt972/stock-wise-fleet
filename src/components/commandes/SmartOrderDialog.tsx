@@ -54,69 +54,123 @@ export const SmartOrderDialog = ({ isOpen, onClose, onOrdersCreated }: SmartOrde
   const calculateSmartOrders = async () => {
     setIsLoading(true);
     try {
-      // Récupérer les articles avec stock faible ou en rupture
-      const { data: articles, error } = await supabase
-        .from('articles')
+      // Récupérer les articles avec stock faible ou en rupture via article_fournisseurs
+      const { data: articleFournisseurs, error } = await supabase
+        .from('article_fournisseurs')
         .select(`
-          id,
-          designation,
-          reference,
-          stock,
-          stock_min,
-          prix_achat,
+          article_id,
           fournisseur_id,
-          fournisseurs (
+          prix_fournisseur,
+          est_principal,
+          actif,
+          articles!inner (
+            id,
+            designation,
+            reference,
+            stock,
+            stock_min,
+            prix_achat
+          ),
+          fournisseurs!inner (
             id,
             nom,
             email,
             telephone,
-            adresse
+            adresse,
+            actif
           )
         `)
-        .not('fournisseur_id', 'is', null);
+        .eq('actif', true)
+        .eq('fournisseurs.actif', true);
 
       if (error) throw error;
 
       // Filtrer côté client les articles avec stock faible ou en rupture
-      const articlesToOrder = articles?.filter(article => 
-        article.stock === 0 || article.stock <= article.stock_min
-      ) || [];
+      const articlesToOrder = articleFournisseurs?.filter(af => {
+        const article = af.articles;
+        return article && (article.stock === 0 || article.stock <= article.stock_min);
+      }) || [];
 
-      if (error) throw error;
-
-      // Grouper par fournisseur
+      // Grouper par fournisseur (priorité aux fournisseurs principaux)
       const grouped: GroupedBySupplier = {};
       
-      articlesToOrder?.forEach((article) => {
-        if (!article.fournisseurs) return;
+      // D'abord, traiter les fournisseurs principaux
+      const principalSuppliers = articlesToOrder.filter(af => af.est_principal);
+      const nonPrincipalSuppliers = articlesToOrder.filter(af => !af.est_principal);
+      
+      // Fonction pour traiter un fournisseur
+      const processSupplier = (af: any) => {
+        const article = af.articles;
+        const fournisseur = af.fournisseurs;
+        
+        // Vérifier si l'article a déjà été traité par un fournisseur principal
+        const alreadyProcessed = Object.values(grouped).some(group => 
+          group.items.some(item => item.article_id === article.id)
+        );
+        
+        if (alreadyProcessed && !af.est_principal) {
+          return; // Skip si déjà traité par un fournisseur principal
+        }
 
-        const fournisseurId = article.fournisseur_id;
         const quantiteACommander = article.stock === 0 
           ? Math.max(article.stock_min * 2, 10) // Rupture : 2x le stock min ou 10 minimum
           : article.stock_min - article.stock + 5; // Stock faible : complément + marge
+
+        const prixUnitaire = af.prix_fournisseur || article.prix_achat;
 
         const item: SmartOrderItem = {
           article_id: article.id,
           designation: article.designation,
           reference: article.reference,
           quantite_commandee: quantiteACommander,
-          prix_unitaire: article.prix_achat,
-          total_ligne: quantiteACommander * article.prix_achat,
-          fournisseur: article.fournisseurs
+          prix_unitaire: prixUnitaire,
+          total_ligne: quantiteACommander * prixUnitaire,
+          fournisseur: fournisseur
         };
+
+        const fournisseurId = fournisseur.id;
 
         if (!grouped[fournisseurId]) {
           grouped[fournisseurId] = {
-            fournisseur: article.fournisseurs,
+            fournisseur: fournisseur,
             items: [],
             total_ht: 0,
             total_ttc: 0,
           };
         }
 
+        // Si c'est un fournisseur principal et que l'article existe déjà, remplacer
+        if (af.est_principal) {
+          // Supprimer l'article de tous les autres fournisseurs
+          Object.keys(grouped).forEach(otherId => {
+            if (otherId !== fournisseurId) {
+              const otherGroup = grouped[otherId];
+              const itemIndex = otherGroup.items.findIndex(i => i.article_id === article.id);
+              if (itemIndex >= 0) {
+                const removedItem = otherGroup.items.splice(itemIndex, 1)[0];
+                otherGroup.total_ht -= removedItem.total_ligne;
+                otherGroup.total_ttc = otherGroup.total_ht * 1.2;
+              }
+            }
+          });
+        }
+
         grouped[fournisseurId].items.push(item);
         grouped[fournisseurId].total_ht += item.total_ligne;
         grouped[fournisseurId].total_ttc = grouped[fournisseurId].total_ht * 1.2; // TVA 20%
+      };
+
+      // Traiter d'abord les fournisseurs principaux
+      principalSuppliers.forEach(processSupplier);
+      
+      // Puis traiter les non-principaux pour les articles restants
+      nonPrincipalSuppliers.forEach(processSupplier);
+
+      // Nettoyer les fournisseurs sans articles
+      Object.keys(grouped).forEach(fournisseurId => {
+        if (grouped[fournisseurId].items.length === 0) {
+          delete grouped[fournisseurId];
+        }
       });
 
       setGroupedOrders(grouped);
