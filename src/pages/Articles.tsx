@@ -82,59 +82,51 @@ export default function Articles() {
 
   return (
     <DashboardLayout>
-      <div className="p-4 md:p-6 space-y-4 md:space-y-6">
-      <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Gestion des Articles</h1>
-          <p className="text-sm md:text-base text-muted-foreground">Gérez votre catalogue de pièces détachées</p>
+      <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Articles</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Gérez votre inventaire d'articles</p>
         </div>
-        <Button className="bg-gradient-primary hover:opacity-90 w-full md:w-auto">
-          <Plus className="h-4 w-4 mr-2" />
+        <Button className="bg-primary hover:bg-primary/90 w-full sm:w-auto">
+          <Plus className="mr-2 h-4 w-4" />
           Nouvel Article
         </Button>
       </div>
 
-      {/* Search and Filters */}
-      <Card className="shadow-soft">
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher par référence, désignation ou marque..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Button variant="outline">
-              <Filter className="h-4 w-4 mr-2" />
-              Filtres
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher un article..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Button variant="outline" className="w-full sm:w-auto">
+          <Filter className="mr-2 h-4 w-4" />
+          Filtres
+        </Button>
+      </div>
 
-      {/* Articles Table */}
-      <Card className="shadow-soft">
-        <CardHeader>
-          <CardTitle>Liste des Articles ({filteredArticles.length})</CardTitle>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="min-w-24">Référence</TableHead>
-                <TableHead className="min-w-32">Désignation</TableHead>
-                <TableHead className="hidden md:table-cell">Marque</TableHead>
-                <TableHead className="hidden lg:table-cell">Catégorie</TableHead>
-                <TableHead className="min-w-16">Stock</TableHead>
-                <TableHead className="hidden sm:table-cell">Statut</TableHead>
-                <TableHead className="hidden lg:table-cell">Prix</TableHead>
-                <TableHead className="hidden xl:table-cell">Emplacement</TableHead>
-                <TableHead className="text-right min-w-20">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
+      <Card>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[100px]">Référence</TableHead>
+                  <TableHead className="min-w-[150px]">Désignation</TableHead>
+                  <TableHead className="hidden md:table-cell min-w-[100px]">Marque</TableHead>
+                  <TableHead className="hidden lg:table-cell min-w-[120px]">Catégorie</TableHead>
+                  <TableHead className="min-w-[80px]">Stock</TableHead>
+                  <TableHead className="min-w-[100px]">Statut</TableHead>
+                  <TableHead className="min-w-[100px]">Prix (€)</TableHead>
+                  <TableHead className="hidden xl:table-cell min-w-[120px]">Emplacement</TableHead>
+                  <TableHead className="min-w-[100px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {filteredArticles.map((article) => {
                 const stockStatus = getStockStatus(article.stock, article.stockMin);
@@ -180,7 +172,8 @@ export default function Articles() {
                 );
               })}
             </TableBody>
-          </Table>
+            </Table>
+          </div>
         </CardContent>
       </Card>
       </div>

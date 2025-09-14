@@ -46,27 +46,27 @@ export function Header({ onMenuClick }: HeaderProps) {
 
   return (
     <header className="bg-card border-b border-border shadow-soft">
-      <div className="flex items-center justify-between px-4 h-16">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between px-2 sm:px-4 h-16 max-w-full overflow-hidden">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
           <Button
             variant="ghost"
             size="sm"
             onClick={onMenuClick}
-            className="md:hidden"
+            className="md:hidden flex-shrink-0"
           >
             <Menu className="h-4 w-4" />
           </Button>
-          <div className="flex items-center gap-2">
-            <img src={logo} alt="StockAuto Logo" className="h-10 w-10" />
-            <div>
-              <h1 className="text-xl font-bold text-foreground">StockAuto</h1>
-              <p className="text-xs text-muted-foreground">Gestion des stocks</p>
+          <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+            <img src={logo} alt="StockAuto Logo" className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0" />
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">StockAuto</h1>
+              <p className="text-xs text-muted-foreground hidden sm:block">Gestion des stocks</p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="relative">
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+          <Button variant="ghost" size="sm" className="relative hidden sm:flex">
             <Bell className="h-4 w-4" />
             <Badge 
               variant="destructive" 

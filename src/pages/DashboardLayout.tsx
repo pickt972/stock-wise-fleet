@@ -17,8 +17,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           isOpen={sidebarOpen} 
           onClose={() => setSidebarOpen(false)} 
         />
-        <main className="flex-1 md:ml-64 transition-all duration-300">
-          {children}
+        <main className="flex-1 md:ml-64 transition-all duration-300 min-w-0 overflow-hidden">
+          <div className="p-4 sm:p-6 max-w-full">
+            {children}
+          </div>
         </main>
       </div>
     </div>
