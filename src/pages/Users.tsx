@@ -43,6 +43,10 @@ export default function Users() {
   const { toast } = useToast();
   const { userRole } = useAuth();
 
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
   // Vérifier que l'utilisateur est admin
   if (userRole !== 'admin') {
     return (
@@ -59,10 +63,6 @@ export default function Users() {
       </DashboardLayout>
     );
   }
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
 
   const fetchUsers = async () => {
     try {
