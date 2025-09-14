@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +48,7 @@ interface Commande {
 }
 
 export default function Commandes() {
+  const location = useLocation();
   const [commandes, setCommandes] = useState<(Commande & { items: CommandeItem[] })[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -79,6 +81,32 @@ export default function Commandes() {
     };
     loadData();
   }, []);
+
+  // Gérer les articles pré-remplis depuis les alertes
+  useEffect(() => {
+    if (location.state?.prefilledItems) {
+      const { prefilledItems, source } = location.state;
+      setCurrentItems(prefilledItems.map((item: any) => ({
+        ...item,
+        total_ligne: item.quantite_commandee * item.prix_unitaire
+      })));
+      
+      const { totalHT, totalTTC } = calculateTotals(prefilledItems, currentCommande.tva_taux);
+      setCurrentCommande(prev => ({
+        ...prev,
+        total_ht: totalHT,
+        total_ttc: totalTTC
+      }));
+      
+      setIsCreating(true);
+      
+      // Message d'information
+      toast({
+        title: source === 'alerts' ? "Articles d'alerte ajoutés" : "Article d'alerte ajouté",
+        description: `${prefilledItems.length} article(s) ajouté(s) à la commande depuis les alertes`,
+      });
+    }
+  }, [location.state]);
 
   const fetchCommandes = async () => {
     try {
