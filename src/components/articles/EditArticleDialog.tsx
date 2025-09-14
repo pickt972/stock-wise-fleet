@@ -148,7 +148,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setOpen(true)} aria-label="Modifier l'article">
           <Edit className="h-3 w-3 md:h-4 md:w-4" />
         </Button>
       </DialogTrigger>
