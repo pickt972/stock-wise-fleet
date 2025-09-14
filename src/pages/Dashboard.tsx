@@ -7,14 +7,14 @@ import DashboardLayout from "./DashboardLayout";
 export default function Dashboard() {
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      <div className="p-4 md:p-6 space-y-4 md:space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Tableau de bord</h1>
-          <p className="text-muted-foreground">Vue d'ensemble de votre gestion des stocks</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Tableau de bord</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Vue d'ensemble de votre gestion des stocks</p>
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           <StatCard
             title="Articles en stock"
             value="1,247"
@@ -50,7 +50,7 @@ export default function Dashboard() {
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Alertes */}
           <div className="lg:col-span-1">
             <AlertsList />

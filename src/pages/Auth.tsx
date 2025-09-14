@@ -99,16 +99,16 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
+      <div className="w-full max-w-md space-y-4 md:space-y-6">
         {/* Logo et titre */}
         <div className="text-center space-y-2">
           <div className="flex justify-center">
             <div className="bg-white p-2 rounded-xl shadow-elegant">
-              <img src={logo} alt="StockAuto Logo" className="h-12 w-12" />
+              <img src={logo} alt="StockAuto Logo" className="h-10 w-10 md:h-12 md:w-12" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-foreground">StockAuto</h1>
-          <p className="text-muted-foreground">Gestion de stock pour location automobile</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">StockAuto</h1>
+          <p className="text-sm md:text-base text-muted-foreground px-2">Gestion de stock pour location automobile</p>
         </div>
 
         <Card className="shadow-elegant border-border/50">
@@ -185,7 +185,7 @@ export default function Auth() {
           </CardContent>
         </Card>
 
-        <div className="text-center text-sm text-muted-foreground bg-muted/50 p-4 rounded-lg">
+        <div className="text-center text-xs md:text-sm text-muted-foreground bg-muted/50 p-3 md:p-4 rounded-lg">
           <div className="space-y-2">
             <p className="font-semibold">Comptes disponibles :</p>
             <div className="space-y-1 text-xs">

@@ -228,18 +228,18 @@ export default function Users() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
+      <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+        <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0">
           <div>
-            <h1 className="text-3xl font-bold">Gestion des utilisateurs</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl md:text-3xl font-bold">Gestion des utilisateurs</h1>
+            <p className="text-sm md:text-base text-muted-foreground">
               Gérez les comptes utilisateurs et leurs rôles
             </p>
           </div>
           
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="w-full md:w-auto">
                 <Plus className="mr-2 h-4 w-4" />
                 Nouvel utilisateur
               </Button>
@@ -332,52 +332,55 @@ export default function Users() {
               {users.length} utilisateur{users.length > 1 ? 's' : ''} enregistré{users.length > 1 ? 's' : ''}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Nom d'utilisateur</TableHead>
-                  <TableHead>Rôle</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="min-w-32">Nom</TableHead>
+                  <TableHead className="hidden sm:table-cell">Nom d'utilisateur</TableHead>
+                  <TableHead className="min-w-24">Rôle</TableHead>
+                  <TableHead className="text-right min-w-32">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">
-                      {user.first_name} {user.last_name}
-                    </TableCell>
-                    <TableCell>{user.username}</TableCell>
-                    <TableCell>
-                      <Badge variant={getRoleBadgeVariant(user.role)}>
-                        {user.role === 'admin' ? 'Administrateur' :
-                         user.role === 'chef_agence' ? 'Chef d\'agence' : 'Magasinier'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Select
-                          value={user.role}
-                          onValueChange={(value) => updateUserRole(user.id, value as UserRole)}
-                        >
-                          <SelectTrigger className="w-36">
-                            <UserCog className="mr-2 h-4 w-4" />
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="magasinier">Magasinier</SelectItem>
-                            <SelectItem value="chef_agence">Chef d'agence</SelectItem>
-                            <SelectItem value="admin">Administrateur</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
+                 {users.map((user) => (
+                   <TableRow key={user.id}>
+                     <TableCell className="font-medium text-sm">
+                       <div>
+                         <div>{user.first_name} {user.last_name}</div>
+                         <div className="text-xs text-muted-foreground sm:hidden">{user.username}</div>
+                       </div>
+                     </TableCell>
+                     <TableCell className="hidden sm:table-cell text-sm">{user.username}</TableCell>
+                     <TableCell>
+                       <Badge variant={getRoleBadgeVariant(user.role)} className="text-xs">
+                         {user.role === 'admin' ? 'Admin' :
+                          user.role === 'chef_agence' ? 'Chef' : 'Mag.'}
+                       </Badge>
+                     </TableCell>
+                     <TableCell className="text-right">
+                       <div className="flex justify-end gap-1 md:gap-2">
+                         <Select
+                           value={user.role}
+                           onValueChange={(value) => updateUserRole(user.id, value as UserRole)}
+                         >
+                           <SelectTrigger className="w-24 md:w-36 text-xs md:text-sm">
+                             <UserCog className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
+                             <SelectValue />
+                           </SelectTrigger>
+                           <SelectContent>
+                             <SelectItem value="magasinier">Magasinier</SelectItem>
+                             <SelectItem value="chef_agence">Chef d'agence</SelectItem>
+                             <SelectItem value="admin">Administrateur</SelectItem>
+                           </SelectContent>
+                         </Select>
+                         
+                         <AlertDialog>
+                           <AlertDialogTrigger asChild>
+                             <Button variant="destructive" size="sm" className="h-8 w-8 p-0">
+                               <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
+                             </Button>
+                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
                               <AlertDialogTitle>Supprimer l'utilisateur</AlertDialogTitle>
