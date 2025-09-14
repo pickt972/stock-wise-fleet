@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,25 +27,25 @@ interface EditUserDialogProps {
 
 export default function EditUserDialog({ user, isOpen, onOpenChange, onUserUpdated }: EditUserDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{ firstName: string; lastName: string; username: string; role: UserRole }>({
     firstName: user?.first_name || "",
-    lastName: user?.last_name || "", 
+    lastName: user?.last_name || "",
     username: user?.username || "",
-    role: user?.role || "magasinier"
+    role: (user?.role as UserRole) || "magasinier",
   });
   const { toast } = useToast();
 
   // Mettre à jour le formData quand l'utilisateur change
-  useState(() => {
+  useEffect(() => {
     if (user) {
       setFormData({
         firstName: user.first_name,
         lastName: user.last_name,
         username: user.username,
-        role: user.role
+        role: user.role,
       });
     }
-  });
+  }, [user]);
 
   const handleSubmit = async () => {
     if (!user || !formData.firstName || !formData.lastName || !formData.username) {
