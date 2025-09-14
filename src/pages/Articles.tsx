@@ -1,9 +1,16 @@
 import { useState, useEffect } from "react";
-import { Search, Filter, Edit, Trash2, AlertTriangle } from "lucide-react";
+import { Search, Filter, Edit, Trash2, AlertTriangle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Table,
   TableBody,
@@ -38,6 +45,16 @@ export default function Articles() {
   const [searchTerm, setSearchTerm] = useState("");
   const [articles, setArticles] = useState<Article[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
+  
+  // États des filtres
+  const [filters, setFilters] = useState({
+    categorie: "",
+    marque: "",
+    stockStatus: "",
+    emplacement: "",
+  });
+  
   const { toast } = useToast();
 
   const fetchArticles = async () => {
@@ -74,11 +91,49 @@ export default function Articles() {
     return { variant: "default" as const, label: "OK" };
   };
 
-  const filteredArticles = articles.filter(article =>
-    article.designation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    article.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    article.marque.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredArticles = articles.filter(article => {
+    // Filtre de recherche textuelle
+    const matchesSearch = searchTerm === "" || 
+      article.designation.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.marque.toLowerCase().includes(searchTerm.toLowerCase());
+
+    // Filtres avancés
+    const matchesCategorie = filters.categorie === "" || article.categorie === filters.categorie;
+    const matchesMarque = filters.marque === "" || article.marque === filters.marque;
+    const matchesEmplacement = filters.emplacement === "" || article.emplacement === filters.emplacement;
+    
+    const stockStatus = getStockStatus(article.stock, article.stock_min);
+    let matchesStockStatus = true;
+    if (filters.stockStatus !== "") {
+      if (filters.stockStatus === "rupture") {
+        matchesStockStatus = stockStatus.label === "Rupture";
+      } else if (filters.stockStatus === "faible") {
+        matchesStockStatus = stockStatus.label === "Faible";
+      } else if (filters.stockStatus === "ok") {
+        matchesStockStatus = stockStatus.label === "OK";
+      }
+    }
+
+    return matchesSearch && matchesCategorie && matchesMarque && matchesEmplacement && matchesStockStatus;
+  });
+
+  // Obtenir les valeurs uniques pour les filtres
+  const uniqueCategories = [...new Set(articles.map(article => article.categorie))].filter(Boolean);
+  const uniqueMarques = [...new Set(articles.map(article => article.marque))].filter(Boolean);
+  const uniqueEmplacements = [...new Set(articles.map(article => article.emplacement))].filter(Boolean);
+
+  const clearFilters = () => {
+    setFilters({
+      categorie: "",
+      marque: "",
+      stockStatus: "",
+      emplacement: "",
+    });
+    setSearchTerm("");
+  };
+
+  const hasActiveFilters = Object.values(filters).some(value => value !== "") || searchTerm !== "";
 
   if (isLoading) {
     return (
@@ -111,11 +166,116 @@ export default function Articles() {
             className="pl-10 w-full"
           />
         </div>
-        <Button variant="outline" className="w-full lg:w-auto flex-shrink-0">
-          <Filter className="mr-2 h-4 w-4" />
-          Filtres
-        </Button>
+        <div className="flex gap-2">
+          <Collapsible open={showFilters} onOpenChange={setShowFilters}>
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" className="w-full lg:w-auto flex-shrink-0">
+                <Filter className="mr-2 h-4 w-4" />
+                Filtres
+                {hasActiveFilters && (
+                  <Badge variant="secondary" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                    !
+                  </Badge>
+                )}
+              </Button>
+            </CollapsibleTrigger>
+          </Collapsible>
+          
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters}>
+              <X className="h-4 w-4 mr-1" />
+              Effacer
+            </Button>
+          )}
+        </div>
       </div>
+
+      {/* Panneau de filtres */}
+      <Collapsible open={showFilters} onOpenChange={setShowFilters}>
+        <CollapsibleContent>
+          <Card className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <Label htmlFor="filter-categorie">Catégorie</Label>
+                <Select 
+                  value={filters.categorie} 
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, categorie: value }))}
+                >
+                  <SelectTrigger id="filter-categorie">
+                    <SelectValue placeholder="Toutes les catégories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Toutes les catégories</SelectItem>
+                    {uniqueCategories.map((categorie) => (
+                      <SelectItem key={categorie} value={categorie}>
+                        {categorie}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="filter-marque">Marque</Label>
+                <Select 
+                  value={filters.marque} 
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, marque: value }))}
+                >
+                  <SelectTrigger id="filter-marque">
+                    <SelectValue placeholder="Toutes les marques" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Toutes les marques</SelectItem>
+                    {uniqueMarques.map((marque) => (
+                      <SelectItem key={marque} value={marque}>
+                        {marque}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="filter-stock">Statut du stock</Label>
+                <Select 
+                  value={filters.stockStatus} 
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, stockStatus: value }))}
+                >
+                  <SelectTrigger id="filter-stock">
+                    <SelectValue placeholder="Tous les statuts" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Tous les statuts</SelectItem>
+                    <SelectItem value="ok">Stock OK</SelectItem>
+                    <SelectItem value="faible">Stock faible</SelectItem>
+                    <SelectItem value="rupture">Rupture de stock</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="filter-emplacement">Emplacement</Label>
+                <Select 
+                  value={filters.emplacement} 
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, emplacement: value }))}
+                >
+                  <SelectTrigger id="filter-emplacement">
+                    <SelectValue placeholder="Tous les emplacements" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Tous les emplacements</SelectItem>
+                    {uniqueEmplacements.map((emplacement) => (
+                      <SelectItem key={emplacement} value={emplacement}>
+                        {emplacement}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </Card>
+        </CollapsibleContent>
+      </Collapsible>
 
       {/* Scanner d'articles */}
       <ArticleScanner onArticleFound={(article) => {
@@ -141,47 +301,55 @@ export default function Articles() {
                 </TableRow>
               </TableHeader>
             <TableBody>
-              {filteredArticles.map((article) => {
-                const stockStatus = getStockStatus(article.stock, article.stock_min);
-                return (
-                  <TableRow key={article.id}>
-                    <TableCell className="font-medium text-xs md:text-sm">{article.reference}</TableCell>
-                    <TableCell className="text-xs md:text-sm">
-                      <div>
-                        <div className="font-medium">{article.designation}</div>
-                        <div className="text-xs text-muted-foreground md:hidden">{article.marque}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell text-sm">{article.marque}</TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <Badge variant="outline" className="text-xs">{article.categorie}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <span className="font-medium text-sm">{article.stock}</span>
-                        {article.stock <= article.stock_min && (
-                          <AlertTriangle className="h-3 w-3 md:h-4 md:w-4 text-warning" />
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      <Badge variant={stockStatus.variant} className="text-xs">
-                        {stockStatus.label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell text-sm whitespace-nowrap">€{article.prix_achat.toFixed(2)}</TableCell>
-                    <TableCell className="hidden xl:table-cell text-sm">{article.emplacement}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <EditArticleDialog article={article} onArticleUpdated={fetchArticles} />
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+              {filteredArticles.length > 0 ? (
+                filteredArticles.map((article) => {
+                  const stockStatus = getStockStatus(article.stock, article.stock_min);
+                  return (
+                    <TableRow key={article.id}>
+                      <TableCell className="font-medium text-xs md:text-sm">{article.reference}</TableCell>
+                      <TableCell className="text-xs md:text-sm">
+                        <div>
+                          <div className="font-medium">{article.designation}</div>
+                          <div className="text-xs text-muted-foreground md:hidden">{article.marque}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-sm">{article.marque}</TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        <Badge variant="outline" className="text-xs">{article.categorie}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium text-sm">{article.stock}</span>
+                          {article.stock <= article.stock_min && (
+                            <AlertTriangle className="h-3 w-3 md:h-4 md:w-4 text-warning" />
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <Badge variant={stockStatus.variant} className="text-xs">
+                          {stockStatus.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell text-sm whitespace-nowrap">€{article.prix_achat.toFixed(2)}</TableCell>
+                      <TableCell className="hidden xl:table-cell text-sm">{article.emplacement}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <EditArticleDialog article={article} onArticleUpdated={fetchArticles} />
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    {hasActiveFilters ? "Aucun article ne correspond aux filtres sélectionnés" : "Aucun article disponible"}
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
             </Table>
           </div>
