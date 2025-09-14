@@ -21,7 +21,6 @@ import { useAuth } from "@/hooks/useAuth";
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Articles", href: "/articles", icon: Package },
-  { name: "Fournisseurs", href: "/fournisseurs", icon: Building2 },
   { name: "Commandes", href: "/commandes", icon: ShoppingCart },
   { name: "Entrées", href: "/entrees", icon: ArrowDownToLine },
   { name: "Sorties", href: "/sorties", icon: ArrowUpFromLine },
@@ -32,6 +31,7 @@ const navigation = [
 
 const adminNavigation = [
   { name: "Utilisateurs", href: "/users", icon: Users },
+  { name: "Fournisseurs", href: "/fournisseurs", icon: Building2 },
   { name: "Catégories", href: "/categories", icon: Tag },
 ];
 
