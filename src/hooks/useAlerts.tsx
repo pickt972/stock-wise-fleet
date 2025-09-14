@@ -22,6 +22,14 @@ export interface Alert {
   };
 }
 
+export interface CategoryAlerts {
+  category: string;
+  alerts: Alert[];
+  totalAlerts: number;
+  highPriorityCount: number;
+  mediumPriorityCount: number;
+}
+
 export const useAlerts = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -86,11 +94,27 @@ export const useAlerts = () => {
 
   const getHighPriorityAlerts = () => alerts.filter(alert => alert.priority === "high");
   const getMediumPriorityAlerts = () => alerts.filter(alert => alert.priority === "medium");
+  
+  const getAlertsByCategory = (): CategoryAlerts[] => {
+    const categories = [...new Set(alerts.map(alert => alert.category))];
+    
+    return categories.map(category => {
+      const categoryAlerts = alerts.filter(alert => alert.category === category);
+      return {
+        category,
+        alerts: categoryAlerts,
+        totalAlerts: categoryAlerts.length,
+        highPriorityCount: categoryAlerts.filter(alert => alert.priority === "high").length,
+        mediumPriorityCount: categoryAlerts.filter(alert => alert.priority === "medium").length,
+      };
+    }).sort((a, b) => b.highPriorityCount - a.highPriorityCount || b.totalAlerts - a.totalAlerts);
+  };
 
   return {
     alerts,
     highPriorityAlerts: getHighPriorityAlerts(),
     mediumPriorityAlerts: getMediumPriorityAlerts(),
+    alertsByCategory: getAlertsByCategory(),
     isLoading,
     refetch: fetchAlerts
   };

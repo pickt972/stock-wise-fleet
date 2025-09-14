@@ -7,7 +7,7 @@ import { useAlerts } from "@/hooks/useAlerts";
 
 export function AlertsList() {
   const navigate = useNavigate();
-  const { alerts, isLoading } = useAlerts();
+  const { alerts, alertsByCategory, isLoading } = useAlerts();
 
   const handleCreateOrderForAlert = (alert: any) => {
     const articleForOrder = {
@@ -27,6 +27,10 @@ export function AlertsList() {
     });
   };
 
+  // Afficher seulement les 3 premières alertes
+  const displayAlerts = alerts.slice(0, 3);
+  const totalCategories = alertsByCategory.length;
+
   if (isLoading) {
     return (
       <Card className="shadow-soft">
@@ -43,15 +47,17 @@ export function AlertsList() {
     );
   }
 
-  // Afficher seulement les 3 premières alertes
-  const displayAlerts = alerts.slice(0, 3);
-
   return (
     <Card className="shadow-soft">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <AlertTriangle className="h-5 w-5 text-warning" />
           Alertes Stock
+          {totalCategories > 0 && (
+            <Badge variant="outline" className="text-xs">
+              {totalCategories} catégories
+            </Badge>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -99,7 +105,7 @@ export function AlertsList() {
           className="w-full" 
           onClick={() => navigate('/alertes')}
         >
-          Voir toutes les alertes
+          Voir toutes les alertes{totalCategories > 0 && ` (${totalCategories} catégories)`}
         </Button>
       </CardContent>
     </Card>

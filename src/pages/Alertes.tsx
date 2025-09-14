@@ -1,15 +1,19 @@
-import { useEffect } from "react";
-import { AlertTriangle, Package, TrendingDown, ArrowLeft, ShoppingCart } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertTriangle, Package, TrendingDown, ArrowLeft, ShoppingCart, Filter, Grid, List } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "./DashboardLayout";
-import { useAlerts, Alert } from "@/hooks/useAlerts";
+import { useAlerts, Alert, CategoryAlerts } from "@/hooks/useAlerts";
 
 export default function Alertes() {
   const navigate = useNavigate();
-  const { highPriorityAlerts, mediumPriorityAlerts, isLoading } = useAlerts();
+  const { highPriorityAlerts, mediumPriorityAlerts, alertsByCategory, isLoading } = useAlerts();
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"overview" | "category">("overview");
 
   useEffect(() => {
     document.title = "Alertes | StockAuto";
@@ -44,6 +48,46 @@ export default function Alertes() {
     });
   };
 
+  const handleCreateOrderForCategory = (categoryAlerts: CategoryAlerts) => {
+    handleCreateOrderForAlerts(categoryAlerts.alerts);
+  };
+
+  const filteredCategoriesAlerts = selectedCategory === "all" 
+    ? alertsByCategory 
+    : alertsByCategory.filter(cat => cat.category === selectedCategory);
+
+  const renderAlertCard = (alert: Alert) => (
+    <div key={alert.id} className="flex items-start justify-between p-4 bg-background rounded-lg border border-border hover:bg-muted/50 transition-colors">
+      <div 
+        className="flex items-start gap-3 flex-1 cursor-pointer"
+        onClick={() => handleCreateOrderForAlerts([alert])}
+      >
+        {alert.type === "rupture" ? (
+          <Package className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
+        ) : (
+          <TrendingDown className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
+        )}
+        <div className="space-y-2 min-w-0 flex-1">
+          <h4 className="font-medium text-foreground hover:text-primary transition-colors">{alert.title}</h4>
+          <p className="text-sm text-muted-foreground">{alert.description}</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="outline" className="text-xs">
+              {alert.category}
+            </Badge>
+            <span className="text-xs text-muted-foreground">{alert.date}</span>
+            <span className="text-xs text-primary">Cliquez pour commander</span>
+          </div>
+        </div>
+      </div>
+      <Badge 
+        variant={alert.priority === "high" ? "destructive" : "secondary"} 
+        className="text-xs flex-shrink-0"
+      >
+        {alert.priority === "high" ? "Urgent" : "Attention"}
+      </Badge>
+    </div>
+  );
+
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -75,108 +119,169 @@ export default function Alertes() {
             Alertes de stock
           </h1>
           <p className="text-sm md:text-base text-muted-foreground">
-            Gérez les ruptures de stock et les niveaux critiques
+            Gérez les ruptures de stock et les niveaux critiques par catégorie
           </p>
         </div>
 
-        <div className="space-y-6">
-          {/* Alertes urgentes */}
-          {highPriorityAlerts.length > 0 && (
-            <section>
-              <Card className="border-destructive bg-destructive/5">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                  <CardTitle className="text-destructive flex items-center gap-2">
-                    <Package className="h-5 w-5" />
-                    Alertes urgentes ({highPriorityAlerts.length})
-                  </CardTitle>
-                  <Button
-                    onClick={() => handleCreateOrderForAlerts(highPriorityAlerts)}
-                    size="sm"
-                    className="bg-destructive hover:bg-destructive/90"
-                  >
-                    <ShoppingCart className="h-4 w-4 mr-2" />
-                    Commander
-                  </Button>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {highPriorityAlerts.map((alert) => (
-                    <div key={alert.id} className="flex items-start justify-between p-4 bg-background rounded-lg border border-destructive/20 hover:bg-muted/50 transition-colors">
-                      <div 
-                        className="flex items-start gap-3 flex-1 cursor-pointer"
-                        onClick={() => handleCreateOrderForAlerts([alert])}
-                      >
-                        <Package className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
-                        <div className="space-y-2 min-w-0 flex-1">
-                          <h4 className="font-medium text-foreground hover:text-primary transition-colors">{alert.title}</h4>
-                          <p className="text-sm text-muted-foreground">{alert.description}</p>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge variant="outline" className="text-xs">
-                              {alert.category}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">{alert.date}</span>
-                            <span className="text-xs text-primary">Cliquez pour commander</span>
-                          </div>
-                        </div>
-                      </div>
-                      <Badge variant="destructive" className="text-xs flex-shrink-0">
-                        Urgent
-                      </Badge>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </section>
-          )}
+        {/* Contrôles de vue */}
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <Tabs value={viewMode} onValueChange={(value: any) => setViewMode(value)} className="w-full sm:w-auto">
+            <TabsList>
+              <TabsTrigger value="overview" className="flex items-center gap-2">
+                <List className="h-4 w-4" />
+                Vue générale
+              </TabsTrigger>
+              <TabsTrigger value="category" className="flex items-center gap-2">
+                <Grid className="h-4 w-4" />
+                Par catégorie
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
-          {/* Alertes d'attention */}
-          {mediumPriorityAlerts.length > 0 && (
-            <section>
-              <Card className="border-warning bg-warning/5">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                  <CardTitle className="text-warning flex items-center gap-2">
-                    <TrendingDown className="h-5 w-5" />
-                    Stocks faibles ({mediumPriorityAlerts.length})
-                  </CardTitle>
-                  <Button
-                    onClick={() => handleCreateOrderForAlerts(mediumPriorityAlerts)}
-                    size="sm"
-                    variant="outline"
-                    className="border-warning text-warning hover:bg-warning hover:text-warning-foreground"
-                  >
-                    <ShoppingCart className="h-4 w-4 mr-2" />
-                    Commander
-                  </Button>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {mediumPriorityAlerts.map((alert) => (
-                    <div key={alert.id} className="flex items-start justify-between p-4 bg-background rounded-lg border border-warning/20 hover:bg-muted/50 transition-colors">
-                      <div 
-                        className="flex items-start gap-3 flex-1 cursor-pointer"
-                        onClick={() => handleCreateOrderForAlerts([alert])}
-                      >
-                        <TrendingDown className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
-                        <div className="space-y-2 min-w-0 flex-1">
-                          <h4 className="font-medium text-foreground hover:text-primary transition-colors">{alert.title}</h4>
-                          <p className="text-sm text-muted-foreground">{alert.description}</p>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge variant="outline" className="text-xs">
-                              {alert.category}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">{alert.date}</span>
-                            <span className="text-xs text-primary">Cliquez pour commander</span>
-                          </div>
-                        </div>
-                      </div>
-                      <Badge variant="secondary" className="text-xs flex-shrink-0">
-                        Attention
-                      </Badge>
-                    </div>
+          {viewMode === "category" && (
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Filtrer par catégorie" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les catégories</SelectItem>
+                  {alertsByCategory.map((cat) => (
+                    <SelectItem key={cat.category} value={cat.category}>
+                      {cat.category} ({cat.totalAlerts})
+                    </SelectItem>
                   ))}
-                </CardContent>
-              </Card>
-            </section>
+                </SelectContent>
+              </Select>
+            </div>
           )}
         </div>
+
+        <Tabs value={viewMode} onValueChange={(value: any) => setViewMode(value)}>
+          <TabsContent value="overview" className="space-y-6">
+            {/* Vue générale - comme avant */}
+            {/* Alertes urgentes */}
+            {highPriorityAlerts.length > 0 && (
+              <section>
+                <Card className="border-destructive bg-destructive/5">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                    <CardTitle className="text-destructive flex items-center gap-2">
+                      <Package className="h-5 w-5" />
+                      Alertes urgentes ({highPriorityAlerts.length})
+                    </CardTitle>
+                    <Button
+                      onClick={() => handleCreateOrderForAlerts(highPriorityAlerts)}
+                      size="sm"
+                      className="bg-destructive hover:bg-destructive/90"
+                    >
+                      <ShoppingCart className="h-4 w-4 mr-2" />
+                      Commander tout
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {highPriorityAlerts.map(renderAlertCard)}
+                  </CardContent>
+                </Card>
+              </section>
+            )}
+
+            {/* Alertes d'attention */}
+            {mediumPriorityAlerts.length > 0 && (
+              <section>
+                <Card className="border-warning bg-warning/5">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                    <CardTitle className="text-warning flex items-center gap-2">
+                      <TrendingDown className="h-5 w-5" />
+                      Stocks faibles ({mediumPriorityAlerts.length})
+                    </CardTitle>
+                    <Button
+                      onClick={() => handleCreateOrderForAlerts(mediumPriorityAlerts)}
+                      size="sm"
+                      variant="outline"
+                      className="border-warning text-warning hover:bg-warning hover:text-warning-foreground"
+                    >
+                      <ShoppingCart className="h-4 w-4 mr-2" />
+                      Commander tout
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {mediumPriorityAlerts.map(renderAlertCard)}
+                  </CardContent>
+                </Card>
+              </section>
+            )}
+          </TabsContent>
+
+          <TabsContent value="category" className="space-y-6">
+            {/* Vue par catégorie */}
+            {filteredCategoriesAlerts.length > 0 ? (
+              filteredCategoriesAlerts.map((categoryData) => (
+                <section key={categoryData.category}>
+                  <Card className={`${
+                    categoryData.highPriorityCount > 0 
+                      ? "border-destructive bg-destructive/5" 
+                      : "border-warning bg-warning/5"
+                  }`}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                      <div>
+                        <CardTitle className={`flex items-center gap-2 ${
+                          categoryData.highPriorityCount > 0 ? "text-destructive" : "text-warning"
+                        }`}>
+                          <Package className="h-5 w-5" />
+                          {categoryData.category}
+                        </CardTitle>
+                        <div className="flex items-center gap-4 mt-2">
+                          <span className="text-sm text-muted-foreground">
+                            {categoryData.totalAlerts} alertes
+                          </span>
+                          {categoryData.highPriorityCount > 0 && (
+                            <Badge variant="destructive" className="text-xs">
+                              {categoryData.highPriorityCount} urgent{categoryData.highPriorityCount > 1 ? 's' : ''}
+                            </Badge>
+                          )}
+                          {categoryData.mediumPriorityCount > 0 && (
+                            <Badge variant="secondary" className="text-xs">
+                              {categoryData.mediumPriorityCount} attention
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => handleCreateOrderForCategory(categoryData)}
+                        size="sm"
+                        className={categoryData.highPriorityCount > 0 
+                          ? "bg-destructive hover:bg-destructive/90" 
+                          : "border-warning text-warning hover:bg-warning hover:text-warning-foreground"
+                        }
+                        variant={categoryData.highPriorityCount > 0 ? "default" : "outline"}
+                      >
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                        Commander ({categoryData.totalAlerts})
+                      </Button>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {categoryData.alerts.map(renderAlertCard)}
+                    </CardContent>
+                  </Card>
+                </section>
+              ))
+            ) : (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <AlertTriangle className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Aucune alerte</h3>
+                  <p className="text-muted-foreground">
+                    {selectedCategory === "all" 
+                      ? "Aucune alerte de stock actuellement" 
+                      : `Aucune alerte pour la catégorie "${selectedCategory}"`
+                    }
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
       </main>
     </DashboardLayout>
   );
