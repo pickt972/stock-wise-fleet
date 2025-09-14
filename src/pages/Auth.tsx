@@ -5,10 +5,18 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import logo from "@/assets/logo.png";
+
+const availableUsers = [
+  { username: "admin", password: "administrateur", role: "Administrateur" },
+  { username: "alvin", password: "alvin123", role: "Magasinier" },
+  { username: "julie", password: "julie123", role: "Magasinier" },
+  { username: "sherman", password: "sherman123", role: "Magasinier" },
+];
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
@@ -16,6 +24,14 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const handleUserSelect = (selectedUsername: string) => {
+    const user = availableUsers.find(u => u.username === selectedUsername);
+    if (user) {
+      setUsername(user.username);
+      setPassword(user.password);
+    }
+  };
 
   useEffect(() => {
     // Vérifier si l'utilisateur est déjà connecté
@@ -104,6 +120,24 @@ export default function Auth() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="user-select">Sélectionner un utilisateur</Label>
+                <Select onValueChange={handleUserSelect}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choisir un utilisateur test" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableUsers.map((user) => (
+                      <SelectItem key={user.username} value={user.username}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{user.username}</span>
+                          <span className="text-xs text-muted-foreground">{user.role}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="username">Nom d'utilisateur</Label>
                 <Input
