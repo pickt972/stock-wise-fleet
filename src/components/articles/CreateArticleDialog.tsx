@@ -63,20 +63,38 @@ export function CreateArticleDialog({ onArticleCreated }: CreateArticleDialogPro
   useEffect(() => {
     if (open) {
       fetchFournisseurs();
+      fetchCategories();
     }
   }, [open]);
 
-  const categories = [
-    "Consommables",
-    "Freinage", 
-    "Filtration",
-    "Électrique",
-    "Moteur",
-    "Transmission",
-    "Pneumatiques",
-    "Carrosserie",
-    "Autre"
-  ];
+  const [categories, setCategories] = useState<string[]>([]);
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('nom')
+        .eq('actif', true)
+        .order('nom');
+
+      if (error) throw error;
+      setCategories(data?.map(cat => cat.nom) || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des catégories:', error);
+      // Fallback vers les catégories par défaut
+      setCategories([
+        "Consommables",
+        "Freinage", 
+        "Filtration",
+        "Électrique",
+        "Moteur",
+        "Transmission",
+        "Pneumatiques",
+        "Carrosserie",
+        "Autre"
+      ]);
+    }
+  };
 
   const handleScanResult = (scannedCode: string) => {
     setFormData(prev => ({ ...prev, reference: scannedCode }));

@@ -73,6 +73,36 @@ export type Database = {
           },
         ]
       }
+      categories: {
+        Row: {
+          actif: boolean
+          created_at: string
+          description: string | null
+          id: string
+          nom: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          actif?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          actif?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       commande_items: {
         Row: {
           article_id: string | null

@@ -13,6 +13,7 @@ import Entrees from "./pages/Entrees";
 import Sorties from "./pages/Sorties";
 import Auth from "./pages/Auth";
 import Users from "./pages/Users";
+import Categories from "./pages/Categories";
 import Parametres from "./pages/Parametres";
 import Alertes from "./pages/Alertes";
 import NotFound from "./pages/NotFound";
@@ -63,6 +64,11 @@ const App = () => (
             <Route path="/users" element={
               <ProtectedRoute>
                 <Users />
+              </ProtectedRoute>
+            } />
+            <Route path="/categories" element={
+              <ProtectedRoute>
+                <Categories />
               </ProtectedRoute>
             } />
             <Route path="/parametres" element={

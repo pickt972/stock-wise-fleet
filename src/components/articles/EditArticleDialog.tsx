@@ -40,19 +40,35 @@ interface EditArticleDialogProps {
   onArticleUpdated: () => void;
 }
 
-const categories = [
-  "Électronique",
-  "Informatique", 
-  "Mobilier",
-  "Fournitures",
-  "Équipement",
-  "Consommables"
-];
+const fetchCategories = async (): Promise<string[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('nom')
+      .eq('actif', true)
+      .order('nom');
+
+    if (error) throw error;
+    return data?.map(cat => cat.nom) || [];
+  } catch (error) {
+    console.error('Erreur lors du chargement des catégories:', error);
+    // Fallback vers les catégories par défaut
+    return [
+      "Électronique",
+      "Informatique", 
+      "Mobilier",
+      "Fournitures",
+      "Équipement",
+      "Consommables"
+    ];
+  }
+};
 
 export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [fournisseurs, setFournisseurs] = useState<any[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     reference: article.reference,
     designation: article.designation,
@@ -101,8 +117,14 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
   useEffect(() => {
     if (open) {
       fetchFournisseurs();
+      loadCategories();
     }
   }, [open]);
+
+  const loadCategories = async () => {
+    const cats = await fetchCategories();
+    setCategories(cats);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
