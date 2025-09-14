@@ -63,7 +63,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
     stock_max: article.stock_max,
     prix_achat: article.prix_achat,
     emplacement: article.emplacement || "",
-    fournisseur_id: article.fournisseur_id || "",
+    fournisseur_id: article.fournisseur_id || "none",
   });
 
   // Mettre à jour le formData quand l'article change
@@ -78,7 +78,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
       stock_max: article.stock_max,
       prix_achat: article.prix_achat,
       emplacement: article.emplacement || "",
-      fournisseur_id: article.fournisseur_id || "",
+      fournisseur_id: article.fournisseur_id || "none",
     });
   }, [article]);
   const { toast } = useToast();
@@ -121,7 +121,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
           stock_max: formData.stock_max,
           prix_achat: formData.prix_achat,
           emplacement: formData.emplacement,
-          fournisseur_id: formData.fournisseur_id || null,
+          fournisseur_id: formData.fournisseur_id === "none" ? null : formData.fournisseur_id,
         })
         .eq('id', article.id);
 
@@ -211,14 +211,14 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
             <div className="space-y-2">
               <Label htmlFor="fournisseur">Fournisseur</Label>
               <Select
-                value={formData.fournisseur_id}
-                onValueChange={(value) => setFormData({ ...formData, fournisseur_id: value })}
+                value={formData.fournisseur_id || "none"}
+                onValueChange={(value) => setFormData({ ...formData, fournisseur_id: value === "none" ? "" : value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un fournisseur" />
                 </SelectTrigger>
                 <SelectContent className="bg-background z-50">
-                  <SelectItem value="">Aucun fournisseur</SelectItem>
+                  <SelectItem value="none">Aucun fournisseur</SelectItem>
                   {fournisseurs.map((fournisseur) => (
                     <SelectItem key={fournisseur.id} value={fournisseur.id}>
                       {fournisseur.nom}
