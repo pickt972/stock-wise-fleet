@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import DashboardLayout from "./DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { MailSettingsForm } from "@/components/mail/MailSettingsForm";
 
 export default function Parametres() {
   useEffect(() => {
@@ -24,16 +25,14 @@ export default function Parametres() {
           <p className="text-sm md:text-base text-muted-foreground">Gérez les préférences de l'application</p>
         </header>
 
-        <section>
+        <section className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Page en construction</CardTitle>
-              <CardDescription>Cette page sera bientôt disponible.</CardDescription>
+              <CardTitle>Configuration de la messagerie</CardTitle>
+              <CardDescription>Paramètres SMTP/IMAP pour l'envoi d'emails aux fournisseurs</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Dites-moi quels paramètres vous souhaitez configurer et je les ajouterai ici.
-              </p>
+              <MailSettingsForm />
             </CardContent>
           </Card>
         </section>

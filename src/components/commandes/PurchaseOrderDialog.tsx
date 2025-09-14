@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Mail, Download } from "lucide-react";
+import { Mail, Download, Settings } from "lucide-react";
+import { EmailOrderDialog } from "./EmailOrderDialog";
 
 interface PurchaseOrderDialogProps {
   isOpen: boolean;
@@ -35,6 +36,7 @@ export const PurchaseOrderDialog = ({ isOpen, onClose, commande, items }: Purcha
   const [senderName, setSenderName] = useState("");
   const [senderEmail, setSenderEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
   const { toast } = useToast();
 
   const generatePurchaseOrderHTML = () => {
@@ -248,8 +250,24 @@ export const PurchaseOrderDialog = ({ isOpen, onClose, commande, items }: Purcha
               <Mail className="w-4 h-4 mr-2" />
               {isLoading ? "Envoi..." : "Envoyer"}
             </Button>
+
+            <Button
+              onClick={() => setShowEmailDialog(true)}
+              variant="outline"
+              className="flex-1"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Email perso
+            </Button>
           </div>
         </div>
+
+        <EmailOrderDialog
+          isOpen={showEmailDialog}
+          onClose={() => setShowEmailDialog(false)}
+          commande={commande}
+          items={items}
+        />
       </DialogContent>
     </Dialog>
   );
