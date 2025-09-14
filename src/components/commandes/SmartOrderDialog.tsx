@@ -73,15 +73,21 @@ export const SmartOrderDialog = ({ isOpen, onClose, onOrdersCreated }: SmartOrde
             adresse
           )
         `)
-        .or('stock.eq.0,stock.lte.stock_min')
         .not('fournisseur_id', 'is', null);
+
+      if (error) throw error;
+
+      // Filtrer côté client les articles avec stock faible ou en rupture
+      const articlesToOrder = articles?.filter(article => 
+        article.stock === 0 || article.stock <= article.stock_min
+      ) || [];
 
       if (error) throw error;
 
       // Grouper par fournisseur
       const grouped: GroupedBySupplier = {};
       
-      articles?.forEach((article) => {
+      articlesToOrder?.forEach((article) => {
         if (!article.fournisseurs) return;
 
         const fournisseurId = article.fournisseur_id;
