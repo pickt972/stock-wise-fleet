@@ -68,6 +68,7 @@ interface Article {
     fournisseur_id: string;
     est_principal: boolean;
     prix_fournisseur?: number;
+    actif: boolean;
     fournisseurs: {
       id: string;
       nom: string;
@@ -103,7 +104,7 @@ export default function Articles() {
             id,
             nom
           ),
-          article_fournisseurs!inner (
+          article_fournisseurs (
             id,
             fournisseur_id,
             est_principal,
@@ -115,7 +116,7 @@ export default function Articles() {
             )
           )
         `)
-        .eq('article_fournisseurs.actif', true)
+        
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -173,16 +174,18 @@ export default function Articles() {
 
   const getPrincipalFournisseur = (article: Article) => {
     if (article.article_fournisseurs) {
-      const principal = article.article_fournisseurs.find(af => af.est_principal);
-      return principal?.fournisseurs.nom || article.article_fournisseurs[0]?.fournisseurs.nom;
+      const active = article.article_fournisseurs.filter(af => af.actif);
+      const principal = active.find(af => af.est_principal);
+      return principal?.fournisseurs.nom || active[0]?.fournisseurs.nom;
     }
     return article.fournisseurs?.nom;
   };
 
   const getPrincipalPrice = (article: Article) => {
     if (article.article_fournisseurs) {
-      const principal = article.article_fournisseurs.find(af => af.est_principal);
-      return principal?.prix_fournisseur ?? article.article_fournisseurs[0]?.prix_fournisseur ?? article.prix_achat;
+      const active = article.article_fournisseurs.filter(af => af.actif);
+      const principal = active.find(af => af.est_principal);
+      return principal?.prix_fournisseur ?? active[0]?.prix_fournisseur ?? article.prix_achat;
     }
     return article.prix_achat;
   };
@@ -403,7 +406,8 @@ export default function Articles() {
                   const stockStatus = getStockStatus(article.stock, article.stock_min);
                   const principalFournisseur = getPrincipalFournisseur(article);
                   const principalPrice = getPrincipalPrice(article);
-                  const hasMultipleFournisseurs = article.article_fournisseurs && article.article_fournisseurs.length > 1;
+                  const activeCount = article.article_fournisseurs ? article.article_fournisseurs.filter(af => af.actif).length : 0;
+                  const hasMultipleFournisseurs = activeCount > 1;
                   
                   return (
                     <TableRow key={article.id}>
