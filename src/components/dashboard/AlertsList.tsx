@@ -2,6 +2,7 @@ import { AlertTriangle, Package, TrendingDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const alerts = [
   {
@@ -31,6 +32,7 @@ const alerts = [
 ];
 
 export function AlertsList() {
+  const navigate = useNavigate();
   return (
     <Card className="shadow-soft">
       <CardHeader>
@@ -67,7 +69,11 @@ export function AlertsList() {
           </div>
         ))}
         
-        <Button variant="outline" className="w-full">
+        <Button 
+          variant="outline" 
+          className="w-full" 
+          onClick={() => navigate('/alertes')}
+        >
           Voir toutes les alertes
         </Button>
       </CardContent>

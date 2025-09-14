@@ -12,6 +12,7 @@ import Sorties from "./pages/Sorties";
 import Auth from "./pages/Auth";
 import Users from "./pages/Users";
 import Parametres from "./pages/Parametres";
+import Alertes from "./pages/Alertes";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "@/components/ProtectedRoute";
 
@@ -55,6 +56,11 @@ const App = () => (
             <Route path="/parametres" element={
               <ProtectedRoute>
                 <Parametres />
+              </ProtectedRoute>
+            } />
+            <Route path="/alertes" element={
+              <ProtectedRoute>
+                <Alertes />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
