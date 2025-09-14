@@ -66,26 +66,39 @@ export default function Users() {
 
   const fetchUsers = async () => {
     try {
-      const { data: profiles, error } = await supabase
+      // Récupérer d'abord tous les profils
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          first_name,
-          last_name,
-          username,
-          user_roles(role)
-        `)
+        .select('id, first_name, last_name, username')
         .order('first_name');
 
-      if (error) throw error;
+      if (profilesError) throw profilesError;
 
-      const usersWithRoles = profiles?.map((profile: any) => ({
-        ...profile,
-        role: (profile.user_roles?.[0]?.role as UserRole) || 'magasinier'
-      })) || [];
+      if (!profiles || profiles.length === 0) {
+        setUsers([]);
+        return;
+      }
+
+      // Récupérer tous les rôles en une seule requête
+      const { data: roles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('user_id', profiles.map(p => p.id));
+
+      if (rolesError) throw rolesError;
+
+      // Mapper les profils avec leurs rôles
+      const usersWithRoles = profiles.map((profile) => {
+        const userRole = roles?.find(r => r.user_id === profile.id);
+        return {
+          ...profile,
+          role: (userRole?.role as UserRole) || 'magasinier'
+        };
+      });
 
       setUsers(usersWithRoles);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Erreur lors du chargement des utilisateurs:', error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les utilisateurs",
