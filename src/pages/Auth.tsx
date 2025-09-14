@@ -128,11 +128,13 @@ export default function Auth() {
                   </SelectTrigger>
                   <SelectContent>
                     {availableUsers.map((user) => (
-                      <SelectItem key={user.username} value={user.username}>
-                        <div className="flex items-center justify-between w-full">
-                          <span className="font-medium">{user.username}</span>
-                          <span className="text-xs text-muted-foreground ml-2">{user.role}</span>
-                        </div>
+                      <SelectItem
+                        key={user.username}
+                        value={user.username}
+                        description={user.role}
+                        textValue={user.username}
+                      >
+                        <span className="font-medium">{user.username}</span>
                       </SelectItem>
                     ))}
                   </SelectContent>
