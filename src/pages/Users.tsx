@@ -11,8 +11,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Plus, Trash2, UserCog } from "lucide-react";
+import { Loader2, Plus, Trash2, UserCog, Edit } from "lucide-react";
 import DashboardLayout from "./DashboardLayout";
+import EditUserDialog from "@/components/users/EditUserDialog";
 
 type UserRole = 'admin' | 'chef_agence' | 'magasinier';
 
@@ -33,6 +34,8 @@ export default function Users() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [formData, setFormData] = useState({
     username: "",
     firstName: "",
@@ -372,56 +375,75 @@ export default function Users() {
                           user.role === 'chef_agence' ? 'Chef' : 'Mag.'}
                        </Badge>
                      </TableCell>
-                     <TableCell className="text-right">
-                       <div className="flex justify-end gap-1 md:gap-2">
-                         <Select
-                           value={user.role}
-                           onValueChange={(value) => updateUserRole(user.id, value as UserRole)}
-                         >
-                           <SelectTrigger className="w-24 md:w-36 text-xs md:text-sm">
-                             <UserCog className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
-                             <SelectValue />
-                           </SelectTrigger>
-                           <SelectContent>
-                             <SelectItem value="magasinier">Magasinier</SelectItem>
-                             <SelectItem value="chef_agence">Chef d'agence</SelectItem>
-                             <SelectItem value="admin">Administrateur</SelectItem>
-                           </SelectContent>
-                         </Select>
-                         
-                         <AlertDialog>
-                           <AlertDialogTrigger asChild>
-                             <Button variant="destructive" size="sm" className="h-8 w-8 p-0">
-                               <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
-                             </Button>
-                           </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Supprimer l'utilisateur</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Êtes-vous sûr de vouloir supprimer {user.first_name} {user.last_name} ?
-                                Cette action est irréversible.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Annuler</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => deleteUser(user.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Supprimer
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1 md:gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setIsEditDialogOpen(true);
+                            }}
+                          >
+                            <Edit className="h-3 w-3 md:h-4 md:w-4" />
+                          </Button>
+                          
+                          <Select
+                            value={user.role}
+                            onValueChange={(value) => updateUserRole(user.id, value as UserRole)}
+                          >
+                            <SelectTrigger className="w-24 md:w-36 text-xs md:text-sm">
+                              <UserCog className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="magasinier">Magasinier</SelectItem>
+                              <SelectItem value="chef_agence">Chef d'agence</SelectItem>
+                              <SelectItem value="admin">Administrateur</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm" className="h-8 w-8 p-0">
+                                <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                           <AlertDialogContent>
+                             <AlertDialogHeader>
+                               <AlertDialogTitle>Supprimer l'utilisateur</AlertDialogTitle>
+                               <AlertDialogDescription>
+                                 Êtes-vous sûr de vouloir supprimer {user.first_name} {user.last_name} ?
+                                 Cette action est irréversible.
+                               </AlertDialogDescription>
+                             </AlertDialogHeader>
+                             <AlertDialogFooter>
+                               <AlertDialogCancel>Annuler</AlertDialogCancel>
+                               <AlertDialogAction
+                                 onClick={() => deleteUser(user.id)}
+                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                               >
+                                 Supprimer
+                               </AlertDialogAction>
+                             </AlertDialogFooter>
+                           </AlertDialogContent>
+                         </AlertDialog>
+                       </div>
+                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </CardContent>
         </Card>
+
+        <EditUserDialog
+          user={selectedUser}
+          isOpen={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          onUserUpdated={fetchUsers}
+        />
       </div>
     </DashboardLayout>
   );
