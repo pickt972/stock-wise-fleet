@@ -62,6 +62,126 @@ export type Database = {
         }
         Relationships: []
       }
+      commande_items: {
+        Row: {
+          article_id: string | null
+          commande_id: string
+          created_at: string
+          designation: string
+          id: string
+          prix_unitaire: number
+          quantite_commandee: number
+          quantite_recue: number
+          reference: string | null
+          total_ligne: number
+          updated_at: string
+        }
+        Insert: {
+          article_id?: string | null
+          commande_id: string
+          created_at?: string
+          designation: string
+          id?: string
+          prix_unitaire: number
+          quantite_commandee: number
+          quantite_recue?: number
+          reference?: string | null
+          total_ligne: number
+          updated_at?: string
+        }
+        Update: {
+          article_id?: string | null
+          commande_id?: string
+          created_at?: string
+          designation?: string
+          id?: string
+          prix_unitaire?: number
+          quantite_commandee?: number
+          quantite_recue?: number
+          reference?: string | null
+          total_ligne?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commande_items_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commande_items_commande_id_fkey"
+            columns: ["commande_id"]
+            isOneToOne: false
+            referencedRelation: "commandes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commandes: {
+        Row: {
+          adresse_fournisseur: string | null
+          created_at: string
+          date_creation: string
+          date_envoi: string | null
+          date_reception_prevue: string | null
+          date_reception_reelle: string | null
+          email_fournisseur: string | null
+          fournisseur: string
+          id: string
+          notes: string | null
+          numero_commande: string
+          status: Database["public"]["Enums"]["commande_status"]
+          telephone_fournisseur: string | null
+          total_ht: number
+          total_ttc: number
+          tva_taux: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          adresse_fournisseur?: string | null
+          created_at?: string
+          date_creation?: string
+          date_envoi?: string | null
+          date_reception_prevue?: string | null
+          date_reception_reelle?: string | null
+          email_fournisseur?: string | null
+          fournisseur: string
+          id?: string
+          notes?: string | null
+          numero_commande: string
+          status?: Database["public"]["Enums"]["commande_status"]
+          telephone_fournisseur?: string | null
+          total_ht?: number
+          total_ttc?: number
+          tva_taux?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          adresse_fournisseur?: string | null
+          created_at?: string
+          date_creation?: string
+          date_envoi?: string | null
+          date_reception_prevue?: string | null
+          date_reception_reelle?: string | null
+          email_fournisseur?: string | null
+          fournisseur?: string
+          id?: string
+          notes?: string | null
+          numero_commande?: string
+          status?: Database["public"]["Enums"]["commande_status"]
+          telephone_fournisseur?: string | null
+          total_ht?: number
+          total_ttc?: number
+          tva_taux?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -175,9 +295,20 @@ export type Database = {
         Args: { article_id: string; quantity_change: number }
         Returns: undefined
       }
+      update_commande_totals: {
+        Args: { commande_id_param: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "magasinier" | "chef_agence"
+      commande_status:
+        | "brouillon"
+        | "envoye"
+        | "confirme"
+        | "recu_partiel"
+        | "recu_complet"
+        | "annule"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -306,6 +437,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "magasinier", "chef_agence"],
+      commande_status: [
+        "brouillon",
+        "envoye",
+        "confirme",
+        "recu_partiel",
+        "recu_complet",
+        "annule",
+      ],
     },
   },
 } as const
