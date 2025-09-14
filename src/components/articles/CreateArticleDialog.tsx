@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
 
 interface CreateArticleDialogProps {
   onArticleCreated: () => void;
@@ -26,6 +27,7 @@ interface CreateArticleDialogProps {
 
 export function CreateArticleDialog({ onArticleCreated }: CreateArticleDialogProps) {
   const [open, setOpen] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     reference: "",
@@ -52,6 +54,11 @@ export function CreateArticleDialog({ onArticleCreated }: CreateArticleDialogPro
     "Carrosserie",
     "Autre"
   ];
+
+  const handleScanResult = (scannedCode: string) => {
+    setFormData(prev => ({ ...prev, reference: scannedCode }));
+    setShowScanner(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,13 +128,25 @@ export function CreateArticleDialog({ onArticleCreated }: CreateArticleDialogPro
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="reference">Référence *</Label>
-              <Input
-                id="reference"
-                value={formData.reference}
-                onChange={(e) => setFormData(prev => ({ ...prev, reference: e.target.value }))}
-                placeholder="HM-530"
-                required
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="reference"
+                  value={formData.reference}
+                  onChange={(e) => setFormData(prev => ({ ...prev, reference: e.target.value }))}
+                  placeholder="HM-530"
+                  required
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowScanner(true)}
+                  className="flex-shrink-0"
+                >
+                  <QrCode className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="marque">Marque *</Label>
@@ -247,6 +266,13 @@ export function CreateArticleDialog({ onArticleCreated }: CreateArticleDialogPro
             </Button>
           </div>
         </form>
+
+        {/* Scanner de code-barres */}
+        <BarcodeScanner
+          isOpen={showScanner}
+          onScanResult={handleScanResult}
+          onClose={() => setShowScanner(false)}
+        />
       </DialogContent>
     </Dialog>
   );

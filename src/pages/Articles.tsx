@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import DashboardLayout from "./DashboardLayout";
 import { CreateArticleDialog } from "@/components/articles/CreateArticleDialog";
+import { ArticleScanner } from "@/components/scanner/ArticleScanner";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -114,6 +115,12 @@ export default function Articles() {
           Filtres
         </Button>
       </div>
+
+      {/* Scanner d'articles */}
+      <ArticleScanner onArticleFound={(article) => {
+        // Optionnel: faire quelque chose quand un article est trouvé
+        console.log('Article trouvé:', article);
+      }} />
 
       <Card className="w-full max-w-full">
         <CardContent className="p-0">
