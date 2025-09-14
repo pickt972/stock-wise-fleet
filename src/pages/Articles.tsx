@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import DashboardLayout from "./DashboardLayout";
 import { CreateArticleDialog } from "@/components/articles/CreateArticleDialog";
+import { EditArticleDialog } from "@/components/articles/EditArticleDialog";
 import { ArticleScanner } from "@/components/scanner/ArticleScanner";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -172,9 +173,7 @@ export default function Articles() {
                     <TableCell className="hidden xl:table-cell text-sm">{article.emplacement}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <Edit className="h-3 w-3 md:h-4 md:w-4" />
-                        </Button>
+                        <EditArticleDialog article={article} onArticleUpdated={fetchArticles} />
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                           <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
                         </Button>
