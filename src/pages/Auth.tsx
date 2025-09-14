@@ -139,18 +139,6 @@ export default function Auth() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="username">Nom d'utilisateur</Label>
-                <Input
-                  id="username"
-                  type="text"
-                  placeholder="Entrez votre nom d'utilisateur"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  disabled={isLoading}
-                  onKeyDown={(e) => e.key === 'Enter' && signIn()}
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="password">Mot de passe</Label>
                 <PasswordInput
                   id="password"
