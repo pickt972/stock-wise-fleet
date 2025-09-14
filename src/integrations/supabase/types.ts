@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           designation: string
           emplacement: string | null
+          fournisseur_id: string | null
           id: string
           marque: string
           prix_achat: number
@@ -35,6 +36,7 @@ export type Database = {
           created_at?: string
           designation: string
           emplacement?: string | null
+          fournisseur_id?: string | null
           id?: string
           marque: string
           prix_achat?: number
@@ -50,6 +52,7 @@ export type Database = {
           created_at?: string
           designation?: string
           emplacement?: string | null
+          fournisseur_id?: string | null
           id?: string
           marque?: string
           prix_achat?: number
@@ -60,7 +63,15 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "articles_fournisseur_id_fkey"
+            columns: ["fournisseur_id"]
+            isOneToOne: false
+            referencedRelation: "fournisseurs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       commande_items: {
         Row: {
@@ -179,6 +190,45 @@ export type Database = {
           tva_taux?: number
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      fournisseurs: {
+        Row: {
+          actif: boolean
+          adresse: string | null
+          contact_principal: string | null
+          created_at: string
+          email: string | null
+          id: string
+          nom: string
+          notes: string | null
+          telephone: string | null
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          adresse?: string | null
+          contact_principal?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nom: string
+          notes?: string | null
+          telephone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          adresse?: string | null
+          contact_principal?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nom?: string
+          notes?: string | null
+          telephone?: string | null
+          updated_at?: string
         }
         Relationships: []
       }

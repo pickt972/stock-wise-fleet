@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Trash2, ShoppingCart, Mail, Download, Edit } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, Mail, Download, Edit, Brain } from "lucide-react";
 import { PurchaseOrderDialog } from "@/components/commandes/PurchaseOrderDialog";
+import { SmartOrderDialog } from "@/components/commandes/SmartOrderDialog";
 import DashboardLayout from "./DashboardLayout";
 
 interface Article {
@@ -47,13 +48,24 @@ interface Commande {
   user_id?: string;
 }
 
+interface Fournisseur {
+  id: string;
+  nom: string;
+  email?: string;
+  telephone?: string;
+  adresse?: string;
+  actif: boolean;
+}
+
 export default function Commandes() {
   const location = useLocation();
   const [commandes, setCommandes] = useState<(Commande & { items: CommandeItem[] })[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
+  const [fournisseurs, setFournisseurs] = useState<Fournisseur[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [editingCommande, setEditingCommande] = useState<(Commande & { items: CommandeItem[] }) | null>(null);
+  const [showSmartOrder, setShowSmartOrder] = useState(false);
   const [currentCommande, setCurrentCommande] = useState<Commande>({
     fournisseur: "",
     email_fournisseur: "",
@@ -76,7 +88,7 @@ export default function Commandes() {
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
-      await Promise.all([fetchCommandes(), fetchArticles()]);
+      await Promise.all([fetchCommandes(), fetchArticles(), fetchFournisseurs()]);
       setIsLoading(false);
     };
     loadData();
@@ -162,6 +174,25 @@ export default function Commandes() {
 
       if (error) throw error;
       setArticles(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchFournisseurs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('fournisseurs')
+        .select('id, nom, email, telephone, adresse, actif')
+        .eq('actif', true)
+        .order('nom');
+
+      if (error) throw error;
+      setFournisseurs(data || []);
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -388,11 +419,37 @@ export default function Commandes() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="fournisseur">Fournisseur *</Label>
+                    <Select
+                      value={currentCommande.fournisseur}
+                      onValueChange={(value) => {
+                        const selectedFournisseur = fournisseurs.find(f => f.nom === value);
+                        if (selectedFournisseur) {
+                          setCurrentCommande(prev => ({
+                            ...prev,
+                            fournisseur: selectedFournisseur.nom,
+                            email_fournisseur: selectedFournisseur.email || "",
+                            telephone_fournisseur: selectedFournisseur.telephone || "",
+                            adresse_fournisseur: selectedFournisseur.adresse || ""
+                          }));
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner un fournisseur" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fournisseurs.map((fournisseur) => (
+                          <SelectItem key={fournisseur.id} value={fournisseur.nom}>
+                            {fournisseur.nom}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <Input
-                      id="fournisseur"
+                      className="mt-2"
+                      placeholder="Ou saisir manuellement"
                       value={currentCommande.fournisseur}
                       onChange={(e) => setCurrentCommande(prev => ({ ...prev, fournisseur: e.target.value }))}
-                      placeholder="Nom du fournisseur"
                     />
                   </div>
                   <div>
@@ -620,13 +677,19 @@ export default function Commandes() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Commandes</h1>
-          <Button onClick={() => setIsCreating(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nouvelle commande
-          </Button>
-        </div>
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold">Commandes</h1>
+            <div className="flex gap-2">
+              <Button onClick={() => setShowSmartOrder(true)} variant="outline">
+                <Brain className="w-4 h-4 mr-2" />
+                Commande intelligente
+              </Button>
+              <Button onClick={() => setIsCreating(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nouvelle commande
+              </Button>
+            </div>
+          </div>
 
         {isLoading ? (
           <div className="flex justify-center items-center py-12">
@@ -720,6 +783,13 @@ export default function Commandes() {
         </div>
         )}
       </div>
+
+      {/* Smart Order Dialog */}
+      <SmartOrderDialog
+        isOpen={showSmartOrder}
+        onClose={() => setShowSmartOrder(false)}
+        onOrdersCreated={fetchCommandes}
+      />
 
       {/* Purchase Order Dialog */}
       <PurchaseOrderDialog

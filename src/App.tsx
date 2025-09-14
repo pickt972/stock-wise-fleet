@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Articles from "./pages/Articles";
+import Fournisseurs from "./pages/Fournisseurs";
 import Commandes from "./pages/Commandes";
 import Entrees from "./pages/Entrees";
 import Sorties from "./pages/Sorties";
@@ -37,6 +38,11 @@ const App = () => (
             <Route path="/articles" element={
               <ProtectedRoute>
                 <Articles />
+              </ProtectedRoute>
+            } />
+            <Route path="/fournisseurs" element={
+              <ProtectedRoute>
+                <Fournisseurs />
               </ProtectedRoute>
             } />
             <Route path="/commandes" element={
