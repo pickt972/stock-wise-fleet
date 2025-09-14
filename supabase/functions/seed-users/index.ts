@@ -31,25 +31,19 @@ const accounts: SeedAccount[] = [
 
 async function findUserIdByEmail(email: string): Promise<string | null> {
   try {
-    const perPage = 200;
-    let page = 1;
-    while (true) {
-      const { data, error } = await admin.auth.admin.listUsers({ perPage, page });
-      if (error) {
-        console.error("[seed-users] listUsers error while searching:", error);
-        return null;
-      }
-      const found = data.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
-      if (found) return found.id;
-      if (data.users.length < perPage) return null; // no more pages
-      page += 1;
-      if (page > 50) return null; // safety cap (10k users)
+    // Use a SECURITY DEFINER SQL function to reliably find the auth user by email
+    const { data, error } = await admin.rpc('get_auth_user_id_by_email', { _email: email });
+    if (error) {
+      console.error('[seed-users] get_auth_user_id_by_email error:', error);
+      return null;
     }
+    return (data as string | null) ?? null;
   } catch (e) {
-    console.error("[seed-users] findUserIdByEmail fatal:", e);
+    console.error('[seed-users] findUserIdByEmail fatal:', e);
     return null;
   }
 }
+
 
 const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 async function waitForUserAbsence(email: string, attempts = 12, delayMs = 500): Promise<boolean> {
