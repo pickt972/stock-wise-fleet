@@ -45,9 +45,9 @@ export function Header({ onMenuClick }: HeaderProps) {
   };
 
   return (
-    <header className="bg-card border-b border-border shadow-soft">
-      <div className="flex items-center justify-between px-2 sm:px-4 h-16 max-w-full overflow-hidden">
-        <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+    <header className="bg-card border-b border-border shadow-soft w-full">
+      <div className="flex items-center justify-between px-2 sm:px-4 h-16 w-full max-w-full overflow-hidden">
+        <div className="flex items-center gap-1 sm:gap-2 lg:gap-4 min-w-0 flex-1 max-w-full overflow-hidden">
           <Button
             variant="ghost"
             size="sm"
@@ -56,11 +56,11 @@ export function Header({ onMenuClick }: HeaderProps) {
           >
             <Menu className="h-4 w-4" />
           </Button>
-          <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-            <img src={logo} alt="StockAuto Logo" className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0" />
-            <div className="min-w-0">
-              <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">StockAuto</h1>
-              <p className="text-xs text-muted-foreground hidden sm:block">Gestion des stocks</p>
+          <div className="flex items-center gap-1 sm:gap-2 min-w-0 max-w-full overflow-hidden">
+            <img src={logo} alt="StockAuto Logo" className="h-7 w-7 sm:h-8 sm:w-8 lg:h-10 lg:w-10 flex-shrink-0" />
+            <div className="min-w-0 max-w-full overflow-hidden">
+              <h1 className="text-base sm:text-lg lg:text-xl font-bold text-foreground truncate">StockAuto</h1>
+              <p className="text-xs text-muted-foreground hidden sm:block truncate">Gestion des stocks</p>
             </div>
           </div>
         </div>

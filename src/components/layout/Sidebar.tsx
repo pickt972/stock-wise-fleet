@@ -50,7 +50,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         "fixed top-16 left-0 h-[calc(100vh-4rem)] bg-card border-r border-border shadow-medium z-50 transition-all duration-300",
         isCollapsed ? "w-16" : "w-64",
         isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
-        "max-w-[80vw] md:max-w-none"
+        "max-w-[75vw] sm:max-w-[60vw] md:max-w-none"
       )}>
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-end p-4">

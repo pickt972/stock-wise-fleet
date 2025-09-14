@@ -82,49 +82,49 @@ export default function Articles() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-4 sm:space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Articles</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Gérez votre inventaire d'articles</p>
+      <div className="space-y-4 lg:space-y-6 w-full max-w-full overflow-x-hidden">
+      <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Articles</h1>
+          <p className="text-sm lg:text-base text-muted-foreground">Gérez votre inventaire d'articles</p>
         </div>
-        <Button className="bg-primary hover:bg-primary/90 w-full sm:w-auto">
+        <Button className="bg-primary hover:bg-primary/90 w-full lg:w-auto flex-shrink-0">
           <Plus className="mr-2 h-4 w-4" />
           Nouvel Article
         </Button>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
-        <div className="relative flex-1">
+      <div className="flex flex-col gap-3 lg:flex-row lg:gap-4">
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Rechercher un article..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 w-full"
           />
         </div>
-        <Button variant="outline" className="w-full sm:w-auto">
+        <Button variant="outline" className="w-full lg:w-auto flex-shrink-0">
           <Filter className="mr-2 h-4 w-4" />
           Filtres
         </Button>
       </div>
 
-      <Card>
+      <Card className="w-full max-w-full">
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
+          <div className="overflow-x-auto w-full">
+            <Table className="min-w-full">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[100px]">Référence</TableHead>
-                  <TableHead className="min-w-[150px]">Désignation</TableHead>
-                  <TableHead className="hidden md:table-cell min-w-[100px]">Marque</TableHead>
-                  <TableHead className="hidden lg:table-cell min-w-[120px]">Catégorie</TableHead>
-                  <TableHead className="min-w-[80px]">Stock</TableHead>
-                  <TableHead className="min-w-[100px]">Statut</TableHead>
-                  <TableHead className="min-w-[100px]">Prix (€)</TableHead>
-                  <TableHead className="hidden xl:table-cell min-w-[120px]">Emplacement</TableHead>
-                  <TableHead className="min-w-[100px]">Actions</TableHead>
+                  <TableHead className="w-24 sm:w-28">Référence</TableHead>
+                  <TableHead className="w-32 sm:w-40">Désignation</TableHead>
+                  <TableHead className="hidden md:table-cell w-24 sm:w-28">Marque</TableHead>
+                  <TableHead className="hidden lg:table-cell w-28">Catégorie</TableHead>
+                  <TableHead className="w-16 sm:w-20">Stock</TableHead>
+                  <TableHead className="hidden sm:table-cell w-20 sm:w-24">Statut</TableHead>
+                  <TableHead className="hidden lg:table-cell w-20 sm:w-24">Prix (€)</TableHead>
+                  <TableHead className="hidden xl:table-cell w-24 sm:w-28">Emplacement</TableHead>
+                  <TableHead className="w-16 sm:w-20">Actions</TableHead>
                 </TableRow>
               </TableHeader>
             <TableBody>
@@ -156,7 +156,7 @@ export default function Articles() {
                         {stockStatus.label}
                       </Badge>
                     </TableCell>
-                    <TableCell className="hidden lg:table-cell text-sm">€{article.prixAchat.toFixed(2)}</TableCell>
+                    <TableCell className="hidden lg:table-cell text-sm whitespace-nowrap">€{article.prixAchat.toFixed(2)}</TableCell>
                     <TableCell className="hidden xl:table-cell text-sm">{article.emplacement}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">

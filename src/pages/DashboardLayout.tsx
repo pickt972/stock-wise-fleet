@@ -10,15 +10,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background w-full overflow-x-hidden">
       <Header onMenuClick={() => setSidebarOpen(true)} />
-      <div className="flex">
+      <div className="flex w-full">
         <Sidebar 
           isOpen={sidebarOpen} 
           onClose={() => setSidebarOpen(false)} 
         />
-        <main className="flex-1 md:ml-64 transition-all duration-300 min-w-0 overflow-hidden">
-          <div className="p-4 sm:p-6 max-w-full">
+        <main className="flex-1 md:ml-64 transition-all duration-300 min-w-0 w-full max-w-full overflow-hidden">
+          <div className="p-3 sm:p-4 lg:p-6 w-full max-w-full overflow-x-hidden">
             {children}
           </div>
         </main>
