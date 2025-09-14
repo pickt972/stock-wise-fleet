@@ -54,69 +54,75 @@ export const SmartOrderDialog = ({ isOpen, onClose, onOrdersCreated }: SmartOrde
   const calculateSmartOrders = async () => {
     setIsLoading(true);
     try {
-      // Récupérer les articles avec stock faible ou en rupture via article_fournisseurs
-      const { data: articleFournisseurs, error } = await supabase
+      // 1) Récupérer tous les articles puis filtrer ceux en alerte côté client
+      const { data: articles, error: articlesError } = await supabase
+        .from('articles')
+        .select('id, designation, reference, stock, stock_min, prix_achat');
+
+      if (articlesError) throw articlesError;
+
+      const lowStockArticles = (articles || []).filter(
+        (a: any) => a && (a.stock === 0 || a.stock <= a.stock_min)
+      );
+
+      if (lowStockArticles.length === 0) {
+        setGroupedOrders({});
+        return;
+      }
+
+      // 2) Charger les associations article_fournisseurs pour ces articles
+      const articleIds = lowStockArticles.map((a: any) => a.id);
+      const { data: afList, error: afError } = await supabase
         .from('article_fournisseurs')
-        .select(`
-          article_id,
-          fournisseur_id,
-          prix_fournisseur,
-          est_principal,
-          actif,
-          articles!inner (
-            id,
-            designation,
-            reference,
-            stock,
-            stock_min,
-            prix_achat
-          ),
-          fournisseurs!inner (
-            id,
-            nom,
-            email,
-            telephone,
-            adresse,
-            actif
-          )
-        `)
-        .eq('actif', true)
-        .eq('fournisseurs.actif', true);
+        .select('article_id, fournisseur_id, prix_fournisseur, est_principal, actif')
+        .in('article_id', articleIds)
+        .eq('actif', true);
 
-      if (error) throw error;
+      if (afError) throw afError;
 
-      // Filtrer côté client les articles avec stock faible ou en rupture
-      const articlesToOrder = articleFournisseurs?.filter(af => {
-        const article = af.articles;
-        return article && (article.stock === 0 || article.stock <= article.stock_min);
-      }) || [];
+      if (!afList || afList.length === 0) {
+        setGroupedOrders({});
+        return;
+      }
 
-      // Grouper par fournisseur (priorité aux fournisseurs principaux)
-      const grouped: GroupedBySupplier = {};
-      
-      // D'abord, traiter les fournisseurs principaux
-      const principalSuppliers = articlesToOrder.filter(af => af.est_principal);
-      const nonPrincipalSuppliers = articlesToOrder.filter(af => !af.est_principal);
-      
-      // Fonction pour traiter un fournisseur
-      const processSupplier = (af: any) => {
-        const article = af.articles;
-        const fournisseur = af.fournisseurs;
-        
-        // Vérifier si l'article a déjà été traité par un fournisseur principal
-        const alreadyProcessed = Object.values(grouped).some(group => 
-          group.items.some(item => item.article_id === article.id)
-        );
-        
-        if (alreadyProcessed && !af.est_principal) {
-          return; // Skip si déjà traité par un fournisseur principal
+      // 3) Charger les fournisseurs actifs référencés
+      const fournisseurIds = Array.from(new Set(afList.map((af: any) => af.fournisseur_id)));
+      const { data: fournisseurs, error: fError } = await supabase
+        .from('fournisseurs')
+        .select('id, nom, email, telephone, adresse, actif')
+        .in('id', fournisseurIds)
+        .eq('actif', true);
+
+      if (fError) throw fError;
+
+      // Maps pour accès rapide
+      const fournisseursMap = new Map((fournisseurs || []).map((f: any) => [f.id, f]));
+      const articlesMap = new Map(lowStockArticles.map((a: any) => [a.id, a]));
+
+      // 4) Choisir pour chaque article le fournisseur principal si dispo, sinon le premier
+      const bestAssociationByArticle = new Map<string, any>();
+      for (const af of afList) {
+        const current = bestAssociationByArticle.get(af.article_id);
+        if (!current) {
+          bestAssociationByArticle.set(af.article_id, af);
+        } else if (!current.est_principal && af.est_principal) {
+          bestAssociationByArticle.set(af.article_id, af);
         }
+      }
 
-        const quantiteACommander = article.stock === 0 
-          ? Math.max(article.stock_min * 2, 10) // Rupture : 2x le stock min ou 10 minimum
-          : article.stock_min - article.stock + 5; // Stock faible : complément + marge
+      // 5) Construire les commandes groupées par fournisseur
+      const grouped: GroupedBySupplier = {};
 
-        const prixUnitaire = af.prix_fournisseur || article.prix_achat;
+      for (const [articleId, af] of bestAssociationByArticle.entries()) {
+        const article: any = articlesMap.get(articleId);
+        const fournisseur: any = fournisseursMap.get(af.fournisseur_id);
+        if (!article || !fournisseur) continue; // sécurité
+
+        const quantiteACommander = article.stock === 0
+          ? Math.max(article.stock_min * 2, 10)
+          : Math.max(article.stock_min - article.stock + 5, 1);
+
+        const prixUnitaire = af.prix_fournisseur ?? article.prix_achat ?? 0;
 
         const item: SmartOrderItem = {
           article_id: article.id,
@@ -125,60 +131,30 @@ export const SmartOrderDialog = ({ isOpen, onClose, onOrdersCreated }: SmartOrde
           quantite_commandee: quantiteACommander,
           prix_unitaire: prixUnitaire,
           total_ligne: quantiteACommander * prixUnitaire,
-          fournisseur: fournisseur
+          fournisseur,
         };
 
-        const fournisseurId = fournisseur.id;
-
-        if (!grouped[fournisseurId]) {
-          grouped[fournisseurId] = {
-            fournisseur: fournisseur,
+        const fid = fournisseur.id;
+        if (!grouped[fid]) {
+          grouped[fid] = {
+            fournisseur,
             items: [],
             total_ht: 0,
             total_ttc: 0,
           };
         }
 
-        // Si c'est un fournisseur principal et que l'article existe déjà, remplacer
-        if (af.est_principal) {
-          // Supprimer l'article de tous les autres fournisseurs
-          Object.keys(grouped).forEach(otherId => {
-            if (otherId !== fournisseurId) {
-              const otherGroup = grouped[otherId];
-              const itemIndex = otherGroup.items.findIndex(i => i.article_id === article.id);
-              if (itemIndex >= 0) {
-                const removedItem = otherGroup.items.splice(itemIndex, 1)[0];
-                otherGroup.total_ht -= removedItem.total_ligne;
-                otherGroup.total_ttc = otherGroup.total_ht * 1.2;
-              }
-            }
-          });
-        }
-
-        grouped[fournisseurId].items.push(item);
-        grouped[fournisseurId].total_ht += item.total_ligne;
-        grouped[fournisseurId].total_ttc = grouped[fournisseurId].total_ht * 1.2; // TVA 20%
-      };
-
-      // Traiter d'abord les fournisseurs principaux
-      principalSuppliers.forEach(processSupplier);
-      
-      // Puis traiter les non-principaux pour les articles restants
-      nonPrincipalSuppliers.forEach(processSupplier);
-
-      // Nettoyer les fournisseurs sans articles
-      Object.keys(grouped).forEach(fournisseurId => {
-        if (grouped[fournisseurId].items.length === 0) {
-          delete grouped[fournisseurId];
-        }
-      });
+        grouped[fid].items.push(item);
+        grouped[fid].total_ht += item.total_ligne;
+        grouped[fid].total_ttc = grouped[fid].total_ht * 1.2; // TVA 20%
+      }
 
       setGroupedOrders(grouped);
     } catch (error: any) {
       toast({
-        title: "Erreur",
+        title: 'Erreur',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
