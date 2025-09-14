@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Articles from "./pages/Articles";
+import Commandes from "./pages/Commandes";
 import Entrees from "./pages/Entrees";
 import Sorties from "./pages/Sorties";
 import Auth from "./pages/Auth";
@@ -36,6 +37,11 @@ const App = () => (
             <Route path="/articles" element={
               <ProtectedRoute>
                 <Articles />
+              </ProtectedRoute>
+            } />
+            <Route path="/commandes" element={
+              <ProtectedRoute>
+                <Commandes />
               </ProtectedRoute>
             } />
             <Route path="/entrees" element={
