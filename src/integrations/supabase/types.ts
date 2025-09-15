@@ -503,6 +503,7 @@ export type Database = {
           type: string
           updated_at: string
           user_id: string
+          vehicule_id: string | null
         }
         Insert: {
           article_id: string
@@ -513,6 +514,7 @@ export type Database = {
           type: string
           updated_at?: string
           user_id: string
+          vehicule_id?: string | null
         }
         Update: {
           article_id?: string
@@ -523,6 +525,7 @@ export type Database = {
           type?: string
           updated_at?: string
           user_id?: string
+          vehicule_id?: string | null
         }
         Relationships: [
           {
@@ -530,6 +533,13 @@ export type Database = {
             columns: ["article_id"]
             isOneToOne: false
             referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_vehicule_id_fkey"
+            columns: ["vehicule_id"]
+            isOneToOne: false
+            referencedRelation: "vehicules"
             referencedColumns: ["id"]
           },
         ]

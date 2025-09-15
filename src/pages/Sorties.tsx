@@ -33,6 +33,9 @@ interface StockExit {
     first_name: string;
     last_name: string;
   };
+  vehicules?: {
+    immatriculation: string;
+  };
 }
 
 export default function Sorties() {
@@ -45,7 +48,9 @@ export default function Sorties() {
     articleId: "",
     quantity: 1,
     motif: "",
+    vehiculeId: "",
   });
+  const [vehicules, setVehicules] = useState<any[]>([]);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -61,6 +66,7 @@ export default function Sorties() {
   useEffect(() => {
     fetchExits();
     fetchArticles();
+    fetchVehicules();
   }, []);
 
   const fetchExits = async () => {
@@ -73,33 +79,40 @@ export default function Sorties() {
           quantity,
           motif,
           created_at,
-          user_id
+          user_id,
+          vehicule_id
         `)
         .eq('type', 'sortie')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Récupérer les informations des articles et utilisateurs séparément
+      // Récupérer les informations des articles, utilisateurs et véhicules séparément
       if (data && data.length > 0) {
         const articleIds = [...new Set(data.map(exit => exit.article_id))];
         const userIds = [...new Set(data.map(exit => exit.user_id))];
+        const vehiculeIds = [...new Set(data.map(exit => exit.vehicule_id).filter(Boolean))];
 
-        const [articlesResponse, profilesResponse] = await Promise.all([
+        const [articlesResponse, profilesResponse, vehiculesResponse] = await Promise.all([
           supabase.from('articles').select('id, reference, designation, marque, stock').in('id', articleIds),
-          supabase.from('profiles').select('id, first_name, last_name').in('id', userIds)
+          supabase.from('profiles').select('id, first_name, last_name').in('id', userIds),
+          vehiculeIds.length > 0 
+            ? supabase.from('vehicules').select('id, immatriculation').in('id', vehiculeIds)
+            : Promise.resolve({ data: [] })
         ]);
 
         const articlesMap = new Map(articlesResponse.data?.map(a => [a.id, a]) || []);
         const profilesMap = new Map(profilesResponse.data?.map(p => [p.id, p]) || []);
+        const vehiculesMap = new Map((vehiculesResponse.data || []).map(v => [v.id, v]));
 
         const enrichedExits = data.map(exit => ({
           ...exit,
           articles: articlesMap.get(exit.article_id) || { reference: '', designation: '', marque: '', stock: 0 },
-          profiles: profilesMap.get(exit.user_id) || { first_name: '', last_name: '' }
+          profiles: profilesMap.get(exit.user_id) || { first_name: '', last_name: '' },
+          vehicules: exit.vehicule_id ? vehiculesMap.get(exit.vehicule_id) : null
         }));
 
-        setExits(enrichedExits as StockExit[]);
+        setExits(enrichedExits as any);
       } else {
         setExits([]);
       }
@@ -126,6 +139,21 @@ export default function Sorties() {
       setArticles(data || []);
     } catch (error: any) {
       console.error('Erreur lors du chargement des articles:', error);
+    }
+  };
+
+  const fetchVehicules = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('vehicules')
+        .select('id, immatriculation, marque, modele')
+        .eq('actif', true)
+        .order('immatriculation');
+
+      if (error) throw error;
+      setVehicules(data || []);
+    } catch (error: any) {
+      console.error('Erreur lors du chargement des véhicules:', error);
     }
   };
 
@@ -161,6 +189,7 @@ export default function Sorties() {
           quantity: formData.quantity,
           motif: formData.motif,
           user_id: user?.id,
+          vehicule_id: formData.vehiculeId || null,
         }]);
 
       if (exitError) throw exitError;
@@ -198,6 +227,7 @@ export default function Sorties() {
         articleId: "",
         quantity: 1,
         motif: "",
+        vehiculeId: "",
       });
 
       setIsDialogOpen(false);
@@ -305,6 +335,25 @@ export default function Sorties() {
                   </div>
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="vehicule">Véhicule (optionnel)</Label>
+                  <Select
+                    value={formData.vehiculeId}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, vehiculeId: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un véhicule" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {vehicules.map((vehicule) => (
+                        <SelectItem key={vehicule.id} value={vehicule.id}>
+                          {vehicule.immatriculation} - {vehicule.marque} {vehicule.modele}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="flex flex-col sm:flex-row gap-3 pt-4">
                   <Button
                     type="button"
@@ -347,13 +396,14 @@ export default function Sorties() {
                     <TableHead className="w-48">Article</TableHead>
                     <TableHead className="w-20">Quantité</TableHead>
                     <TableHead className="w-32">Motif</TableHead>
+                    <TableHead className="w-32">Véhicule</TableHead>
                     <TableHead className="w-32">Utilisateur</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {exits.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         Aucune sortie enregistrée
                       </TableCell>
                     </TableRow>
@@ -384,6 +434,9 @@ export default function Sorties() {
                           <Badge variant="outline" className="text-xs">
                             {exit.motif}
                           </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {exit.vehicules?.immatriculation || '-'}
                         </TableCell>
                         <TableCell className="text-sm">
                           <div className="flex items-center gap-2">
