@@ -446,9 +446,9 @@ export default function Articles() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <Badge variant={stockStatus.variant} className="text-xs">
-                          {stockStatus.label}
+                       <TableCell className="hidden sm:table-cell">
+                         <Badge variant={stockStatus.variant} className="text-xs">
+                           {stockStatus.label}
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell text-sm whitespace-nowrap">€{Number(principalPrice ?? 0).toFixed(2)}</TableCell>
