@@ -12,7 +12,8 @@ import {
   ChevronLeft,
   ShoppingCart,
   Building2,
-  Tag
+  Tag,
+  Car
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,7 @@ const adminNavigation = [
   { name: "Utilisateurs", href: "/users", icon: Users },
   { name: "Fournisseurs", href: "/fournisseurs", icon: Building2 },
   { name: "Catégories", href: "/categories", icon: Tag },
+  { name: "Véhicules", href: "/vehicules", icon: Car },
 ];
 
 interface SidebarProps {

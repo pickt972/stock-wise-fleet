@@ -14,6 +14,7 @@ import Sorties from "./pages/Sorties";
 import Auth from "./pages/Auth";
 import Users from "./pages/Users";
 import Categories from "./pages/Categories";
+import Vehicules from "./pages/Vehicules";
 import Parametres from "./pages/Parametres";
 import Alertes from "./pages/Alertes";
 import NotFound from "./pages/NotFound";
@@ -69,6 +70,11 @@ const App = () => (
             <Route path="/categories" element={
               <ProtectedRoute>
                 <Categories />
+              </ProtectedRoute>
+            } />
+            <Route path="/vehicules" element={
+              <ProtectedRoute>
+                <Vehicules />
               </ProtectedRoute>
             } />
             <Route path="/parametres" element={

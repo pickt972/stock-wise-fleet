@@ -20,6 +20,7 @@ import {
 import { Edit } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import ArticleVehicleCompatibility from "./ArticleVehicleCompatibility";
 
 interface Article {
   id: string;
@@ -307,6 +308,8 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
               required
             />
           </div>
+
+          <ArticleVehicleCompatibility articleId={article.id} />
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>

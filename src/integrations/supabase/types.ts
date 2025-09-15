@@ -77,6 +77,51 @@ export type Database = {
           },
         ]
       }
+      article_vehicules: {
+        Row: {
+          article_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          updated_at: string
+          user_id: string | null
+          vehicule_id: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string | null
+          vehicule_id: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string | null
+          vehicule_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_vehicules_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_vehicules_vehicule_id_fkey"
+            columns: ["vehicule_id"]
+            isOneToOne: false
+            referencedRelation: "vehicules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       articles: {
         Row: {
           categorie: string
@@ -507,6 +552,48 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      vehicules: {
+        Row: {
+          actif: boolean
+          annee: number | null
+          created_at: string
+          id: string
+          immatriculation: string
+          marque: string
+          modele: string
+          motorisation: string | null
+          notes: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          actif?: boolean
+          annee?: number | null
+          created_at?: string
+          id?: string
+          immatriculation: string
+          marque: string
+          modele: string
+          motorisation?: string | null
+          notes?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          actif?: boolean
+          annee?: number | null
+          created_at?: string
+          id?: string
+          immatriculation?: string
+          marque?: string
+          modele?: string
+          motorisation?: string | null
+          notes?: string | null
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
