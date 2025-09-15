@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Mail, Download, Settings } from "lucide-react";
+import { Mail, Download, Settings, Eye } from "lucide-react";
 import { EmailOrderDialog } from "./EmailOrderDialog";
+import { PurchaseOrderPreview } from "./PurchaseOrderPreview";
 
 interface PurchaseOrderDialogProps {
   isOpen: boolean;
@@ -37,6 +38,7 @@ export const PurchaseOrderDialog = ({ isOpen, onClose, commande, items }: Purcha
   const [senderEmail, setSenderEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const { toast } = useToast();
 
   const generatePurchaseOrderHTML = () => {
@@ -234,12 +236,12 @@ export const PurchaseOrderDialog = ({ isOpen, onClose, commande, items }: Purcha
           
           <div className="flex gap-2">
             <Button
-              onClick={downloadPDF}
+              onClick={() => setShowPreview(true)}
               variant="outline"
               className="flex-1"
             >
-              <Download className="w-4 h-4 mr-2" />
-              Télécharger
+              <Eye className="w-4 h-4 mr-2" />
+              Aperçu
             </Button>
             
             <Button
@@ -261,6 +263,17 @@ export const PurchaseOrderDialog = ({ isOpen, onClose, commande, items }: Purcha
             </Button>
           </div>
         </div>
+
+        <PurchaseOrderPreview
+          isOpen={showPreview}
+          onClose={() => setShowPreview(false)}
+          onSend={() => {
+            setShowPreview(false);
+            sendEmail();
+          }}
+          commande={commande}
+          items={items}
+        />
 
         <EmailOrderDialog
           isOpen={showEmailDialog}

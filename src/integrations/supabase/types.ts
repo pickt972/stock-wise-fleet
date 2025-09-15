@@ -286,6 +286,48 @@ export type Database = {
         }
         Relationships: []
       }
+      company_settings: {
+        Row: {
+          company_address: string
+          company_email: string
+          company_logo_url: string | null
+          company_name: string
+          company_phone: string
+          company_siret: string
+          created_at: string
+          id: string
+          is_active: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_address?: string
+          company_email?: string
+          company_logo_url?: string | null
+          company_name?: string
+          company_phone?: string
+          company_siret?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_address?: string
+          company_email?: string
+          company_logo_url?: string | null
+          company_name?: string
+          company_phone?: string
+          company_siret?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       fournisseurs: {
         Row: {
           actif: boolean

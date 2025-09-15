@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import DashboardLayout from "./DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MailSettingsForm } from "@/components/mail/MailSettingsForm";
+import { CompanySettingsForm } from "@/components/company/CompanySettingsForm";
 
 export default function Parametres() {
   useEffect(() => {
@@ -26,6 +27,16 @@ export default function Parametres() {
         </header>
 
         <section className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Informations de l'entreprise</CardTitle>
+              <CardDescription>Paramètres de votre entreprise pour les bons de commande</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CompanySettingsForm />
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Configuration de la messagerie</CardTitle>
