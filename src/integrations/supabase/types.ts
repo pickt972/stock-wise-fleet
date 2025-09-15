@@ -497,6 +497,7 @@ export type Database = {
         Row: {
           article_id: string
           created_at: string
+          fournisseur_id: string | null
           id: string
           motif: string
           quantity: number
@@ -508,6 +509,7 @@ export type Database = {
         Insert: {
           article_id: string
           created_at?: string
+          fournisseur_id?: string | null
           id?: string
           motif: string
           quantity: number
@@ -519,6 +521,7 @@ export type Database = {
         Update: {
           article_id?: string
           created_at?: string
+          fournisseur_id?: string | null
           id?: string
           motif?: string
           quantity?: number
@@ -533,6 +536,13 @@ export type Database = {
             columns: ["article_id"]
             isOneToOne: false
             referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_fournisseur_id_fkey"
+            columns: ["fournisseur_id"]
+            isOneToOne: false
+            referencedRelation: "fournisseurs"
             referencedColumns: ["id"]
           },
           {

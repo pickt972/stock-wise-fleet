@@ -22,22 +22,30 @@ interface Article {
   stock: number;
 }
 
+interface Fournisseur {
+  id: string;
+  nom: string;
+}
+
 interface StockEntry {
   id: string;
   article_id: string;
   quantity: number;
   motif: string;
   created_at: string;
+  fournisseur_id?: string;
   articles: Article;
   profiles: {
     first_name: string;
     last_name: string;
   };
+  fournisseurs?: Fournisseur;
 }
 
 export default function Entrees() {
   const [entries, setEntries] = useState<StockEntry[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
+  const [fournisseurs, setFournisseurs] = useState<Fournisseur[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -45,6 +53,7 @@ export default function Entrees() {
     articleId: "",
     quantity: 1,
     motif: "",
+    fournisseurId: "",
   });
   const { toast } = useToast();
   const { user } = useAuth();
@@ -60,6 +69,7 @@ export default function Entrees() {
   useEffect(() => {
     fetchEntries();
     fetchArticles();
+    fetchFournisseurs();
   }, []);
 
   const fetchEntries = async () => {
@@ -72,17 +82,19 @@ export default function Entrees() {
           quantity,
           motif,
           created_at,
-          user_id
+          user_id,
+          fournisseur_id
         `)
         .eq('type', 'entree')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Récupérer les informations des articles et utilisateurs séparément
+      // Récupérer les informations des articles, utilisateurs et fournisseurs séparément
       if (data && data.length > 0) {
         const articleIds = [...new Set(data.map(entry => entry.article_id))];
         const userIds = [...new Set(data.map(entry => entry.user_id))];
+        const fournisseurIds = [...new Set(data.map(entry => entry.fournisseur_id).filter(Boolean))];
 
         const [articlesResponse, profilesResponse] = await Promise.all([
           supabase.from('articles').select('id, reference, designation, marque, stock').in('id', articleIds),
@@ -91,11 +103,22 @@ export default function Entrees() {
 
         const articlesMap = new Map(articlesResponse.data?.map(a => [a.id, a]) || []);
         const profilesMap = new Map(profilesResponse.data?.map(p => [p.id, p]) || []);
+        
+        // Récupérer les fournisseurs séparément si nécessaire
+        let fournisseursMap = new Map();
+        if (fournisseurIds.length > 0) {
+          const fournisseursResponse = await supabase
+            .from('fournisseurs')
+            .select('id, nom')
+            .in('id', fournisseurIds);
+          fournisseursMap = new Map(fournisseursResponse.data?.map(f => [f.id, f]) || []);
+        }
 
         const enrichedEntries = data.map(entry => ({
           ...entry,
           articles: articlesMap.get(entry.article_id) || { reference: '', designation: '', marque: '', stock: 0 },
-          profiles: profilesMap.get(entry.user_id) || { first_name: '', last_name: '' }
+          profiles: profilesMap.get(entry.user_id) || { first_name: '', last_name: '' },
+          fournisseurs: entry.fournisseur_id ? fournisseursMap.get(entry.fournisseur_id) : undefined
         }));
 
         setEntries(enrichedEntries as StockEntry[]);
@@ -128,11 +151,26 @@ export default function Entrees() {
     }
   };
 
+  const fetchFournisseurs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('fournisseurs')
+        .select('id, nom')
+        .eq('actif', true)
+        .order('nom');
+
+      if (error) throw error;
+      setFournisseurs(data || []);
+    } catch (error: any) {
+      console.error('Erreur lors du chargement des fournisseurs:', error);
+    }
+  };
+
   const createEntry = async () => {
     if (!formData.articleId || !formData.quantity || !formData.motif) {
       toast({
         title: "Erreur",
-        description: "Veuillez remplir tous les champs",
+        description: "Veuillez remplir tous les champs obligatoires",
         variant: "destructive",
       });
       return;
@@ -149,6 +187,7 @@ export default function Entrees() {
           quantity: formData.quantity,
           motif: formData.motif,
           user_id: user?.id,
+          fournisseur_id: formData.fournisseurId || null,
         }]);
 
       if (entryError) throw entryError;
@@ -181,6 +220,7 @@ export default function Entrees() {
         articleId: "",
         quantity: 1,
         motif: "",
+        fournisseurId: "",
       });
 
       setIsDialogOpen(false);
@@ -245,6 +285,25 @@ export default function Entrees() {
                       {articles.map((article) => (
                         <SelectItem key={article.id} value={article.id}>
                           {article.reference} - {article.designation}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="fournisseur">Fournisseur</Label>
+                  <Select
+                    value={formData.fournisseurId}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, fournisseurId: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un fournisseur (optionnel)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {fournisseurs.map((fournisseur) => (
+                        <SelectItem key={fournisseur.id} value={fournisseur.id}>
+                          {fournisseur.nom}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -325,13 +384,14 @@ export default function Entrees() {
                     <TableHead className="w-48">Article</TableHead>
                     <TableHead className="w-20">Quantité</TableHead>
                     <TableHead className="w-32">Motif</TableHead>
+                    <TableHead className="w-32">Fournisseur</TableHead>
                     <TableHead className="w-32">Utilisateur</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {entries.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         Aucune entrée enregistrée
                       </TableCell>
                     </TableRow>
@@ -362,6 +422,15 @@ export default function Entrees() {
                           <Badge variant="outline" className="text-xs">
                             {entry.motif}
                           </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {entry.fournisseurs ? (
+                            <Badge variant="secondary" className="text-xs">
+                              {entry.fournisseurs.nom}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">-</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-sm">
                           <div className="flex items-center gap-2">
