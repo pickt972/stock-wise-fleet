@@ -153,9 +153,9 @@ export default function Revisions() {
           <CardContent>
             <div className="space-y-3">
               {vehiculeGroups.map((group, index) => (
-                <div 
+                <button 
                   key={index}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 cursor-pointer"
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 cursor-pointer w-full text-left transition-colors"
                   onClick={() => handleRevisionAnalysis(group)}
                 >
                   <div>
@@ -170,7 +170,7 @@ export default function Revisions() {
                   <Badge variant="outline">
                     {group.count}
                   </Badge>
-                </div>
+                </button>
               ))}
               
               {vehiculeGroups.length === 0 && (
