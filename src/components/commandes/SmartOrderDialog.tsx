@@ -74,7 +74,7 @@ export const SmartOrderDialog = ({ isOpen, onClose, onOrdersCreated }: SmartOrde
       const articleIds = lowStockArticles.map((a: any) => a.id);
       const { data: afList, error: afError } = await supabase
         .from('article_fournisseurs')
-        .select('article_id, fournisseur_id, prix_fournisseur, est_principal, actif')
+        .select('article_id, fournisseur_id, prix_fournisseur, est_principal, actif, quantite_minimum')
         .in('article_id', articleIds)
         .eq('actif', true);
 
@@ -118,9 +118,11 @@ export const SmartOrderDialog = ({ isOpen, onClose, onOrdersCreated }: SmartOrde
         const fournisseur: any = fournisseursMap.get(af.fournisseur_id);
         if (!article || !fournisseur) continue; // sécurité
 
+        // Utiliser la quantité minimum définie dans article_fournisseurs ou calculer une quantité par défaut
+        const quantiteMinimum = af.quantite_minimum || 1;
         const quantiteACommander = article.stock === 0
-          ? Math.max(article.stock_min * 2, 10)
-          : Math.max(article.stock_min - article.stock + 5, 1);
+          ? Math.max(quantiteMinimum, article.stock_min || 1)
+          : Math.max(quantiteMinimum, (article.stock_min || 1) - article.stock);
 
         const prixUnitaire = af.prix_fournisseur ?? article.prix_achat ?? 0;
 
