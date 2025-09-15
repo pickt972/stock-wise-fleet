@@ -13,7 +13,8 @@ import {
   ShoppingCart,
   Building2,
   Tag,
-  Car
+  Car,
+  Wrench
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,7 @@ import { useAuth } from "@/hooks/useAuth";
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Articles", href: "/articles", icon: Package },
+  { name: "Révisions", href: "/revisions", icon: Wrench },
   { name: "Commandes", href: "/commandes", icon: ShoppingCart },
   { name: "Entrées", href: "/entrees", icon: ArrowDownToLine },
   { name: "Sorties", href: "/sorties", icon: ArrowUpFromLine },

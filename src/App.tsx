@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Articles from "./pages/Articles";
+import Revisions from "./pages/Revisions";
 import Fournisseurs from "./pages/Fournisseurs";
 import Commandes from "./pages/Commandes";
 import Entrees from "./pages/Entrees";
@@ -40,6 +41,11 @@ const App = () => (
             <Route path="/articles" element={
               <ProtectedRoute>
                 <Articles />
+              </ProtectedRoute>
+            } />
+            <Route path="/revisions" element={
+              <ProtectedRoute>
+                <Revisions />
               </ProtectedRoute>
             } />
             <Route path="/fournisseurs" element={
