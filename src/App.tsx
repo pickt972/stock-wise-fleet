@@ -20,6 +20,7 @@ import Parametres from "./pages/Parametres";
 import Alertes from "./pages/Alertes";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
 
 const queryClient = new QueryClient();
 
@@ -30,72 +31,75 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/articles" element={
-              <ProtectedRoute>
-                <Articles />
-              </ProtectedRoute>
-            } />
-            <Route path="/revisions" element={
-              <ProtectedRoute>
-                <Revisions />
-              </ProtectedRoute>
-            } />
-            <Route path="/fournisseurs" element={
-              <ProtectedRoute>
-                <Fournisseurs />
-              </ProtectedRoute>
-            } />
-            <Route path="/commandes" element={
-              <ProtectedRoute>
-                <Commandes />
-              </ProtectedRoute>
-            } />
-            <Route path="/entrees" element={
-              <ProtectedRoute>
-                <Entrees />
-              </ProtectedRoute>
-            } />
-            <Route path="/sorties" element={
-              <ProtectedRoute>
-                <Sorties />
-              </ProtectedRoute>
-            } />
-            <Route path="/users" element={
-              <ProtectedRoute>
-                <Users />
-              </ProtectedRoute>
-            } />
-            <Route path="/categories" element={
-              <ProtectedRoute>
-                <Categories />
-              </ProtectedRoute>
-            } />
-            <Route path="/vehicules" element={
-              <ProtectedRoute>
-                <Vehicules />
-              </ProtectedRoute>
-            } />
-            <Route path="/parametres" element={
-              <ProtectedRoute>
-                <Parametres />
-              </ProtectedRoute>
-            } />
-            <Route path="/alertes" element={
-              <ProtectedRoute>
-                <Alertes />
-              </ProtectedRoute>
-            } />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          {/* Error boundary global pour éviter les écrans blancs */}
+          <GlobalErrorBoundary>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/articles" element={
+                <ProtectedRoute>
+                  <Articles />
+                </ProtectedRoute>
+              } />
+              <Route path="/revisions" element={
+                <ProtectedRoute>
+                  <Revisions />
+                </ProtectedRoute>
+              } />
+              <Route path="/fournisseurs" element={
+                <ProtectedRoute>
+                  <Fournisseurs />
+                </ProtectedRoute>
+              } />
+              <Route path="/commandes" element={
+                <ProtectedRoute>
+                  <Commandes />
+                </ProtectedRoute>
+              } />
+              <Route path="/entrees" element={
+                <ProtectedRoute>
+                  <Entrees />
+                </ProtectedRoute>
+              } />
+              <Route path="/sorties" element={
+                <ProtectedRoute>
+                  <Sorties />
+                </ProtectedRoute>
+              } />
+              <Route path="/users" element={
+                <ProtectedRoute>
+                  <Users />
+                </ProtectedRoute>
+              } />
+              <Route path="/categories" element={
+                <ProtectedRoute>
+                  <Categories />
+                </ProtectedRoute>
+              } />
+              <Route path="/vehicules" element={
+                <ProtectedRoute>
+                  <Vehicules />
+                </ProtectedRoute>
+              } />
+              <Route path="/parametres" element={
+                <ProtectedRoute>
+                  <Parametres />
+                </ProtectedRoute>
+              } />
+              <Route path="/alertes" element={
+                <ProtectedRoute>
+                  <Alertes />
+                </ProtectedRoute>
+              } />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </GlobalErrorBoundary>
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
