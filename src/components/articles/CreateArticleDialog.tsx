@@ -163,7 +163,7 @@ export function CreateArticleDialog({ onArticleCreated }: CreateArticleDialogPro
           Nouvel Article
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto bg-background border border-border shadow-large z-50">
         <DialogHeader>
           <DialogTitle>Créer un nouvel article</DialogTitle>
         </DialogHeader>
@@ -225,7 +225,7 @@ export function CreateArticleDialog({ onArticleCreated }: CreateArticleDialogPro
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner une catégorie" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-popover border border-border shadow-medium z-[60]">
                   {categories.map((category) => (
                     <SelectItem key={category} value={category}>
                       {category}
@@ -243,7 +243,7 @@ export function CreateArticleDialog({ onArticleCreated }: CreateArticleDialogPro
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un fournisseur" />
                 </SelectTrigger>
-                <SelectContent className="bg-background z-50">
+                <SelectContent className="bg-popover border border-border shadow-medium z-[60]">
                   <SelectItem value="">Aucun fournisseur</SelectItem>
                   {fournisseurs.map((fournisseur) => (
                     <SelectItem key={fournisseur.id} value={fournisseur.id}>
