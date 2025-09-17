@@ -238,13 +238,15 @@ export function CreateArticleDialog({ onArticleCreated }: CreateArticleDialogPro
               <Label htmlFor="fournisseur">Fournisseur</Label>
               <Select
                 value={formData.fournisseurId}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, fournisseurId: value }))}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, fournisseurId: value === "none" ? "" : value }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un fournisseur" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border border-border shadow-medium z-[60]">
-                  <SelectItem value="">Aucun fournisseur</SelectItem>
+                  <SelectItem value="none">Aucun fournisseur</SelectItem>
                   {fournisseurs.map((fournisseur) => (
                     <SelectItem key={fournisseur.id} value={fournisseur.id}>
                       {fournisseur.nom}
