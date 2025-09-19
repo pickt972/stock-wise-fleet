@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import DashboardLayout from "./DashboardLayout";
 import { ArticleScanner } from "@/components/scanner/ArticleScanner";
+import { CreateVehiculeDialog } from "@/components/vehicules/CreateVehiculeDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -336,7 +337,13 @@ export default function Sorties() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="vehicule">Véhicule (optionnel)</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="vehicule">Véhicule (optionnel)</Label>
+                    <CreateVehiculeDialog 
+                      onVehiculeCreated={fetchVehicules}
+                      onVehiculeSelected={(vehiculeId) => setFormData(prev => ({ ...prev, vehiculeId }))}
+                    />
+                  </div>
                   <Select
                     value={formData.vehiculeId}
                     onValueChange={(value) => setFormData(prev => ({ ...prev, vehiculeId: value }))}
