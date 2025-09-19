@@ -18,6 +18,7 @@ import Categories from "./pages/Categories";
 import Vehicules from "./pages/Vehicules";
 import Parametres from "./pages/Parametres";
 import Alertes from "./pages/Alertes";
+import Inventaire from "./pages/Inventaire";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
@@ -94,6 +95,11 @@ const App = () => (
               <Route path="/alertes" element={
                 <ProtectedRoute>
                   <Alertes />
+                </ProtectedRoute>
+              } />
+              <Route path="/inventaire" element={
+                <ProtectedRoute>
+                  <Inventaire />
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
