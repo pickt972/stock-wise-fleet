@@ -28,6 +28,20 @@ export function CreateVehiculeDialog({ onVehiculeCreated, onVehiculeSelected }: 
   const { toast } = useToast();
   const { user } = useAuth();
 
+  const formatImmatriculation = (value: string) => {
+    // Supprimer tous les caractères non alphanumériques et convertir en majuscules
+    const cleaned = value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+    
+    // Appliquer le format XX-XXX-XX
+    if (cleaned.length <= 2) {
+      return cleaned;
+    } else if (cleaned.length <= 5) {
+      return `${cleaned.slice(0, 2)}-${cleaned.slice(2)}`;
+    } else {
+      return `${cleaned.slice(0, 2)}-${cleaned.slice(2, 5)}-${cleaned.slice(5, 7)}`;
+    }
+  };
+
   const createVehicule = async () => {
     if (!formData.immatriculation || !formData.marque || !formData.modele) {
       toast({
@@ -108,8 +122,12 @@ export function CreateVehiculeDialog({ onVehiculeCreated, onVehiculeSelected }: 
             <Input
               id="immatriculation"
               value={formData.immatriculation}
-              onChange={(e) => setFormData(prev => ({ ...prev, immatriculation: e.target.value }))}
+              onChange={(e) => {
+                const formatted = formatImmatriculation(e.target.value);
+                setFormData(prev => ({ ...prev, immatriculation: formatted }));
+              }}
               placeholder="AB-123-CD"
+              maxLength={9}
               required
             />
           </div>
