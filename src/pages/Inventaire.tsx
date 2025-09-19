@@ -1,16 +1,31 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "./DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Download, BarChart3 } from "lucide-react";
+import { Search, Download, BarChart3, ShoppingCart } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Inventaire() {
   const [searchTerm, setSearchTerm] = useState("");
+  const navigate = useNavigate();
+
+  const handleOrderArticle = (article: any) => {
+    navigate('/commandes', { 
+      state: { 
+        preSelectedArticle: {
+          id: article.id,
+          reference: article.reference,
+          designation: article.designation,
+          prix_achat: article.prix_achat
+        }
+      } 
+    });
+  };
 
   const { data: articles = [], isLoading } = useQuery({
     queryKey: ['articles'],
@@ -149,9 +164,22 @@ export default function Inventaire() {
                           <TableCell>{article.prix_achat.toFixed(2)} €</TableCell>
                           <TableCell className="font-medium">{stockValue.toFixed(2)} €</TableCell>
                           <TableCell>
-                            <Badge variant={stockStatus.variant}>
-                              {stockStatus.label}
-                            </Badge>
+                            {stockStatus.label === "Stock faible" ? (
+                              <div className="flex items-center gap-2">
+                                <Badge 
+                                  variant={stockStatus.variant}
+                                  className="cursor-pointer hover:bg-orange-100 hover:text-orange-800 transition-colors"
+                                  onClick={() => handleOrderArticle(article)}
+                                >
+                                  <ShoppingCart className="h-3 w-3 mr-1" />
+                                  {stockStatus.label}
+                                </Badge>
+                              </div>
+                            ) : (
+                              <Badge variant={stockStatus.variant}>
+                                {stockStatus.label}
+                              </Badge>
+                            )}
                           </TableCell>
                         </TableRow>
                       );

@@ -94,7 +94,7 @@ export default function Commandes() {
     loadData();
   }, []);
 
-  // Gérer les articles pré-remplis depuis les alertes
+  // Gérer les articles pré-remplis depuis les alertes et inventaire
   useEffect(() => {
     if (location.state?.prefilledItems) {
       const { prefilledItems, source } = location.state;
@@ -116,6 +116,33 @@ export default function Commandes() {
       toast({
         title: source === 'alerts' ? "Articles d'alerte ajoutés" : "Article d'alerte ajouté",
         description: `${prefilledItems.length} article(s) ajouté(s) à la commande depuis les alertes`,
+      });
+    }
+    
+    // Gérer l'article pré-sélectionné depuis l'inventaire
+    if (location.state?.preSelectedArticle) {
+      const { preSelectedArticle } = location.state;
+      const newItem: CommandeItem = {
+        article_id: preSelectedArticle.id,
+        designation: preSelectedArticle.designation,
+        reference: preSelectedArticle.reference,
+        quantite_commandee: 1,
+        prix_unitaire: preSelectedArticle.prix_achat,
+        total_ligne: preSelectedArticle.prix_achat
+      };
+      
+      setCurrentItems([newItem]);
+      setCurrentCommande(prev => ({
+        ...prev,
+        total_ht: preSelectedArticle.prix_achat,
+        total_ttc: preSelectedArticle.prix_achat * (1 + prev.tva_taux / 100)
+      }));
+      
+      setIsCreating(true);
+      
+      toast({
+        title: "Article ajouté",
+        description: `${preSelectedArticle.designation} ajouté à la commande`,
       });
     }
   }, [location.state]);
