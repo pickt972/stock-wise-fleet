@@ -28,11 +28,10 @@ const navigation = [
   { name: "Entrées", href: "/entrees", icon: ArrowDownToLine },
   { name: "Sorties", href: "/sorties", icon: ArrowUpFromLine },
   { name: "Inventaire", href: "/inventaire", icon: ClipboardList },
-  { name: "Rapports", href: "/rapports", icon: BarChart3 },
-  { name: "Paramètres", href: "/parametres", icon: Settings },
 ];
 
 const adminNavigation = [
+  { name: "Administration", href: "/administration", icon: Settings },
   { name: "Utilisateurs", href: "/users", icon: Users },
   { name: "Fournisseurs", href: "/fournisseurs", icon: Building2 },
   { name: "Catégories", href: "/categories", icon: Tag },
