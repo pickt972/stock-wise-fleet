@@ -83,6 +83,7 @@ export default function Articles() {
   const [isLoading, setIsLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [deletingArticleId, setDeletingArticleId] = useState<string | null>(null);
+  const [selectedArticleForEdit, setSelectedArticleForEdit] = useState<Article | null>(null);
   const [selectedArticleForFournisseurs, setSelectedArticleForFournisseurs] = useState<Article | null>(null);
   
   // États des filtres
@@ -527,7 +528,15 @@ export default function Articles() {
                               )}
                             </DialogContent>
                           </Dialog>
-                          <EditArticleDialog article={article} onArticleUpdated={fetchArticles} />
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0" 
+                            onClick={() => setSelectedArticleForEdit(article)}
+                            aria-label="Modifier l'article"
+                          >
+                            <Edit className="h-3 w-3 md:h-4 md:w-4" />
+                          </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -571,6 +580,17 @@ export default function Articles() {
         </CardContent>
       </Card>
       </div>
+
+      {/* Single EditArticleDialog for all articles */}
+      {selectedArticleForEdit && (
+        <EditArticleDialog 
+          article={selectedArticleForEdit} 
+          onArticleUpdated={() => {
+            fetchArticles();
+            setSelectedArticleForEdit(null);
+          }} 
+        />
+      )}
     </DashboardLayout>
   );
 }

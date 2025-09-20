@@ -66,7 +66,7 @@ const fetchCategories = async (): Promise<string[]> => {
 };
 
 export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true); // Start open since it's rendered conditionally
   const [isLoading, setIsLoading] = useState(false);
   const [fournisseurs, setFournisseurs] = useState<any[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -98,6 +98,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
       fournisseur_id: article.fournisseur_id || "none",
     });
   }, [article]);
+  
   const { toast } = useToast();
 
   const fetchFournisseurs = async () => {
@@ -116,15 +117,19 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
   };
 
   useEffect(() => {
-    if (open) {
-      fetchFournisseurs();
-      loadCategories();
-    }
-  }, [open]);
+    fetchFournisseurs();
+    loadCategories();
+  }, []);
 
   const loadCategories = async () => {
     const cats = await fetchCategories();
     setCategories(cats);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    // Call onArticleUpdated to notify parent to remove this dialog
+    onArticleUpdated();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -155,8 +160,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
         description: "L'article a été modifié avec succès",
       });
 
-      setOpen(false);
-      onArticleUpdated();
+      handleClose();
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -169,10 +173,11 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setOpen(true)} aria-label="Modifier l'article">
-        <Edit className="h-3 w-3 md:h-4 md:w-4" />
-      </Button>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      if (!isOpen) {
+        handleClose();
+      }
+    }}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Modifier l'article</DialogTitle>
@@ -312,7 +317,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
           <ArticleVehicleCompatibility articleId={article.id} />
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={handleClose}>
               Annuler
             </Button>
             <Button type="submit" disabled={isLoading}>
