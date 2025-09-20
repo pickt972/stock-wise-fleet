@@ -19,23 +19,24 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useRoleAccess } from "@/hooks/useRoleAccess";
 
-const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Articles", href: "/articles", icon: Package },
-  { name: "Révisions", href: "/revisions", icon: Wrench },
-  { name: "Commandes", href: "/commandes", icon: ShoppingCart },
-  { name: "Entrées", href: "/entrees", icon: ArrowDownToLine },
-  { name: "Sorties", href: "/sorties", icon: ArrowUpFromLine },
-  { name: "Inventaire", href: "/inventaire", icon: ClipboardList },
+const getNavigation = (permissions: any) => [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, show: true },
+  { name: "Articles", href: "/articles", icon: Package, show: permissions.manageStock },
+  { name: "Révisions", href: "/revisions", icon: Wrench, show: permissions.manageStock },
+  { name: "Commandes", href: "/commandes", icon: ShoppingCart, show: permissions.createOrders },
+  { name: "Entrées", href: "/entrees", icon: ArrowDownToLine, show: permissions.manageStock },
+  { name: "Sorties", href: "/sorties", icon: ArrowUpFromLine, show: permissions.manageStock },
+  { name: "Inventaire", href: "/inventaire", icon: ClipboardList, show: permissions.manageStock },
 ];
 
-const adminNavigation = [
-  { name: "Administration", href: "/administration", icon: Settings },
-  { name: "Utilisateurs", href: "/users", icon: Users },
-  { name: "Fournisseurs", href: "/fournisseurs", icon: Building2 },
-  { name: "Catégories", href: "/categories", icon: Tag },
-  { name: "Véhicules", href: "/vehicules", icon: Car },
+const getAdminNavigation = (permissions: any) => [
+  { name: "Administration", href: "/administration", icon: Settings, show: permissions.viewReports || permissions.manageSettings },
+  { name: "Utilisateurs", href: "/users", icon: Users, show: permissions.manageUsers },
+  { name: "Fournisseurs", href: "/fournisseurs", icon: Building2, show: permissions.manageSuppliers },
+  { name: "Catégories", href: "/categories", icon: Tag, show: permissions.manageCategories },
+  { name: "Véhicules", href: "/vehicules", icon: Car, show: permissions.manageVehicles },
 ];
 
 interface SidebarProps {
@@ -46,6 +47,7 @@ interface SidebarProps {
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { userRole } = useAuth();
+  const { permissions } = useRoleAccess();
 
   return (
     <>
@@ -77,7 +79,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
 
           <nav className="flex-1 px-4 space-y-2">
-            {navigation.map((item) => (
+            {getNavigation(permissions).filter(item => item.show).map((item) => (
               <NavLink
                 key={item.name}
                 to={item.href}
@@ -99,7 +101,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             ))}
             
             {/* Navigation admin - Section séparée */}
-            {userRole === 'admin' && (
+            {getAdminNavigation(permissions).some(item => item.show) && (
               <div className="pt-4">
                 {!isCollapsed && (
                   <div className="px-3 py-2">
@@ -109,7 +111,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   </div>
                 )}
                 <div className="space-y-1">
-                  {adminNavigation.map((item) => (
+                  {getAdminNavigation(permissions).filter(item => item.show).map((item) => (
                     <NavLink
                       key={item.name}
                       to={item.href}
