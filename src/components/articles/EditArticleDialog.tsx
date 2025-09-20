@@ -66,6 +66,7 @@ const fetchCategories = async (): Promise<string[]> => {
 };
 
 export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDialogProps) {
+  console.count("[EditArticleDialog] render");
   const [open, setOpen] = useState(true); // Start open since it's rendered conditionally
   const [isLoading, setIsLoading] = useState(false);
   const [fournisseurs, setFournisseurs] = useState<any[]>([]);

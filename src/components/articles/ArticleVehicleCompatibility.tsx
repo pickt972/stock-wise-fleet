@@ -20,6 +20,7 @@ interface ArticleVehicleCompatibilityProps {
 }
 
 export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicleCompatibilityProps) {
+  console.count("[ArticleVehicleCompatibility] render");
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedVehiculeId, setSelectedVehiculeId] = useState<string>("");
@@ -128,6 +129,7 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
   const availableVehicules = vehicules.filter(
     (vehicule) => !compatibilities.some((comp) => comp.vehicule_id === vehicule.id)
   );
+  console.log("[ArticleVehicleCompatibility] availableVehicules:", availableVehicules.length);
 
   return (
     <Card>
