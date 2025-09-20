@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Plus, Edit, Trash2 } from "lucide-react";
+import { SortControls, SortConfig, SortOption } from "@/components/ui/sort-controls";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,6 +55,7 @@ export function CategoriesManagement() {
     nom: "",
     description: "",
   });
+  const [sortConfigs, setSortConfigs] = useState<SortConfig[]>([]);
 
   const { toast } = useToast();
 
@@ -76,6 +78,37 @@ export function CategoriesManagement() {
       setIsLoading(false);
     }
   };
+
+  const sortOptions: SortOption[] = [
+    { value: 'nom', label: 'Nom' },
+    { value: 'created_at', label: 'Date de création' },
+    { value: 'updated_at', label: 'Date de modification' },
+    { value: 'actif', label: 'Statut' }
+  ];
+
+  const applySorts = (data: Categorie[]) => {
+    if (sortConfigs.length === 0) return data;
+
+    return [...data].sort((a, b) => {
+      for (const sort of sortConfigs.sort((x, y) => x.priority - y.priority)) {
+        let aValue = a[sort.field as keyof Categorie];
+        let bValue = b[sort.field as keyof Categorie];
+
+        if (sort.field === 'actif') {
+          aValue = a.actif ? '1' : '0';
+          bValue = b.actif ? '1' : '0';
+        }
+
+        if (aValue === bValue) continue;
+
+        const result = aValue < bValue ? -1 : 1;
+        return sort.direction === 'asc' ? result : -result;
+      }
+      return 0;
+    });
+  };
+
+  const sortedCategories = applySorts(categories);
 
   useEffect(() => {
     fetchCategories();
@@ -187,11 +220,18 @@ export function CategoriesManagement() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Gestion des catégories</CardTitle>
-          <Dialog open={openCreateDialog} onOpenChange={setOpenCreateDialog}>
+    <div className="space-y-6">
+      <SortControls
+        sortOptions={sortOptions}
+        onSortChange={setSortConfigs}
+        maxSorts={3}
+      />
+      
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Gestion des catégories</CardTitle>
+            <Dialog open={openCreateDialog} onOpenChange={setOpenCreateDialog}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
@@ -243,7 +283,7 @@ export function CategoriesManagement() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {categories.map((categorie) => (
+            {sortedCategories.map((categorie) => (
               <TableRow key={categorie.id}>
                 <TableCell className="font-medium">{categorie.nom}</TableCell>
                 <TableCell>{categorie.description || "-"}</TableCell>
@@ -330,5 +370,6 @@ export function CategoriesManagement() {
         </Dialog>
       </CardContent>
     </Card>
+    </div>
   );
 }

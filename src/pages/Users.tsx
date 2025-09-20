@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { SortControls, SortConfig, SortOption } from "@/components/ui/sort-controls";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,6 +44,7 @@ export default function Users() {
     password: "",
     role: "magasinier"
   });
+  const [sortConfigs, setSortConfigs] = useState<SortConfig[]>([]);
   const { toast } = useToast();
   const { userRole } = useAuth();
 
@@ -94,6 +96,39 @@ export default function Users() {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  const sortOptions: SortOption[] = [
+    { value: 'first_name', label: 'Prénom' },
+    { value: 'last_name', label: 'Nom' },
+    { value: 'username', label: "Nom d'utilisateur" },
+    { value: 'role', label: 'Rôle' }
+  ];
+
+  const applySorts = (data: UserProfile[]) => {
+    if (sortConfigs.length === 0) return data;
+
+    return [...data].sort((a, b) => {
+      for (const sort of sortConfigs.sort((x, y) => x.priority - y.priority)) {
+        let aValue = a[sort.field as keyof UserProfile];
+        let bValue = b[sort.field as keyof UserProfile];
+
+        // Gestion spéciale pour le rôle
+        if (sort.field === 'role') {
+          const roleOrder = { 'admin': '3', 'chef_agence': '2', 'magasinier': '1' };
+          aValue = roleOrder[a.role] || '0';
+          bValue = roleOrder[b.role] || '0';
+        }
+
+        if (aValue === bValue) continue;
+
+        const result = aValue < bValue ? -1 : 1;
+        return sort.direction === 'asc' ? result : -result;
+      }
+      return 0;
+    });
+  };
+
+  const sortedUsers = applySorts(users);
 
   // Vérifier que l'utilisateur est admin
   if (userRole !== 'admin') {
@@ -246,6 +281,13 @@ export default function Users() {
   return (
     <DashboardLayout>
       <div className="p-4 md:p-6 space-y-4 md:space-y-6 max-w-full overflow-x-auto">
+        
+        <SortControls
+          sortOptions={sortOptions}
+          onSortChange={setSortConfigs}
+          maxSorts={3}
+        />
+        
         <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">Gestion des utilisateurs</h1>
@@ -359,9 +401,9 @@ export default function Users() {
                   <TableHead className="text-right min-w-32">Actions</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                 {users.map((user) => (
-                   <TableRow key={user.id}>
+               <TableBody>
+                  {sortedUsers.map((user) => (
+                    <TableRow key={user.id}>
                      <TableCell className="font-medium text-sm">
                        <div>
                          <div>{user.first_name} {user.last_name}</div>

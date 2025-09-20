@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Search, Filter, Edit, Trash2, AlertTriangle, X, Layers } from "lucide-react";
+import { SortControls, SortConfig, SortOption } from "@/components/ui/sort-controls";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -91,6 +92,7 @@ export default function Articles() {
     stockStatus: "",
     emplacement: "",
   });
+  const [sortConfigs, setSortConfigs] = useState<SortConfig[]>([]);
   
   const { toast } = useToast();
 
@@ -190,6 +192,40 @@ export default function Articles() {
     return article.prix_achat;
   };
 
+  const sortOptions: SortOption[] = [
+    { value: 'designation', label: 'Désignation' },
+    { value: 'reference', label: 'Référence' },
+    { value: 'marque', label: 'Marque' },
+    { value: 'categorie', label: 'Catégorie' },
+    { value: 'stock', label: 'Stock' },
+    { value: 'prix_achat', label: 'Prix' },
+    { value: 'created_at', label: 'Date de création' },
+    { value: 'emplacement', label: 'Emplacement' }
+  ];
+
+  const applySorts = (data: Article[]) => {
+    if (sortConfigs.length === 0) return data;
+
+    return [...data].sort((a, b) => {
+      for (const sort of sortConfigs.sort((x, y) => x.priority - y.priority)) {
+        let aValue = a[sort.field as keyof Article];
+        let bValue = b[sort.field as keyof Article];
+
+        // Gestion des valeurs numériques
+        if (sort.field === 'stock' || sort.field === 'prix_achat') {
+          aValue = Number(aValue) || 0;
+          bValue = Number(bValue) || 0;
+        }
+
+        if (aValue === bValue) continue;
+
+        const result = aValue < bValue ? -1 : 1;
+        return sort.direction === 'asc' ? result : -result;
+      }
+      return 0;
+    });
+  };
+
   const filteredArticles = articles.filter(article => {
     // Filtre de recherche textuelle
     const matchesSearch = searchTerm === "" || 
@@ -216,6 +252,8 @@ export default function Articles() {
 
     return matchesSearch && matchesCategorie && matchesMarque && matchesEmplacement && matchesStockStatus;
   });
+
+  const sortedArticles = applySorts(filteredArticles);
 
   // Obtenir les valeurs uniques pour les filtres
   const uniqueCategories = [...new Set(articles.map(article => article.categorie))].filter(Boolean);
@@ -247,6 +285,13 @@ export default function Articles() {
   return (
     <DashboardLayout>
       <div className="space-y-4 lg:space-y-6 w-full max-w-full overflow-x-hidden">
+      
+      <SortControls
+        sortOptions={sortOptions}
+        onSortChange={setSortConfigs}
+        maxSorts={3}
+      />
+      
       <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 flex-1">
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Articles</h1>
@@ -401,8 +446,8 @@ export default function Articles() {
                 </TableRow>
               </TableHeader>
             <TableBody>
-              {filteredArticles.length > 0 ? (
-                filteredArticles.map((article) => {
+              {sortedArticles.length > 0 ? (
+                sortedArticles.map((article) => {
                   const stockStatus = getStockStatus(article.stock, article.stock_min);
                   const principalFournisseur = getPrincipalFournisseur(article);
                   const principalPrice = getPrincipalPrice(article);
