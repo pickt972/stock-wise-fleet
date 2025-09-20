@@ -32,14 +32,24 @@ export function CreateVehiculeDialog({ onVehiculeCreated, onVehiculeSelected }: 
     // Supprimer tous les caractères non alphanumériques et convertir en majuscules
     const cleaned = value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
     
-    // Appliquer le format XX-XXX-XX
-    if (cleaned.length <= 2) {
-      return cleaned;
-    } else if (cleaned.length <= 5) {
-      return `${cleaned.slice(0, 2)}-${cleaned.slice(2)}`;
-    } else {
-      return `${cleaned.slice(0, 2)}-${cleaned.slice(2, 5)}-${cleaned.slice(5, 7)}`;
+    // Format français standard: AA-000-AA (2 lettres, 3 chiffres, 2 lettres)
+    let formatted = '';
+    
+    for (let i = 0; i < cleaned.length && i < 7; i++) {
+      // Ajouter les tirets aux bonnes positions
+      if (i === 2 || i === 5) {
+        formatted += '-';
+      }
+      formatted += cleaned[i];
     }
+    
+    return formatted;
+  };
+
+  const validateImmatriculation = (value: string) => {
+    // Regex pour valider le format français AA-000-AA
+    const regex = /^[A-Z]{2}-[0-9]{3}-[A-Z]{2}$/;
+    return regex.test(value);
   };
 
   const createVehicule = async () => {
@@ -47,6 +57,16 @@ export function CreateVehiculeDialog({ onVehiculeCreated, onVehiculeSelected }: 
       toast({
         title: "Erreur",
         description: "Veuillez remplir les champs obligatoires",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Vérifier le format de l'immatriculation
+    if (!validateImmatriculation(formData.immatriculation)) {
+      toast({
+        title: "Erreur",
+        description: "Le format de l'immatriculation doit être AA-000-AA",
         variant: "destructive",
       });
       return;
@@ -129,7 +149,19 @@ export function CreateVehiculeDialog({ onVehiculeCreated, onVehiculeSelected }: 
               placeholder="AB-123-CD"
               maxLength={9}
               required
+              className={formData.immatriculation && !validateImmatriculation(formData.immatriculation) 
+                ? "border-destructive focus:border-destructive" 
+                : ""
+              }
             />
+            <p className="text-xs text-muted-foreground">
+              Format: AA-000-AA (2 lettres, 3 chiffres, 2 lettres)
+            </p>
+            {formData.immatriculation && !validateImmatriculation(formData.immatriculation) && (
+              <p className="text-xs text-destructive">
+                Format d'immatriculation invalide
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
