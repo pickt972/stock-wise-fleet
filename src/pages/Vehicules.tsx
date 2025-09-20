@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { Car, Plus, Edit, Trash2 } from "lucide-react";
@@ -32,6 +32,31 @@ export default function Vehicules() {
     notes: "",
     actif: true,
   });
+
+  // Fonction de formatage de l'immatriculation
+  const formatImmatriculation = (value: string) => {
+    // Supprimer tous les caractères non alphanumériques et convertir en majuscules
+    const cleaned = value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+    
+    // Format français standard: AA-000-AA (2 lettres, 3 chiffres, 2 lettres)
+    let formatted = '';
+    
+    for (let i = 0; i < cleaned.length && i < 7; i++) {
+      // Ajouter les tirets aux bonnes positions
+      if (i === 2 || i === 5) {
+        formatted += '-';
+      }
+      formatted += cleaned[i];
+    }
+    
+    return formatted;
+  };
+
+  const validateImmatriculation = (value: string) => {
+    // Regex pour valider le format français AA-000-AA
+    const regex = /^[A-Z]{2}-[0-9]{3}-[A-Z]{2}$/;
+    return regex.test(value);
+  };
 
   const { data: vehicules = [] } = useQuery({
     queryKey: ["vehicules"],
@@ -128,7 +153,7 @@ export default function Vehicules() {
       marque: vehicule.marque,
       modele: vehicule.modele,
       motorisation: vehicule.motorisation || "",
-      immatriculation: vehicule.immatriculation,
+      immatriculation: formatImmatriculation(vehicule.immatriculation), // Formater lors de l'édition
       annee: vehicule.annee?.toString() || "",
       notes: vehicule.notes || "",
       actif: vehicule.actif,
@@ -137,6 +162,12 @@ export default function Vehicules() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Vérifier le format de l'immatriculation
+    if (!validateImmatriculation(formData.immatriculation)) {
+      toast.error("Le format de l'immatriculation doit être AA-000-AA");
+      return;
+    }
     
     if (editingVehicule) {
       updateMutation.mutate({ id: editingVehicule.id, data: formData });
@@ -166,6 +197,9 @@ export default function Vehicules() {
                 <DialogTitle>
                   {editingVehicule ? "Modifier le véhicule" : "Ajouter un nouveau véhicule"}
                 </DialogTitle>
+                <DialogDescription>
+                  {editingVehicule ? "Modifiez les informations du véhicule" : "Ajoutez un nouveau véhicule à votre parc"}
+                </DialogDescription>
               </DialogHeader>
               
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -221,10 +255,26 @@ export default function Vehicules() {
                   <Input
                     id="immatriculation"
                     value={formData.immatriculation}
-                    onChange={(e) => setFormData(prev => ({ ...prev, immatriculation: e.target.value }))}
-                    placeholder="AA-123-BB"
+                    onChange={(e) => {
+                      const formatted = formatImmatriculation(e.target.value);
+                      setFormData(prev => ({ ...prev, immatriculation: formatted }));
+                    }}
+                    placeholder="AB-123-CD"
+                    maxLength={9}
                     required
+                    className={formData.immatriculation && !validateImmatriculation(formData.immatriculation) 
+                      ? "border-destructive focus:border-destructive" 
+                      : ""
+                    }
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Format: AA-000-AA (2 lettres, 3 chiffres, 2 lettres)
+                  </p>
+                  {formData.immatriculation && !validateImmatriculation(formData.immatriculation) && (
+                    <p className="text-xs text-destructive mt-1">
+                      Format d'immatriculation invalide
+                    </p>
+                  )}
                 </div>
 
                 <div>
