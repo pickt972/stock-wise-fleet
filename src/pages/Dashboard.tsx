@@ -2,14 +2,14 @@ import { Package, TrendingUp, AlertTriangle, DollarSign } from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { AlertsList } from "@/components/dashboard/AlertsList";
 import { RecentMovements } from "@/components/dashboard/RecentMovements";
-import { SecurityAuditAlert } from "@/components/SecurityAuditAlert";
+
 import DashboardLayout from "./DashboardLayout";
 
 export default function Dashboard() {
   return (
     <DashboardLayout>
       <div className="space-y-4 lg:space-y-6 w-full max-w-full overflow-x-hidden">
-        <SecurityAuditAlert />
+        
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Tableau de bord</h1>
           <p className="text-sm lg:text-base text-muted-foreground">Vue d'ensemble de votre gestion des stocks</p>
