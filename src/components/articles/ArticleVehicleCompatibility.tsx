@@ -25,9 +25,12 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
   const [selectedVehiculeId, setSelectedVehiculeId] = useState<string>("");
   const [notes, setNotes] = useState("");
 
+  console.log("ArticleVehicleCompatibility render - articleId:", articleId);
+
   const { data: vehicules = [] } = useQuery({
     queryKey: ["vehicules"],
     queryFn: async () => {
+      console.log("Fetching vehicules...");
       const { data, error } = await supabase
         .from("vehicules")
         .select("*")
@@ -35,6 +38,7 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
         .order("marque", { ascending: true });
       
       if (error) throw error;
+      console.log("Vehicules fetched:", data?.length || 0);
       return data;
     },
   });
@@ -42,6 +46,7 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
   const { data: compatibilities = [] } = useQuery({
     queryKey: ["article-vehicules", articleId],
     queryFn: async () => {
+      console.log("Fetching compatibilities for article:", articleId);
       const { data, error } = await supabase
         .from("article_vehicules")
         .select(`
@@ -59,8 +64,10 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
         .eq("article_id", articleId);
       
       if (error) throw error;
+      console.log("Compatibilities fetched:", data?.length || 0);
       return data;
     },
+    enabled: !!articleId, // Only run when articleId is available
   });
 
   const addCompatibilityMutation = useMutation({
