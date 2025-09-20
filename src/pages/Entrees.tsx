@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { ArrowDownToLine, Plus, Package, Calendar, User } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -253,8 +254,9 @@ export default function Entrees() {
   }
 
   return (
-    <DashboardLayout>
-      <div className="space-y-4 lg:space-y-6 w-full max-w-full overflow-x-hidden">
+    <TooltipProvider>
+      <DashboardLayout>
+        <div className="space-y-4 lg:space-y-6 w-full max-w-full overflow-x-hidden">
         <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0 flex-1">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Entrées de stock</h1>
@@ -415,12 +417,19 @@ export default function Entrees() {
                   ) : (
                     entries.map((entry) => (
                       <TableRow key={entry.id}>
-                        <TableCell className="text-sm">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-3 w-3 text-muted-foreground" />
-                            {new Date(entry.created_at).toLocaleDateString('fr-FR')}
-                          </div>
-                        </TableCell>
+                         <TableCell className="text-sm">
+                           <div className="flex items-center gap-2">
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 <Calendar className="h-3 w-3 text-muted-foreground cursor-help" />
+                               </TooltipTrigger>
+                               <TooltipContent>
+                                 <p>Date d'entrée</p>
+                               </TooltipContent>
+                             </Tooltip>
+                             {new Date(entry.created_at).toLocaleDateString('fr-FR')}
+                           </div>
+                         </TableCell>
                         <TableCell className="font-mono text-sm">
                           {entry.articles.reference}
                         </TableCell>
@@ -449,12 +458,19 @@ export default function Entrees() {
                             <span className="text-muted-foreground text-xs">-</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-sm">
-                          <div className="flex items-center gap-2">
-                            <User className="h-3 w-3 text-muted-foreground" />
-                            {entry.profiles.first_name} {entry.profiles.last_name}
-                          </div>
-                        </TableCell>
+                         <TableCell className="text-sm">
+                           <div className="flex items-center gap-2">
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 <User className="h-3 w-3 text-muted-foreground cursor-help" />
+                               </TooltipTrigger>
+                               <TooltipContent>
+                                 <p>Utilisateur ayant effectué l'entrée</p>
+                               </TooltipContent>
+                             </Tooltip>
+                             {entry.profiles.first_name} {entry.profiles.last_name}
+                           </div>
+                         </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -464,6 +480,7 @@ export default function Entrees() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+      </DashboardLayout>
+    </TooltipProvider>
   );
 }

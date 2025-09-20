@@ -1,4 +1,5 @@
 import { Bell, User, Menu, Settings, LogOut } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import logo from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,17 +48,25 @@ export function Header({ onMenuClick }: HeaderProps) {
   };
 
   return (
-    <header className="bg-card border-b border-border shadow-soft w-full">
+    <TooltipProvider>
+      <header className="bg-card border-b border-border shadow-soft w-full">
       <div className="flex items-center justify-between px-2 sm:px-4 h-16 w-full max-w-full overflow-hidden">
         <div className="flex items-center gap-1 sm:gap-2 lg:gap-4 min-w-0 flex-1 max-w-full overflow-hidden">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onMenuClick}
-            className="md:hidden flex-shrink-0"
-          >
-            <Menu className="h-4 w-4" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onMenuClick}
+                className="md:hidden flex-shrink-0"
+              >
+                <Menu className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Ouvrir le menu</p>
+            </TooltipContent>
+          </Tooltip>
           <div className="flex items-center gap-1 sm:gap-2 min-w-0 max-w-full overflow-hidden">
             <img src={logo} alt="StockAuto Logo" className="h-7 w-7 sm:h-8 sm:w-8 lg:h-10 lg:w-10 flex-shrink-0" />
             <div className="min-w-0 max-w-full overflow-hidden">
@@ -68,15 +77,22 @@ export function Header({ onMenuClick }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-          <Button variant="ghost" size="sm" className="relative hidden sm:flex">
-            <Bell className="h-4 w-4" />
-            <Badge 
-              variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-            >
-              3
-            </Badge>
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="sm" className="relative hidden sm:flex">
+                <Bell className="h-4 w-4" />
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                >
+                  3
+                </Badge>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Notifications (3 nouvelles)</p>
+            </TooltipContent>
+          </Tooltip>
           
           {/* Menu utilisateur */}
           <DropdownMenu>
@@ -124,6 +140,7 @@ export function Header({ onMenuClick }: HeaderProps) {
           </DropdownMenu>
         </div>
       </div>
-    </header>
+      </header>
+    </TooltipProvider>
   );
 }
