@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import DashboardLayout from "./DashboardLayout";
 import { ArticleScanner } from "@/components/scanner/ArticleScanner";
+import { CreateArticleDialog } from "@/components/articles/CreateArticleDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -274,21 +275,37 @@ export default function Entrees() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="article">Article *</Label>
-                  <Select
-                    value={formData.articleId}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, articleId: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner un article" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {articles.map((article) => (
-                        <SelectItem key={article.id} value={article.id}>
-                          {article.reference} - {article.designation}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2">
+                    <Select
+                      value={formData.articleId}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, articleId: value }))}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Sélectionner un article" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {articles.map((article) => (
+                          <SelectItem key={article.id} value={article.id}>
+                            {article.reference} - {article.designation}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <CreateArticleDialog 
+                      onArticleCreated={() => {
+                        fetchArticles();
+                        toast({
+                          title: "Article créé",
+                          description: "Vous pouvez maintenant le sélectionner",
+                        });
+                      }}
+                      triggerButton={
+                        <Button variant="outline" size="sm" className="flex-shrink-0">
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      }
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">

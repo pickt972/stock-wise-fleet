@@ -23,9 +23,10 @@ import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
 
 interface CreateArticleDialogProps {
   onArticleCreated: () => void;
+  triggerButton?: React.ReactNode;
 }
 
-export function CreateArticleDialog({ onArticleCreated }: CreateArticleDialogProps) {
+export function CreateArticleDialog({ onArticleCreated, triggerButton }: CreateArticleDialogProps) {
   const [open, setOpen] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -158,10 +159,12 @@ export function CreateArticleDialog({ onArticleCreated }: CreateArticleDialogPro
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-primary hover:bg-primary/90 w-full lg:w-auto flex-shrink-0">
-          <Plus className="mr-2 h-4 w-4" />
-          Nouvel Article
-        </Button>
+        {triggerButton || (
+          <Button className="bg-primary hover:bg-primary/90 w-full lg:w-auto flex-shrink-0">
+            <Plus className="mr-2 h-4 w-4" />
+            Nouvel Article
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto bg-background border border-border shadow-large z-50">
         <DialogHeader>
