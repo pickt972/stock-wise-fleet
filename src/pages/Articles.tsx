@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Search, Filter, Edit, Trash2, AlertTriangle, X, Layers } from "lucide-react";
-import { SortControls, SortConfig, SortOption } from "@/components/ui/sort-controls";
+import { CompactSortControls } from "@/components/ui/compact-sort-controls";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -92,7 +92,8 @@ export default function Articles() {
     stockStatus: "",
     emplacement: "",
   });
-  const [sortConfigs, setSortConfigs] = useState<SortConfig[]>([]);
+  const [currentSort, setCurrentSort] = useState('designation');
+  const [currentDirection, setCurrentDirection] = useState<'asc' | 'desc'>('asc');
   
   const { toast } = useToast();
 
@@ -192,7 +193,7 @@ export default function Articles() {
     return article.prix_achat;
   };
 
-  const sortOptions: SortOption[] = [
+  const sortOptions = [
     { value: 'designation', label: 'Désignation' },
     { value: 'reference', label: 'Référence' },
     { value: 'marque', label: 'Marque' },
@@ -203,27 +204,26 @@ export default function Articles() {
     { value: 'emplacement', label: 'Emplacement' }
   ];
 
-  const applySorts = (data: Article[]) => {
-    if (sortConfigs.length === 0) return data;
-
+  const applySorting = (data: Article[]) => {
     return [...data].sort((a, b) => {
-      for (const sort of sortConfigs.sort((x, y) => x.priority - y.priority)) {
-        let aValue = a[sort.field as keyof Article];
-        let bValue = b[sort.field as keyof Article];
+      let aValue = a[currentSort as keyof Article];
+      let bValue = b[currentSort as keyof Article];
 
-        // Gestion des valeurs numériques
-        if (sort.field === 'stock' || sort.field === 'prix_achat') {
-          aValue = Number(aValue) || 0;
-          bValue = Number(bValue) || 0;
-        }
-
-        if (aValue === bValue) continue;
-
-        const result = aValue < bValue ? -1 : 1;
-        return sort.direction === 'asc' ? result : -result;
+      // Gestion des valeurs numériques
+      if (currentSort === 'stock' || currentSort === 'prix_achat') {
+        aValue = Number(aValue) || 0;
+        bValue = Number(bValue) || 0;
       }
-      return 0;
+
+      if (aValue === bValue) return 0;
+      const result = aValue < bValue ? -1 : 1;
+      return currentDirection === 'asc' ? result : -result;
     });
+  };
+
+  const handleSortChange = (field: string, direction: 'asc' | 'desc') => {
+    setCurrentSort(field);
+    setCurrentDirection(direction);
   };
 
   const filteredArticles = articles.filter(article => {
@@ -253,7 +253,7 @@ export default function Articles() {
     return matchesSearch && matchesCategorie && matchesMarque && matchesEmplacement && matchesStockStatus;
   });
 
-  const sortedArticles = applySorts(filteredArticles);
+  const sortedArticles = applySorting(filteredArticles);
 
   // Obtenir les valeurs uniques pour les filtres
   const uniqueCategories = [...new Set(articles.map(article => article.categorie))].filter(Boolean);
@@ -286,11 +286,15 @@ export default function Articles() {
     <DashboardLayout>
       <div className="space-y-4 lg:space-y-6 w-full max-w-full overflow-x-hidden">
       
-      <SortControls
-        sortOptions={sortOptions}
-        onSortChange={setSortConfigs}
-        maxSorts={3}
-      />
+      <div className="flex items-center justify-between">
+        <CompactSortControls
+          sortOptions={sortOptions}
+          currentSort={currentSort}
+          currentDirection={currentDirection}
+          onSortChange={handleSortChange}
+          showDragHandle={false}
+        />
+      </div>
       
       <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 flex-1">

@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { Plus, Edit, Trash2 } from "lucide-react";
-import { SortControls, SortConfig, SortOption } from "@/components/ui/sort-controls";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CompactSortControls } from "@/components/ui/compact-sort-controls";
+import { DragHandle } from "@/components/ui/drag-handle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,9 +58,17 @@ export function CategoriesManagement() {
     nom: "",
     description: "",
   });
-  const [sortConfigs, setSortConfigs] = useState<SortConfig[]>([]);
+  const [currentSort, setCurrentSort] = useState('nom');
+  const [currentDirection, setCurrentDirection] = useState<'asc' | 'desc'>('asc');
 
   const { toast } = useToast();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const fetchCategories = async () => {
     try {
@@ -79,36 +90,47 @@ export function CategoriesManagement() {
     }
   };
 
-  const sortOptions: SortOption[] = [
+  const sortOptions = [
     { value: 'nom', label: 'Nom' },
     { value: 'created_at', label: 'Date de création' },
     { value: 'updated_at', label: 'Date de modification' },
     { value: 'actif', label: 'Statut' }
   ];
 
-  const applySorts = (data: Categorie[]) => {
-    if (sortConfigs.length === 0) return data;
-
+  const applySorting = (data: Categorie[]) => {
     return [...data].sort((a, b) => {
-      for (const sort of sortConfigs.sort((x, y) => x.priority - y.priority)) {
-        let aValue = a[sort.field as keyof Categorie];
-        let bValue = b[sort.field as keyof Categorie];
+      let aValue = a[currentSort as keyof Categorie];
+      let bValue = b[currentSort as keyof Categorie];
 
-        if (sort.field === 'actif') {
-          aValue = a.actif ? '1' : '0';
-          bValue = b.actif ? '1' : '0';
-        }
-
-        if (aValue === bValue) continue;
-
-        const result = aValue < bValue ? -1 : 1;
-        return sort.direction === 'asc' ? result : -result;
+      if (currentSort === 'actif') {
+        aValue = a.actif ? '1' : '0';
+        bValue = b.actif ? '1' : '0';
       }
-      return 0;
+
+      if (aValue === bValue) return 0;
+      const result = aValue < bValue ? -1 : 1;
+      return currentDirection === 'asc' ? result : -result;
     });
   };
 
-  const sortedCategories = applySorts(categories);
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+
+    if (active.id !== over.id) {
+      setCategories((items) => {
+        const oldIndex = items.findIndex(item => item.id === active.id);
+        const newIndex = items.findIndex(item => item.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const handleSortChange = (field: string, direction: 'asc' | 'desc') => {
+    setCurrentSort(field);
+    setCurrentDirection(direction);
+  };
+
+  const displayedCategories = currentSort === 'manual' ? categories : applySorting(categories);
 
   useEffect(() => {
     fetchCategories();
@@ -220,156 +242,223 @@ export function CategoriesManagement() {
   }
 
   return (
-    <div className="space-y-6">
-      <SortControls
-        sortOptions={sortOptions}
-        onSortChange={setSortConfigs}
-        maxSorts={3}
-      />
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <CompactSortControls
+          sortOptions={[{ value: 'manual', label: 'Manuel' }, ...sortOptions]}
+          currentSort={currentSort}
+          currentDirection={currentDirection}
+          onSortChange={handleSortChange}
+          showDragHandle={currentSort === 'manual'}
+        />
+      </div>
       
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Gestion des catégories</CardTitle>
             <Dialog open={openCreateDialog} onOpenChange={setOpenCreateDialog}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Nouvelle catégorie
-              </Button>
-            </DialogTrigger>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nouvelle catégorie
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Créer une nouvelle catégorie</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleCreate} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="nom">Nom de la catégorie *</Label>
+                    <Input
+                      id="nom"
+                      value={formData.nom}
+                      onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      rows={3}
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setOpenCreateDialog(false)}>
+                      Annuler
+                    </Button>
+                    <Button type="submit">Créer</Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {currentSort === 'manual' && <TableHead className="w-12"></TableHead>}
+                  <TableHead>Nom</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Statut</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <SortableContext items={displayedCategories.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                <TableBody>
+                  {displayedCategories.map((categorie) => (
+                    <TableRow key={categorie.id}>
+                      {currentSort === 'manual' ? (
+                        <DragHandle id={categorie.id}>
+                          <>
+                            <TableCell></TableCell>
+                            <TableCell className="font-medium">{categorie.nom}</TableCell>
+                            <TableCell>{categorie.description || "-"}</TableCell>
+                            <TableCell>
+                              <Badge variant={categorie.actif ? "default" : "secondary"}>
+                                {categorie.actif ? "Active" : "Inactive"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                  onClick={() => openEditForm(categorie)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Êtes-vous sûr de vouloir supprimer la catégorie "{categorie.nom}" ?
+                                        Cette action ne supprimera pas définitivement la catégorie mais la désactivera.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleDelete(categorie.id)}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                        Supprimer
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </TableCell>
+                          </>
+                        </DragHandle>
+                      ) : (
+                        <>
+                          <TableCell className="font-medium">{categorie.nom}</TableCell>
+                          <TableCell>{categorie.description || "-"}</TableCell>
+                          <TableCell>
+                            <Badge variant={categorie.actif ? "default" : "secondary"}>
+                              {categorie.actif ? "Active" : "Inactive"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                                onClick={() => openEditForm(categorie)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Êtes-vous sûr de vouloir supprimer la catégorie "{categorie.nom}" ?
+                                      Cette action ne supprimera pas définitivement la catégorie mais la désactivera.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDelete(categorie.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Supprimer
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </TableCell>
+                        </>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </SortableContext>
+            </Table>
+          </DndContext>
+
+          {/* Dialog d'édition */}
+          <Dialog open={openEditDialog} onOpenChange={setOpenEditDialog}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Créer une nouvelle catégorie</DialogTitle>
+                <DialogTitle>Modifier la catégorie</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleCreate} className="space-y-4">
+              <form onSubmit={handleEdit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="nom">Nom de la catégorie *</Label>
+                  <Label htmlFor="edit-nom">Nom de la catégorie *</Label>
                   <Input
-                    id="nom"
+                    id="edit-nom"
                     value={formData.nom}
                     onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="edit-description">Description</Label>
                   <Textarea
-                    id="description"
+                    id="edit-description"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={3}
                   />
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setOpenCreateDialog(false)}>
+                  <Button type="button" variant="outline" onClick={() => setOpenEditDialog(false)}>
                     Annuler
                   </Button>
-                  <Button type="submit">Créer</Button>
+                  <Button type="submit">Modifier</Button>
                 </div>
               </form>
             </DialogContent>
           </Dialog>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nom</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Statut</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedCategories.map((categorie) => (
-              <TableRow key={categorie.id}>
-                <TableCell className="font-medium">{categorie.nom}</TableCell>
-                <TableCell>{categorie.description || "-"}</TableCell>
-                <TableCell>
-                  <Badge variant={categorie.actif ? "default" : "secondary"}>
-                    {categorie.actif ? "Active" : "Inactive"}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                      onClick={() => openEditForm(categorie)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Êtes-vous sûr de vouloir supprimer la catégorie "{categorie.nom}" ?
-                            Cette action ne supprimera pas définitivement la catégorie mais la désactivera.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Annuler</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDelete(categorie.id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            Supprimer
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-
-        {/* Dialog d'édition */}
-        <Dialog open={openEditDialog} onOpenChange={setOpenEditDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Modifier la catégorie</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleEdit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-nom">Nom de la catégorie *</Label>
-                <Input
-                  id="edit-nom"
-                  value={formData.nom}
-                  onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-description">Description</Label>
-                <Textarea
-                  id="edit-description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setOpenEditDialog(false)}>
-                  Annuler
-                </Button>
-                <Button type="submit">Modifier</Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
     </div>
   );
 }
