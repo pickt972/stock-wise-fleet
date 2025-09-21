@@ -31,7 +31,7 @@ export default function RapportsContent() {
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - parseInt(selectedPeriod));
       
-      const { data, error } = await supabase
+      const { data: movements, error: movementsError } = await supabase
         .from('stock_movements')
         .select(`
           *,
@@ -40,8 +40,24 @@ export default function RapportsContent() {
         .gte('created_at', daysAgo.toISOString())
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
-      return data;
+      if (movementsError) throw movementsError;
+
+      // Récupérer les profils des utilisateurs
+      const userIds = [...new Set(movements?.map(m => m.user_id) || [])];
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', userIds);
+      
+      if (profilesError) throw profilesError;
+
+      // Combiner les données
+      const enrichedMovements = movements?.map(movement => ({
+        ...movement,
+        profile: profiles?.find(p => p.id === movement.user_id)
+      })) || [];
+
+      return enrichedMovements;
     }
   });
 
@@ -170,6 +186,7 @@ export default function RapportsContent() {
                 <TableHead>Article</TableHead>
                 <TableHead>Quantité</TableHead>
                 <TableHead>Motif</TableHead>
+                <TableHead>Utilisateur</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -188,6 +205,15 @@ export default function RapportsContent() {
                   </TableCell>
                   <TableCell className="text-center">{movement.quantity}</TableCell>
                   <TableCell>{movement.motif}</TableCell>
+                  <TableCell>
+                    <Button 
+                      variant="link" 
+                      className="p-0 h-auto font-normal text-primary hover:underline"
+                      onClick={() => window.open(`/users`, '_blank')}
+                    >
+                      {movement.profile?.first_name} {movement.profile?.last_name}
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
