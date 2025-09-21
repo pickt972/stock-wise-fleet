@@ -161,34 +161,18 @@ export default function Users() {
 
     setIsCreating(true);
     try {
-      // Créer l'utilisateur dans auth.users
-      const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-        email: `${formData.username}@stock-wise.local`,
-        password: formData.password,
-        user_metadata: {
-          first_name: formData.firstName,
-          last_name: formData.lastName,
+      // Appel sécurisé à l'Edge Function (utilise le service role côté serveur)
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: {
+          username: formData.username,
+          password: formData.password,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          role: formData.role as UserRole,
         },
-        email_confirm: true,
       });
 
-      if (authError) throw authError;
-
-      // Mettre à jour le profil avec le nom d'utilisateur
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ username: formData.username })
-        .eq('id', authUser.user.id);
-
-      if (profileError) throw profileError;
-
-      // Assigner le rôle
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .update({ role: formData.role as UserRole })
-        .eq('user_id', authUser.user.id);
-
-      if (roleError) throw roleError;
+      if (error) throw error;
 
       toast({
         title: "Utilisateur créé",
@@ -200,14 +184,15 @@ export default function Users() {
         firstName: "",
         lastName: "",
         password: "",
-        role: "magasinier"
+        role: "magasinier",
       });
       setIsDialogOpen(false);
       fetchUsers();
     } catch (error: any) {
+      console.error('Erreur création utilisateur:', error);
       toast({
         title: "Erreur",
-        description: error.message || "Impossible de créer l'utilisateur",
+        description: error?.message || "Impossible de créer l'utilisateur",
         variant: "destructive",
       });
     } finally {
