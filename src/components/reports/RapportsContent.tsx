@@ -271,7 +271,11 @@ export default function RapportsContent() {
             </TableHeader>
             <TableBody>
               {commandesData.slice(0, 10).map((commande) => (
-                <TableRow key={commande.id}>
+                <TableRow 
+                  key={commande.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => window.open('/commandes', '_blank')}
+                >
                   <TableCell className="font-medium">{commande.numero_commande}</TableCell>
                   <TableCell>{commande.fournisseur}</TableCell>
                   <TableCell>
