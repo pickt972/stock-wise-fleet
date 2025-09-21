@@ -57,35 +57,15 @@ export default function Administration() {
 
           <TabsContent value="parametres" className="space-y-6 mt-6">
             <Tabs defaultValue="configuration" className="w-full">
-              <TabsList className="grid w-full grid-cols-6">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="configuration" className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
                   Configuration
                 </TabsTrigger>
-                {permissions.manageUsers && (
-                  <TabsTrigger value="utilisateurs" className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Utilisateurs
-                  </TabsTrigger>
-                )}
-                {permissions.manageSuppliers && (
-                  <TabsTrigger value="fournisseurs" className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4" />
-                    Fournisseurs
-                  </TabsTrigger>
-                )}
-                {permissions.manageCategories && (
-                  <TabsTrigger value="categories" className="flex items-center gap-2">
-                    <Tags className="h-4 w-4" />
-                    Catégories
-                  </TabsTrigger>
-                )}
-                {permissions.manageVehicles && (
-                  <TabsTrigger value="vehicules" className="flex items-center gap-2">
-                    <Truck className="h-4 w-4" />
-                    Véhicules
-                  </TabsTrigger>
-                )}
+                <TabsTrigger value="gestion" className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Gestion
+                </TabsTrigger>
                 <TabsTrigger value="emplacements" className="flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
                   Emplacements
@@ -116,45 +96,76 @@ export default function Administration() {
                 </section>
               </TabsContent>
 
-              {permissions.manageUsers && (
-                <TabsContent value="utilisateurs" className="space-y-6 mt-6">
-                  <UsersContent />
-                </TabsContent>
-              )}
+              <TabsContent value="gestion" className="space-y-6 mt-6">
+                <Tabs defaultValue="utilisateurs" className="w-full">
+                  <TabsList className="flex flex-wrap gap-1 h-auto p-1">
+                    {permissions.manageUsers && (
+                      <TabsTrigger value="utilisateurs" className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Utilisateurs
+                      </TabsTrigger>
+                    )}
+                    {permissions.manageSuppliers && (
+                      <TabsTrigger value="fournisseurs" className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4" />
+                        Fournisseurs
+                      </TabsTrigger>
+                    )}
+                    {permissions.manageCategories && (
+                      <TabsTrigger value="categories" className="flex items-center gap-2">
+                        <Tags className="h-4 w-4" />
+                        Catégories
+                      </TabsTrigger>
+                    )}
+                    {permissions.manageVehicles && (
+                      <TabsTrigger value="vehicules" className="flex items-center gap-2">
+                        <Truck className="h-4 w-4" />
+                        Véhicules
+                      </TabsTrigger>
+                    )}
+                  </TabsList>
 
-              {permissions.manageSuppliers && (
-                <TabsContent value="fournisseurs" className="space-y-6 mt-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Gestion des fournisseurs</CardTitle>
-                      <CardDescription>Gérez les fournisseurs et leurs informations</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <FournisseursManagement />
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              )}
+                  {permissions.manageUsers && (
+                    <TabsContent value="utilisateurs" className="space-y-6 mt-6">
+                      <UsersContent />
+                    </TabsContent>
+                  )}
 
-              {permissions.manageCategories && (
-                <TabsContent value="categories" className="space-y-6 mt-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Gestion des catégories</CardTitle>
-                      <CardDescription>Gérez les catégories d'articles</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <CategoriesManagement />
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              )}
+                  {permissions.manageSuppliers && (
+                    <TabsContent value="fournisseurs" className="space-y-6 mt-6">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Gestion des fournisseurs</CardTitle>
+                          <CardDescription>Gérez les fournisseurs et leurs informations</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <FournisseursManagement />
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+                  )}
 
-              {permissions.manageVehicles && (
-                <TabsContent value="vehicules" className="space-y-6 mt-6">
-                  <VehiculesContent />
-                </TabsContent>
-              )}
+                  {permissions.manageCategories && (
+                    <TabsContent value="categories" className="space-y-6 mt-6">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Gestion des catégories</CardTitle>
+                          <CardDescription>Gérez les catégories d'articles</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <CategoriesManagement />
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+                  )}
+
+                  {permissions.manageVehicles && (
+                    <TabsContent value="vehicules" className="space-y-6 mt-6">
+                      <VehiculesContent />
+                    </TabsContent>
+                  )}
+                </Tabs>
+              </TabsContent>
 
               <TabsContent value="emplacements" className="space-y-6 mt-6">
                 <EmplacementsContent />
