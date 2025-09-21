@@ -285,9 +285,8 @@ export default function Articles() {
   }
 
   return (
-    <TooltipProvider>
-      <DashboardLayout>
-        <div className="space-y-4 lg:space-y-6 w-full max-w-full overflow-x-hidden">
+    <DashboardLayout>
+      <div className="space-y-4 lg:space-y-6 w-full max-w-full overflow-x-hidden">
       
       <div className="flex items-center justify-between">
         <CompactSortControls
@@ -333,17 +332,19 @@ export default function Articles() {
           </Collapsible>
           
           {hasActiveFilters && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
-                  <X className="h-4 w-4 mr-1" />
-                  Effacer
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Effacer tous les filtres</p>
-              </TooltipContent>
-            </Tooltip>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" onClick={clearFilters}>
+                    <X className="h-4 w-4 mr-1" />
+                    Effacer
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Effacer tous les filtres</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
         </div>
       </div>
@@ -501,14 +502,16 @@ export default function Articles() {
                          <div className="flex items-center gap-1">
                            <span className="font-medium text-sm">{article.stock}</span>
                            {article.stock <= article.stock_min && (
-                             <Tooltip>
-                               <TooltipTrigger asChild>
-                                 <AlertTriangle className="h-3 w-3 md:h-4 md:w-4 text-warning cursor-help" />
-                               </TooltipTrigger>
-                               <TooltipContent>
-                                 <p>Stock faible (≤ {article.stock_min})</p>
-                               </TooltipContent>
-                             </Tooltip>
+                             <TooltipProvider>
+                               <Tooltip>
+                                 <TooltipTrigger asChild>
+                                   <AlertTriangle className="h-3 w-3 md:h-4 md:w-4 text-warning cursor-help" />
+                                 </TooltipTrigger>
+                                 <TooltipContent>
+                                   <p>Stock faible (≤ {article.stock_min})</p>
+                                 </TooltipContent>
+                               </Tooltip>
+                             </TooltipProvider>
                            )}
                          </div>
                       </TableCell>
@@ -523,21 +526,23 @@ export default function Articles() {
                          <div className="flex justify-end gap-1">
                            <Dialog>
                              <DialogTrigger asChild>
-                               <Tooltip>
-                                 <TooltipTrigger asChild>
-                                   <Button 
-                                     variant="ghost" 
-                                     size="sm" 
-                                     className="h-8 w-8 p-0"
-                                     onClick={() => setSelectedArticleForFournisseurs(article)}
-                                   >
-                                     <Layers className="h-3 w-3 md:h-4 md:w-4" />
-                                   </Button>
-                                 </TooltipTrigger>
-                                 <TooltipContent>
-                                   <p>Gérer les fournisseurs</p>
-                                 </TooltipContent>
-                               </Tooltip>
+                               <TooltipProvider>
+                                 <Tooltip>
+                                   <TooltipTrigger asChild>
+                                     <Button 
+                                       variant="ghost" 
+                                       size="sm" 
+                                       className="h-8 w-8 p-0"
+                                       onClick={() => setSelectedArticleForFournisseurs(article)}
+                                     >
+                                       <Layers className="h-3 w-3 md:h-4 md:w-4" />
+                                     </Button>
+                                   </TooltipTrigger>
+                                   <TooltipContent>
+                                     <p>Gérer les fournisseurs</p>
+                                   </TooltipContent>
+                                 </Tooltip>
+                               </TooltipProvider>
                              </DialogTrigger>
                             <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                               <DialogHeader>
@@ -551,34 +556,38 @@ export default function Articles() {
                               )}
                             </DialogContent>
                           </Dialog>
-                           <Tooltip>
-                             <TooltipTrigger asChild>
-                               <Button 
-                                 variant="ghost" 
-                                 size="sm" 
-                                 className="h-8 w-8 p-0" 
-                                 onClick={() => setSelectedArticleForEdit(article)}
-                                 aria-label="Modifier l'article"
-                               >
-                                 <Edit className="h-3 w-3 md:h-4 md:w-4" />
-                               </Button>
-                             </TooltipTrigger>
-                             <TooltipContent>
-                               <p>Modifier l'article</p>
-                             </TooltipContent>
-                           </Tooltip>
+                           <TooltipProvider>
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 <Button 
+                                   variant="ghost" 
+                                   size="sm" 
+                                   className="h-8 w-8 p-0" 
+                                   onClick={() => setSelectedArticleForEdit(article)}
+                                   aria-label="Modifier l'article"
+                                 >
+                                   <Edit className="h-3 w-3 md:h-4 md:w-4" />
+                                 </Button>
+                               </TooltipTrigger>
+                               <TooltipContent>
+                                 <p>Modifier l'article</p>
+                               </TooltipContent>
+                             </Tooltip>
+                           </TooltipProvider>
                            <AlertDialog>
                              <AlertDialogTrigger asChild>
-                               <Tooltip>
-                                 <TooltipTrigger asChild>
-                                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                     <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
-                                   </Button>
-                                 </TooltipTrigger>
-                                 <TooltipContent>
-                                   <p>Supprimer l'article</p>
-                                 </TooltipContent>
-                               </Tooltip>
+                               <TooltipProvider>
+                                 <Tooltip>
+                                   <TooltipTrigger asChild>
+                                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                       <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
+                                     </Button>
+                                   </TooltipTrigger>
+                                   <TooltipContent>
+                                     <p>Supprimer l'article</p>
+                                   </TooltipContent>
+                                 </Tooltip>
+                               </TooltipProvider>
                              </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
@@ -629,6 +638,5 @@ export default function Articles() {
         />
       )}
       </DashboardLayout>
-    </TooltipProvider>
   );
 }
