@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
-import { MapPin, Package } from "lucide-react";
+import { MapPin, Package, ArrowLeftRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { TransfertEmplacementDialog } from "@/components/transferts/TransfertEmplacementDialog";
 
 interface ArticleEmplacement {
   id: string;
@@ -106,13 +108,18 @@ export function ArticleEmplacementsList({ articleReference, articleDesignation }
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <MapPin className="h-4 w-4" />
-          Répartition par emplacement
-        </CardTitle>
-        <CardDescription>
-          {articleDesignation} - Total: {totalStock} unité(s)
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Répartition par emplacement
+            </CardTitle>
+            <CardDescription className="mt-1">
+              {articleDesignation} - Total: {totalStock} unité(s)
+            </CardDescription>
+          </div>
+          <TransfertEmplacementDialog onTransfertCompleted={fetchArticleEmplacements} />
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
         {emplacements.map((emplacement) => (
