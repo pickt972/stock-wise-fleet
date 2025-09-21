@@ -50,19 +50,25 @@ serve(async (req) => {
       });
     }
 
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    // Create client for verifying the calling user
+    const clientForUser = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
       global: { headers: { Authorization: authHeader } },
     });
 
     // Verify caller user
-    const { data: userData, error: userError } = await supabase.auth.getUser();
+    const { data: userData, error: userError } = await clientForUser.auth.getUser();
     if (userError || !userData?.user) {
       return new Response(JSON.stringify({ error: 'unauthorized' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
     }
+
+    // Create admin client with service role (no auth header)
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false },
+    });
 
     // Check admin role
     const { data: isAdmin, error: roleErr } = await supabase.rpc('has_role', {
