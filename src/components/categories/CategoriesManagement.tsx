@@ -38,6 +38,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ColorSelector } from "@/components/ui/color-selector";
+import { useColorPreferences } from "@/hooks/useColorPreferences";
 
 interface Categorie {
   id: string;
@@ -62,6 +64,7 @@ export function CategoriesManagement() {
   const [currentDirection, setCurrentDirection] = useState<'asc' | 'desc'>('asc');
 
   const { toast } = useToast();
+  const { getColorForText } = useColorPreferences();
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -287,6 +290,15 @@ export function CategoriesManagement() {
                       rows={3}
                     />
                   </div>
+                  
+                  {formData.nom && (
+                    <ColorSelector 
+                      type="category" 
+                      name={formData.nom}
+                      label="Couleur d'affichage"
+                    />
+                  )}
+                  
                   <div className="flex justify-end gap-2">
                     <Button type="button" variant="outline" onClick={() => setOpenCreateDialog(false)}>
                       Annuler
@@ -322,7 +334,14 @@ export function CategoriesManagement() {
                         <DragHandle id={categorie.id}>
                           <>
                             <TableCell></TableCell>
-                            <TableCell className="font-medium">{categorie.nom}</TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant="outline"
+                                className={`${getColorForText(categorie.nom, 'category')}`}
+                              >
+                                {categorie.nom}
+                              </Badge>
+                            </TableCell>
                             <TableCell>{categorie.description || "-"}</TableCell>
                             <TableCell>
                               <Badge variant={categorie.actif ? "default" : "secondary"}>
@@ -370,7 +389,14 @@ export function CategoriesManagement() {
                         </DragHandle>
                       ) : (
                         <>
-                          <TableCell className="font-medium">{categorie.nom}</TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant="outline"
+                              className={`${getColorForText(categorie.nom, 'category')}`}
+                            >
+                              {categorie.nom}
+                            </Badge>
+                          </TableCell>
                           <TableCell>{categorie.description || "-"}</TableCell>
                           <TableCell>
                             <Badge variant={categorie.actif ? "default" : "secondary"}>
@@ -446,9 +472,18 @@ export function CategoriesManagement() {
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={3}
-                  />
-                </div>
-                <div className="flex justify-end gap-2">
+                    />
+                  </div>
+                  
+                  {editingCategorie && (
+                    <ColorSelector 
+                      type="category" 
+                      name={editingCategorie.nom}
+                      label="Couleur d'affichage"
+                    />
+                  )}
+                  
+                  <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => setOpenEditDialog(false)}>
                     Annuler
                   </Button>

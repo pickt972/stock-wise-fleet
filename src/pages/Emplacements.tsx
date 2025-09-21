@@ -39,6 +39,8 @@ import DashboardLayout from "./DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { ColorSelector } from "@/components/ui/color-selector";
+import { useColorPreferences } from "@/hooks/useColorPreferences";
 
 interface Emplacement {
   id: string;
@@ -66,6 +68,7 @@ export default function Emplacements() {
 
   const { toast } = useToast();
   const { user } = useAuth();
+  const { getColorForText } = useColorPreferences();
 
   const fetchEmplacements = async () => {
     try {
@@ -261,6 +264,14 @@ export default function Emplacements() {
                   />
                   <Label htmlFor="actif">Emplacement actif</Label>
                 </div>
+                
+                {formData.nom && (
+                  <ColorSelector 
+                    type="location" 
+                    name={formData.nom}
+                    label="Couleur d'affichage"
+                  />
+                )}
               </div>
               
               <DialogFooter>
@@ -306,10 +317,15 @@ export default function Emplacements() {
                 <TableBody>
                   {filteredEmplacements.length > 0 ? (
                     filteredEmplacements.map((emplacement) => (
-                      <TableRow key={emplacement.id}>
-                        <TableCell className="font-medium text-xs md:text-sm">
-                          {emplacement.nom}
-                        </TableCell>
+                       <TableRow key={emplacement.id}>
+                         <TableCell className="font-medium text-xs md:text-sm">
+                           <Badge 
+                             variant="outline"
+                             className={`${getColorForText(emplacement.nom, 'location')}`}
+                           >
+                             📍 {emplacement.nom}
+                           </Badge>
+                         </TableCell>
                         <TableCell className="hidden md:table-cell text-xs md:text-sm max-w-48 truncate">
                           {emplacement.description || "-"}
                         </TableCell>
@@ -418,8 +434,16 @@ export default function Emplacements() {
                   onCheckedChange={(checked) => setFormData(prev => ({ ...prev, actif: checked }))}
                 />
                 <Label htmlFor="edit-actif">Emplacement actif</Label>
+                </div>
+                
+                {selectedEmplacement && (
+                  <ColorSelector 
+                    type="location" 
+                    name={selectedEmplacement.nom}
+                    label="Couleur d'affichage"
+                  />
+                )}
               </div>
-            </div>
             
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
