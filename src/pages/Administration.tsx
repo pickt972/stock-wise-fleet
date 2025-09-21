@@ -2,12 +2,20 @@ import { useEffect } from "react";
 import DashboardLayout from "./DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, BarChart3 } from "lucide-react";
+import { Settings, BarChart3, Users, Truck, MapPin, Building2, Tags } from "lucide-react";
 import { MailSettingsForm } from "@/components/mail/MailSettingsForm";
 import { CompanySettingsForm } from "@/components/company/CompanySettingsForm";
 import RapportsContent from "@/components/reports/RapportsContent";
+import { UsersContent } from "@/components/admin/UsersContent";
+import { VehiculesContent } from "@/components/admin/VehiculesContent";
+import { EmplacementsContent } from "@/components/admin/EmplacementsContent";
+import { FournisseursManagement } from "@/components/fournisseurs/FournisseursManagement";
+import { CategoriesManagement } from "@/components/categories/CategoriesManagement";
+import { useRoleAccess } from "@/hooks/useRoleAccess";
 
 export default function Administration() {
+  const { permissions } = useRoleAccess();
+
   useEffect(() => {
     document.title = "Administration | StockAuto";
     const metaDesc = document.querySelector('meta[name="description"]');
@@ -48,27 +56,110 @@ export default function Administration() {
           </TabsContent>
 
           <TabsContent value="parametres" className="space-y-6 mt-6">
-            <section className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Informations de l'entreprise</CardTitle>
-                  <CardDescription>Paramètres de votre entreprise pour les bons de commande</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <CompanySettingsForm />
-                </CardContent>
-              </Card>
+            <Tabs defaultValue="configuration" className="w-full">
+              <TabsList className="grid w-full grid-cols-6">
+                <TabsTrigger value="configuration" className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  Configuration
+                </TabsTrigger>
+                {permissions.manageUsers && (
+                  <TabsTrigger value="utilisateurs" className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Utilisateurs
+                  </TabsTrigger>
+                )}
+                {permissions.manageSuppliers && (
+                  <TabsTrigger value="fournisseurs" className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Fournisseurs
+                  </TabsTrigger>
+                )}
+                {permissions.manageCategories && (
+                  <TabsTrigger value="categories" className="flex items-center gap-2">
+                    <Tags className="h-4 w-4" />
+                    Catégories
+                  </TabsTrigger>
+                )}
+                {permissions.manageVehicles && (
+                  <TabsTrigger value="vehicules" className="flex items-center gap-2">
+                    <Truck className="h-4 w-4" />
+                    Véhicules
+                  </TabsTrigger>
+                )}
+                <TabsTrigger value="emplacements" className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Emplacements
+                </TabsTrigger>
+              </TabsList>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Configuration de la messagerie</CardTitle>
-                  <CardDescription>Paramètres SMTP/IMAP pour l'envoi d'emails aux fournisseurs</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <MailSettingsForm />
-                </CardContent>
-              </Card>
-            </section>
+              <TabsContent value="configuration" className="space-y-6 mt-6">
+                <section className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Informations de l'entreprise</CardTitle>
+                      <CardDescription>Paramètres de votre entreprise pour les bons de commande</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <CompanySettingsForm />
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Configuration de la messagerie</CardTitle>
+                      <CardDescription>Paramètres SMTP/IMAP pour l'envoi d'emails aux fournisseurs</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <MailSettingsForm />
+                    </CardContent>
+                  </Card>
+                </section>
+              </TabsContent>
+
+              {permissions.manageUsers && (
+                <TabsContent value="utilisateurs" className="space-y-6 mt-6">
+                  <UsersContent />
+                </TabsContent>
+              )}
+
+              {permissions.manageSuppliers && (
+                <TabsContent value="fournisseurs" className="space-y-6 mt-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Gestion des fournisseurs</CardTitle>
+                      <CardDescription>Gérez les fournisseurs et leurs informations</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <FournisseursManagement />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              )}
+
+              {permissions.manageCategories && (
+                <TabsContent value="categories" className="space-y-6 mt-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Gestion des catégories</CardTitle>
+                      <CardDescription>Gérez les catégories d'articles</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <CategoriesManagement />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              )}
+
+              {permissions.manageVehicles && (
+                <TabsContent value="vehicules" className="space-y-6 mt-6">
+                  <VehiculesContent />
+                </TabsContent>
+              )}
+
+              <TabsContent value="emplacements" className="space-y-6 mt-6">
+                <EmplacementsContent />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         </Tabs>
       </main>
