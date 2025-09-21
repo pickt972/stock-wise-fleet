@@ -35,7 +35,7 @@ interface CompatibleArticle extends Article {
 export default function Revisions() {
   const { user } = useAuth();
   const [selectedGroup, setSelectedGroup] = useState<VehiculeGroup | null>(null);
-  const [quantiteRevision, setQuantiteRevision] = useState(1);
+  const [quantiteRevision, setQuantiteRevision] = useState<number | "">(1);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const { data: vehicules = [] } = useQuery({
@@ -122,7 +122,7 @@ export default function Revisions() {
 
     const piecesACommander = articlesCompatibles
       .map(article => {
-        const analyse = analyseStock(article, quantiteRevision);
+        const analyse = analyseStock(article, typeof quantiteRevision === "number" ? quantiteRevision : 1);
         return { article, analyse };
       })
       .filter(({ analyse }) => analyse.manquant > 0);
@@ -214,7 +214,22 @@ export default function Revisions() {
                       min="1"
                       max={selectedGroup.count}
                       value={quantiteRevision}
-                      onChange={(e) => setQuantiteRevision(parseInt(e.target.value) || 1)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "") {
+                          setQuantiteRevision("");
+                        } else {
+                          const num = parseInt(value);
+                          if (!isNaN(num) && num >= 1) {
+                            setQuantiteRevision(num);
+                          }
+                        }
+                      }}
+                      onBlur={(e) => {
+                        if (e.target.value === "" || parseInt(e.target.value) < 1) {
+                          setQuantiteRevision(1);
+                        }
+                      }}
                       className="w-full"
                     />
                   </div>
@@ -229,7 +244,7 @@ export default function Revisions() {
                       
                       <div className="max-h-64 overflow-y-auto space-y-2">
                         {articlesCompatibles.map((article) => {
-                          const analyse = analyseStock(article, quantiteRevision);
+                          const analyse = analyseStock(article, typeof quantiteRevision === "number" ? quantiteRevision : 1);
                           return (
                             <div key={article.id} className="flex items-center justify-between p-2 border rounded">
                               <div className="flex-1">
@@ -291,7 +306,7 @@ export default function Revisions() {
                 <div className="text-center p-4 bg-green-50 rounded-lg">
                   <Package className="h-8 w-8 mx-auto mb-2 text-green-600" />
                   <div className="text-2xl font-bold text-green-600">
-                    {articlesCompatibles.filter(a => analyseStock(a, quantiteRevision).suffisant).length}
+                    {articlesCompatibles.filter(a => analyseStock(a, typeof quantiteRevision === "number" ? quantiteRevision : 1).suffisant).length}
                   </div>
                   <div className="text-sm text-green-700">Pièces disponibles</div>
                 </div>
@@ -299,7 +314,7 @@ export default function Revisions() {
                 <div className="text-center p-4 bg-orange-50 rounded-lg">
                   <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-orange-600" />
                   <div className="text-2xl font-bold text-orange-600">
-                    {articlesCompatibles.filter(a => !analyseStock(a, quantiteRevision).suffisant).length}
+                    {articlesCompatibles.filter(a => !analyseStock(a, typeof quantiteRevision === "number" ? quantiteRevision : 1).suffisant).length}
                   </div>
                   <div className="text-sm text-orange-700">Pièces à commander</div>
                 </div>
@@ -307,7 +322,7 @@ export default function Revisions() {
                 <div className="text-center p-4 bg-blue-50 rounded-lg">
                   <Wrench className="h-8 w-8 mx-auto mb-2 text-blue-600" />
                   <div className="text-2xl font-bold text-blue-600">
-                    {quantiteRevision}
+                    {typeof quantiteRevision === "number" ? quantiteRevision : 1}
                   </div>
                   <div className="text-sm text-blue-700">Véhicules à réviser</div>
                 </div>
