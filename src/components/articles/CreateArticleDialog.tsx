@@ -288,7 +288,7 @@ export function CreateArticleDialog({ onArticleCreated, triggerButton }: CreateA
                   <SelectValue placeholder="Sélectionner un emplacement" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border border-border shadow-medium z-[60]">
-                  <SelectItem value="">Aucun emplacement</SelectItem>
+                  <SelectItem value="none">Aucun emplacement</SelectItem>
                   {emplacements.map((emplacement) => (
                     <SelectItem key={emplacement.id} value={emplacement.nom}>
                       {emplacement.nom}
