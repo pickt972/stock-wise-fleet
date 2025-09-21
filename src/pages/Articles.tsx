@@ -218,6 +218,32 @@ export default function Articles() {
     return article.prix_achat;
   };
 
+  // Fonction pour générer des couleurs consistantes basées sur le texte
+  const getColorForText = (text: string): string => {
+    if (!text) return "default";
+    
+    const colors = [
+      "bg-blue-100 text-blue-800 border-blue-300",
+      "bg-green-100 text-green-800 border-green-300", 
+      "bg-purple-100 text-purple-800 border-purple-300",
+      "bg-orange-100 text-orange-800 border-orange-300",
+      "bg-pink-100 text-pink-800 border-pink-300",
+      "bg-teal-100 text-teal-800 border-teal-300",
+      "bg-indigo-100 text-indigo-800 border-indigo-300",
+      "bg-yellow-100 text-yellow-800 border-yellow-300",
+      "bg-red-100 text-red-800 border-red-300",
+      "bg-cyan-100 text-cyan-800 border-cyan-300"
+    ];
+    
+    // Hash simple pour obtenir un index consistant
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+      hash = text.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    return colors[Math.abs(hash) % colors.length];
+  };
+
   const sortOptions = [
     { value: 'designation', label: 'Désignation' },
     { value: 'reference', label: 'Référence' },
@@ -507,9 +533,14 @@ export default function Articles() {
                         </div>
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-sm">{article.marque}</TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        <Badge variant="outline" className="text-xs">{article.categorie}</Badge>
-                      </TableCell>
+                       <TableCell className="hidden lg:table-cell">
+                         <Badge 
+                           variant="outline" 
+                           className={`text-xs ${getColorForText(article.categorie)}`}
+                         >
+                           {article.categorie}
+                         </Badge>
+                       </TableCell>
                       <TableCell className="hidden xl:table-cell text-sm">
                         <div className="flex items-center gap-1">
                           {principalFournisseur ? (
@@ -549,12 +580,17 @@ export default function Articles() {
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell text-sm whitespace-nowrap">€{Number(principalPrice ?? 0).toFixed(2)}</TableCell>
-                       <TableCell className="hidden md:table-cell text-sm">
-                         <div className="flex items-center gap-1">
-                           <span className="text-muted-foreground">📍</span>
-                           {article.emplacements?.nom || article.emplacement || "Non défini"}
-                         </div>
-                       </TableCell>
+                        <TableCell className="hidden md:table-cell text-sm">
+                          <div className="flex items-center gap-1">
+                            <span className="text-muted-foreground">📍</span>
+                            <Badge 
+                              variant="outline"
+                              className={`text-xs ${getColorForText(article.emplacements?.nom || article.emplacement || "Non défini")}`}
+                            >
+                              {article.emplacements?.nom || article.emplacement || "Non défini"}
+                            </Badge>
+                          </div>
+                        </TableCell>
                       <TableCell className="text-right">
                          <div className="flex justify-end gap-1">
                            <Dialog>
