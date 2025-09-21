@@ -46,6 +46,7 @@ import { ArticleScanner } from "@/components/scanner/ArticleScanner";
 import { ArticleFournisseursManagement } from "@/components/articles/ArticleFournisseursManagement";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useColorPreferences } from "@/hooks/useColorPreferences";
 
 interface Article {
   id: string;
@@ -104,6 +105,7 @@ export default function Articles() {
   const [currentDirection, setCurrentDirection] = useState<'asc' | 'desc'>('asc');
   
   const { toast } = useToast();
+  const { getColorForText } = useColorPreferences();
 
   const fetchArticles = async () => {
     try {
@@ -216,32 +218,6 @@ export default function Articles() {
       return principal?.prix_fournisseur ?? active[0]?.prix_fournisseur ?? article.prix_achat;
     }
     return article.prix_achat;
-  };
-
-  // Fonction pour générer des couleurs consistantes basées sur le texte
-  const getColorForText = (text: string): string => {
-    if (!text) return "default";
-    
-    const colors = [
-      "bg-blue-100 text-blue-800 border-blue-300",
-      "bg-green-100 text-green-800 border-green-300", 
-      "bg-purple-100 text-purple-800 border-purple-300",
-      "bg-orange-100 text-orange-800 border-orange-300",
-      "bg-pink-100 text-pink-800 border-pink-300",
-      "bg-teal-100 text-teal-800 border-teal-300",
-      "bg-indigo-100 text-indigo-800 border-indigo-300",
-      "bg-yellow-100 text-yellow-800 border-yellow-300",
-      "bg-red-100 text-red-800 border-red-300",
-      "bg-cyan-100 text-cyan-800 border-cyan-300"
-    ];
-    
-    // Hash simple pour obtenir un index consistant
-    let hash = 0;
-    for (let i = 0; i < text.length; i++) {
-      hash = text.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    
-    return colors[Math.abs(hash) % colors.length];
   };
 
   const sortOptions = [
@@ -536,7 +512,7 @@ export default function Articles() {
                        <TableCell className="hidden lg:table-cell">
                          <Badge 
                            variant="outline" 
-                           className={`text-xs ${getColorForText(article.categorie)}`}
+                           className={`text-xs ${getColorForText(article.categorie, 'category')}`}
                          >
                            {article.categorie}
                          </Badge>
@@ -585,7 +561,7 @@ export default function Articles() {
                             <span className="text-muted-foreground">📍</span>
                             <Badge 
                               variant="outline"
-                              className={`text-xs ${getColorForText(article.emplacements?.nom || article.emplacement || "Non défini")}`}
+                              className={`text-xs ${getColorForText(article.emplacements?.nom || article.emplacement || "Non défini", 'location')}`}
                             >
                               {article.emplacements?.nom || article.emplacement || "Non défini"}
                             </Badge>

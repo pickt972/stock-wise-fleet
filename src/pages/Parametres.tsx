@@ -3,6 +3,7 @@ import DashboardLayout from "./DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MailSettingsForm } from "@/components/mail/MailSettingsForm";
 import { CompanySettingsForm } from "@/components/company/CompanySettingsForm";
+import { ColorPreferencesSettings } from "@/components/settings/ColorPreferencesSettings";
 
 export default function Parametres() {
   useEffect(() => {
@@ -27,6 +28,8 @@ export default function Parametres() {
         </header>
 
         <section className="space-y-6">
+          <ColorPreferencesSettings />
+
           <Card>
             <CardHeader>
               <CardTitle>Informations de l'entreprise</CardTitle>

@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TransfertEmplacementDialog } from "@/components/transferts/TransfertEmplacementDialog";
+import { useColorPreferences } from "@/hooks/useColorPreferences";
 
 interface ArticleEmplacement {
   id: string;
@@ -21,6 +22,7 @@ interface ArticleEmplacementsListProps {
 export function ArticleEmplacementsList({ articleReference, articleDesignation }: ArticleEmplacementsListProps) {
   const [emplacements, setEmplacements] = useState<ArticleEmplacement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { getColorForText } = useColorPreferences();
 
   useEffect(() => {
     fetchArticleEmplacements();
@@ -73,31 +75,6 @@ export function ArticleEmplacementsList({ articleReference, articleDesignation }
 
   const totalStock = emplacements.reduce((total, emp) => total + emp.stock, 0);
 
-  // Fonction pour générer des couleurs consistantes basées sur le texte
-  const getColorForText = (text: string): string => {
-    if (!text) return "default";
-    
-    const colors = [
-      "bg-blue-100 text-blue-800 border-blue-300",
-      "bg-green-100 text-green-800 border-green-300", 
-      "bg-purple-100 text-purple-800 border-purple-300",
-      "bg-orange-100 text-orange-800 border-orange-300",
-      "bg-pink-100 text-pink-800 border-pink-300",
-      "bg-teal-100 text-teal-800 border-teal-300",
-      "bg-indigo-100 text-indigo-800 border-indigo-300",
-      "bg-yellow-100 text-yellow-800 border-yellow-300",
-      "bg-red-100 text-red-800 border-red-300",
-      "bg-cyan-100 text-cyan-800 border-cyan-300"
-    ];
-    
-    // Hash simple pour obtenir un index consistant
-    let hash = 0;
-    for (let i = 0; i < text.length; i++) {
-      hash = text.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    
-    return colors[Math.abs(hash) % colors.length];
-  };
 
   if (isLoading) {
     return (
@@ -160,7 +137,7 @@ export function ArticleEmplacementsList({ articleReference, articleDesignation }
                <div>
                  <Badge 
                    variant="outline"
-                   className={`text-xs ${getColorForText(emplacement.emplacement)}`}
+                   className={`text-xs ${getColorForText(emplacement.emplacement, 'location')}`}
                  >
                    {emplacement.emplacement}
                  </Badge>

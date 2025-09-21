@@ -221,6 +221,36 @@ export type Database = {
         }
         Relationships: []
       }
+      color_preferences: {
+        Row: {
+          color_class: string
+          created_at: string
+          id: string
+          name: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color_class: string
+          created_at?: string
+          id?: string
+          name: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color_class?: string
+          created_at?: string
+          id?: string
+          name?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       commande_items: {
         Row: {
           article_id: string | null
