@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Wrench, AlertTriangle, CheckCircle, ShoppingCart, Package } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Wrench, AlertTriangle, CheckCircle, ShoppingCart, Package, Minus } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "./DashboardLayout";
@@ -34,9 +35,13 @@ interface CompatibleArticle extends Article {
 
 export default function Revisions() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [selectedGroup, setSelectedGroup] = useState<VehiculeGroup | null>(null);
   const [quantiteRevision, setQuantiteRevision] = useState<number | "">(1);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [selectedArticles, setSelectedArticles] = useState<Set<string>>(new Set());
+  const [showSortieDialog, setShowSortieDialog] = useState(false);
+  const [articleQuantities, setArticleQuantities] = useState<Record<string, number>>({});
 
   const { data: vehicules = [] } = useQuery({
     queryKey: ["vehicules-actifs"],
@@ -115,6 +120,8 @@ export default function Revisions() {
   const handleRevisionAnalysis = (group: VehiculeGroup) => {
     setSelectedGroup(group);
     setIsAnalyzing(true);
+    setSelectedArticles(new Set());
+    setArticleQuantities({});
   };
 
   const generateCommande = async () => {
@@ -135,6 +142,87 @@ export default function Revisions() {
     // Ici on pourrait créer automatiquement une commande
     toast.success(`Analyse terminée: ${piecesACommander.length} pièces à commander`);
   };
+
+  const handleArticleSelection = (articleId: string, checked: boolean) => {
+    const newSelected = new Set(selectedArticles);
+    if (checked) {
+      newSelected.add(articleId);
+      // Initialiser la quantité à 1 par défaut
+      setArticleQuantities(prev => ({
+        ...prev,
+        [articleId]: prev[articleId] || 1
+      }));
+    } else {
+      newSelected.delete(articleId);
+      setArticleQuantities(prev => {
+        const newQuantities = { ...prev };
+        delete newQuantities[articleId];
+        return newQuantities;
+      });
+    }
+    setSelectedArticles(newSelected);
+  };
+
+  const handleQuantityChange = (articleId: string, quantity: number) => {
+    setArticleQuantities(prev => ({
+      ...prev,
+      [articleId]: quantity
+    }));
+  };
+
+  const handleSortieStock = () => {
+    if (selectedArticles.size === 0) {
+      toast.error("Veuillez sélectionner au moins un article");
+      return;
+    }
+    setShowSortieDialog(true);
+  };
+
+  const sortieStockMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Utilisateur non connecté");
+
+      const mouvements = Array.from(selectedArticles).map(articleId => {
+        const article = articlesCompatibles.find(a => a.id === articleId);
+        const quantity = articleQuantities[articleId] || 1;
+        
+        return {
+          article_id: articleId,
+          type: 'sortie',
+          motif: 'révision',
+          quantity: -quantity, // Négatif pour une sortie
+          user_id: user.id,
+          vehicule_id: selectedGroup?.vehicules[0]?.id || null
+        };
+      });
+
+      // Créer les mouvements de stock
+      const { error } = await supabase
+        .from('stock_movements')
+        .insert(mouvements);
+
+      if (error) throw error;
+
+      // Mettre à jour le stock des articles
+      for (const articleId of selectedArticles) {
+        const quantity = articleQuantities[articleId] || 1;
+        await supabase.rpc('update_article_stock', {
+          article_id: articleId,
+          quantity_change: -quantity
+        });
+      }
+    },
+    onSuccess: () => {
+      toast.success("Sortie de stock effectuée avec succès");
+      queryClient.invalidateQueries({ queryKey: ["articles-compatibles"] });
+      setShowSortieDialog(false);
+      setSelectedArticles(new Set());
+      setArticleQuantities({});
+    },
+    onError: (error) => {
+      toast.error(`Erreur lors de la sortie de stock: ${error.message}`);
+    }
+  });
 
   return (
     <DashboardLayout>
@@ -245,14 +333,36 @@ export default function Revisions() {
                       <div className="max-h-64 overflow-y-auto space-y-2">
                         {articlesCompatibles.map((article) => {
                           const analyse = analyseStock(article, typeof quantiteRevision === "number" ? quantiteRevision : 1);
+                          const isSelected = selectedArticles.has(article.id);
                           return (
                             <div key={article.id} className="flex items-center justify-between p-2 border rounded">
-                              <div className="flex-1">
-                                <div className="font-medium text-sm">{article.designation}</div>
-                                <div className="text-xs text-muted-foreground">
-                                  {article.reference} - {article.marque}
+                              <div className="flex items-center gap-2 flex-1">
+                                <Checkbox
+                                  checked={isSelected}
+                                  onCheckedChange={(checked) => 
+                                    handleArticleSelection(article.id, checked as boolean)
+                                  }
+                                />
+                                <div className="flex-1">
+                                  <div className="font-medium text-sm">{article.designation}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {article.reference} - {article.marque}
+                                  </div>
                                 </div>
                               </div>
+                              {isSelected && (
+                                <div className="flex items-center gap-2 mr-2">
+                                  <Label className="text-xs">Qté:</Label>
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    max={article.stock}
+                                    value={articleQuantities[article.id] || 1}
+                                    onChange={(e) => handleQuantityChange(article.id, parseInt(e.target.value) || 1)}
+                                    className="w-16 h-6 text-xs"
+                                  />
+                                </div>
+                              )}
                               <div className="text-right">
                                 <div className="flex items-center gap-2">
                                   {analyse.suffisant ? (
@@ -277,6 +387,15 @@ export default function Revisions() {
 
                       {articlesCompatibles.length > 0 && (
                         <div className="pt-4 space-y-2">
+                          <Button 
+                            onClick={handleSortieStock}
+                            className="w-full"
+                            variant="outline"
+                            disabled={selectedArticles.size === 0}
+                          >
+                            <Minus className="h-4 w-4 mr-2" />
+                            Sortir du Stock ({selectedArticles.size} sélectionné{selectedArticles.size > 1 ? 's' : ''})
+                          </Button>
                           <Button 
                             onClick={generateCommande}
                             className="w-full"
@@ -330,6 +449,73 @@ export default function Revisions() {
             </CardContent>
           </Card>
         )}
+
+        {/* Dialog de confirmation pour la sortie de stock */}
+        <Dialog open={showSortieDialog} onOpenChange={setShowSortieDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Confirmer la Sortie de Stock - Révision</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <h3 className="font-medium text-blue-900">
+                  {selectedGroup?.marque} {selectedGroup?.modele}
+                  {selectedGroup?.motorisation && ` (${selectedGroup.motorisation})`}
+                </h3>
+                <p className="text-sm text-blue-700">
+                  Motif: Révision - {selectedArticles.size} article{selectedArticles.size > 1 ? 's' : ''} sélectionné{selectedArticles.size > 1 ? 's' : ''}
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <h4 className="font-medium">Articles à sortir du stock:</h4>
+                <div className="max-h-64 overflow-y-auto space-y-2">
+                  {Array.from(selectedArticles).map(articleId => {
+                    const article = articlesCompatibles.find(a => a.id === articleId);
+                    const quantity = articleQuantities[articleId] || 1;
+                    if (!article) return null;
+                    
+                    return (
+                      <div key={articleId} className="flex items-center justify-between p-2 border rounded">
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">{article.designation}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {article.reference} - {article.marque}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm">
+                            Quantité: {quantity}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Stock actuel: {article.stock}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowSortieDialog(false)}
+                  className="flex-1"
+                >
+                  Annuler
+                </Button>
+                <Button 
+                  onClick={() => sortieStockMutation.mutate()}
+                  disabled={sortieStockMutation.isPending}
+                  className="flex-1"
+                >
+                  {sortieStockMutation.isPending ? "Traitement..." : "Confirmer la Sortie"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
