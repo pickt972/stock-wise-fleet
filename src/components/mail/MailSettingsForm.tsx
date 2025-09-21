@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -339,9 +340,8 @@ export function MailSettingsForm() {
 
               <div>
                 <Label htmlFor="smtp_password">Mot de passe SMTP</Label>
-                <Input
+                <PasswordInput
                   id="smtp_password"
-                  type="password"
                   {...form.register("smtp_password")}
                   placeholder="Votre mot de passe ou mot de passe d'application"
                 />
@@ -385,9 +385,8 @@ export function MailSettingsForm() {
 
               <div>
                 <Label htmlFor="imap_password">Mot de passe IMAP</Label>
-                <Input
+                <PasswordInput
                   id="imap_password"
-                  type="password"
                   {...form.register("imap_password")}
                   placeholder="Votre mot de passe ou mot de passe d'application"
                 />
