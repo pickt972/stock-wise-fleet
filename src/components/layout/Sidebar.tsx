@@ -34,11 +34,6 @@ const getNavigation = (permissions: any) => [
 
 const getAdminNavigation = (permissions: any) => [
   { name: "Administration", href: "/administration", icon: Settings, show: permissions.viewReports || permissions.manageSettings },
-  { name: "Utilisateurs", href: "/users", icon: Users, show: permissions.manageUsers },
-  { name: "Fournisseurs", href: "/fournisseurs", icon: Building2, show: permissions.manageSuppliers },
-  { name: "Catégories", href: "/categories", icon: Tag, show: permissions.manageCategories },
-  { name: "Véhicules", href: "/vehicules", icon: Car, show: permissions.manageVehicles },
-  { name: "Emplacements", href: "/emplacements", icon: MapPin, show: permissions.manageStock },
 ];
 
 interface SidebarProps {
