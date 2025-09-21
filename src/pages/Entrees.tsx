@@ -286,7 +286,7 @@ export default function Entrees() {
                         <SelectValue placeholder="Sélectionner un article" />
                       </SelectTrigger>
                       <SelectContent>
-                        {articles.map((article) => (
+                        {articles.filter(article => article.id && article.id.trim() !== '').map((article) => (
                           <SelectItem key={article.id} value={article.id}>
                             {article.reference} - {article.designation}
                           </SelectItem>
@@ -320,7 +320,7 @@ export default function Entrees() {
                       <SelectValue placeholder="Sélectionner un fournisseur (optionnel)" />
                     </SelectTrigger>
                     <SelectContent>
-                      {fournisseurs.map((fournisseur) => (
+                      {fournisseurs.filter(fournisseur => fournisseur.id && fournisseur.id.trim() !== '').map((fournisseur) => (
                         <SelectItem key={fournisseur.id} value={fournisseur.id}>
                           {fournisseur.nom}
                         </SelectItem>
@@ -351,7 +351,7 @@ export default function Entrees() {
                         <SelectValue placeholder="Sélectionner un motif" />
                       </SelectTrigger>
                       <SelectContent>
-                        {motifs.map((motif) => (
+                        {motifs.filter(motif => motif && motif.trim() !== '').map((motif) => (
                           <SelectItem key={motif} value={motif}>
                             {motif}
                           </SelectItem>
