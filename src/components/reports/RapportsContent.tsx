@@ -105,9 +105,9 @@ export default function RapportsContent() {
             <div className="text-2xl font-bold">{totalStockValue.toFixed(2)} €</div>
             <div className="text-sm text-muted-foreground">Valeur totale du stock</div>
           </div>
-          <div className="text-center p-4 bg-orange-50 border border-orange-200 rounded-lg">
-            <div className="text-2xl font-bold text-orange-600">{lowStockItems}</div>
-            <div className="text-sm text-orange-600">Articles en stock faible</div>
+          <div className="text-center p-4 bg-warning-light border border-warning rounded-lg">
+            <div className="text-2xl font-bold text-warning">{lowStockItems}</div>
+            <div className="text-sm text-warning">Articles en stock faible</div>
           </div>
         </div>
 
@@ -163,17 +163,17 @@ export default function RapportsContent() {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div className="text-center p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="text-2xl font-bold text-green-600">
+          <div className="text-center p-4 bg-success-light border border-success rounded-lg">
+            <div className="text-2xl font-bold text-success">
               {movementsData.filter(m => m.type === 'entree').length}
             </div>
-            <div className="text-sm text-green-600">Entrées</div>
+            <div className="text-sm text-success">Entrées</div>
           </div>
-          <div className="text-center p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="text-2xl font-bold text-red-600">
+          <div className="text-center p-4 bg-destructive-light border border-destructive rounded-lg">
+            <div className="text-2xl font-bold text-destructive">
               {movementsData.filter(m => m.type === 'sortie').length}
             </div>
-            <div className="text-sm text-red-600">Sorties</div>
+            <div className="text-sm text-destructive">Sorties</div>
           </div>
         </div>
 
@@ -244,17 +244,17 @@ export default function RapportsContent() {
             <div className="text-2xl font-bold">{commandesData.length}</div>
             <div className="text-sm text-muted-foreground">Commandes totales</div>
           </div>
-          <div className="text-center p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">
+          <div className="text-center p-4 bg-primary-light border border-primary rounded-lg">
+            <div className="text-2xl font-bold text-primary">
               {commandesData.reduce((sum, cmd) => sum + cmd.total_ht, 0).toFixed(2)} €
             </div>
-            <div className="text-sm text-blue-600">Montant total HT</div>
+            <div className="text-sm text-primary">Montant total HT</div>
           </div>
-          <div className="text-center p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="text-2xl font-bold text-green-600">
+          <div className="text-center p-4 bg-success-light border border-success rounded-lg">
+            <div className="text-2xl font-bold text-success">
               {commandesData.filter(cmd => cmd.status === 'recu_complet').length}
             </div>
-            <div className="text-sm text-green-600">Commandes reçues</div>
+            <div className="text-sm text-success">Commandes reçues</div>
           </div>
         </div>
 
