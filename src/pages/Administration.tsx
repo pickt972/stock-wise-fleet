@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "./DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,6 +18,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 export default function Administration() {
   const { permissions } = useRoleAccess();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   useEffect(() => {
     document.title = "Administration | StockAuto";
@@ -47,7 +49,10 @@ export default function Administration() {
             // Version mobile avec cartes de navigation
             <div className="space-y-4">
               {permissions.manageUsers && (
-                <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <Card 
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => navigate('/users')}
+                >
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-3 text-lg">
                       <Users className="h-5 w-5" />
@@ -59,7 +64,10 @@ export default function Administration() {
               )}
 
               {permissions.manageSuppliers && (
-                <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <Card 
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => navigate('/fournisseurs')}
+                >
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-3 text-lg">
                       <Building2 className="h-5 w-5" />
@@ -71,7 +79,10 @@ export default function Administration() {
               )}
 
               {permissions.manageCategories && (
-                <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <Card 
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => navigate('/categories')}
+                >
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-3 text-lg">
                       <Tags className="h-5 w-5" />
@@ -83,7 +94,10 @@ export default function Administration() {
               )}
 
               {permissions.manageVehicles && (
-                <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <Card 
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => navigate('/vehicules')}
+                >
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-3 text-lg">
                       <Truck className="h-5 w-5" />
@@ -94,7 +108,10 @@ export default function Administration() {
                 </Card>
               )}
 
-              <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
+              <Card 
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => navigate('/emplacements')}
+              >
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-3 text-lg">
                     <MapPin className="h-5 w-5" />
