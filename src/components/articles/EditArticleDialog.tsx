@@ -263,7 +263,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un fournisseur" />
                 </SelectTrigger>
-                <SelectContent className="bg-background z-50">
+                <SelectContent className="bg-popover border shadow-lg z-[60]">
                   <SelectItem value="none">Aucun fournisseur</SelectItem>
                   {fournisseurs.map((fournisseur) => (
                     <SelectItem key={fournisseur.id} value={fournisseur.id}>
@@ -285,7 +285,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un emplacement" />
                 </SelectTrigger>
-                <SelectContent className="bg-background z-50">
+                <SelectContent className="bg-popover border shadow-lg z-[60]">
                   <SelectItem value="">Aucun emplacement</SelectItem>
                   {emplacements.map((emplacement) => (
                     <SelectItem key={emplacement.id} value={emplacement.nom}>
