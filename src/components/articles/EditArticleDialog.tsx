@@ -163,7 +163,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
           designation: formData.designation,
           marque: formData.marque,
           categorie: formData.categorie,
-          stock: formData.stock,
+          // Ne pas mettre à jour le stock ici: il est géré par les mouvements/entrées/sorties et transferts
           stock_min: formData.stock_min,
           stock_max: formData.stock_max,
           prix_achat: formData.prix_achat,
@@ -297,15 +297,18 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="stock">Stock actuel</Label>
+              <Label htmlFor="stock">Stock actuel (information)</Label>
               <Input
                 id="stock"
                 type="number"
                 min="0"
                 value={formData.stock}
-                onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
-                required
+                disabled
+                className="bg-muted"
               />
+              <p className="text-xs text-muted-foreground">
+                Le stock ne peut être modifié que par les entrées, sorties et transferts
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="stock_min">Stock minimum</Label>
