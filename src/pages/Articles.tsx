@@ -58,12 +58,18 @@ interface Article {
   stock_max: number;
   prix_achat: number;
   emplacement: string;
+  emplacement_id?: string;
   created_at: string;
   updated_at: string;
   fournisseur_id?: string;
   fournisseurs?: {
     id: string;
     nom: string;
+  };
+  emplacements?: {
+    id: string;
+    nom: string;
+    description?: string;
   };
   article_fournisseurs?: Array<{
     id: string;
@@ -108,6 +114,11 @@ export default function Articles() {
           fournisseurs (
             id,
             nom
+          ),
+          emplacements (
+            id,
+            nom,
+            description
           ),
           article_fournisseurs (
             id,
@@ -238,7 +249,9 @@ export default function Articles() {
     // Filtres avancés
     const matchesCategorie = filters.categorie === "" || article.categorie === filters.categorie;
     const matchesMarque = filters.marque === "" || article.marque === filters.marque;
-    const matchesEmplacement = filters.emplacement === "" || article.emplacement === filters.emplacement;
+    const matchesEmplacement = filters.emplacement === "" || 
+      article.emplacement === filters.emplacement || 
+      article.emplacements?.nom === filters.emplacement;
     
     const stockStatus = getStockStatus(article.stock, article.stock_min);
     let matchesStockStatus = true;
@@ -260,7 +273,10 @@ export default function Articles() {
   // Obtenir les valeurs uniques pour les filtres
   const uniqueCategories = [...new Set(articles.map(article => article.categorie))].filter(Boolean);
   const uniqueMarques = [...new Set(articles.map(article => article.marque))].filter(Boolean);
-  const uniqueEmplacements = [...new Set(articles.map(article => article.emplacement))].filter(Boolean);
+  const uniqueEmplacements = [...new Set([
+    ...articles.map(article => article.emplacement),
+    ...articles.map(article => article.emplacements?.nom)
+  ])].filter(Boolean);
 
   const clearFilters = () => {
     setFilters({
@@ -456,7 +472,7 @@ export default function Articles() {
                   <TableHead className="w-16 sm:w-20">Stock</TableHead>
                   <TableHead className="hidden sm:table-cell w-20 sm:w-24">Statut</TableHead>
                   <TableHead className="hidden lg:table-cell w-20 sm:w-24">Prix (€)</TableHead>
-                  <TableHead className="hidden xl:table-cell w-24 sm:w-28">Emplacement</TableHead>
+                  <TableHead className="hidden md:table-cell w-24 sm:w-28">Emplacement</TableHead>
                   <TableHead className="w-16 sm:w-20">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -521,7 +537,12 @@ export default function Articles() {
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell text-sm whitespace-nowrap">€{Number(principalPrice ?? 0).toFixed(2)}</TableCell>
-                      <TableCell className="hidden xl:table-cell text-sm">{article.emplacement}</TableCell>
+                       <TableCell className="hidden md:table-cell text-sm">
+                         <div className="flex items-center gap-1">
+                           <span className="text-muted-foreground">📍</span>
+                           {article.emplacements?.nom || article.emplacement || "Non défini"}
+                         </div>
+                       </TableCell>
                       <TableCell className="text-right">
                          <div className="flex justify-end gap-1">
                            <Dialog>
