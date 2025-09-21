@@ -16,6 +16,7 @@ interface Article {
   marque: string;
   stock: number;
   emplacement_id?: string;
+  categorie?: string;
 }
 
 interface Emplacement {
@@ -54,7 +55,7 @@ export function TransfertEmplacementDialog({ onTransfertCompleted }: TransfertEm
     try {
       const { data, error } = await supabase
         .from('articles')
-        .select('id, reference, designation, marque, stock, emplacement_id')
+        .select('id, reference, designation, marque, stock, emplacement_id, categorie')
         .gt('stock', 0)
         .order('designation');
 
@@ -155,18 +156,61 @@ export function TransfertEmplacementDialog({ onTransfertCompleted }: TransfertEm
 
       if (entreeError) throw entreeError;
 
-      // Mettre à jour l'emplacement de l'article
-      const emplacementDestinationData = emplacements.find(e => e.id === formData.emplacementDestinationId);
-      const { error: updateError } = await supabase
+      // Diminuer le stock de l'article source
+      const { error: updateSourceError } = await supabase
         .from('articles')
         .update({ 
-          emplacement_id: formData.emplacementDestinationId,
-          emplacement: emplacementDestinationData?.nom || '',
+          stock: selectedArticle.stock - formData.quantity,
           updated_at: new Date().toISOString()
         })
         .eq('id', formData.articleId);
 
-      if (updateError) throw updateError;
+      if (updateSourceError) throw updateSourceError;
+
+      // Vérifier s'il existe déjà un article avec la même référence dans l'emplacement de destination
+      const emplacementDestinationData = emplacements.find(e => e.id === formData.emplacementDestinationId);
+      const { data: existingArticle, error: searchError } = await supabase
+        .from('articles')
+        .select('id, stock')
+        .eq('reference', selectedArticle.reference)
+        .eq('emplacement_id', formData.emplacementDestinationId)
+        .single();
+
+      if (searchError && searchError.code !== 'PGRST116') {
+        throw searchError;
+      }
+
+      if (existingArticle) {
+        // Mettre à jour l'article existant dans l'emplacement de destination
+        const { error: updateDestError } = await supabase
+          .from('articles')
+          .update({ 
+            stock: existingArticle.stock + formData.quantity,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingArticle.id);
+
+        if (updateDestError) throw updateDestError;
+      } else {
+        // Créer un nouvel article dans l'emplacement de destination
+        const { error: createError } = await supabase
+          .from('articles')
+          .insert([{
+            reference: selectedArticle.reference,
+            designation: selectedArticle.designation,
+            marque: selectedArticle.marque,
+            categorie: selectedArticle.categorie || '',
+            stock: formData.quantity,
+            stock_min: 0,
+            stock_max: 100,
+            prix_achat: 0,
+            emplacement_id: formData.emplacementDestinationId,
+            emplacement: emplacementDestinationData?.nom || '',
+            user_id: user?.id
+          }]);
+
+        if (createError) throw createError;
+      }
 
       toast({
         title: "Succès",
