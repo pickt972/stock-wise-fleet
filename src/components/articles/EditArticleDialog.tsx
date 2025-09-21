@@ -21,6 +21,7 @@ import { Edit } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import ArticleVehicleCompatibility from "./ArticleVehicleCompatibility";
+import { ArticleEmplacementsList } from "./ArticleEmplacementsList";
 
 interface Article {
   id: string;
@@ -344,6 +345,11 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
           </div>
 
           <ArticleVehicleCompatibility articleId={article.id} />
+
+          <ArticleEmplacementsList 
+            articleReference={article.reference}
+            articleDesignation={article.designation}
+          />
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={handleClose}>
