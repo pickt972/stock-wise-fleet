@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import DashboardLayout from "./DashboardLayout";
 import { ArticleScanner } from "@/components/scanner/ArticleScanner";
 import { CreateVehiculeDialog } from "@/components/vehicules/CreateVehiculeDialog";
+import { TransfertEmplacementDialog } from "@/components/transferts/TransfertEmplacementDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -268,13 +269,14 @@ export default function Sorties() {
             <p className="text-sm lg:text-base text-muted-foreground">Gérez les sorties de marchandises</p>
           </div>
           
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90 w-full lg:w-auto flex-shrink-0">
-                <Plus className="mr-2 h-4 w-4" />
-                Nouvelle Sortie
-              </Button>
-            </DialogTrigger>
+          <div className="flex flex-col sm:flex-row gap-2 lg:gap-3">
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-primary hover:bg-primary/90 w-full lg:w-auto flex-shrink-0">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nouvelle Sortie
+                </Button>
+              </DialogTrigger>
             <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Nouvelle sortie de stock</DialogTitle>
@@ -380,7 +382,15 @@ export default function Sorties() {
                 </div>
               </div>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+            
+            <TransfertEmplacementDialog 
+              onTransfertCompleted={() => {
+                fetchExits();
+                fetchArticles();
+              }}
+            />
+          </div>
         </div>
 
         {/* Scanner d'articles */}
