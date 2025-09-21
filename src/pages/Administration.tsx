@@ -12,9 +12,11 @@ import { EmplacementsContent } from "@/components/admin/EmplacementsContent";
 import { FournisseursManagement } from "@/components/fournisseurs/FournisseursManagement";
 import { CategoriesManagement } from "@/components/categories/CategoriesManagement";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function Administration() {
   const { permissions } = useRoleAccess();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     document.title = "Administration | StockAuto";
@@ -57,18 +59,18 @@ export default function Administration() {
 
           <TabsContent value="parametres" className="space-y-6 mt-6">
             <Tabs defaultValue="configuration" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="configuration" className="flex items-center gap-2">
+              <TabsList className={`grid w-full ${isMobile ? 'grid-cols-1 gap-1' : 'grid-cols-3'}`}>
+                <TabsTrigger value="configuration" className={`flex items-center gap-2 ${isMobile ? 'justify-start px-3 py-2' : ''}`}>
                   <Settings className="h-4 w-4" />
-                  Configuration
+                  {isMobile ? 'Config' : 'Configuration'}
                 </TabsTrigger>
-                <TabsTrigger value="gestion" className="flex items-center gap-2">
+                <TabsTrigger value="gestion" className={`flex items-center gap-2 ${isMobile ? 'justify-start px-3 py-2' : ''}`}>
                   <Users className="h-4 w-4" />
                   Gestion
                 </TabsTrigger>
-                <TabsTrigger value="emplacements" className="flex items-center gap-2">
+                <TabsTrigger value="emplacements" className={`flex items-center gap-2 ${isMobile ? 'justify-start px-3 py-2' : ''}`}>
                   <MapPin className="h-4 w-4" />
-                  Emplacements
+                  {isMobile ? 'Emplacements' : 'Emplacements'}
                 </TabsTrigger>
               </TabsList>
 
@@ -98,29 +100,29 @@ export default function Administration() {
 
               <TabsContent value="gestion" className="space-y-6 mt-6">
                 <Tabs defaultValue="utilisateurs" className="w-full">
-                  <TabsList className="flex flex-wrap gap-1 h-auto p-1">
+                  <TabsList className={`${isMobile ? 'grid grid-cols-2 gap-1 h-auto p-1' : 'flex flex-wrap gap-1 h-auto p-1'}`}>
                     {permissions.manageUsers && (
-                      <TabsTrigger value="utilisateurs" className="flex items-center gap-2">
+                      <TabsTrigger value="utilisateurs" className={`flex items-center gap-2 ${isMobile ? 'text-xs px-2 py-2' : ''}`}>
                         <Users className="h-4 w-4" />
-                        Utilisateurs
+                        {isMobile ? 'Users' : 'Utilisateurs'}
                       </TabsTrigger>
                     )}
                     {permissions.manageSuppliers && (
-                      <TabsTrigger value="fournisseurs" className="flex items-center gap-2">
+                      <TabsTrigger value="fournisseurs" className={`flex items-center gap-2 ${isMobile ? 'text-xs px-2 py-2' : ''}`}>
                         <Building2 className="h-4 w-4" />
-                        Fournisseurs
+                        {isMobile ? 'Fourniss.' : 'Fournisseurs'}
                       </TabsTrigger>
                     )}
                     {permissions.manageCategories && (
-                      <TabsTrigger value="categories" className="flex items-center gap-2">
+                      <TabsTrigger value="categories" className={`flex items-center gap-2 ${isMobile ? 'text-xs px-2 py-2' : ''}`}>
                         <Tags className="h-4 w-4" />
-                        Catégories
+                        {isMobile ? 'Catég.' : 'Catégories'}
                       </TabsTrigger>
                     )}
                     {permissions.manageVehicles && (
-                      <TabsTrigger value="vehicules" className="flex items-center gap-2">
+                      <TabsTrigger value="vehicules" className={`flex items-center gap-2 ${isMobile ? 'text-xs px-2 py-2' : ''}`}>
                         <Truck className="h-4 w-4" />
-                        Véhicules
+                        {isMobile ? 'Véhic.' : 'Véhicules'}
                       </TabsTrigger>
                     )}
                   </TabsList>
