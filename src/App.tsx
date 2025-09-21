@@ -21,6 +21,7 @@ import Alertes from "./pages/Alertes";
 import Inventaire from "./pages/Inventaire";
 import Rapports from "./pages/Rapports";
 import Administration from "./pages/Administration";
+import Emplacements from "./pages/Emplacements";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
@@ -112,6 +113,11 @@ const App = () => (
               <Route path="/administration" element={
                 <ProtectedRoute>
                   <Administration />
+                </ProtectedRoute>
+              } />
+              <Route path="/emplacements" element={
+                <ProtectedRoute>
+                  <Emplacements />
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

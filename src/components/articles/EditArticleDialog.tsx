@@ -71,6 +71,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
   const [isLoading, setIsLoading] = useState(false);
   const [fournisseurs, setFournisseurs] = useState<any[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [emplacements, setEmplacements] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     reference: article.reference,
     designation: article.designation,
@@ -117,8 +118,24 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
     }
   };
 
+  const fetchEmplacements = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('emplacements')
+        .select('id, nom')
+        .eq('actif', true)
+        .order('nom');
+
+      if (error) throw error;
+      setEmplacements(data || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des emplacements:', error);
+    }
+  };
+
   useEffect(() => {
     fetchFournisseurs();
+    fetchEmplacements();
     loadCategories();
   }, []);
 
@@ -261,11 +278,22 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="emplacement">Emplacement</Label>
-              <Input
-                id="emplacement"
+              <Select
                 value={formData.emplacement}
-                onChange={(e) => setFormData({ ...formData, emplacement: e.target.value })}
-              />
+                onValueChange={(value) => setFormData({ ...formData, emplacement: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un emplacement" />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50">
+                  <SelectItem value="">Aucun emplacement</SelectItem>
+                  {emplacements.map((emplacement) => (
+                    <SelectItem key={emplacement.id} value={emplacement.nom}>
+                      {emplacement.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="stock">Stock actuel</Label>

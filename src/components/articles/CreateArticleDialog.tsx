@@ -31,6 +31,7 @@ export function CreateArticleDialog({ onArticleCreated, triggerButton }: CreateA
   const [showScanner, setShowScanner] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [fournisseurs, setFournisseurs] = useState<any[]>([]);
+  const [emplacements, setEmplacements] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     reference: "",
     designation: "",
@@ -61,10 +62,26 @@ export function CreateArticleDialog({ onArticleCreated, triggerButton }: CreateA
     }
   };
 
+  const fetchEmplacements = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('emplacements')
+        .select('id, nom')
+        .eq('actif', true)
+        .order('nom');
+
+      if (error) throw error;
+      setEmplacements(data || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des emplacements:', error);
+    }
+  };
+
   useEffect(() => {
     if (open) {
       fetchFournisseurs();
       fetchCategories();
+      fetchEmplacements();
     }
   }, [open]);
 
@@ -263,12 +280,22 @@ export function CreateArticleDialog({ onArticleCreated, triggerButton }: CreateA
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="emplacement">Emplacement</Label>
-              <Input
-                id="emplacement"
+              <Select
                 value={formData.emplacement}
-                onChange={(e) => setFormData(prev => ({ ...prev, emplacement: e.target.value }))}
-                placeholder="A1-B2"
-              />
+                onValueChange={(value) => setFormData(prev => ({ ...prev, emplacement: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un emplacement" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border border-border shadow-medium z-[60]">
+                  <SelectItem value="">Aucun emplacement</SelectItem>
+                  {emplacements.map((emplacement) => (
+                    <SelectItem key={emplacement.id} value={emplacement.nom}>
+                      {emplacement.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

@@ -14,7 +14,8 @@ import {
   Building2,
   Tag,
   Car,
-  Wrench
+  Wrench,
+  MapPin
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ const getAdminNavigation = (permissions: any) => [
   { name: "Fournisseurs", href: "/fournisseurs", icon: Building2, show: permissions.manageSuppliers },
   { name: "Catégories", href: "/categories", icon: Tag, show: permissions.manageCategories },
   { name: "Véhicules", href: "/vehicules", icon: Car, show: permissions.manageVehicles },
+  { name: "Emplacements", href: "/emplacements", icon: MapPin, show: permissions.manageStock },
 ];
 
 interface SidebarProps {

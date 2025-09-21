@@ -128,6 +128,7 @@ export type Database = {
           created_at: string
           designation: string
           emplacement: string | null
+          emplacement_id: string | null
           fournisseur_id: string | null
           id: string
           marque: string
@@ -144,6 +145,7 @@ export type Database = {
           created_at?: string
           designation: string
           emplacement?: string | null
+          emplacement_id?: string | null
           fournisseur_id?: string | null
           id?: string
           marque: string
@@ -160,6 +162,7 @@ export type Database = {
           created_at?: string
           designation?: string
           emplacement?: string | null
+          emplacement_id?: string | null
           fournisseur_id?: string | null
           id?: string
           marque?: string
@@ -172,6 +175,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "articles_emplacement_id_fkey"
+            columns: ["emplacement_id"]
+            isOneToOne: false
+            referencedRelation: "emplacements"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "articles_fournisseur_id_fkey"
             columns: ["fournisseur_id"]
@@ -370,6 +380,36 @@ export type Database = {
           is_active?: boolean
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      emplacements: {
+        Row: {
+          actif: boolean
+          created_at: string
+          description: string | null
+          id: string
+          nom: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          actif?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          actif?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom?: string
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
