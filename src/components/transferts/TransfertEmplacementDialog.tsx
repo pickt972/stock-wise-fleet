@@ -156,10 +156,12 @@ export function TransfertEmplacementDialog({ onTransfertCompleted }: TransfertEm
       if (entreeError) throw entreeError;
 
       // Mettre à jour l'emplacement de l'article
+      const emplacementDestinationData = emplacements.find(e => e.id === formData.emplacementDestinationId);
       const { error: updateError } = await supabase
         .from('articles')
         .update({ 
           emplacement_id: formData.emplacementDestinationId,
+          emplacement: emplacementDestinationData?.nom || '',
           updated_at: new Date().toISOString()
         })
         .eq('id', formData.articleId);

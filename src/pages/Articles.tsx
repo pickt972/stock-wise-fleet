@@ -152,6 +152,18 @@ export default function Articles() {
     fetchArticles();
   }, []);
 
+  // Recharger les articles quand la page devient visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchArticles();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
   const handleArticleCreated = () => {
     fetchArticles();
   };
