@@ -13,6 +13,8 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { useAlerts } from "@/hooks/useAlerts";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -21,6 +23,7 @@ interface HeaderProps {
 export function Header({ onMenuClick }: HeaderProps) {
   const { user, profile, userRole, signOut } = useAuth();
   const navigate = useNavigate();
+  const { alerts } = useAlerts();
 
   const getRoleLabel = (role: string) => {
     switch (role) {
@@ -77,22 +80,52 @@ export function Header({ onMenuClick }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-          <Tooltip>
-            <TooltipTrigger asChild>
+          <Popover>
+            <PopoverTrigger asChild>
               <Button variant="ghost" size="sm" className="relative hidden sm:flex">
                 <Bell className="h-4 w-4" />
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-                >
-                  3
-                </Badge>
+                {alerts.length > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                  >
+                    {alerts.length}
+                  </Badge>
+                )}
               </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Notifications (3 nouvelles)</p>
-            </TooltipContent>
-          </Tooltip>
+            </PopoverTrigger>
+            <PopoverContent className="w-80" align="end">
+              <div className="space-y-2">
+                <h4 className="font-medium">Notifications</h4>
+                {alerts.length > 0 ? (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {alerts.map((alert) => (
+                      <div 
+                        key={alert.id} 
+                        className="p-2 border rounded-lg text-sm cursor-pointer hover:bg-accent"
+                        onClick={() => navigate('/alertes')}
+                      >
+                        <div className="font-medium">{alert.title}</div>
+                        <div className="text-muted-foreground">{alert.description}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Aucune notification</p>
+                )}
+                {alerts.length > 0 && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => navigate('/alertes')}
+                  >
+                    Voir toutes les alertes
+                  </Button>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
           
           {/* Menu utilisateur */}
           <DropdownMenu>
