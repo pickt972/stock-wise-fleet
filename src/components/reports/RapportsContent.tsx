@@ -191,7 +191,17 @@ export default function RapportsContent() {
             </TableHeader>
             <TableBody>
               {movementsData.slice(0, 10).map((movement) => (
-                <TableRow key={movement.id}>
+                <TableRow 
+                  key={movement.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => {
+                    if (movement.type === 'entree') {
+                      window.open('/entrees', '_blank');
+                    } else {
+                      window.open('/sorties', '_blank');
+                    }
+                  }}
+                >
                   <TableCell>
                     {new Date(movement.created_at).toLocaleDateString('fr-FR')}
                   </TableCell>
@@ -206,13 +216,7 @@ export default function RapportsContent() {
                   <TableCell className="text-center">{movement.quantity}</TableCell>
                   <TableCell>{movement.motif}</TableCell>
                   <TableCell>
-                    <Button 
-                      variant="link" 
-                      className="p-0 h-auto font-normal text-primary hover:underline"
-                      onClick={() => window.open(`/users`, '_blank')}
-                    >
-                      {movement.profile?.first_name} {movement.profile?.last_name}
-                    </Button>
+                    {movement.profile?.first_name} {movement.profile?.last_name}
                   </TableCell>
                 </TableRow>
               ))}
