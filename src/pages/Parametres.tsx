@@ -159,7 +159,7 @@ export default function Parametres() {
           ) : (
             // Version desktop avec onglets
             <Tabs defaultValue="gestion" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="gestion" className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
                   Gestion
@@ -167,10 +167,6 @@ export default function Parametres() {
                 <TabsTrigger value="emplacements" className="flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
                   Emplacements
-                </TabsTrigger>
-                <TabsTrigger value="configuration" className="flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  Configuration
                 </TabsTrigger>
               </TabsList>
 
@@ -240,50 +236,52 @@ export default function Parametres() {
                   {permissions.manageVehicles && (
                     <TabsContent value="vehicules" className="space-y-6 mt-6">
                       <VehiculesContent />
-                    </TabsContent>
-                  )}
-                </Tabs>
-              </TabsContent>
+                     </TabsContent>
+                   )}
+                 </Tabs>
 
-              <TabsContent value="emplacements" className="space-y-6 mt-6">
-                <EmplacementsContent />
-              </TabsContent>
+                 {/* Section Configuration intégrée */}
+                 <div className="mt-8">
+                   <h3 className="text-lg font-semibold mb-4">Configuration</h3>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <Card 
+                       className="cursor-pointer hover:bg-muted/50 transition-colors"
+                       onClick={() => {
+                         console.log("Company settings card clicked (desktop)");
+                         setShowCompanySettings(true);
+                       }}
+                     >
+                       <CardHeader className="pb-3">
+                         <CardTitle className="flex items-center gap-3 text-lg">
+                           <Building className="h-5 w-5" />
+                           Informations de l'entreprise
+                         </CardTitle>
+                         <CardDescription>Paramètres de votre entreprise pour les bons de commande</CardDescription>
+                       </CardHeader>
+                     </Card>
 
-              <TabsContent value="configuration" className="space-y-6 mt-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card 
-                    className="cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => {
-                      console.log("Company settings card clicked (desktop)");
-                      setShowCompanySettings(true);
-                    }}
-                  >
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-3 text-lg">
-                        <Building className="h-5 w-5" />
-                        Informations de l'entreprise
-                      </CardTitle>
-                      <CardDescription>Paramètres de votre entreprise pour les bons de commande</CardDescription>
-                    </CardHeader>
-                  </Card>
+                     <Card 
+                       className="cursor-pointer hover:bg-muted/50 transition-colors"
+                       onClick={() => {
+                         console.log("Mail settings card clicked (desktop)");
+                         setShowMailSettings(true);
+                       }}
+                     >
+                       <CardHeader className="pb-3">
+                         <CardTitle className="flex items-center gap-3 text-lg">
+                           <Mail className="h-5 w-5" />
+                           Configuration de la messagerie
+                         </CardTitle>
+                         <CardDescription>Paramètres SMTP/IMAP pour l'envoi d'emails aux fournisseurs</CardDescription>
+                       </CardHeader>
+                     </Card>
+                   </div>
+                 </div>
+               </TabsContent>
 
-                  <Card 
-                    className="cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => {
-                      console.log("Mail settings card clicked (desktop)");
-                      setShowMailSettings(true);
-                    }}
-                  >
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-3 text-lg">
-                        <Mail className="h-5 w-5" />
-                        Configuration de la messagerie
-                      </CardTitle>
-                      <CardDescription>Paramètres SMTP/IMAP pour l'envoi d'emails aux fournisseurs</CardDescription>
-                    </CardHeader>
-                  </Card>
-                </div>
-              </TabsContent>
+               <TabsContent value="emplacements" className="space-y-6 mt-6">
+                 <EmplacementsContent />
+               </TabsContent>
             </Tabs>
           )}
         </div>
