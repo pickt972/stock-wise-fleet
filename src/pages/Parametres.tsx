@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "./DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Settings, BarChart3, Users, Truck, MapPin, Building2, Tags, Mail, Building } from "lucide-react";
 import { MailSettingsForm } from "@/components/mail/MailSettingsForm";
 import { CompanySettingsForm } from "@/components/company/CompanySettingsForm";
@@ -19,6 +20,8 @@ export default function Parametres() {
   const { permissions } = useRoleAccess();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const [showCompanySettings, setShowCompanySettings] = useState(false);
+  const [showMailSettings, setShowMailSettings] = useState(false);
 
   useEffect(() => {
     document.title = "Paramètres | StockAuto";
@@ -121,7 +124,10 @@ export default function Parametres() {
               </Card>
 
               {/* Nouvelles cartes pour entreprise et messagerie */}
-              <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
+              <Card 
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => setShowCompanySettings(true)}
+              >
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-3 text-lg">
                     <Building className="h-5 w-5" />
@@ -131,7 +137,10 @@ export default function Parametres() {
                 </CardHeader>
               </Card>
 
-              <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
+              <Card 
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => setShowMailSettings(true)}
+              >
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-3 text-lg">
                     <Mail className="h-5 w-5" />
@@ -236,7 +245,10 @@ export default function Parametres() {
 
               <TabsContent value="configuration" className="space-y-6 mt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <Card 
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => setShowCompanySettings(true)}
+                  >
                     <CardHeader className="pb-3">
                       <CardTitle className="flex items-center gap-3 text-lg">
                         <Building className="h-5 w-5" />
@@ -246,7 +258,10 @@ export default function Parametres() {
                     </CardHeader>
                   </Card>
 
-                  <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
+                  <Card 
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => setShowMailSettings(true)}
+                  >
                     <CardHeader className="pb-3">
                       <CardTitle className="flex items-center gap-3 text-lg">
                         <Mail className="h-5 w-5" />
@@ -261,6 +276,25 @@ export default function Parametres() {
           )}
         </div>
       </main>
+
+      {/* Modales pour les paramètres */}
+      <Dialog open={showCompanySettings} onOpenChange={setShowCompanySettings}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Informations de l'entreprise</DialogTitle>
+          </DialogHeader>
+          <CompanySettingsForm />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showMailSettings} onOpenChange={setShowMailSettings}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Configuration de la messagerie</DialogTitle>
+          </DialogHeader>
+          <MailSettingsForm />
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
