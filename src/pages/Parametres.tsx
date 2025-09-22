@@ -129,9 +129,6 @@ export default function Parametres() {
                   </CardTitle>
                   <CardDescription>Paramètres de votre entreprise pour les bons de commande</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <CompanySettingsForm />
-                </CardContent>
               </Card>
 
               <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
@@ -142,9 +139,6 @@ export default function Parametres() {
                   </CardTitle>
                   <CardDescription>Paramètres SMTP/IMAP pour l'envoi d'emails aux fournisseurs</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <MailSettingsForm />
-                </CardContent>
               </Card>
             </div>
           ) : (
@@ -241,25 +235,25 @@ export default function Parametres() {
               </TabsContent>
 
               <TabsContent value="configuration" className="space-y-6 mt-6">
-                <div className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Informations de l'entreprise</CardTitle>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-3 text-lg">
+                        <Building className="h-5 w-5" />
+                        Informations de l'entreprise
+                      </CardTitle>
                       <CardDescription>Paramètres de votre entreprise pour les bons de commande</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <CompanySettingsForm />
-                    </CardContent>
                   </Card>
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Configuration de la messagerie</CardTitle>
+                  <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-3 text-lg">
+                        <Mail className="h-5 w-5" />
+                        Configuration de la messagerie
+                      </CardTitle>
                       <CardDescription>Paramètres SMTP/IMAP pour l'envoi d'emails aux fournisseurs</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <MailSettingsForm />
-                    </CardContent>
                   </Card>
                 </div>
               </TabsContent>
