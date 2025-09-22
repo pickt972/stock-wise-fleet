@@ -126,7 +126,10 @@ export default function Parametres() {
               {/* Nouvelles cartes pour entreprise et messagerie */}
               <Card 
                 className="cursor-pointer hover:bg-muted/50 transition-colors"
-                onClick={() => setShowCompanySettings(true)}
+                onClick={() => {
+                  console.log("Company settings card clicked");
+                  setShowCompanySettings(true);
+                }}
               >
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-3 text-lg">
@@ -139,7 +142,10 @@ export default function Parametres() {
 
               <Card 
                 className="cursor-pointer hover:bg-muted/50 transition-colors"
-                onClick={() => setShowMailSettings(true)}
+                onClick={() => {
+                  console.log("Mail settings card clicked");
+                  setShowMailSettings(true);
+                }}
               >
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-3 text-lg">
@@ -247,7 +253,10 @@ export default function Parametres() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Card 
                     className="cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => setShowCompanySettings(true)}
+                    onClick={() => {
+                      console.log("Company settings card clicked (desktop)");
+                      setShowCompanySettings(true);
+                    }}
                   >
                     <CardHeader className="pb-3">
                       <CardTitle className="flex items-center gap-3 text-lg">
@@ -260,7 +269,10 @@ export default function Parametres() {
 
                   <Card 
                     className="cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => setShowMailSettings(true)}
+                    onClick={() => {
+                      console.log("Mail settings card clicked (desktop)");
+                      setShowMailSettings(true);
+                    }}
                   >
                     <CardHeader className="pb-3">
                       <CardTitle className="flex items-center gap-3 text-lg">
