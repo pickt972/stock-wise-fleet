@@ -20,7 +20,7 @@ import Parametres from "./pages/Parametres";
 import Alertes from "./pages/Alertes";
 import Inventaire from "./pages/Inventaire";
 import Rapports from "./pages/Rapports";
-import Administration from "./pages/Administration";
+
 import Emplacements from "./pages/Emplacements";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -108,11 +108,6 @@ const App = () => (
               <Route path="/rapports" element={
                 <ProtectedRoute>
                   <Rapports />
-                </ProtectedRoute>
-              } />
-              <Route path="/administration" element={
-                <ProtectedRoute>
-                  <Administration />
                 </ProtectedRoute>
               } />
               <Route path="/emplacements" element={

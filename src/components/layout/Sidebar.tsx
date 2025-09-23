@@ -31,7 +31,6 @@ const getNavigation = (permissions: any) => [
   { name: "Sorties", href: "/sorties", icon: ArrowUpFromLine, show: permissions.manageStock },
   { name: "Inventaire", href: "/inventaire", icon: ClipboardList, show: permissions.manageStock },
   { name: "Rapports", href: "/rapports", icon: BarChart3, show: permissions.viewReports },
-  { name: "Administration", href: "/administration", icon: Settings, show: permissions.manageSettings },
 ];
 
 const getAdminNavigation = (permissions: any) => [
