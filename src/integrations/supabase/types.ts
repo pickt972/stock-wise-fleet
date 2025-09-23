@@ -482,6 +482,112 @@ export type Database = {
         }
         Relationships: []
       }
+      inventaire_items: {
+        Row: {
+          article_id: string
+          counted_by: string | null
+          created_at: string
+          date_comptage: string | null
+          ecart: number | null
+          emplacement: string | null
+          emplacement_id: string | null
+          id: string
+          inventaire_id: string
+          notes: string | null
+          stock_compte: number | null
+          stock_theorique: number
+          updated_at: string
+        }
+        Insert: {
+          article_id: string
+          counted_by?: string | null
+          created_at?: string
+          date_comptage?: string | null
+          ecart?: number | null
+          emplacement?: string | null
+          emplacement_id?: string | null
+          id?: string
+          inventaire_id: string
+          notes?: string | null
+          stock_compte?: number | null
+          stock_theorique?: number
+          updated_at?: string
+        }
+        Update: {
+          article_id?: string
+          counted_by?: string | null
+          created_at?: string
+          date_comptage?: string | null
+          ecart?: number | null
+          emplacement?: string | null
+          emplacement_id?: string | null
+          id?: string
+          inventaire_id?: string
+          notes?: string | null
+          stock_compte?: number | null
+          stock_theorique?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventaire_items_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventaire_items_emplacement_id_fkey"
+            columns: ["emplacement_id"]
+            isOneToOne: false
+            referencedRelation: "emplacements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventaire_items_inventaire_id_fkey"
+            columns: ["inventaire_id"]
+            isOneToOne: false
+            referencedRelation: "inventaires"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventaires: {
+        Row: {
+          created_at: string
+          created_by: string
+          date_cloture: string | null
+          date_creation: string
+          date_inventaire: string
+          id: string
+          notes: string | null
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          date_cloture?: string | null
+          date_creation?: string
+          date_inventaire: string
+          id?: string
+          notes?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          date_cloture?: string | null
+          date_creation?: string
+          date_inventaire?: string
+          id?: string
+          notes?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       mail_settings: {
         Row: {
           created_at: string
