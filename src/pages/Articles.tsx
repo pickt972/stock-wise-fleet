@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Search, Filter, Edit, Trash2, AlertTriangle, X, Layers } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { CompactSortControls } from "@/components/ui/compact-sort-controls";
@@ -231,66 +231,81 @@ export default function Articles() {
     { value: 'emplacement', label: 'Emplacement' }
   ];
 
-  const applySorting = (data: Article[]) => {
-    return [...data].sort((a, b) => {
-      let aValue = a[currentSort as keyof Article];
-      let bValue = b[currentSort as keyof Article];
+  const applySorting = useMemo(() => {
+    return (data: Article[]) => {
+      return [...data].sort((a, b) => {
+        let aValue = a[currentSort as keyof Article];
+        let bValue = b[currentSort as keyof Article];
 
-      // Gestion des valeurs numériques
-      if (currentSort === 'stock' || currentSort === 'prix_achat') {
-        aValue = Number(aValue) || 0;
-        bValue = Number(bValue) || 0;
-      }
+        // Gestion des valeurs numériques
+        if (currentSort === 'stock' || currentSort === 'prix_achat') {
+          aValue = Number(aValue) || 0;
+          bValue = Number(bValue) || 0;
+        }
 
-      if (aValue === bValue) return 0;
-      const result = aValue < bValue ? -1 : 1;
-      return currentDirection === 'asc' ? result : -result;
-    });
-  };
+        if (aValue === bValue) return 0;
+        const result = aValue < bValue ? -1 : 1;
+        return currentDirection === 'asc' ? result : -result;
+      });
+    };
+  }, [currentSort, currentDirection]);
 
   const handleSortChange = (field: string, direction: 'asc' | 'desc') => {
     setCurrentSort(field);
     setCurrentDirection(direction);
   };
 
-  const filteredArticles = articles.filter(article => {
-    // Filtre de recherche textuelle
-    const matchesSearch = searchTerm === "" || 
-      article.designation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      article.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      article.marque.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredArticles = useMemo(() => {
+    return articles.filter(article => {
+      // Filtre de recherche textuelle
+      const matchesSearch = searchTerm === "" || 
+        article.designation.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        article.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        article.marque.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // Filtres avancés
-    const matchesCategorie = filters.categorie === "" || article.categorie === filters.categorie;
-    const matchesMarque = filters.marque === "" || article.marque === filters.marque;
-    const matchesEmplacement = filters.emplacement === "" || 
-      article.emplacement === filters.emplacement || 
-      article.emplacements?.nom === filters.emplacement;
-    
-    const stockStatus = getStockStatus(article.stock, article.stock_min);
-    let matchesStockStatus = true;
-    if (filters.stockStatus !== "") {
-      if (filters.stockStatus === "rupture") {
-        matchesStockStatus = stockStatus.label === "Rupture";
-      } else if (filters.stockStatus === "faible") {
-        matchesStockStatus = stockStatus.label === "Faible";
-      } else if (filters.stockStatus === "ok") {
-        matchesStockStatus = stockStatus.label === "OK";
+      // Filtres avancés
+      const matchesCategorie = filters.categorie === "" || article.categorie === filters.categorie;
+      const matchesMarque = filters.marque === "" || article.marque === filters.marque;
+      const matchesEmplacement = filters.emplacement === "" || 
+        article.emplacement === filters.emplacement || 
+        article.emplacements?.nom === filters.emplacement;
+      
+      const stockStatus = getStockStatus(article.stock, article.stock_min);
+      let matchesStockStatus = true;
+      if (filters.stockStatus !== "") {
+        if (filters.stockStatus === "rupture") {
+          matchesStockStatus = stockStatus.label === "Rupture";
+        } else if (filters.stockStatus === "faible") {
+          matchesStockStatus = stockStatus.label === "Faible";
+        } else if (filters.stockStatus === "ok") {
+          matchesStockStatus = stockStatus.label === "OK";
+        }
       }
-    }
 
-    return matchesSearch && matchesCategorie && matchesMarque && matchesEmplacement && matchesStockStatus;
-  });
+      return matchesSearch && matchesCategorie && matchesMarque && matchesEmplacement && matchesStockStatus;
+    });
+  }, [articles, searchTerm, filters]);
 
-  const sortedArticles = applySorting(filteredArticles);
+  const sortedArticles = useMemo(() => {
+    return applySorting(filteredArticles);
+  }, [filteredArticles, applySorting]);
 
   // Obtenir les valeurs uniques pour les filtres
-  const uniqueCategories = [...new Set(articles.map(article => article.categorie))].filter(Boolean);
-  const uniqueMarques = [...new Set(articles.map(article => article.marque))].filter(Boolean);
-  const uniqueEmplacements = [...new Set([
-    ...articles.map(article => article.emplacement),
-    ...articles.map(article => article.emplacements?.nom)
-  ])].filter(Boolean);
+  const uniqueCategories = useMemo(() => 
+    [...new Set(articles.map(article => article.categorie))].filter(Boolean), 
+    [articles]
+  );
+  const uniqueMarques = useMemo(() => 
+    [...new Set(articles.map(article => article.marque))].filter(Boolean), 
+    [articles]
+  );
+  const uniqueEmplacements = useMemo(() => 
+    [...new Set([
+      ...articles.map(article => article.emplacement),
+      ...articles.map(article => article.emplacements?.nom)
+    ])].filter(Boolean), 
+    [articles]
+  );
 
   const clearFilters = () => {
     setFilters({
