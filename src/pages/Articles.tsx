@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Search, Filter, Edit, Trash2, AlertTriangle, X, Layers } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { CompactSortControls } from "@/components/ui/compact-sort-controls";
@@ -87,6 +87,7 @@ interface Article {
 
 export default function Articles() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [articles, setArticles] = useState<Article[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
@@ -153,6 +154,15 @@ export default function Articles() {
   useEffect(() => {
     fetchArticles();
   }, []);
+
+  // Debouncing pour la recherche
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 150); // 150ms de délai
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // Recharger les articles quand la page devient visible
   useEffect(() => {
@@ -257,11 +267,11 @@ export default function Articles() {
 
   const filteredArticles = useMemo(() => {
     return articles.filter(article => {
-      // Filtre de recherche textuelle
-      const matchesSearch = searchTerm === "" || 
-        article.designation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        article.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        article.marque.toLowerCase().includes(searchTerm.toLowerCase());
+      // Filtre de recherche textuelle avec le terme debouncé
+      const matchesSearch = debouncedSearchTerm === "" || 
+        article.designation.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        article.reference.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        article.marque.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
 
       // Filtres avancés
       const matchesCategorie = filters.categorie === "" || article.categorie === filters.categorie;
@@ -284,7 +294,7 @@ export default function Articles() {
 
       return matchesSearch && matchesCategorie && matchesMarque && matchesEmplacement && matchesStockStatus;
     });
-  }, [articles, searchTerm, filters]);
+  }, [articles, debouncedSearchTerm, filters]);
 
   const sortedArticles = useMemo(() => {
     return applySorting(filteredArticles);
@@ -307,7 +317,7 @@ export default function Articles() {
     [articles]
   );
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setFilters({
       categorie: "",
       marque: "",
@@ -315,9 +325,10 @@ export default function Articles() {
       emplacement: "",
     });
     setSearchTerm("");
-  };
+    setDebouncedSearchTerm("");
+  }, []);
 
-  const hasActiveFilters = Object.values(filters).some(value => value !== "") || searchTerm !== "";
+  const hasActiveFilters = Object.values(filters).some(value => value !== "") || debouncedSearchTerm !== "";
 
   if (isLoading) {
     return (
