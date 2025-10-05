@@ -74,9 +74,13 @@ export function ArticleScanner({ onArticleFound }: ArticleScannerProps) {
   };
 
   const handleScanResult = (scannedCode: string) => {
-    setSearchQuery(scannedCode);
     setShowScanner(false);
-    searchArticle(scannedCode);
+    setSearchQuery(scannedCode);
+    
+    // Délai pour laisser le scanner se fermer proprement
+    setTimeout(() => {
+      searchArticle(scannedCode);
+    }, 200);
   };
 
   const handleSearch = () => {

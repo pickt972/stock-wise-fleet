@@ -22,6 +22,7 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
   const [lastScanResult, setLastScanResult] = useState<string>("");
+  const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -89,18 +90,31 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
 
     // Gestion centralisée du résultat
     const handleResult = (result: Result | null, error?: Error) => {
-      if (result) {
+      if (result && !isProcessing) {
         const scannedText = result.getText();
+        
+        // Éviter les scans multiples du même code
+        if (scannedText === lastScanResult) {
+          return;
+        }
+        
+        setIsProcessing(true);
         setLastScanResult(scannedText);
-        onScanResult(scannedText);
-
-        toast({
-          title: "Code scanné !",
-          description: `Code détecté: ${scannedText}`,
-        });
-
-        // Arrêter le scan après détection réussie
+        
+        // Arrêter le scan immédiatement
         stopScanning();
+        
+        // Délai court pour stabiliser avant de notifier
+        setTimeout(() => {
+          onScanResult(scannedText);
+          
+          toast({
+            title: "Code scanné !",
+            description: `Code détecté: ${scannedText}`,
+          });
+          
+          setIsProcessing(false);
+        }, 100);
       }
 
       if (error && !(error.name === "NotFoundException")) {

@@ -65,6 +65,7 @@ export function InventaireSession({ onSessionCreated }: InventaireSessionProps) 
         .from('inventaires')
         .insert({
           date_inventaire: dateInventaire,
+          location: 'BOIS_ROUGE',
           created_by: userResponse.user.id,
           notes: notes.trim() || null,
         })
