@@ -485,45 +485,57 @@ export type Database = {
       inventaire_items: {
         Row: {
           article_id: string
+          barcode: string | null
           counted_by: string | null
           created_at: string
+          created_by: string | null
           date_comptage: string | null
           ecart: number | null
           emplacement: string | null
           emplacement_id: string | null
           id: string
           inventaire_id: string
+          location: Database["public"]["Enums"]["location_enum"] | null
           notes: string | null
+          qty: number
           stock_compte: number | null
           stock_theorique: number
           updated_at: string
         }
         Insert: {
           article_id: string
+          barcode?: string | null
           counted_by?: string | null
           created_at?: string
+          created_by?: string | null
           date_comptage?: string | null
           ecart?: number | null
           emplacement?: string | null
           emplacement_id?: string | null
           id?: string
           inventaire_id: string
+          location?: Database["public"]["Enums"]["location_enum"] | null
           notes?: string | null
+          qty?: number
           stock_compte?: number | null
           stock_theorique?: number
           updated_at?: string
         }
         Update: {
           article_id?: string
+          barcode?: string | null
           counted_by?: string | null
           created_at?: string
+          created_by?: string | null
           date_comptage?: string | null
           ecart?: number | null
           emplacement?: string | null
           emplacement_id?: string | null
           id?: string
           inventaire_id?: string
+          location?: Database["public"]["Enums"]["location_enum"] | null
           notes?: string | null
+          qty?: number
           stock_compte?: number | null
           stock_theorique?: number
           updated_at?: string
@@ -554,35 +566,53 @@ export type Database = {
       }
       inventaires: {
         Row: {
+          closed_at: string | null
           created_at: string
-          created_by: string
+          created_by: string | null
           date_cloture: string | null
           date_creation: string
           date_inventaire: string
           id: string
+          location: Database["public"]["Enums"]["location_enum"]
           notes: string | null
+          site_id: string | null
+          started_at: string
+          started_by: string | null
+          status: Database["public"]["Enums"]["inventory_status"]
           statut: string
           updated_at: string
         }
         Insert: {
+          closed_at?: string | null
           created_at?: string
-          created_by: string
+          created_by?: string | null
           date_cloture?: string | null
           date_creation?: string
           date_inventaire: string
           id?: string
+          location: Database["public"]["Enums"]["location_enum"]
           notes?: string | null
+          site_id?: string | null
+          started_at?: string
+          started_by?: string | null
+          status?: Database["public"]["Enums"]["inventory_status"]
           statut?: string
           updated_at?: string
         }
         Update: {
+          closed_at?: string | null
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           date_cloture?: string | null
           date_creation?: string
           date_inventaire?: string
           id?: string
+          location?: Database["public"]["Enums"]["location_enum"]
           notes?: string | null
+          site_id?: string | null
+          started_at?: string
+          started_by?: string | null
+          status?: Database["public"]["Enums"]["inventory_status"]
           statut?: string
           updated_at?: string
         }
@@ -648,6 +678,7 @@ export type Database = {
           first_name: string
           id: string
           last_name: string
+          role: string
           updated_at: string
           username: string | null
         }
@@ -656,6 +687,7 @@ export type Database = {
           first_name: string
           id: string
           last_name: string
+          role?: string
           updated_at?: string
           username?: string | null
         }
@@ -664,6 +696,7 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string
+          role?: string
           updated_at?: string
           username?: string | null
         }
@@ -673,10 +706,12 @@ export type Database = {
         Row: {
           article_id: string
           created_at: string
+          created_by: string | null
           fournisseur_id: string | null
           id: string
           motif: string
           quantity: number
+          site_id: string | null
           type: string
           updated_at: string
           user_id: string
@@ -685,10 +720,12 @@ export type Database = {
         Insert: {
           article_id: string
           created_at?: string
+          created_by?: string | null
           fournisseur_id?: string | null
           id?: string
           motif: string
           quantity: number
+          site_id?: string | null
           type: string
           updated_at?: string
           user_id: string
@@ -697,10 +734,12 @@ export type Database = {
         Update: {
           article_id?: string
           created_at?: string
+          created_by?: string | null
           fournisseur_id?: string | null
           id?: string
           motif?: string
           quantity?: number
+          site_id?: string | null
           type?: string
           updated_at?: string
           user_id?: string
@@ -798,6 +837,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      close_inventory: {
+        Args: { p_inventaire_id: string }
+        Returns: undefined
+      }
       get_auth_user_id_by_email: {
         Args: { _email: string }
         Returns: string
@@ -812,6 +855,21 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      is_admin: {
+        Args: { uid?: string }
+        Returns: boolean
+      }
+      scan_item: {
+        Args: { p_barcode: string; p_delta?: number; p_inventaire_id: string }
+        Returns: {
+          item_id: string
+          qty: number
+        }[]
+      }
+      start_inventory: {
+        Args: { loc: Database["public"]["Enums"]["location_enum"] }
+        Returns: string
       }
       update_article_stock: {
         Args: { article_id: string; quantity_change: number }
@@ -831,6 +889,8 @@ export type Database = {
         | "recu_partiel"
         | "recu_complet"
         | "annule"
+      inventory_status: "OPEN" | "CLOSED"
+      location_enum: "CARRERE" | "BOIS_ROUGE"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -967,6 +1027,8 @@ export const Constants = {
         "recu_complet",
         "annule",
       ],
+      inventory_status: ["OPEN", "CLOSED"],
+      location_enum: ["CARRERE", "BOIS_ROUGE"],
     },
   },
 } as const
