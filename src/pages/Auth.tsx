@@ -11,30 +11,74 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import logo from "@/assets/logo.png";
 
-const availableUsers = [
-  { username: "admin", password: "administrateur", role: "Administrateur" },
-  { username: "alvin", password: "alvin123", role: "Magasinier" },
-  { username: "julie", password: "julie123", role: "Magasinier" },
-  { username: "sherman", password: "sherman123", role: "Magasinier" },
-];
+type UserRole = 'admin' | 'chef_agence' | 'magasinier';
+
+interface AvailableUser {
+  username: string;
+  role: string;
+  roleDisplay: string;
+}
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [availableUsers, setAvailableUsers] = useState<AvailableUser[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleUserSelect = (selectedUsername: string) => {
-    const user = availableUsers.find(u => u.username === selectedUsername);
-    if (user) {
-      setUsername(user.username);
-      setPassword(user.password);
+  const getRoleDisplay = (role: UserRole): string => {
+    switch (role) {
+      case 'admin': return 'Administrateur';
+      case 'chef_agence': return "Chef d'agence";
+      case 'magasinier': return 'Magasinier';
+      default: return 'Utilisateur';
     }
   };
 
+  const fetchAvailableUsers = async () => {
+    try {
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username')
+        .not('username', 'is', null);
+
+      if (profilesError) throw profilesError;
+
+      if (!profiles || profiles.length === 0) {
+        return;
+      }
+
+      const { data: roles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('user_id', profiles.map(p => p.id));
+
+      if (rolesError) throw rolesError;
+
+      const usersWithRoles = profiles.map((profile) => {
+        const userRole = roles?.find(r => r.user_id === profile.id);
+        const role = (userRole?.role as UserRole) || 'magasinier';
+        return {
+          username: profile.username || '',
+          role: role,
+          roleDisplay: getRoleDisplay(role)
+        };
+      }).filter(u => u.username);
+
+      setAvailableUsers(usersWithRoles);
+    } catch (error) {
+      console.error('Erreur lors du chargement des utilisateurs:', error);
+    }
+  };
+
+  const handleUserSelect = (selectedUsername: string) => {
+    setUsername(selectedUsername);
+  };
+
   useEffect(() => {
-    // Vérifier si l'utilisateur est déjà connecté
+    fetchAvailableUsers();
+    
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -43,7 +87,6 @@ export default function Auth() {
     };
     checkUser();
 
-    // Écouter les changements d'état d'authentification
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session && event === 'SIGNED_IN') {
         navigate("/dashboard");
@@ -122,23 +165,40 @@ export default function Auth() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="user-select">Sélectionner un utilisateur</Label>
-                <Select onValueChange={handleUserSelect}>
+                <Select onValueChange={handleUserSelect} value={username}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Choisir un utilisateur test" />
+                    <SelectValue placeholder="Choisir un utilisateur" />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableUsers.map((user) => (
-                      <SelectItem
-                        key={user.username}
-                        value={user.username}
-                        description={user.role}
-                        textValue={user.username}
-                      >
-                        <span className="font-medium">{user.username}</span>
+                    {availableUsers.length === 0 ? (
+                      <SelectItem value="none" disabled>
+                        Aucun utilisateur disponible
                       </SelectItem>
-                    ))}
+                    ) : (
+                      availableUsers.map((user) => (
+                        <SelectItem
+                          key={user.username}
+                          value={user.username}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-medium">{user.username}</span>
+                            <span className="text-xs text-muted-foreground">({user.roleDisplay})</span>
+                          </div>
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="username-manual">Ou saisir manuellement</Label>
+                <Input
+                  id="username-manual"
+                  placeholder="Nom d'utilisateur"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  disabled={isLoading}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Mot de passe</Label>
@@ -187,12 +247,18 @@ export default function Auth() {
 
         <div className="text-center text-xs md:text-sm text-muted-foreground bg-muted/50 p-3 md:p-4 rounded-lg">
           <div className="space-y-2">
-            <p className="font-semibold">Comptes disponibles :</p>
+            <p className="font-semibold">Connexion</p>
             <div className="space-y-1 text-xs">
-              <p><strong>admin</strong> / administrateur (Administrateur)</p>
-              <p><strong>alvin</strong> / alvin123 (Magasinier)</p>
-              <p><strong>julie</strong> / julie123 (Magasinier)</p>
-              <p><strong>sherman</strong> / sherman123 (Magasinier)</p>
+              {availableUsers.length > 0 ? (
+                <>
+                  <p>Sélectionnez un utilisateur dans la liste ci-dessus</p>
+                  <p className="text-muted-foreground">
+                    {availableUsers.length} utilisateur{availableUsers.length > 1 ? 's' : ''} disponible{availableUsers.length > 1 ? 's' : ''}
+                  </p>
+                </>
+              ) : (
+                <p>Cliquez sur "Initialiser les comptes" pour créer les utilisateurs de test</p>
+              )}
             </div>
           </div>
         </div>
