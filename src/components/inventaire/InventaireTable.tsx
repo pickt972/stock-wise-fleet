@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { Search, Save, AlertTriangle, CheckCircle, Package, Calculator } from "lucide-react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { Search, Save, AlertTriangle, CheckCircle, Package, Calculator, ScanBarcode } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
 
 interface InventaireItem {
   id: string;
@@ -36,6 +37,8 @@ export function InventaireTable({ inventaireId, onItemUpdate }: InventaireTableP
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [stockValues, setStockValues] = useState<Record<string, string>>({});
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const tableRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -146,6 +149,42 @@ export function InventaireTable({ inventaireId, onItemUpdate }: InventaireTableP
     }
   };
 
+  const handleScanResult = (scannedCode: string) => {
+    const foundItem = items.find(
+      item => item.articles.reference.toLowerCase() === scannedCode.toLowerCase()
+    );
+
+    if (foundItem) {
+      setSearchTerm(scannedCode);
+      setIsScannerOpen(false);
+      
+      // Scroll vers l'article
+      setTimeout(() => {
+        const row = document.querySelector(`[data-article-id="${foundItem.id}"]`);
+        if (row) {
+          row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Focus sur l'input de stock
+          const input = row.querySelector('input[type="number"]') as HTMLInputElement;
+          if (input) {
+            input.focus();
+            input.select();
+          }
+        }
+      }, 100);
+
+      toast({
+        title: "Article trouvé",
+        description: `${foundItem.articles.reference} - ${foundItem.articles.designation}`,
+      });
+    } else {
+      toast({
+        title: "Article non trouvé",
+        description: `Aucun article avec la référence "${scannedCode}" dans cet inventaire.`,
+        variant: "destructive",
+      });
+    }
+  };
+
   const getEcartBadge = (ecart: number | null) => {
     if (ecart === null) return null;
     
@@ -235,9 +274,17 @@ export function InventaireTable({ inventaireId, onItemUpdate }: InventaireTableP
               onChange={(e) => setSearchTerm(e.target.value)}
               className="flex-1"
             />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setIsScannerOpen(true)}
+              title="Scanner un code-barres"
+            >
+              <ScanBarcode className="h-4 w-4" />
+            </Button>
           </div>
 
-          <div className="rounded-lg border">
+          <div className="rounded-lg border" ref={tableRef}>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -253,7 +300,11 @@ export function InventaireTable({ inventaireId, onItemUpdate }: InventaireTableP
               </TableHeader>
               <TableBody>
                 {filteredItems.map((item) => (
-                  <TableRow key={item.id} className={item.ecart !== null && item.ecart !== 0 ? "bg-red-50" : ""}>
+                  <TableRow 
+                    key={item.id} 
+                    data-article-id={item.id}
+                    className={item.ecart !== null && item.ecart !== 0 ? "bg-red-50" : ""}
+                  >
                     <TableCell className="font-medium">
                       {item.articles.reference}
                     </TableCell>
@@ -302,6 +353,12 @@ export function InventaireTable({ inventaireId, onItemUpdate }: InventaireTableP
           )}
         </CardContent>
       </Card>
+
+      <BarcodeScanner
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScanResult={handleScanResult}
+      />
     </div>
   );
 }
