@@ -38,37 +38,14 @@ export default function Auth() {
 
   const fetchAvailableUsers = async () => {
     try {
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, username')
-        .not('username', 'is', null);
+      const { data, error } = await supabase.functions.invoke('list-available-users');
+      if (error) throw error;
 
-      if (profilesError) throw profilesError;
-
-      if (!profiles || profiles.length === 0) {
-        return;
-      }
-
-      const { data: roles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role')
-        .in('user_id', profiles.map(p => p.id));
-
-      if (rolesError) throw rolesError;
-
-      const usersWithRoles = profiles.map((profile) => {
-        const userRole = roles?.find(r => r.user_id === profile.id);
-        const role = (userRole?.role as UserRole) || 'magasinier';
-        return {
-          username: profile.username || '',
-          role: role,
-          roleDisplay: getRoleDisplay(role)
-        };
-      }).filter(u => u.username);
-
-      setAvailableUsers(usersWithRoles);
+      const users = (data?.users || []) as Array<{ username: string; role: string; roleDisplay: string }>; 
+      setAvailableUsers(users);
     } catch (error) {
-      console.error('Erreur lors du chargement des utilisateurs:', error);
+      console.error('Erreur lors du chargement des utilisateurs (edge):', error);
+      setAvailableUsers([]);
     }
   };
 
@@ -234,6 +211,7 @@ export default function Auth() {
                       return;
                     }
                     toast({ title: 'Comptes initialisés', description: 'Réessayez la connexion.' });
+                    await fetchAvailableUsers();
                   } catch (e: any) {
                     toast({ title: 'Erreur', description: e.message, variant: 'destructive' });
                   }
