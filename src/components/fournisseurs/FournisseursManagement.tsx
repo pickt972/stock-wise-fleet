@@ -259,11 +259,41 @@ export const FournisseursManagement = () => {
   }, []);
 
   const deleteFournisseur = async (id: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer ce fournisseur ?")) {
-      return;
-    }
-
     try {
+      // Vérifier si le fournisseur est utilisé dans des articles
+      const { data: articlesData, error: articlesError } = await supabase
+        .from('articles')
+        .select('id')
+        .eq('fournisseur_id', id)
+        .limit(1);
+
+      if (articlesError) throw articlesError;
+
+      // Vérifier si le fournisseur est utilisé dans des associations article-fournisseur
+      const { data: associationsData, error: associationsError } = await supabase
+        .from('article_fournisseurs')
+        .select('id')
+        .eq('fournisseur_id', id)
+        .limit(1);
+
+      if (associationsError) throw associationsError;
+
+      const hasArticles = articlesData && articlesData.length > 0;
+      const hasAssociations = associationsData && associationsData.length > 0;
+
+      if (hasArticles || hasAssociations) {
+        toast({
+          title: "Suppression impossible",
+          description: "Ce fournisseur est lié à des articles. Veuillez d'abord supprimer ou réassigner les articles associés.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!confirm("Êtes-vous sûr de vouloir supprimer ce fournisseur ?")) {
+        return;
+      }
+
       const { error } = await supabase
         .from('fournisseurs')
         .delete()
@@ -273,7 +303,7 @@ export const FournisseursManagement = () => {
 
       toast({
         title: "Succès",
-        description: "Fournisseur supprimé",
+        description: "Fournisseur supprimé avec succès",
       });
       fetchFournisseurs();
     } catch (error: any) {
