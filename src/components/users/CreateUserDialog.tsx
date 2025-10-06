@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,45 +10,31 @@ import { Loader2 } from "lucide-react";
 
 type UserRole = 'admin' | 'chef_agence' | 'magasinier';
 
-interface UserProfile {
-  id: string;
-  first_name: string;
-  last_name: string;
-  username: string;
-  role: string;
-}
-
-interface EditUserDialogProps {
-  user: UserProfile | null;
+interface CreateUserDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onUserUpdated: () => void;
+  onUserCreated: () => void;
 }
 
-export default function EditUserDialog({ user, isOpen, onOpenChange, onUserUpdated }: EditUserDialogProps) {
+export default function CreateUserDialog({ isOpen, onOpenChange, onUserCreated }: CreateUserDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState<{ firstName: string; lastName: string; username: string; role: UserRole }>({
-    firstName: user?.first_name || "",
-    lastName: user?.last_name || "",
-    username: user?.username || "",
-    role: (user?.role as UserRole) || "magasinier",
+  const [formData, setFormData] = useState<{ 
+    username: string; 
+    password: string;
+    firstName: string; 
+    lastName: string; 
+    role: UserRole 
+  }>({
+    username: "",
+    password: "",
+    firstName: "",
+    lastName: "",
+    role: "magasinier",
   });
   const { toast } = useToast();
 
-  // Mettre à jour le formData quand l'utilisateur change
-  useEffect(() => {
-    if (user) {
-      setFormData({
-        firstName: user.first_name,
-        lastName: user.last_name,
-        username: user.username,
-        role: (user.role as UserRole) || 'magasinier',
-      });
-    }
-  }, [user]);
-
   const handleSubmit = async () => {
-    if (!user || !formData.firstName || !formData.lastName || !formData.username) {
+    if (!formData.username || !formData.password || !formData.firstName || !formData.lastName) {
       toast({
         title: "Erreur",
         description: "Veuillez remplir tous les champs",
@@ -59,53 +45,39 @@ export default function EditUserDialog({ user, isOpen, onOpenChange, onUserUpdat
 
     setIsLoading(true);
     try {
-      // Mettre à jour le profil
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          username: formData.username
-        })
-        .eq('id', user.id);
-
-      if (profileError) throw profileError;
-
-      // Vérifier si un rôle existe déjà
-      const { data: existingRole } = await supabase
-        .from('user_roles')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (existingRole) {
-        // Mettre à jour le rôle existant
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .update({ role: formData.role })
-          .eq('user_id', user.id);
-
-        if (roleError) throw roleError;
-      } else {
-        // Créer un nouveau rôle
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .insert({ user_id: user.id, role: formData.role });
-
-        if (roleError) throw roleError;
-      }
-
-      toast({
-        title: "Utilisateur modifié",
-        description: "Les informations ont été mises à jour avec succès",
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: {
+          username: formData.username,
+          password: formData.password,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          role: formData.role,
+        }
       });
 
-      onUserUpdated();
+      if (error) throw error;
+
+      toast({
+        title: "Utilisateur créé",
+        description: `${formData.firstName} ${formData.lastName} a été créé avec succès`,
+      });
+
+      // Reset form
+      setFormData({
+        username: "",
+        password: "",
+        firstName: "",
+        lastName: "",
+        role: "magasinier",
+      });
+
+      onUserCreated();
       onOpenChange(false);
     } catch (error: any) {
+      console.error('Erreur création utilisateur:', error);
       toast({
         title: "Erreur",
-        description: error.message || "Impossible de modifier l'utilisateur",
+        description: error.message || "Impossible de créer l'utilisateur",
         variant: "destructive",
       });
     } finally {
@@ -117,35 +89,45 @@ export default function EditUserDialog({ user, isOpen, onOpenChange, onUserUpdat
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Modifier l'utilisateur</DialogTitle>
+          <DialogTitle>Créer un utilisateur</DialogTitle>
           <DialogDescription>
-            Modifiez les informations de {user?.first_name} {user?.last_name}
+            Créez un nouveau compte utilisateur
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="edit-username">Nom d'utilisateur</Label>
+            <Label htmlFor="create-username">Nom d'utilisateur</Label>
             <Input
-              id="edit-username"
+              id="create-username"
               value={formData.username}
               onChange={(e) => setFormData({...formData, username: e.target.value})}
               placeholder="nom_utilisateur"
             />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="create-password">Mot de passe</Label>
+            <Input
+              id="create-password"
+              type="password"
+              value={formData.password}
+              onChange={(e) => setFormData({...formData, password: e.target.value})}
+              placeholder="••••••••"
+            />
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-firstName">Prénom</Label>
+              <Label htmlFor="create-firstName">Prénom</Label>
               <Input
-                id="edit-firstName"
+                id="create-firstName"
                 value={formData.firstName}
                 onChange={(e) => setFormData({...formData, firstName: e.target.value})}
                 placeholder="Prénom"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-lastName">Nom</Label>
+              <Label htmlFor="create-lastName">Nom</Label>
               <Input
-                id="edit-lastName"
+                id="create-lastName"
                 value={formData.lastName}
                 onChange={(e) => setFormData({...formData, lastName: e.target.value})}
                 placeholder="Nom"
@@ -153,7 +135,7 @@ export default function EditUserDialog({ user, isOpen, onOpenChange, onUserUpdat
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-role">Rôle</Label>
+            <Label htmlFor="create-role">Rôle</Label>
             <Select 
               value={formData.role} 
               onValueChange={(value) => setFormData({...formData, role: value as UserRole})}
@@ -179,7 +161,7 @@ export default function EditUserDialog({ user, isOpen, onOpenChange, onUserUpdat
           </Button>
           <Button onClick={handleSubmit} disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Modifier
+            Créer
           </Button>
         </DialogFooter>
       </DialogContent>
