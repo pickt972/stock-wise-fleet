@@ -374,6 +374,7 @@ const articleSchema = z.object({
                 min="0"
                 value={formData.stock}
                 onChange={(e) => setFormData(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
+                onFocus={(e) => e.target.select()}
               />
             </div>
             <div className="space-y-2">
@@ -384,6 +385,7 @@ const articleSchema = z.object({
                 min="0"
                 value={formData.stockMin}
                 onChange={(e) => setFormData(prev => ({ ...prev, stockMin: parseInt(e.target.value) || 0 }))}
+                onFocus={(e) => e.target.select()}
               />
             </div>
             <div className="space-y-2">
@@ -394,6 +396,7 @@ const articleSchema = z.object({
                 min="1"
                 value={formData.stockMax}
                 onChange={(e) => setFormData(prev => ({ ...prev, stockMax: parseInt(e.target.value) || 100 }))}
+                onFocus={(e) => e.target.select()}
               />
             </div>
           </div>
@@ -407,6 +410,7 @@ const articleSchema = z.object({
               min="0"
               value={formData.prixAchat}
               onChange={(e) => setFormData(prev => ({ ...prev, prixAchat: parseFloat(e.target.value) || 0 }))}
+              onFocus={(e) => e.target.select()}
               placeholder="0.00"
             />
           </div>
