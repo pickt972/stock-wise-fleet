@@ -20,6 +20,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
+import { CreateFournisseurDialog } from "@/components/fournisseurs/CreateFournisseurDialog";
 import { z } from "zod";
 interface CreateArticleDialogProps {
   onArticleCreated: () => void;
@@ -294,6 +295,14 @@ const articleSchema = z.object({
                   <SelectValue placeholder="Sélectionner un fournisseur" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border border-border shadow-medium z-[60] max-h-[200px] overflow-y-auto">
+                  <div className="p-2 border-b border-border mb-1">
+                    <CreateFournisseurDialog
+                      onFournisseurCreated={(id) => {
+                        fetchFournisseurs();
+                        setFormData(prev => ({ ...prev, fournisseurId: id }));
+                      }}
+                    />
+                  </div>
                   <SelectItem value="none">Aucun fournisseur</SelectItem>
                   {fournisseurs.map((fournisseur) => (
                     <SelectItem key={fournisseur.id} value={fournisseur.id}>
