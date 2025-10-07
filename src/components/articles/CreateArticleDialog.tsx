@@ -273,7 +273,7 @@ const articleSchema = z.object({
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner une catégorie" />
                 </SelectTrigger>
-                <SelectContent className="bg-popover border border-border shadow-medium z-[60]">
+                <SelectContent className="bg-popover border border-border shadow-medium z-[60] max-h-[200px] overflow-y-auto">
                   {categories.map((category) => (
                     <SelectItem key={category} value={category}>
                       {category}
@@ -293,7 +293,7 @@ const articleSchema = z.object({
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un fournisseur" />
                 </SelectTrigger>
-                <SelectContent className="bg-popover border border-border shadow-medium z-[60]">
+                <SelectContent className="bg-popover border border-border shadow-medium z-[60] max-h-[200px] overflow-y-auto">
                   <SelectItem value="none">Aucun fournisseur</SelectItem>
                   {fournisseurs.map((fournisseur) => (
                     <SelectItem key={fournisseur.id} value={fournisseur.id}>
@@ -315,7 +315,7 @@ const articleSchema = z.object({
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un emplacement" />
                 </SelectTrigger>
-                <SelectContent className="bg-popover border border-border shadow-medium z-[60]">
+                <SelectContent className="bg-popover border border-border shadow-medium z-[60] max-h-[200px] overflow-y-auto">
                   <SelectItem value="none">Aucun emplacement</SelectItem>
                   {emplacements.map((emplacement) => (
                     <SelectItem key={emplacement.id} value={emplacement.id}>
