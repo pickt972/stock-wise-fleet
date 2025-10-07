@@ -56,10 +56,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       
       {/* Sidebar */}
       <aside className={cn(
-        "fixed top-16 left-0 h-[calc(100vh-4rem)] bg-card border-r border-border shadow-medium z-50 transition-all duration-300",
+        "fixed top-16 left-0 h-[calc(100vh-4rem)] bg-card border-r border-border shadow-medium z-50 transition-all duration-300 overflow-y-auto",
         isCollapsed ? "w-16" : "w-64",
         isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
-        "max-w-[75vw] sm:max-w-[60vw] md:max-w-none"
+        "max-w-[80vw] sm:max-w-[65vw] md:max-w-none"
       )}>
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-end p-4">
@@ -76,7 +76,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             </Button>
           </div>
 
-          <nav className="flex-1 px-4 space-y-2">
+          <nav className="flex-1 px-3 sm:px-4 space-y-1 pb-4">
             {getNavigation(permissions).filter(item => item.show).map((item) => (
               <NavLink
                 key={item.name}
@@ -84,8 +84,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 onClick={() => window.innerWidth < 768 && onClose()}
                 className={({ isActive }) =>
                   cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                    "hover:bg-accent hover:text-accent-foreground",
+                    "flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors min-h-[44px]",
+                    "hover:bg-accent hover:text-accent-foreground active:scale-95",
                     isActive 
                       ? "bg-primary text-primary-foreground shadow-soft" 
                       : "text-muted-foreground",
@@ -116,8 +116,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                       onClick={() => window.innerWidth < 768 && onClose()}
                       className={({ isActive }) =>
                         cn(
-                          "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                          "hover:bg-accent hover:text-accent-foreground",
+                          "flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors min-h-[44px]",
+                          "hover:bg-accent hover:text-accent-foreground active:scale-95",
                           isActive 
                             ? "bg-primary text-primary-foreground shadow-soft" 
                             : "text-muted-foreground",

@@ -215,7 +215,7 @@ const articleSchema = z.object({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto bg-background border border-border shadow-large z-50">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto bg-background border border-border shadow-large z-50 w-[95vw] p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Créer un nouvel article</DialogTitle>
         </DialogHeader>

@@ -498,7 +498,135 @@ export default function Articles() {
         console.log('Article trouvé:', article);
       }} />
 
-      <Card className="w-full max-w-full">
+      {/* Vue mobile en cartes */}
+      <div className="md:hidden space-y-3">
+        {sortedArticles.length > 0 ? (
+          sortedArticles.map((article) => {
+            const stockStatus = getStockStatus(article.stock, article.stock_min);
+            const principalFournisseur = getPrincipalFournisseur(article);
+            const principalPrice = getPrincipalPrice(article);
+            
+            return (
+              <Card key={article.id} className="p-4">
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-sm truncate">{article.designation}</div>
+                      <div className="text-xs text-muted-foreground">Réf: {article.reference}</div>
+                      <div className="text-xs text-muted-foreground">{article.marque}</div>
+                    </div>
+                    <Badge variant={stockStatus.variant} className="text-xs flex-shrink-0">
+                      {stockStatus.label}
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline" className={`text-xs ${getColorForText(article.categorie, 'category')}`}>
+                      {article.categorie}
+                    </Badge>
+                    {principalFournisseur && (
+                      <Badge variant="secondary" className="text-xs">
+                        {principalFournisseur}
+                      </Badge>
+                    )}
+                    <Badge variant="outline" className={`text-xs ${getColorForText(article.emplacements?.nom || article.emplacement || "Non défini", 'location')}`}>
+                      📍 {article.emplacements?.nom || article.emplacement || "Non défini"}
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <div className="flex items-center gap-4">
+                      <div>
+                        <div className="text-xs text-muted-foreground">Stock</div>
+                        <div className="font-semibold flex items-center gap-1">
+                          {article.stock}
+                          {article.stock <= article.stock_min && (
+                            <AlertTriangle className="h-3 w-3 text-warning" />
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">Prix</div>
+                        <div className="font-semibold">€{Number(principalPrice ?? 0).toFixed(2)}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-1">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-9 w-9 p-0"
+                            onClick={() => setSelectedArticleForFournisseurs(article)}
+                          >
+                            <Layers className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] overflow-y-auto p-4">
+                          <DialogHeader>
+                            <DialogTitle className="text-base">Gestion des fournisseurs</DialogTitle>
+                          </DialogHeader>
+                          {selectedArticleForFournisseurs && (
+                            <ArticleFournisseursManagement
+                              articleId={selectedArticleForFournisseurs.id}
+                              articleNom={selectedArticleForFournisseurs.designation}
+                            />
+                          )}
+                        </DialogContent>
+                      </Dialog>
+                      
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-9 w-9 p-0" 
+                        onClick={() => setSelectedArticleForEdit(article)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="w-[90vw] max-w-md">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="text-base">Confirmer la suppression</AlertDialogTitle>
+                            <AlertDialogDescription className="text-sm">
+                              Êtes-vous sûr de vouloir supprimer l'article "{article.designation}" (Réf: {article.reference}) ?
+                              Cette action est irréversible.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                            <AlertDialogCancel className="w-full sm:w-auto">Annuler</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteArticle(article.id)}
+                              className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Supprimer
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            );
+          })
+        ) : (
+          <Card className="p-8 text-center">
+            <p className="text-sm text-muted-foreground">
+              {hasActiveFilters ? "Aucun article ne correspond aux filtres sélectionnés" : "Aucun article disponible"}
+            </p>
+          </Card>
+        )}
+      </div>
+
+      {/* Vue desktop en tableau */}
+      <Card className="w-full max-w-full hidden md:block">
         <CardContent className="p-0">
           <div className="overflow-x-auto w-full">
             <Table className="min-w-full">
@@ -615,7 +743,7 @@ export default function Articles() {
                                  </Tooltip>
                                </TooltipProvider>
                              </DialogTrigger>
-                            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                            <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
                               <DialogHeader>
                                 <DialogTitle>Gestion des fournisseurs</DialogTitle>
                               </DialogHeader>
@@ -660,7 +788,7 @@ export default function Articles() {
                                  </Tooltip>
                                </TooltipProvider>
                              </AlertDialogTrigger>
-                            <AlertDialogContent>
+                            <AlertDialogContent className="w-[90vw] max-w-md">
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
                                 <AlertDialogDescription>
@@ -668,11 +796,11 @@ export default function Articles() {
                                   Cette action est irréversible.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                               <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                                <AlertDialogCancel className="w-full sm:w-auto">Annuler</AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() => handleDeleteArticle(article.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
                                   Supprimer
                                 </AlertDialogAction>
