@@ -20,7 +20,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
-
+import { z } from "zod";
 interface CreateArticleDialogProps {
   onArticleCreated: () => void;
   triggerButton?: React.ReactNode;
@@ -45,7 +45,20 @@ export function CreateArticleDialog({ onArticleCreated, triggerButton }: CreateA
     fournisseurId: "",
   });
 
-  const { toast } = useToast();
+const { toast } = useToast();
+
+const articleSchema = z.object({
+  reference: z.string().trim().min(1, { message: "Référence requise" }),
+  designation: z.string().trim().min(1, { message: "Désignation requise" }),
+  marque: z.string().trim().min(1, { message: "Marque requise" }),
+  categorie: z.string().trim().min(1, { message: "Catégorie requise" }),
+  stock: z.number().int().min(0),
+  stockMin: z.number().int().min(0),
+  stockMax: z.number().int().min(1),
+  prixAchat: z.number().min(0),
+  emplacementId: z.string().uuid().optional().or(z.literal("")),
+  fournisseurId: z.string().uuid().optional().or(z.literal("")),
+});
 
   const fetchFournisseurs = async () => {
     try {
@@ -124,20 +137,34 @@ export function CreateArticleDialog({ onArticleCreated, triggerButton }: CreateA
     setIsLoading(true);
 
     try {
+      const parsed = articleSchema.safeParse(formData);
+      if (!parsed.success) {
+        const msg = parsed.error.issues?.[0]?.message ?? "Veuillez vérifier le formulaire";
+        toast({
+          title: "Champs manquants",
+          description: msg,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const data = parsed.data;
+      const { data: userData } = await supabase.auth.getUser();
+
       const { error } = await supabase
         .from('articles')
         .insert([{
-          reference: formData.reference,
-          designation: formData.designation,
-          marque: formData.marque,
-          categorie: formData.categorie,
-          stock: formData.stock,
-          stock_min: formData.stockMin,
-          stock_max: formData.stockMax,
-          prix_achat: formData.prixAchat,
-          emplacement_id: formData.emplacementId || null,
-          fournisseur_id: formData.fournisseurId || null,
-          user_id: (await supabase.auth.getUser()).data.user?.id
+          reference: data.reference.trim(),
+          designation: data.designation.trim(),
+          marque: data.marque.trim(),
+          categorie: data.categorie.trim(),
+          stock: data.stock,
+          stock_min: data.stockMin,
+          stock_max: data.stockMax,
+          prix_achat: data.prixAchat,
+          emplacement_id: data.emplacementId ? data.emplacementId : null,
+          fournisseur_id: data.fournisseurId ? data.fournisseurId : null,
+          user_id: userData?.user?.id
         }]);
 
       if (error) throw error;
@@ -163,9 +190,10 @@ export function CreateArticleDialog({ onArticleCreated, triggerButton }: CreateA
       setOpen(false);
       onArticleCreated();
     } catch (error: any) {
+      const message = error?.message || "Impossible de créer l'article";
       toast({
         title: "Erreur",
-        description: error.message || "Impossible de créer l'article",
+        description: message,
         variant: "destructive",
       });
     } finally {
