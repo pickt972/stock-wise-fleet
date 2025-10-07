@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,25 +9,21 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus } from "lucide-react";
 
-interface CreateFournisseurDialogProps {
-  onFournisseurCreated: (fournisseurId: string) => void;
+interface CreateCategorieDialogProps {
+  onCategorieCreated: (categorieName: string) => void;
   trigger?: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
 
-export function CreateFournisseurDialog({ onFournisseurCreated, trigger, open, onOpenChange }: CreateFournisseurDialogProps) {
+export function CreateCategorieDialog({ onCategorieCreated, trigger, open, onOpenChange }: CreateCategorieDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = open !== undefined ? open : internalOpen;
   const setIsOpen = onOpenChange || setInternalOpen;
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     nom: "",
-    email: "",
-    telephone: "",
-    adresse: "",
-    contact_principal: "",
-    notes: "",
+    description: "",
     actif: true,
   });
   const { toast } = useToast();
@@ -36,7 +32,7 @@ export function CreateFournisseurDialog({ onFournisseurCreated, trigger, open, o
     if (!formData.nom.trim()) {
       toast({
         title: "Erreur",
-        description: "Le nom du fournisseur est obligatoire",
+        description: "Le nom de la catégorie est obligatoire",
         variant: "destructive",
       });
       return;
@@ -44,37 +40,40 @@ export function CreateFournisseurDialog({ onFournisseurCreated, trigger, open, o
 
     setIsLoading(true);
     try {
+      const { data: userData } = await supabase.auth.getUser();
+      
       const { data, error } = await supabase
-        .from('fournisseurs')
-        .insert([formData])
-        .select('id')
+        .from('categories')
+        .insert([{
+          nom: formData.nom.trim(),
+          description: formData.description.trim() || null,
+          actif: formData.actif,
+          user_id: userData?.user?.id
+        }])
+        .select('nom')
         .single();
 
       if (error) throw error;
 
       toast({
         title: "Succès",
-        description: "Fournisseur créé avec succès",
+        description: "Catégorie créée avec succès",
       });
 
       setFormData({
         nom: "",
-        email: "",
-        telephone: "",
-        adresse: "",
-        contact_principal: "",
-        notes: "",
+        description: "",
         actif: true,
       });
 
       setIsOpen(false);
-      if (data?.id) {
-        onFournisseurCreated(data.id);
+      if (data?.nom) {
+        onCategorieCreated(data.nom);
       }
     } catch (error: any) {
       toast({
         title: "Erreur",
-        description: error.message || "Impossible de créer le fournisseur",
+        description: error.message || "Impossible de créer la catégorie",
         variant: "destructive",
       });
     } finally {
@@ -88,13 +87,13 @@ export function CreateFournisseurDialog({ onFournisseurCreated, trigger, open, o
         {trigger || (
           <Button variant="outline" size="sm" className="w-full">
             <Plus className="h-4 w-4 mr-2" />
-            Nouveau fournisseur
+            Nouvelle catégorie
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px] bg-background border border-border shadow-large z-[70]">
         <DialogHeader>
-          <DialogTitle>Nouveau fournisseur</DialogTitle>
+          <DialogTitle>Nouvelle catégorie</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
@@ -103,53 +102,16 @@ export function CreateFournisseurDialog({ onFournisseurCreated, trigger, open, o
               id="nom"
               value={formData.nom}
               onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-              placeholder="Nom du fournisseur"
+              placeholder="Nom de la catégorie"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="contact@fournisseur.fr"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="telephone">Téléphone</Label>
-            <Input
-              id="telephone"
-              value={formData.telephone}
-              onChange={(e) => setFormData({ ...formData, telephone: e.target.value })}
-              placeholder="01 23 45 67 89"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="adresse">Adresse</Label>
+            <Label htmlFor="description">Description</Label>
             <Textarea
-              id="adresse"
-              value={formData.adresse}
-              onChange={(e) => setFormData({ ...formData, adresse: e.target.value })}
-              placeholder="Adresse complète"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="contact_principal">Contact principal</Label>
-            <Input
-              id="contact_principal"
-              value={formData.contact_principal}
-              onChange={(e) => setFormData({ ...formData, contact_principal: e.target.value })}
-              placeholder="Nom du contact"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Notes additionnelles"
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Description de la catégorie"
             />
           </div>
           <div className="flex items-center space-x-2">

@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
 import { CreateFournisseurDialog } from "@/components/fournisseurs/CreateFournisseurDialog";
+import { CreateCategorieDialog } from "@/components/categories/CreateCategorieDialog";
 import { z } from "zod";
 interface CreateArticleDialogProps {
   onArticleCreated: () => void;
@@ -33,6 +34,8 @@ export function CreateArticleDialog({ onArticleCreated, triggerButton }: CreateA
   const [isLoading, setIsLoading] = useState(false);
   const [fournisseurs, setFournisseurs] = useState<any[]>([]);
   const [emplacements, setEmplacements] = useState<any[]>([]);
+  const [showFournisseurDialog, setShowFournisseurDialog] = useState(false);
+  const [showCategorieDialog, setShowCategorieDialog] = useState(false);
   const [formData, setFormData] = useState({
     reference: "",
     designation: "",
@@ -268,13 +271,31 @@ const articleSchema = z.object({
               <Label htmlFor="categorie">Catégorie *</Label>
               <Select
                 value={formData.categorie}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, categorie: value }))}
+                onValueChange={(value) => {
+                  if (value === "__create_new__") {
+                    setShowCategorieDialog(true);
+                  } else {
+                    setFormData(prev => ({ ...prev, categorie: value }));
+                  }
+                }}
                 required
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner une catégorie" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border border-border shadow-medium z-[60] max-h-[200px] overflow-y-auto">
+                  <div className="p-2 border-b border-border mb-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => setShowCategorieDialog(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nouvelle catégorie
+                    </Button>
+                  </div>
                   {categories.map((category) => (
                     <SelectItem key={category} value={category}>
                       {category}
@@ -287,21 +308,29 @@ const articleSchema = z.object({
               <Label htmlFor="fournisseur">Fournisseur</Label>
               <Select
                 value={formData.fournisseurId}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, fournisseurId: value === "none" ? "" : value }))
-                }
+                onValueChange={(value) => {
+                  if (value === "__create_new__") {
+                    setShowFournisseurDialog(true);
+                  } else {
+                    setFormData((prev) => ({ ...prev, fournisseurId: value === "none" ? "" : value }));
+                  }
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un fournisseur" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border border-border shadow-medium z-[60] max-h-[200px] overflow-y-auto">
                   <div className="p-2 border-b border-border mb-1">
-                    <CreateFournisseurDialog
-                      onFournisseurCreated={(id) => {
-                        fetchFournisseurs();
-                        setFormData(prev => ({ ...prev, fournisseurId: id }));
-                      }}
-                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => setShowFournisseurDialog(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nouveau fournisseur
+                    </Button>
                   </div>
                   <SelectItem value="none">Aucun fournisseur</SelectItem>
                   {fournisseurs.map((fournisseur) => (
@@ -408,6 +437,25 @@ const articleSchema = z.object({
           onClose={() => setShowScanner(false)}
         />
       </DialogContent>
+
+      {/* Dialogues de création en dehors du dropdown */}
+      <CreateFournisseurDialog
+        open={showFournisseurDialog}
+        onOpenChange={setShowFournisseurDialog}
+        onFournisseurCreated={(id) => {
+          fetchFournisseurs();
+          setFormData(prev => ({ ...prev, fournisseurId: id }));
+        }}
+      />
+
+      <CreateCategorieDialog
+        open={showCategorieDialog}
+        onOpenChange={setShowCategorieDialog}
+        onCategorieCreated={(nom) => {
+          fetchCategories();
+          setFormData(prev => ({ ...prev, categorie: nom }));
+        }}
+      />
     </Dialog>
   );
 }
