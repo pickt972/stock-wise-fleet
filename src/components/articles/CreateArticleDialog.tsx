@@ -41,7 +41,7 @@ export function CreateArticleDialog({ onArticleCreated, triggerButton }: CreateA
     stockMin: 0,
     stockMax: 100,
     prixAchat: 0,
-    emplacement: "",
+    emplacementId: "",
     fournisseurId: "",
   });
 
@@ -135,7 +135,7 @@ export function CreateArticleDialog({ onArticleCreated, triggerButton }: CreateA
           stock_min: formData.stockMin,
           stock_max: formData.stockMax,
           prix_achat: formData.prixAchat,
-          emplacement: formData.emplacement,
+          emplacement_id: formData.emplacementId || null,
           fournisseur_id: formData.fournisseurId || null,
           user_id: (await supabase.auth.getUser()).data.user?.id
         }]);
@@ -156,7 +156,7 @@ export function CreateArticleDialog({ onArticleCreated, triggerButton }: CreateA
         stockMin: 0,
         stockMax: 100,
         prixAchat: 0,
-        emplacement: "",
+        emplacementId: "",
         fournisseurId: "",
       });
 
@@ -281,8 +281,8 @@ export function CreateArticleDialog({ onArticleCreated, triggerButton }: CreateA
             <div className="space-y-2">
               <Label htmlFor="emplacement">Emplacement</Label>
               <Select
-                value={formData.emplacement}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, emplacement: value }))}
+                value={formData.emplacementId}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, emplacementId: value === "none" ? "" : value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un emplacement" />
@@ -290,7 +290,7 @@ export function CreateArticleDialog({ onArticleCreated, triggerButton }: CreateA
                 <SelectContent className="bg-popover border border-border shadow-medium z-[60]">
                   <SelectItem value="none">Aucun emplacement</SelectItem>
                   {emplacements.map((emplacement) => (
-                    <SelectItem key={emplacement.id} value={emplacement.nom}>
+                    <SelectItem key={emplacement.id} value={emplacement.id}>
                       {emplacement.nom}
                     </SelectItem>
                   ))}
