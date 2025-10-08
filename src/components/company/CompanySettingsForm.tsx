@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, Building2 } from "lucide-react";
+import { Loader2, Building2, Upload, X } from "lucide-react";
 
 const companySettingsSchema = z.object({
   company_name: z.string().min(1, "Le nom de l'entreprise est requis"),
@@ -41,6 +41,8 @@ interface CompanySetting {
 export function CompanySettingsForm() {
   const [companySettings, setCompanySettings] = useState<CompanySetting | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string>("");
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -72,6 +74,7 @@ export function CompanySettingsForm() {
       
       if (data) {
         setCompanySettings(data);
+        setLogoPreview(data.company_logo_url || "");
         form.reset({
           company_name: data.company_name,
           company_address: data.company_address,
@@ -96,15 +99,67 @@ export function CompanySettingsForm() {
     fetchCompanySettings();
   }, [user]);
 
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setLogoFile(null);
+    setLogoPreview("");
+    form.setValue("company_logo_url", "");
+  };
+
+  const uploadLogo = async (): Promise<string | null> => {
+    if (!logoFile || !user) return null;
+
+    const fileExt = logoFile.name.split('.').pop();
+    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+    const { data, error } = await supabase.storage
+      .from('company-logos')
+      .upload(fileName, logoFile, { upsert: true });
+
+    if (error) throw error;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('company-logos')
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  };
+
   const onSubmit = async (data: CompanySettingsFormData) => {
     if (!user) return;
 
     setIsLoading(true);
     try {
+      let logoUrl = data.company_logo_url;
+
+      // Upload du logo si un fichier a été sélectionné
+      if (logoFile) {
+        const uploadedUrl = await uploadLogo();
+        if (uploadedUrl) {
+          logoUrl = uploadedUrl;
+        }
+      }
+
+      const settingsData = {
+        ...data,
+        company_logo_url: logoUrl,
+      };
+
       if (companySettings) {
         const { error } = await supabase
           .from("company_settings")
-          .update({ ...data, updated_at: new Date().toISOString() })
+          .update({ ...settingsData, updated_at: new Date().toISOString() })
           .eq("id", companySettings.id)
           .eq("user_id", user.id);
 
@@ -118,7 +173,7 @@ export function CompanySettingsForm() {
         const { error } = await supabase
           .from("company_settings")
           .insert({
-            ...data,
+            ...settingsData,
             user_id: user.id
           });
 
@@ -130,6 +185,7 @@ export function CompanySettingsForm() {
         });
       }
 
+      setLogoFile(null);
       fetchCompanySettings();
     } catch (error) {
       console.error("Erreur lors de la sauvegarde:", error);
@@ -218,15 +274,47 @@ export function CompanySettingsForm() {
           </div>
 
           <div>
-            <Label htmlFor="company_logo_url">URL du logo (optionnel)</Label>
-            <Input
-              id="company_logo_url"
-              {...form.register("company_logo_url")}
-              placeholder="https://exemple.com/logo.png"
-            />
-            {form.formState.errors.company_logo_url && (
-              <p className="text-sm text-destructive">{form.formState.errors.company_logo_url.message}</p>
-            )}
+            <Label htmlFor="company_logo">Logo de l'entreprise (optionnel)</Label>
+            <div className="space-y-4">
+              {logoPreview && (
+                <div className="relative inline-block">
+                  <img 
+                    src={logoPreview} 
+                    alt="Logo preview" 
+                    className="h-24 w-auto rounded border"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-2 -right-2 h-6 w-6"
+                    onClick={handleRemoveLogo}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Input
+                  id="company_logo"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoChange}
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => document.getElementById('company_logo')?.click()}
+                >
+                  <Upload className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Formats acceptés: PNG, JPG, WEBP (max 5MB)
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center space-x-2">
