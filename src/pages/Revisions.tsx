@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,7 @@ interface CompatibleArticle extends Article {
 export default function Revisions() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [selectedGroup, setSelectedGroup] = useState<VehiculeGroup | null>(null);
   const [quantiteRevision, setQuantiteRevision] = useState<number | "">(1);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -139,8 +141,8 @@ export default function Revisions() {
       return;
     }
 
-    // Ici on pourrait créer automatiquement une commande
     toast.success(`Analyse terminée: ${piecesACommander.length} pièces à commander`);
+    navigate('/commandes');
   };
 
   const handleArticleSelection = (articleId: string, checked: boolean) => {
