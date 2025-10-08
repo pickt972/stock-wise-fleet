@@ -123,13 +123,13 @@ export default function Articles() {
             nom,
             description
           ),
-          article_fournisseurs!inner (
+          article_fournisseurs (
             id,
             fournisseur_id,
             est_principal,
             prix_fournisseur,
             actif,
-            fournisseurs!inner (
+            fournisseurs (
               id,
               nom
             )
