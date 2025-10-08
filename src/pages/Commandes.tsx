@@ -948,7 +948,10 @@ export default function Commandes() {
                           <Input
                             type="number"
                             value={item.quantite_commandee}
-                            onChange={(e) => updateItem(index, 'quantite_commandee', parseInt(e.target.value) || 0)}
+                            onChange={(e) => {
+                              const value = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
+                              updateItem(index, 'quantite_commandee', value || 0);
+                            }}
                             min="1"
                           />
                         </div>
@@ -961,7 +964,10 @@ export default function Commandes() {
                             type="number"
                             step="0.01"
                             value={item.prix_unitaire}
-                            onChange={(e) => updateItem(index, 'prix_unitaire', parseFloat(e.target.value) || 0)}
+                            onChange={(e) => {
+                              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                              updateItem(index, 'prix_unitaire', value || 0);
+                            }}
                             min="0"
                           />
                         </div>
