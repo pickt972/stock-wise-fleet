@@ -125,6 +125,7 @@ export type Database = {
       articles: {
         Row: {
           categorie: string
+          code_barre: string | null
           created_at: string
           designation: string
           emplacement: string | null
@@ -142,6 +143,7 @@ export type Database = {
         }
         Insert: {
           categorie: string
+          code_barre?: string | null
           created_at?: string
           designation: string
           emplacement?: string | null
@@ -159,6 +161,7 @@ export type Database = {
         }
         Update: {
           categorie?: string
+          code_barre?: string | null
           created_at?: string
           designation?: string
           emplacement?: string | null

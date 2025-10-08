@@ -1154,6 +1154,13 @@ export default function Commandes() {
         items={purchaseOrderDialog.commande?.items || []}
       />
 
+      {/* Barcode Scanner */}
+      <BarcodeScanner
+        isOpen={showScanner}
+        onClose={() => setShowScanner(false)}
+        onScanResult={handleBarcodeScan}
+      />
+
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialog.isOpen} onOpenChange={(open) => !open && setDeleteDialog({ isOpen: false })}>
         <AlertDialogContent>
