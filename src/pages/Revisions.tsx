@@ -263,7 +263,14 @@ export default function Revisions() {
       }
 
       toast.success(`${Object.keys(grouped).length} commande(s) créée(s) pour ${piecesACommander.length} pièces`);
-      navigate('/commandes', { state: { openCommandeIds: createdCommandeIds } });
+      
+      // Rediriger vers les commandes avec les IDs créés
+      setTimeout(() => {
+        navigate('/commandes', { 
+          state: { openCommandeIds: createdCommandeIds },
+          replace: true 
+        });
+      }, 300);
     } catch (error: any) {
       toast.error(`Erreur: ${error.message}`);
     }

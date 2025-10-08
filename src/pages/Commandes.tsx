@@ -162,22 +162,28 @@ export default function Commandes() {
   }, [location.state]);
 
   // Ouvrir automatiquement la/les commande(s) fraîchement créée(s)
-  const [handledOpenIds, setHandledOpenIds] = useState(false);
   useEffect(() => {
-    const state: any = location.state as any;
+    const state = location.state as any;
     const ids: string[] | undefined = state?.openCommandeIds;
-    if (!handledOpenIds && ids && ids.length > 0 && commandes.length > 0) {
+    
+    if (ids && ids.length > 0 && commandes.length > 0) {
+      // Trouver la première commande créée qui correspond aux IDs
       const toOpen = commandes.find(c => ids.includes(c.id as string));
       if (toOpen) {
-        editCommande(toOpen);
-        toast({
-          title: "Commandes créées",
-          description: `${ids.length} commande(s) créée(s). Ouverture de la première.`,
-        });
+        // Attendre un peu pour que le rendu soit terminé
+        setTimeout(() => {
+          editCommande(toOpen);
+          toast({
+            title: "Commandes créées",
+            description: `${ids.length} commande(s) créée(s)`,
+          });
+        }, 100);
       }
-      setHandledOpenIds(true);
+      
+      // Nettoyer le state pour éviter de réouvrir
+      window.history.replaceState({}, document.title);
     }
-  }, [commandes, location.state, handledOpenIds]);
+  }, [commandes]);
 
   const fetchCommandes = async () => {
     try {
@@ -511,38 +517,53 @@ export default function Commandes() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="fournisseur">Fournisseur *</Label>
-                    <Select
-                      value={currentCommande.fournisseur}
-                      onValueChange={(value) => {
-                        const selectedFournisseur = fournisseurs.find(f => f.nom === value);
-                        if (selectedFournisseur) {
-                          setCurrentCommande(prev => ({
-                            ...prev,
-                            fournisseur: selectedFournisseur.nom,
-                            email_fournisseur: selectedFournisseur.email || "",
-                            telephone_fournisseur: selectedFournisseur.telephone || "",
-                            adresse_fournisseur: selectedFournisseur.adresse || ""
-                          }));
-                        }
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner un fournisseur" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {fournisseurs.map((fournisseur) => (
-                          <SelectItem key={fournisseur.id} value={fournisseur.nom}>
-                            {fournisseur.nom}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      className="mt-2"
-                      placeholder="Ou saisir manuellement"
-                      value={currentCommande.fournisseur}
-                      onChange={(e) => setCurrentCommande(prev => ({ ...prev, fournisseur: e.target.value }))}
-                    />
+                    {fournisseurs.length > 0 ? (
+                      <>
+                        <Select
+                          value={currentCommande.fournisseur}
+                          onValueChange={(value) => {
+                            const selectedFournisseur = fournisseurs.find(f => f.nom === value);
+                            if (selectedFournisseur) {
+                              setCurrentCommande(prev => ({
+                                ...prev,
+                                fournisseur: selectedFournisseur.nom,
+                                email_fournisseur: selectedFournisseur.email || "",
+                                telephone_fournisseur: selectedFournisseur.telephone || "",
+                                adresse_fournisseur: selectedFournisseur.adresse || ""
+                              }));
+                            } else if (value === "MANUAL_INPUT") {
+                              // Ne rien faire, l'utilisateur va saisir manuellement
+                            }
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionner un fournisseur" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {fournisseurs.map((fournisseur) => (
+                              <SelectItem key={fournisseur.id} value={fournisseur.nom}>
+                                {fournisseur.nom}
+                              </SelectItem>
+                            ))}
+                            <SelectItem value="MANUAL_INPUT" className="text-muted-foreground italic">
+                              + Saisir manuellement
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          className="mt-2"
+                          placeholder="Ou saisir le nom manuellement"
+                          value={currentCommande.fournisseur}
+                          onChange={(e) => setCurrentCommande(prev => ({ ...prev, fournisseur: e.target.value }))}
+                        />
+                      </>
+                    ) : (
+                      <Input
+                        placeholder="Nom du fournisseur"
+                        value={currentCommande.fournisseur}
+                        onChange={(e) => setCurrentCommande(prev => ({ ...prev, fournisseur: e.target.value }))}
+                      />
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="email">Email</Label>

@@ -174,6 +174,7 @@ export const SmartOrderDialog = ({ isOpen, onClose, onOrdersCreated }: SmartOrde
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      const createdCommandeIds: string[] = [];
       
       for (const [fournisseurId, orderData] of Object.entries(groupedOrders)) {
         // Créer la commande
@@ -195,6 +196,9 @@ export const SmartOrderDialog = ({ isOpen, onClose, onOrdersCreated }: SmartOrde
           .single();
 
         if (commandeError) throw commandeError;
+
+        // Collecter l'ID
+        createdCommandeIds.push(commande.id);
 
         // Créer les items de commande
         const itemsToInsert = orderData.items.map(item => ({
@@ -221,6 +225,13 @@ export const SmartOrderDialog = ({ isOpen, onClose, onOrdersCreated }: SmartOrde
 
       onOrdersCreated();
       onClose();
+      
+      // Ouvrir la première commande créée
+      if (createdCommandeIds.length > 0) {
+        setTimeout(() => {
+          window.location.hash = `#commande-${createdCommandeIds[0]}`;
+        }, 500);
+      }
     } catch (error: any) {
       toast({
         title: "Erreur",
