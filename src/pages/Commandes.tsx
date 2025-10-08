@@ -1323,22 +1323,20 @@ export default function Commandes() {
       </AlertDialog>
 
       {/* Create Article Dialog */}
-      {showCreateArticleDialog && (
-        <CreateArticleDialog
-          open={showCreateArticleDialog}
-          onOpenChange={setShowCreateArticleDialog}
-          defaultFournisseurId={currentFournisseurId}
-          onArticleCreated={async () => {
-            await fetchArticles();
-            setShowCreateArticleDialog(false);
-            toast({
-              title: "Succès",
-              description: "Article créé avec succès",
-            });
-          }}
-          triggerButton={null as any}
-        />
-      )}
+      <CreateArticleDialog
+        open={showCreateArticleDialog}
+        onOpenChange={setShowCreateArticleDialog}
+        defaultFournisseurId={currentFournisseurId}
+        onArticleCreated={async () => {
+          await fetchArticles();
+          setShowCreateArticleDialog(false);
+          toast({
+            title: "Succès",
+            description: "Article créé avec succès",
+          });
+        }}
+        triggerButton={<></>}
+      />
     </DashboardLayout>
   );
 }
