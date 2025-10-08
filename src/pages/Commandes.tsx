@@ -581,8 +581,8 @@ export default function Commandes() {
       }
 
       // Insérer les nouveaux items
-      const itemsToInsert = currentItems.map(item => ({
-        ...item,
+      const itemsToInsert = currentItems.map(({ id, ...rest }) => ({
+        ...rest,
         commande_id: commandeId
       }));
 
