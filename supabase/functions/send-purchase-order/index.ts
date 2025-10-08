@@ -105,6 +105,7 @@ const generatePurchaseOrderHTML = (data: PurchaseOrderRequest) => {
       
       <div class="info-section">
         <div><span class="info-label">Date de commande :</span> ${new Date(commande.date_creation).toLocaleDateString('fr-FR')}</div>
+        <div><span class="info-label">Commandé par :</span> ${sender.name}</div>
       </div>
       
       <table>
