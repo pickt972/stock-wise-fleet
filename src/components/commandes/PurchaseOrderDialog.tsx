@@ -168,6 +168,21 @@ export const PurchaseOrderDialog = ({ isOpen, onClose, commande, items }: Purcha
     setIsLoading(true);
     
     try {
+      // Récupérer les paramètres de l'entreprise
+      const { data: user } = await supabase.auth.getUser();
+      let companySettings = null;
+      
+      if (user?.user) {
+        const { data: settings } = await supabase
+          .from("company_settings")
+          .select("*")
+          .eq("user_id", user.user.id)
+          .eq("is_active", true)
+          .maybeSingle();
+        
+        companySettings = settings;
+      }
+
       const { data, error } = await supabase.functions.invoke('send-purchase-order', {
         body: {
           commande,
@@ -176,6 +191,7 @@ export const PurchaseOrderDialog = ({ isOpen, onClose, commande, items }: Purcha
             name: senderName,
             email: senderEmail,
           },
+          companySettings,
         },
       });
 
