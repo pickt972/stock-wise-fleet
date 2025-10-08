@@ -152,13 +152,27 @@ export default function Revisions() {
 
       if (afError) throw afError;
 
-      if (!afList || afList.length === 0) {
+      // Récupérer tous les fournisseur_id depuis les articles et article_fournisseurs
+      const fournisseurIdsSet = new Set<string>();
+      
+      // Ajouter les fournisseurs depuis article_fournisseurs
+      if (afList) {
+        afList.forEach(af => fournisseurIdsSet.add(af.fournisseur_id));
+      }
+      
+      // Ajouter les fournisseurs depuis les articles
+      piecesACommander.forEach(({ article }) => {
+        if (article.fournisseur_id) {
+          fournisseurIdsSet.add(article.fournisseur_id);
+        }
+      });
+
+      if (fournisseurIdsSet.size === 0) {
         toast.error("Aucun fournisseur trouvé pour ces articles");
         return;
       }
 
-      // Récupérer les fournisseurs actifs
-      const fournisseurIds = Array.from(new Set(afList.map(af => af.fournisseur_id)));
+      const fournisseurIds = Array.from(fournisseurIdsSet);
       const { data: fournisseurs, error: fError } = await supabase
         .from('fournisseurs')
         .select('id, nom, email, telephone, adresse, actif')
@@ -174,15 +188,24 @@ export default function Revisions() {
       
       for (const { article, analyse } of piecesACommander) {
         // Trouver le meilleur fournisseur pour cet article
-        const articleFournisseurs = afList.filter(af => af.article_id === article.id);
+        const articleFournisseurs = afList?.filter(af => af.article_id === article.id) || [];
         let bestFournisseur = articleFournisseurs.find(af => af.est_principal);
         if (!bestFournisseur && articleFournisseurs.length > 0) {
           bestFournisseur = articleFournisseurs[0];
         }
 
-        if (!bestFournisseur) continue;
+        let fournisseur;
+        let prixFournisseur;
 
-        const fournisseur = fournisseursMap.get(bestFournisseur.fournisseur_id);
+        if (bestFournisseur) {
+          fournisseur = fournisseursMap.get(bestFournisseur.fournisseur_id);
+          prixFournisseur = bestFournisseur.prix_fournisseur;
+        } else if (article.fournisseur_id) {
+          // Utiliser le fournisseur de l'article si pas d'association dans article_fournisseurs
+          fournisseur = fournisseursMap.get(article.fournisseur_id);
+          prixFournisseur = null;
+        }
+
         if (!fournisseur) continue;
 
         const fournisseurId = fournisseur.id;
@@ -195,7 +218,7 @@ export default function Revisions() {
           };
         }
 
-        const prixUnitaire = bestFournisseur.prix_fournisseur || article.prix_achat || 0;
+        const prixUnitaire = prixFournisseur || article.prix_achat || 0;
         const totalLigne = analyse.manquant * prixUnitaire;
 
         grouped[fournisseurId].items.push({
