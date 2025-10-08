@@ -1,8 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -41,6 +39,7 @@ interface PurchaseOrderRequest {
     company_email: string;
     company_logo_url?: string;
   };
+  mailSettingId: string;
 }
 
 const generatePurchaseOrderHTML = (data: PurchaseOrderRequest) => {
@@ -169,7 +168,7 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const requestData: PurchaseOrderRequest = await req.json();
-    const { commande, items, sender } = requestData;
+    const { commande, items, sender, mailSettingId } = requestData;
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -180,19 +179,47 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Email du fournisseur manquant");
     }
 
+    // Récupérer les paramètres de messagerie
+    const { data: mailSetting, error: mailError } = await supabase
+      .from("mail_settings")
+      .select("*")
+      .eq("id", mailSettingId)
+      .eq("is_active", true)
+      .single();
+
+    if (mailError || !mailSetting) {
+      console.error("❌ Mail setting not found:", mailError);
+      throw new Error("Configuration de messagerie non trouvée");
+    }
+
+    console.log("📧 Mail setting found:", mailSetting.name);
+
     const html = generatePurchaseOrderHTML(requestData);
 
-    const emailResponse = await resend.emails.send({
-      from: `${sender.name} <onboarding@resend.dev>`,
-      to: [commande.email_fournisseur],
+    // Créer le client SMTP avec les paramètres configurés
+    const client = new SMTPClient({
+      connection: {
+        hostname: mailSetting.smtp_host,
+        port: mailSetting.smtp_port,
+        tls: mailSetting.use_tls,
+        auth: {
+          username: mailSetting.smtp_username,
+          password: mailSetting.smtp_password,
+        },
+      },
+    });
+
+    // Envoi via SMTP
+    await client.send({
+      from: mailSetting.smtp_username,
+      to: commande.email_fournisseur,
       subject: `Bon de commande ${commande.numero_commande} - ${commande.fournisseur}`,
+      content: "auto",
       html: html,
     });
 
-    if ((emailResponse as any)?.error) {
-      console.error("Resend error:", (emailResponse as any).error);
-      throw new Error((emailResponse as any).error?.message || "Echec d'envoi d'email");
-    }
+    await client.close();
+    console.log("✅ Email sent successfully via SMTP");
 
     // Mettre à jour le statut de la commande après envoi réussi
     if (commande?.id) {

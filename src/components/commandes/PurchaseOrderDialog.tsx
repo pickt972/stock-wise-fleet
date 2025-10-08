@@ -211,9 +211,10 @@ export const PurchaseOrderDialog = ({ isOpen, onClose, commande, items }: Purcha
     setIsLoading(true);
     
     try {
-      // Récupérer les paramètres de l'entreprise
+      // Récupérer les paramètres de l'entreprise et de messagerie
       const { data: user } = await supabase.auth.getUser();
       let companySettings = null;
+      let mailSettingId = null;
       
       if (user?.user) {
         const { data: settings } = await supabase
@@ -224,6 +225,20 @@ export const PurchaseOrderDialog = ({ isOpen, onClose, commande, items }: Purcha
           .maybeSingle();
         
         companySettings = settings;
+
+        // Récupérer le compte email actif
+        const { data: mailSetting } = await supabase
+          .from("mail_settings")
+          .select("id")
+          .eq("user_id", user.user.id)
+          .eq("is_active", true)
+          .maybeSingle();
+
+        if (!mailSetting) {
+          throw new Error("Aucun compte email configuré. Veuillez configurer un compte dans Paramètres.");
+        }
+
+        mailSettingId = mailSetting.id;
       }
 
       const { data, error } = await supabase.functions.invoke('send-purchase-order', {
@@ -235,6 +250,7 @@ export const PurchaseOrderDialog = ({ isOpen, onClose, commande, items }: Purcha
             email: senderEmail,
           },
           companySettings,
+          mailSettingId,
         },
       });
 

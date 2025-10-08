@@ -1,13 +1,11 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
-import { Resend } from "npm:resend@2.0.0";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 interface EmailRequest {
   mailSettingId: string;
@@ -50,20 +48,35 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("📧 Mail setting found:", mailSetting.name);
 
-    // Envoi réel via Resend
-    const emailResponse = await resend.emails.send({
-      from: `${mailSetting.name || 'Commande'} <onboarding@resend.dev>`,
-      to: [to],
-      subject,
-      html: body && body.trim().length > 0 && body.includes('<')
-        ? body
-        : `<pre style="font-family: ui-sans-serif, system-ui; white-space: pre-wrap;">${body || ''}</pre>`,
+    // Créer le client SMTP avec les paramètres configurés
+    const client = new SMTPClient({
+      connection: {
+        hostname: mailSetting.smtp_host,
+        port: mailSetting.smtp_port,
+        tls: mailSetting.use_tls,
+        auth: {
+          username: mailSetting.smtp_username,
+          password: mailSetting.smtp_password,
+        },
+      },
     });
 
-    if ((emailResponse as any)?.error) {
-      console.error("❌ Resend error:", (emailResponse as any).error);
-      throw new Error((emailResponse as any).error?.message || "Echec d'envoi d'email");
-    }
+    // Préparer le contenu HTML
+    const htmlContent = body && body.trim().length > 0 && body.includes('<')
+      ? body
+      : `<pre style="font-family: ui-sans-serif, system-ui; white-space: pre-wrap;">${body || ''}</pre>`;
+
+    // Envoi via SMTP
+    await client.send({
+      from: mailSetting.smtp_username,
+      to: to,
+      subject: subject,
+      content: "auto",
+      html: htmlContent,
+    });
+
+    await client.close();
+    console.log("✅ Email sent successfully via SMTP");
 
     
     // Log de l'envoi dans la base de données pour traçabilité
