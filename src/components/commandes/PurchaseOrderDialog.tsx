@@ -48,8 +48,17 @@ export const PurchaseOrderDialog = ({ isOpen, onClose, commande, items }: Purcha
         const { data: { user } } = await supabase.auth.getUser();
         
         if (user) {
-          // Récupérer l'email de l'utilisateur
-          setSenderEmail(user.email || "");
+          // Récupérer l'email depuis mail_settings
+          const { data: mailSettings } = await supabase
+            .from("mail_settings")
+            .select("smtp_username")
+            .eq("user_id", user.id)
+            .eq("is_active", true)
+            .maybeSingle();
+          
+          if (mailSettings?.smtp_username) {
+            setSenderEmail(mailSettings.smtp_username);
+          }
           
           // Récupérer le profil pour obtenir le nom
           const { data: profile } = await supabase
