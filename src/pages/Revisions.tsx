@@ -15,7 +15,6 @@ import { Wrench, AlertTriangle, CheckCircle, ShoppingCart, Package, Minus } from
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "./DashboardLayout";
-import { SmartOrderDialog } from "@/components/commandes/SmartOrderDialog";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Vehicule = Tables<"vehicules">;
@@ -44,7 +43,6 @@ export default function Revisions() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedArticles, setSelectedArticles] = useState<Set<string>>(new Set());
   const [showSortieDialog, setShowSortieDialog] = useState(false);
-  const [showSmartOrderDialog, setShowSmartOrderDialog] = useState(false);
   const [articleQuantities, setArticleQuantities] = useState<Record<string, number>>({});
 
   const { data: vehicules = [] } = useQuery({
@@ -143,8 +141,128 @@ export default function Revisions() {
       return;
     }
 
-    toast.success(`Analyse terminée: ${piecesACommander.length} pièces à commander`);
-    setShowSmartOrderDialog(true);
+    try {
+      // Récupérer les associations article-fournisseur pour les pièces à commander
+      const articleIds = piecesACommander.map(({ article }) => article.id);
+      const { data: afList, error: afError } = await supabase
+        .from('article_fournisseurs')
+        .select('article_id, fournisseur_id, prix_fournisseur, est_principal, actif')
+        .in('article_id', articleIds)
+        .eq('actif', true);
+
+      if (afError) throw afError;
+
+      if (!afList || afList.length === 0) {
+        toast.error("Aucun fournisseur trouvé pour ces articles");
+        return;
+      }
+
+      // Récupérer les fournisseurs actifs
+      const fournisseurIds = Array.from(new Set(afList.map(af => af.fournisseur_id)));
+      const { data: fournisseurs, error: fError } = await supabase
+        .from('fournisseurs')
+        .select('id, nom, email, telephone, adresse, actif')
+        .in('id', fournisseurIds)
+        .eq('actif', true);
+
+      if (fError) throw fError;
+
+      const fournisseursMap = new Map((fournisseurs || []).map(f => [f.id, f]));
+
+      // Grouper par fournisseur
+      const grouped: Record<string, any> = {};
+      
+      for (const { article, analyse } of piecesACommander) {
+        // Trouver le meilleur fournisseur pour cet article
+        const articleFournisseurs = afList.filter(af => af.article_id === article.id);
+        let bestFournisseur = articleFournisseurs.find(af => af.est_principal);
+        if (!bestFournisseur && articleFournisseurs.length > 0) {
+          bestFournisseur = articleFournisseurs[0];
+        }
+
+        if (!bestFournisseur) continue;
+
+        const fournisseur = fournisseursMap.get(bestFournisseur.fournisseur_id);
+        if (!fournisseur) continue;
+
+        const fournisseurId = fournisseur.id;
+        if (!grouped[fournisseurId]) {
+          grouped[fournisseurId] = {
+            fournisseur,
+            items: [],
+            total_ht: 0,
+            total_ttc: 0
+          };
+        }
+
+        const prixUnitaire = bestFournisseur.prix_fournisseur || article.prix_achat || 0;
+        const totalLigne = analyse.manquant * prixUnitaire;
+
+        grouped[fournisseurId].items.push({
+          article_id: article.id,
+          designation: article.designation,
+          reference: article.reference,
+          quantite_commandee: analyse.manquant,
+          prix_unitaire: prixUnitaire,
+          total_ligne: totalLigne
+        });
+
+        grouped[fournisseurId].total_ht += totalLigne;
+        grouped[fournisseurId].total_ttc = grouped[fournisseurId].total_ht * 1.20;
+      }
+
+      if (Object.keys(grouped).length === 0) {
+        toast.error("Impossible de grouper les articles par fournisseur");
+        return;
+      }
+
+      // Créer les commandes
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      for (const [fournisseurId, orderData] of Object.entries(grouped)) {
+        // Créer la commande
+        const { data: commande, error: commandeError } = await supabase
+          .from('commandes')
+          .insert([{
+            fournisseur: orderData.fournisseur.nom,
+            email_fournisseur: orderData.fournisseur.email,
+            telephone_fournisseur: orderData.fournisseur.telephone,
+            adresse_fournisseur: orderData.fournisseur.adresse,
+            status: 'brouillon',
+            total_ht: orderData.total_ht,
+            total_ttc: orderData.total_ttc,
+            tva_taux: 20,
+            user_id: currentUser?.id,
+            numero_commande: ''
+          }])
+          .select()
+          .single();
+
+        if (commandeError) throw commandeError;
+
+        // Créer les items de commande
+        const itemsToInsert = orderData.items.map((item: any) => ({
+          commande_id: commande.id,
+          article_id: item.article_id,
+          designation: item.designation,
+          reference: item.reference,
+          quantite_commandee: item.quantite_commandee,
+          prix_unitaire: item.prix_unitaire,
+          total_ligne: item.total_ligne
+        }));
+
+        const { error: itemsError } = await supabase
+          .from('commande_items')
+          .insert(itemsToInsert);
+
+        if (itemsError) throw itemsError;
+      }
+
+      toast.success(`${Object.keys(grouped).length} commande(s) créée(s) pour ${piecesACommander.length} pièces`);
+      navigate('/commandes');
+    } catch (error: any) {
+      toast.error(`Erreur: ${error.message}`);
+    }
   };
 
   const handleArticleSelection = (articleId: string, checked: boolean) => {
@@ -520,17 +638,6 @@ export default function Revisions() {
             </div>
           </DialogContent>
         </Dialog>
-
-        {/* Smart Order Dialog */}
-        <SmartOrderDialog
-          isOpen={showSmartOrderDialog}
-          onClose={() => setShowSmartOrderDialog(false)}
-          onOrdersCreated={() => {
-            setShowSmartOrderDialog(false);
-            toast.success("Commande(s) créée(s) avec succès");
-            navigate('/commandes');
-          }}
-        />
       </div>
     </DashboardLayout>
   );
