@@ -839,15 +839,60 @@ export default function Commandes() {
                     <span>{currentCommande.total_ttc.toFixed(2)} €</span>
                   </div>
                 </div>
+
+                {/* Liste des articles ajoutés */}
+                {currentItems.length > 0 && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h4 className="font-medium mb-3">Articles ajoutés</h4>
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {currentItems.map((item, index) => (
+                          <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md text-sm">
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium truncate">{item.designation}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {item.reference} • {item.prix_unitaire.toFixed(2)} € × {item.quantite_commandee}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Input
+                                type="number"
+                                min="1"
+                                value={item.quantite_commandee}
+                                onChange={(e) => {
+                                  const value = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
+                                  updateItem(index, 'quantite_commandee', value || 1);
+                                }}
+                                className="w-16 h-8 text-center"
+                              />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => removeItem(index)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                            <div className="font-medium shrink-0">
+                              {item.total_ligne.toFixed(2)} €
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>
 
-          {/* Articles */}
+          {/* Articles - Section compacte */}
           <Card>
             <CardHeader>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <CardTitle>Articles ({currentItems.length})</CardTitle>
+                <CardTitle>Ajouter des articles</CardTitle>
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                   <Button 
                     onClick={() => setShowScanner(true)} 
@@ -904,93 +949,15 @@ export default function Commandes() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="text-sm text-muted-foreground">
                 {currentItems.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <div className="text-center py-8">
+                    <Search className="w-10 h-10 mx-auto mb-3 opacity-50" />
                     <p>Aucun article ajouté</p>
-                    <p className="text-sm mt-2">Cliquez sur "Rechercher un article" pour commencer</p>
+                    <p className="text-xs mt-1">Utilisez les boutons ci-dessus pour ajouter des articles</p>
                   </div>
                 ) : (
-                  currentItems.map((item, index) => (
-                    <div key={index} className="flex flex-col gap-3 p-4 border rounded-lg bg-card">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <Label>Article</Label>
-                          <Input
-                            placeholder="Désignation"
-                            value={item.designation}
-                            onChange={(e) => updateItem(index, 'designation', e.target.value)}
-                            className="font-medium"
-                          />
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeItem(index)}
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10 mt-6 shrink-0"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <Label>Référence</Label>
-                          <Input
-                            value={item.reference || ""}
-                            onChange={(e) => updateItem(index, 'reference', e.target.value)}
-                            placeholder="REF-001"
-                          />
-                        </div>
-                        <div>
-                          <Label>Quantité</Label>
-                          <Input
-                            type="number"
-                            value={item.quantite_commandee}
-                            onChange={(e) => {
-                              const value = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
-                              updateItem(index, 'quantite_commandee', value || 0);
-                            }}
-                            min="1"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <Label>Prix unitaire</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={item.prix_unitaire}
-                            onChange={(e) => {
-                              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                              updateItem(index, 'prix_unitaire', value || 0);
-                            }}
-                            min="0"
-                          />
-                        </div>
-                        <div>
-                          <Label>Total ligne</Label>
-                          <div className="font-semibold text-lg h-10 flex items-center">{item.total_ligne.toFixed(2)} €</div>
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end mt-2">
-                        <Button size="sm" variant="default">
-                          <Plus className="w-4 h-4 mr-2" />
-                          Ajouter
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                )}
-                
-                {currentItems.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Aucun article ajouté. Cliquez sur "Ajouter un article" pour commencer.
-                  </div>
+                  <p className="text-center py-2">{currentItems.length} article(s) dans la commande</p>
                 )}
               </div>
             </CardContent>
