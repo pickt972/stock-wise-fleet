@@ -1140,6 +1140,27 @@ export default function Commandes() {
               {editingCommande ? 'Valider' : 'Créer'} la commande
             </Button>
           </div>
+
+          {/* Overlays for creation flow */}
+          <BarcodeScanner
+            isOpen={showScanner}
+            onClose={() => setShowScanner(false)}
+            onScanResult={handleBarcodeScan}
+          />
+
+          <CreateArticleDialog
+            open={showCreateArticleDialog}
+            onOpenChange={setShowCreateArticleDialog}
+            defaultFournisseurId={currentFournisseurId}
+            onArticleCreated={async () => {
+              await fetchArticles();
+              setShowCreateArticleDialog(false);
+              toast({
+                title: "Succès",
+                description: "Article créé avec succès",
+              });
+            }}
+          />
         </div>
       </DashboardLayout>
     );
