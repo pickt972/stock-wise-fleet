@@ -95,7 +95,7 @@ export default function Commandes() {
     status: "brouillon",
     total_ht: 0,
     total_ttc: 0,
-    tva_taux: 20,
+    tva_taux: 8.5,
     user_id: undefined,
   });
   const [currentItems, setCurrentItems] = useState<CommandeItem[]>([]);
@@ -610,7 +610,7 @@ export default function Commandes() {
         status: "brouillon",
         total_ht: 0,
         total_ttc: 0,
-        tva_taux: 20,
+        tva_taux: 8.5,
         user_id: undefined,
       });
       setCurrentItems([]);
@@ -722,7 +722,7 @@ export default function Commandes() {
                 status: "brouillon",
                 total_ht: 0,
                 total_ttc: 0,
-                tva_taux: 20,
+                tva_taux: 8.5,
                 user_id: undefined,
               });
               setCurrentItems([]);
@@ -859,12 +859,10 @@ export default function Commandes() {
               <CardContent className="space-y-4">
                 <div>
                   <Label htmlFor="tva">Taux TVA (%)</Label>
-                  <Input
-                    id="tva"
-                    type="number"
-                    value={currentCommande.tva_taux}
-                    onChange={(e) => {
-                      const newTva = parseFloat(e.target.value) || 0;
+                  <Select
+                    value={currentCommande.tva_taux.toString()}
+                    onValueChange={(value) => {
+                      const newTva = parseFloat(value);
                       const { totalHT, totalTTC } = calculateTotals(currentItems, newTva);
                       setCurrentCommande(prev => ({
                         ...prev,
@@ -873,7 +871,16 @@ export default function Commandes() {
                         total_ttc: totalTTC
                       }));
                     }}
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">0%</SelectItem>
+                      <SelectItem value="8.5">8,5%</SelectItem>
+                      <SelectItem value="20">20%</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <Separator />
                 <div className="space-y-2">

@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
@@ -47,6 +48,8 @@ export function CreateArticleDialog({
   const [emplacements, setEmplacements] = useState<any[]>([]);
   const [showFournisseurDialog, setShowFournisseurDialog] = useState(false);
   const [showCategorieDialog, setShowCategorieDialog] = useState(false);
+  const [priceType, setPriceType] = useState<"HT" | "TTC">("HT");
+  const [tvaTaux, setTvaTaux] = useState(0);
   const [formData, setFormData] = useState({
     reference: "",
     designation: "",
@@ -421,18 +424,64 @@ const articleSchema = z.object({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="prixAchat">Prix d'achat (€)</Label>
-            <Input
-              id="prixAchat"
-              type="number"
-              step="0.01"
-              min="0"
-              value={formData.prixAchat}
-              onChange={(e) => setFormData(prev => ({ ...prev, prixAchat: parseFloat(e.target.value) || 0 }))}
-              onFocus={(e) => e.target.select()}
-              placeholder="0.00"
-            />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Type de prix</Label>
+              <RadioGroup value={priceType} onValueChange={(val: "HT" | "TTC") => setPriceType(val)} className="flex gap-4">
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="HT" id="ht" />
+                  <Label htmlFor="ht" className="font-normal cursor-pointer">Hors taxes (HT)</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="TTC" id="ttc" />
+                  <Label htmlFor="ttc" className="font-normal cursor-pointer">Toutes taxes comprises (TTC)</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {priceType === "TTC" && (
+              <div className="space-y-2">
+                <Label htmlFor="tva">Taux de TVA (%)</Label>
+                <Select value={tvaTaux.toString()} onValueChange={(val) => setTvaTaux(parseFloat(val))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border border-border shadow-medium z-[60]">
+                    <SelectItem value="0">0%</SelectItem>
+                    <SelectItem value="8.5">8,5%</SelectItem>
+                    <SelectItem value="20">20%</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="prixAchat">Prix d'achat {priceType} (€)</Label>
+              <Input
+                id="prixAchat"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.prixAchat}
+                onChange={(e) => {
+                  const inputPrice = parseFloat(e.target.value) || 0;
+                  let prixHT = inputPrice;
+                  
+                  if (priceType === "TTC" && tvaTaux > 0) {
+                    prixHT = inputPrice / (1 + tvaTaux / 100);
+                  }
+                  
+                  setFormData(prev => ({ ...prev, prixAchat: prixHT }));
+                }}
+                onFocus={(e) => e.target.select()}
+                placeholder="0.00"
+              />
+              {priceType === "TTC" && tvaTaux > 0 && formData.prixAchat > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Prix HT : {formData.prixAchat.toFixed(2)} €
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 pt-4">

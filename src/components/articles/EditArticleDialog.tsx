@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Edit } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -73,6 +74,8 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
   const [fournisseurs, setFournisseurs] = useState<any[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [emplacements, setEmplacements] = useState<any[]>([]);
+  const [priceType, setPriceType] = useState<"HT" | "TTC">("HT");
+  const [tvaTaux, setTvaTaux] = useState(0);
   const [formData, setFormData] = useState({
     reference: article.reference,
     designation: article.designation,
@@ -343,19 +346,65 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="prix_achat" className="text-xs sm:text-sm">Prix d'achat (€)</Label>
-            <Input
-              id="prix_achat"
-              type="number"
-              step="0.01"
-              min="0"
-              value={formData.prix_achat}
-              onChange={(e) => setFormData({ ...formData, prix_achat: parseFloat(e.target.value) || 0 })}
-              onFocus={(e) => e.target.select()}
-              required
-              className="h-11 text-base"
-            />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Type de prix</Label>
+              <RadioGroup value={priceType} onValueChange={(val: "HT" | "TTC") => setPriceType(val)} className="flex gap-4">
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="HT" id="edit-ht" />
+                  <Label htmlFor="edit-ht" className="font-normal cursor-pointer">Hors taxes (HT)</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="TTC" id="edit-ttc" />
+                  <Label htmlFor="edit-ttc" className="font-normal cursor-pointer">Toutes taxes comprises (TTC)</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {priceType === "TTC" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-tva" className="text-xs sm:text-sm">Taux de TVA (%)</Label>
+                <Select value={tvaTaux.toString()} onValueChange={(val) => setTvaTaux(parseFloat(val))}>
+                  <SelectTrigger className="h-11 text-base">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border shadow-lg z-[60]">
+                    <SelectItem value="0">0%</SelectItem>
+                    <SelectItem value="8.5">8,5%</SelectItem>
+                    <SelectItem value="20">20%</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <Label htmlFor="prix_achat" className="text-xs sm:text-sm">Prix d'achat {priceType} (€)</Label>
+              <Input
+                id="prix_achat"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.prix_achat}
+                onChange={(e) => {
+                  const inputPrice = parseFloat(e.target.value) || 0;
+                  let prixHT = inputPrice;
+                  
+                  if (priceType === "TTC" && tvaTaux > 0) {
+                    prixHT = inputPrice / (1 + tvaTaux / 100);
+                  }
+                  
+                  setFormData({ ...formData, prix_achat: prixHT });
+                }}
+                onFocus={(e) => e.target.select()}
+                required
+                className="h-11 text-base"
+              />
+              {priceType === "TTC" && tvaTaux > 0 && formData.prix_achat > 0 && (
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
+                  Prix HT : {formData.prix_achat.toFixed(2)} €
+                </p>
+              )}
+            </div>
           </div>
 
           <ArticleVehicleCompatibility articleId={article.id} />
