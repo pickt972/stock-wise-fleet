@@ -13,6 +13,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Plus, Trash2, ShoppingCart, Mail, Download, Edit, Brain } from "lucide-react";
 import { PurchaseOrderDialog } from "@/components/commandes/PurchaseOrderDialog";
 import { SmartOrderDialog } from "@/components/commandes/SmartOrderDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import DashboardLayout from "./DashboardLayout";
 
 interface Article {
@@ -80,6 +90,10 @@ export default function Commandes() {
   });
   const [currentItems, setCurrentItems] = useState<CommandeItem[]>([]);
   const [purchaseOrderDialog, setPurchaseOrderDialog] = useState<{
+    isOpen: boolean;
+    commande?: Commande & { items: CommandeItem[] };
+  }>({ isOpen: false });
+  const [deleteDialog, setDeleteDialog] = useState<{
     isOpen: boolean;
     commande?: Commande & { items: CommandeItem[] };
   }>({ isOpen: false });
@@ -383,6 +397,39 @@ export default function Commandes() {
     setCurrentCommande(commande);
     setCurrentItems(commande.items);
     setIsCreating(true);
+  };
+
+  const deleteCommande = async (commandeId: string) => {
+    try {
+      // Supprimer d'abord les items de la commande
+      const { error: itemsError } = await supabase
+        .from('commande_items')
+        .delete()
+        .eq('commande_id', commandeId);
+
+      if (itemsError) throw itemsError;
+
+      // Puis supprimer la commande
+      const { error: commandeError } = await supabase
+        .from('commandes')
+        .delete()
+        .eq('id', commandeId);
+
+      if (commandeError) throw commandeError;
+
+      toast({
+        title: "Succès",
+        description: "Commande supprimée avec succès",
+      });
+
+      fetchCommandes();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -750,6 +797,19 @@ export default function Commandes() {
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
+                    {commande?.status === 'brouillon' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setDeleteDialog({
+                          isOpen: true,
+                          commande: commande
+                        })}
+                        className="shrink-0"
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"
@@ -828,6 +888,35 @@ export default function Commandes() {
         commande={purchaseOrderDialog.commande as any}
         items={purchaseOrderDialog.commande?.items || []}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialog.isOpen} onOpenChange={(open) => !open && setDeleteDialog({ isOpen: false })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer la commande {deleteDialog.commande?.numero_commande} ?
+              Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteDialog({ isOpen: false })}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteDialog.commande?.id) {
+                  deleteCommande(deleteDialog.commande.id);
+                }
+                setDeleteDialog({ isOpen: false });
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }
