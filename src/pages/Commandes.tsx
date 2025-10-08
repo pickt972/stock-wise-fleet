@@ -30,6 +30,7 @@ interface Article {
   designation: string;
   reference: string;
   prix_achat: number;
+  fournisseur_id?: string;
 }
 
 interface CommandeItem {
@@ -72,6 +73,7 @@ export default function Commandes() {
   const [commandes, setCommandes] = useState<(Commande & { items: CommandeItem[] })[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
   const [fournisseurs, setFournisseurs] = useState<Fournisseur[]>([]);
+  const [filteredArticles, setFilteredArticles] = useState<Article[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [editingCommande, setEditingCommande] = useState<(Commande & { items: CommandeItem[] }) | null>(null);
@@ -234,17 +236,59 @@ export default function Commandes() {
     try {
       const { data, error } = await supabase
         .from('articles')
-        .select('id, designation, reference, prix_achat')
+        .select('id, designation, reference, prix_achat, fournisseur_id')
         .order('designation');
 
       if (error) throw error;
       setArticles(data || []);
+      setFilteredArticles(data || []);
     } catch (error: any) {
       toast({
         title: "Erreur",
         description: error.message,
         variant: "destructive",
       });
+    }
+  };
+
+  const filterArticlesByFournisseur = async (fournisseurNom: string) => {
+    if (!fournisseurNom) {
+      setFilteredArticles(articles);
+      return;
+    }
+
+    try {
+      // Trouver l'ID du fournisseur
+      const fournisseur = fournisseurs.find(f => f.nom === fournisseurNom);
+      if (!fournisseur) {
+        setFilteredArticles(articles);
+        return;
+      }
+
+      // Récupérer les articles associés à ce fournisseur via article_fournisseurs
+      const { data: articleFournisseurs, error } = await supabase
+        .from('article_fournisseurs')
+        .select('article_id')
+        .eq('fournisseur_id', fournisseur.id)
+        .eq('actif', true);
+
+      if (error) throw error;
+
+      const articleIdsFromAF = new Set(articleFournisseurs?.map(af => af.article_id) || []);
+
+      // Filtrer les articles: ceux qui sont dans article_fournisseurs OU qui ont directement le fournisseur_id
+      const filtered = articles.filter(article => 
+        articleIdsFromAF.has(article.id) || article.fournisseur_id === fournisseur.id
+      );
+
+      setFilteredArticles(filtered);
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+      setFilteredArticles(articles);
     }
   };
 
@@ -421,6 +465,10 @@ export default function Commandes() {
     setCurrentCommande(commande);
     setCurrentItems(commande.items);
     setIsCreating(true);
+    // Filtrer les articles par fournisseur lors de l'édition
+    if (commande.fournisseur) {
+      filterArticlesByFournisseur(commande.fournisseur);
+    }
   };
 
   const deleteCommande = async (commandeId: string) => {
@@ -531,8 +579,10 @@ export default function Commandes() {
                                 telephone_fournisseur: selectedFournisseur.telephone || "",
                                 adresse_fournisseur: selectedFournisseur.adresse || ""
                               }));
+                              filterArticlesByFournisseur(selectedFournisseur.nom);
                             } else if (value === "MANUAL_INPUT") {
                               // Ne rien faire, l'utilisateur va saisir manuellement
+                              setFilteredArticles(articles);
                             }
                           }}
                         >
@@ -691,7 +741,7 @@ export default function Commandes() {
                           <SelectValue placeholder="Sélectionner un article" />
                         </SelectTrigger>
                         <SelectContent>
-                          {articles.map((article) => (
+                          {filteredArticles.map((article) => (
                             <SelectItem key={article.id} value={article.id}>
                               {article.designation} - {article.reference}
                             </SelectItem>
