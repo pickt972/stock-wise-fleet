@@ -128,26 +128,26 @@ export function ArticleEmplacementsList({ articleReference, articleDesignation }
         {emplacements.map((emplacement) => (
           <div
             key={`${emplacement.emplacement}-${emplacement.id}`}
-            className="flex items-center justify-between gap-2 p-3 rounded-lg border bg-card"
+            className="flex items-center justify-between gap-2 p-3 rounded-lg border bg-card overflow-hidden"
           >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="p-2 rounded-full bg-primary/10">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="p-2 rounded-full bg-primary/10 flex-shrink-0">
                 <Package className="h-4 w-4 text-primary" />
               </div>
-               <div className="min-w-0">
+               <div className="min-w-0 flex-1">
                  <Badge 
                    variant="outline"
-                   className={`text-xs max-w-[60vw] truncate ${getColorForText(emplacement.emplacement, 'location')}`}
+                   className={`text-xs w-fit max-w-full truncate ${getColorForText(emplacement.emplacement, 'location')}`}
                  >
                    {emplacement.emplacement}
                  </Badge>
-                 <div className="text-sm text-muted-foreground mt-1">
+                 <div className="text-xs sm:text-sm text-muted-foreground mt-1">
                    Emplacement
                  </div>
                </div>
             </div>
-            <Badge variant={emplacement.stock > 0 ? "default" : "secondary"}>
-              {emplacement.stock} unité(s)
+            <Badge variant={emplacement.stock > 0 ? "default" : "secondary"} className="flex-shrink-0">
+              {emplacement.stock}
             </Badge>
           </div>
         ))}
