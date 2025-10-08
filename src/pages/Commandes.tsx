@@ -976,6 +976,13 @@ export default function Commandes() {
                           <div className="font-semibold text-lg h-10 flex items-center">{item.total_ligne.toFixed(2)} €</div>
                         </div>
                       </div>
+
+                      <div className="flex justify-end mt-2">
+                        <Button size="sm" variant="default">
+                          <Plus className="w-4 h-4 mr-2" />
+                          Ajouter
+                        </Button>
+                      </div>
                     </div>
                   ))
                 )}
@@ -1011,7 +1018,7 @@ export default function Commandes() {
               Annuler
             </Button>
             <Button onClick={saveCommande}>
-              {editingCommande ? 'Modifier' : 'Créer'} la commande
+              {editingCommande ? 'Valider' : 'Créer'} la commande
             </Button>
           </div>
         </div>
