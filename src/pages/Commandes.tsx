@@ -10,7 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Trash2, ShoppingCart, Mail, Download, Edit, Brain } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, Mail, Download, Edit, Brain, Search, Check } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { PurchaseOrderDialog } from "@/components/commandes/PurchaseOrderDialog";
 import { SmartOrderDialog } from "@/components/commandes/SmartOrderDialog";
 import {
@@ -78,6 +81,7 @@ export default function Commandes() {
   const [isCreating, setIsCreating] = useState(false);
   const [editingCommande, setEditingCommande] = useState<(Commande & { items: CommandeItem[] }) | null>(null);
   const [showSmartOrder, setShowSmartOrder] = useState(false);
+  const [articleSearchOpen, setArticleSearchOpen] = useState(false);
   const [currentCommande, setCurrentCommande] = useState<Commande>({
     fournisseur: "",
     email_fournisseur: "",
@@ -370,6 +374,60 @@ export default function Commandes() {
       updateItem(index, 'reference', article.reference);
       updateItem(index, 'prix_unitaire', article.prix_achat);
     }
+  };
+
+  const addArticleDirectly = (articleId: string) => {
+    const article = filteredArticles.find(a => a.id === articleId);
+    if (!article) return;
+
+    // Vérifier si l'article n'est pas déjà dans la liste
+    const existingIndex = currentItems.findIndex(item => item.article_id === articleId);
+    if (existingIndex !== -1) {
+      // Incrémenter la quantité si l'article existe déjà
+      const newItems = [...currentItems];
+      newItems[existingIndex].quantite_commandee += 1;
+      newItems[existingIndex].total_ligne = newItems[existingIndex].quantite_commandee * newItems[existingIndex].prix_unitaire;
+      setCurrentItems(newItems);
+      
+      const { totalHT, totalTTC } = calculateTotals(newItems, currentCommande.tva_taux);
+      setCurrentCommande(prev => ({
+        ...prev,
+        total_ht: totalHT,
+        total_ttc: totalTTC
+      }));
+      
+      toast({
+        title: "Quantité mise à jour",
+        description: `${article.designation} : quantité augmentée`,
+      });
+    } else {
+      // Ajouter un nouvel article
+      const newItem: CommandeItem = {
+        article_id: articleId,
+        designation: article.designation,
+        reference: article.reference,
+        quantite_commandee: 1,
+        prix_unitaire: article.prix_achat,
+        total_ligne: article.prix_achat
+      };
+      
+      const newItems = [...currentItems, newItem];
+      setCurrentItems(newItems);
+      
+      const { totalHT, totalTTC } = calculateTotals(newItems, currentCommande.tva_taux);
+      setCurrentCommande(prev => ({
+        ...prev,
+        total_ht: totalHT,
+        total_ttc: totalTTC
+      }));
+      
+      toast({
+        title: "Article ajouté",
+        description: `${article.designation} ajouté à la commande`,
+      });
+    }
+    
+    setArticleSearchOpen(false);
   };
 
   const saveCommande = async () => {
@@ -723,80 +781,117 @@ export default function Commandes() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Articles</CardTitle>
-                <Button onClick={addItem} size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Ajouter un article
-                </Button>
+                <CardTitle>Articles ({currentItems.length})</CardTitle>
+                <div className="flex gap-2">
+                  <Popover open={articleSearchOpen} onOpenChange={setArticleSearchOpen}>
+                    <PopoverTrigger asChild>
+                      <Button size="sm" variant="default">
+                        <Search className="w-4 h-4 mr-2" />
+                        Rechercher un article
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[400px] p-0" align="end">
+                      <Command>
+                        <CommandInput placeholder="Rechercher un article..." />
+                        <CommandList>
+                          <CommandEmpty>Aucun article trouvé.</CommandEmpty>
+                          <CommandGroup>
+                            {filteredArticles.map((article) => (
+                              <CommandItem
+                                key={article.id}
+                                value={`${article.designation} ${article.reference}`}
+                                onSelect={() => addArticleDirectly(article.id)}
+                                className="cursor-pointer"
+                              >
+                                <div className="flex items-center justify-between w-full">
+                                  <div className="flex-1">
+                                    <div className="font-medium">{article.designation}</div>
+                                    <div className="text-sm text-muted-foreground">
+                                      Réf: {article.reference}
+                                    </div>
+                                  </div>
+                                  <div className="text-right ml-4">
+                                    <div className="font-medium">{article.prix_achat.toFixed(2)} €</div>
+                                  </div>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <Button onClick={addItem} size="sm" variant="outline">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Saisie manuelle
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {currentItems.map((item, index) => (
-                  <div key={index} className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border rounded-lg">
-                    <div className="md:col-span-2">
-                      <Label>Article</Label>
-                      <Select onValueChange={(value) => selectArticle(index, value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner un article" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {filteredArticles.map((article) => (
-                            <SelectItem key={article.id} value={article.id}>
-                              {article.designation} - {article.reference}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        className="mt-2"
-                        placeholder="Ou saisir manuellement"
-                        value={item.designation}
-                        onChange={(e) => updateItem(index, 'designation', e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label>Référence</Label>
-                      <Input
-                        value={item.reference || ""}
-                        onChange={(e) => updateItem(index, 'reference', e.target.value)}
-                        placeholder="REF-001"
-                      />
-                    </div>
-                    <div>
-                      <Label>Quantité</Label>
-                      <Input
-                        type="number"
-                        value={item.quantite_commandee}
-                        onChange={(e) => updateItem(index, 'quantite_commandee', parseInt(e.target.value) || 0)}
-                        min="1"
-                      />
-                    </div>
-                    <div>
-                      <Label>Prix unitaire</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={item.prix_unitaire}
-                        onChange={(e) => updateItem(index, 'prix_unitaire', parseFloat(e.target.value) || 0)}
-                        min="0"
-                      />
-                    </div>
-                    <div className="flex items-end justify-between">
-                      <div>
-                        <Label>Total</Label>
-                        <div className="font-medium">{item.total_ligne.toFixed(2)} €</div>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeItem(index)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+                {currentItems.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>Aucun article ajouté</p>
+                    <p className="text-sm mt-2">Cliquez sur "Rechercher un article" pour commencer</p>
                   </div>
-                ))}
+                ) : (
+                  currentItems.map((item, index) => (
+                    <div key={index} className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border rounded-lg bg-card">
+                      <div className="md:col-span-2">
+                        <Label>Article</Label>
+                        <Input
+                          placeholder="Désignation"
+                          value={item.designation}
+                          onChange={(e) => updateItem(index, 'designation', e.target.value)}
+                          className="font-medium"
+                        />
+                      </div>
+                      <div>
+                        <Label>Référence</Label>
+                        <Input
+                          value={item.reference || ""}
+                          onChange={(e) => updateItem(index, 'reference', e.target.value)}
+                          placeholder="REF-001"
+                        />
+                      </div>
+                      <div>
+                        <Label>Quantité</Label>
+                        <Input
+                          type="number"
+                          value={item.quantite_commandee}
+                          onChange={(e) => updateItem(index, 'quantite_commandee', parseInt(e.target.value) || 0)}
+                          min="1"
+                        />
+                      </div>
+                      <div>
+                        <Label>Prix unitaire</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={item.prix_unitaire}
+                          onChange={(e) => updateItem(index, 'prix_unitaire', parseFloat(e.target.value) || 0)}
+                          min="0"
+                        />
+                      </div>
+                      <div className="flex items-end justify-between">
+                        <div>
+                          <Label>Total</Label>
+                          <div className="font-medium text-lg">{item.total_ligne.toFixed(2)} €</div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeItem(index)}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
                 
                 {currentItems.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
