@@ -530,10 +530,21 @@ export default function Commandes() {
       let commandeId: string;
 
       if (editingCommande) {
-        // Modifier une commande existante
+        const updatePayload = {
+          fournisseur: currentCommande.fournisseur,
+          email_fournisseur: currentCommande.email_fournisseur || "",
+          telephone_fournisseur: currentCommande.telephone_fournisseur || "",
+          adresse_fournisseur: currentCommande.adresse_fournisseur || "",
+          notes: currentCommande.notes || "",
+          status: currentCommande.status,
+          total_ht: currentCommande.total_ht,
+          total_ttc: currentCommande.total_ttc,
+          tva_taux: currentCommande.tva_taux,
+          user_id: currentCommande.user_id,
+        };
         const { error: commandeError } = await supabase
           .from('commandes')
-          .update(currentCommande)
+          .update(updatePayload)
           .eq('id', editingCommande.id);
 
         if (commandeError) throw commandeError;
@@ -545,15 +556,23 @@ export default function Commandes() {
           .delete()
           .eq('commande_id', commandeId);
       } else {
-        // Créer une nouvelle commande
         const { data: { user } } = await supabase.auth.getUser();
+        const insertPayload = {
+          fournisseur: currentCommande.fournisseur,
+          email_fournisseur: currentCommande.email_fournisseur || "",
+          telephone_fournisseur: currentCommande.telephone_fournisseur || "",
+          adresse_fournisseur: currentCommande.adresse_fournisseur || "",
+          notes: currentCommande.notes || "",
+          status: currentCommande.status,
+          total_ht: currentCommande.total_ht,
+          total_ttc: currentCommande.total_ttc,
+          tva_taux: currentCommande.tva_taux,
+          user_id: user?.id,
+          numero_commande: '' // Le trigger va générer le numéro automatiquement
+        };
         const { data: commandeData, error: commandeError } = await supabase
           .from('commandes')
-          .insert([{ 
-            ...currentCommande, 
-            user_id: user?.id,
-            numero_commande: '' // Le trigger va générer le numéro automatiquement
-          }])
+          .insert([insertPayload])
           .select()
           .single();
 
@@ -606,7 +625,19 @@ export default function Commandes() {
 
   const editCommande = (commande: Commande & { items: CommandeItem[] }) => {
     setEditingCommande(commande);
-    setCurrentCommande(commande);
+    // Ne garder que les champs de la table `commandes` (éviter d'envoyer `items` au UPDATE)
+    setCurrentCommande({
+      fournisseur: commande.fournisseur,
+      email_fournisseur: commande.email_fournisseur || "",
+      telephone_fournisseur: commande.telephone_fournisseur || "",
+      adresse_fournisseur: commande.adresse_fournisseur || "",
+      notes: commande.notes || "",
+      status: commande.status,
+      total_ht: commande.total_ht,
+      total_ttc: commande.total_ttc,
+      tva_taux: commande.tva_taux,
+      user_id: commande.user_id,
+    });
     setCurrentItems(commande.items);
     setIsCreating(true);
     // Filtrer les articles par fournisseur lors de l'édition
@@ -897,6 +928,7 @@ export default function Commandes() {
                                     return next;
                                   });
                                 }}
+                                onFocus={(e) => e.currentTarget.select()}
                                 className="w-16 h-8 text-center"
                               />
                               <Button
