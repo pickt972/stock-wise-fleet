@@ -221,6 +221,15 @@ export default function Articles() {
     return article.fournisseurs?.nom;
   };
 
+  const getAllActiveFournisseurs = (article: Article) => {
+    if (article.article_fournisseurs) {
+      return article.article_fournisseurs
+        .filter(af => af.actif)
+        .map(af => af.fournisseurs.nom);
+    }
+    return article.fournisseurs ? [article.fournisseurs.nom] : [];
+  };
+
   const getPrincipalPrice = (article: Article) => {
     if (article.article_fournisseurs) {
       const active = article.article_fournisseurs.filter(af => af.actif);
@@ -524,11 +533,11 @@ export default function Articles() {
                     <Badge variant="outline" className={`text-xs ${getColorForText(article.categorie, 'category')}`}>
                       {article.categorie}
                     </Badge>
-                    {principalFournisseur && (
-                      <Badge variant="secondary" className="text-xs">
-                        {principalFournisseur}
+                    {getAllActiveFournisseurs(article).map((fournisseur, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs bg-secondary/80">
+                        {fournisseur}
                       </Badge>
-                    )}
+                    ))}
                     <Badge variant="outline" className={`text-xs ${getColorForText(article.emplacements?.nom || article.emplacement || "Non défini", 'location')}`}>
                       📍 {article.emplacements?.nom || article.emplacement || "Non défini"}
                     </Badge>
@@ -672,18 +681,15 @@ export default function Articles() {
                          </Badge>
                        </TableCell>
                       <TableCell className="hidden xl:table-cell text-sm">
-                        <div className="flex items-center gap-1">
-                          {principalFournisseur ? (
-                            <Badge variant="secondary" className="text-xs">
-                              {principalFournisseur}
-                            </Badge>
+                        <div className="flex flex-wrap items-center gap-1">
+                          {getAllActiveFournisseurs(article).length > 0 ? (
+                            getAllActiveFournisseurs(article).map((fournisseur, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs bg-secondary/80">
+                                {fournisseur}
+                              </Badge>
+                            ))
                           ) : (
                             <span className="text-xs text-muted-foreground">-</span>
-                          )}
-                          {hasMultipleFournisseurs && (
-                            <Badge variant="outline" className="text-xs">
-                              +{article.article_fournisseurs!.length - 1}
-                            </Badge>
                           )}
                         </div>
                       </TableCell>
