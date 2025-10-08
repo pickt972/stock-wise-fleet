@@ -15,6 +15,7 @@ import { Wrench, AlertTriangle, CheckCircle, ShoppingCart, Package, Minus } from
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "./DashboardLayout";
+import { SmartOrderDialog } from "@/components/commandes/SmartOrderDialog";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Vehicule = Tables<"vehicules">;
@@ -43,6 +44,7 @@ export default function Revisions() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedArticles, setSelectedArticles] = useState<Set<string>>(new Set());
   const [showSortieDialog, setShowSortieDialog] = useState(false);
+  const [showSmartOrderDialog, setShowSmartOrderDialog] = useState(false);
   const [articleQuantities, setArticleQuantities] = useState<Record<string, number>>({});
 
   const { data: vehicules = [] } = useQuery({
@@ -142,7 +144,7 @@ export default function Revisions() {
     }
 
     toast.success(`Analyse terminée: ${piecesACommander.length} pièces à commander`);
-    navigate('/commandes');
+    setShowSmartOrderDialog(true);
   };
 
   const handleArticleSelection = (articleId: string, checked: boolean) => {
@@ -518,6 +520,17 @@ export default function Revisions() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Smart Order Dialog */}
+        <SmartOrderDialog
+          isOpen={showSmartOrderDialog}
+          onClose={() => setShowSmartOrderDialog(false)}
+          onOrdersCreated={() => {
+            setShowSmartOrderDialog(false);
+            toast.success("Commande(s) créée(s) avec succès");
+            navigate('/commandes');
+          }}
+        />
       </div>
     </DashboardLayout>
   );
