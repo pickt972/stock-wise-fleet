@@ -960,7 +960,7 @@ export default function Commandes() {
                 <CardTitle>Ajouter des articles</CardTitle>
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                   <Button 
-                    onClick={() => setShowScanner(true)} 
+                    onClick={() => { setArticleSearchOpen(false); setShowScanner(true); toast({ title: "Ouverture du scanner" }); }} 
                     size="sm" 
                     variant="default"
                     className="w-full sm:w-auto"
@@ -1335,7 +1335,6 @@ export default function Commandes() {
             description: "Article créé avec succès",
           });
         }}
-        triggerButton={<></>}
       />
     </DashboardLayout>
   );

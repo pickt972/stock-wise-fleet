@@ -223,14 +223,18 @@ const articleSchema = z.object({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {triggerButton || (
+      {triggerButton ? (
+        <DialogTrigger asChild>
+          {triggerButton}
+        </DialogTrigger>
+      ) : typeof controlledOpen === 'undefined' ? (
+        <DialogTrigger asChild>
           <Button className="bg-primary hover:bg-primary/90 w-full lg:w-auto flex-shrink-0">
             <Plus className="mr-2 h-4 w-4" />
             Nouvel Article
           </Button>
-        )}
-      </DialogTrigger>
+        </DialogTrigger>
+      ) : null}
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto bg-background border border-border shadow-large z-50 w-[95vw] p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Créer un nouvel article</DialogTitle>
