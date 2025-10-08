@@ -197,56 +197,56 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
         handleClose();
       }
     }}>
-      <DialogContent className="w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
-        <DialogHeader>
-          <DialogTitle className="text-lg sm:text-xl">Modifier l'article</DialogTitle>
-          <DialogDescription className="text-sm">
+      <DialogContent className="w-[98vw] max-w-[98vw] sm:w-full sm:max-w-[600px] max-h-[95vh] overflow-y-auto p-3 sm:p-6">
+        <DialogHeader className="pb-3">
+          <DialogTitle className="text-base sm:text-xl">Modifier l'article</DialogTitle>
+          <DialogDescription className="text-xs sm:text-sm">
             Modifiez les informations de l'article.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="reference" className="text-sm">Référence</Label>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="grid grid-cols-1 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="reference" className="text-xs sm:text-sm">Référence</Label>
               <Input
                 id="reference"
                 value={formData.reference}
                 onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
                 required
-                className="h-10 sm:h-9"
+                className="h-11 text-base"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="marque" className="text-sm">Marque</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="marque" className="text-xs sm:text-sm">Marque</Label>
               <Input
                 id="marque"
                 value={formData.marque}
                 onChange={(e) => setFormData({ ...formData, marque: e.target.value })}
                 required
-                className="h-10 sm:h-9"
+                className="h-11 text-base"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="designation" className="text-sm">Désignation</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="designation" className="text-xs sm:text-sm">Désignation</Label>
             <Input
               id="designation"
               value={formData.designation}
               onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
               required
-              className="h-10 sm:h-9"
+              className="h-11 text-base"
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="categorie" className="text-sm">Catégorie</Label>
+          <div className="grid grid-cols-1 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="categorie" className="text-xs sm:text-sm">Catégorie</Label>
               <Select
                 value={formData.categorie}
                 onValueChange={(value) => setFormData({ ...formData, categorie: value })}
               >
-                <SelectTrigger className="h-10 sm:h-9">
+                <SelectTrigger className="h-11 text-base">
                   <SelectValue placeholder="Sélectionner une catégorie" />
                 </SelectTrigger>
                 <SelectContent>
@@ -258,13 +258,13 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="fournisseur" className="text-sm">Fournisseur</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="fournisseur" className="text-xs sm:text-sm">Fournisseur</Label>
               <Select
                 value={formData.fournisseur_id || "none"}
                 onValueChange={(value) => setFormData({ ...formData, fournisseur_id: value === "none" ? "" : value })}
               >
-                <SelectTrigger className="h-10 sm:h-9">
+                <SelectTrigger className="h-11 text-base">
                   <SelectValue placeholder="Sélectionner un fournisseur" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border shadow-lg z-[60]">
@@ -279,13 +279,13 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="emplacement" className="text-sm">Emplacement</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="emplacement" className="text-xs sm:text-sm">Emplacement</Label>
             <Select
               value={formData.emplacement}
               onValueChange={(value) => setFormData({ ...formData, emplacement: value })}
             >
-              <SelectTrigger className="h-10 sm:h-9">
+              <SelectTrigger className="h-11 text-base">
                 <SelectValue placeholder="Sélectionner un emplacement" />
               </SelectTrigger>
               <SelectContent className="bg-popover border shadow-lg z-[60]">
@@ -299,24 +299,24 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="stock" className="text-sm">Stock actuel (information)</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="stock" className="text-xs sm:text-sm">Stock actuel (information)</Label>
             <Input
               id="stock"
               type="number"
               min="0"
               value={formData.stock}
               disabled
-              className="bg-muted h-10 sm:h-9"
+              className="bg-muted h-11 text-base"
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[10px] sm:text-xs text-muted-foreground">
               Le stock ne peut être modifié que par les entrées, sorties et transferts
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="stock_min" className="text-sm">Stock minimum</Label>
+          <div className="grid grid-cols-1 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="stock_min" className="text-xs sm:text-sm">Stock minimum</Label>
               <Input
                 id="stock_min"
                 type="number"
@@ -325,11 +325,11 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
                 onChange={(e) => setFormData({ ...formData, stock_min: parseInt(e.target.value) || 0 })}
                 onFocus={(e) => e.target.select()}
                 required
-                className="h-10 sm:h-9"
+                className="h-11 text-base"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="stock_max" className="text-sm">Stock maximum</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="stock_max" className="text-xs sm:text-sm">Stock maximum</Label>
               <Input
                 id="stock_max"
                 type="number"
@@ -338,13 +338,13 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
                 onChange={(e) => setFormData({ ...formData, stock_max: parseInt(e.target.value) || 0 })}
                 onFocus={(e) => e.target.select()}
                 required
-                className="h-10 sm:h-9"
+                className="h-11 text-base"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="prix_achat" className="text-sm">Prix d'achat (€)</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="prix_achat" className="text-xs sm:text-sm">Prix d'achat (€)</Label>
             <Input
               id="prix_achat"
               type="number"
@@ -354,7 +354,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
               onChange={(e) => setFormData({ ...formData, prix_achat: parseFloat(e.target.value) || 0 })}
               onFocus={(e) => e.target.select()}
               required
-              className="h-10 sm:h-9"
+              className="h-11 text-base"
             />
           </div>
 
@@ -365,11 +365,11 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
             articleDesignation={article.designation}
           />
 
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={handleClose} className="w-full sm:w-auto min-h-[44px] sm:min-h-0">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t">
+            <Button type="button" variant="outline" onClick={handleClose} className="w-full sm:w-auto h-11">
               Annuler
             </Button>
-            <Button type="submit" disabled={isLoading} className="w-full sm:w-auto min-h-[44px] sm:min-h-0">
+            <Button type="submit" disabled={isLoading} className="w-full sm:w-auto h-11">
               {isLoading ? "Modification..." : "Modifier l'article"}
             </Button>
           </div>
