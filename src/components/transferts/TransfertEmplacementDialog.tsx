@@ -241,9 +241,10 @@ export function TransfertEmplacementDialog({ onTransfertCompleted }: TransfertEm
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="bg-background hover:bg-accent w-full lg:w-auto flex-shrink-0">
+        <Button variant="outline" className="bg-background hover:bg-accent flex-shrink-0 px-3 h-9 text-sm whitespace-nowrap">
           <ArrowLeftRight className="mr-2 h-4 w-4" />
-          Transfert Emplacement
+          <span className="hidden sm:inline">Transfert emplacement</span>
+          <span className="sm:hidden">Transférer</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">

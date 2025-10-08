@@ -111,8 +111,8 @@ export function ArticleEmplacementsList({ articleReference, articleDesignation }
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex items-start sm:items-center justify-between gap-2 flex-wrap">
+          <div className="min-w-0">
             <CardTitle className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
               Répartition par emplacement
