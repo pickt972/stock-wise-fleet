@@ -137,7 +137,7 @@ export function ArticleEmplacementsList({ articleReference, articleDesignation }
                <div className="min-w-0 flex-1">
                  <Badge 
                    variant="outline"
-                   className={`text-xs w-fit max-w-full truncate ${getColorForText(emplacement.emplacement, 'location')}`}
+                   className={`text-xs w-fit max-w-full break-words whitespace-normal ${getColorForText(emplacement.emplacement, 'location')}`}
                  >
                    {emplacement.emplacement}
                  </Badge>

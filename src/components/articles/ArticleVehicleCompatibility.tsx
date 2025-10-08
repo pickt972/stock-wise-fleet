@@ -192,11 +192,11 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
                 <div key={compatibility.id} className="flex items-center justify-between gap-2 p-3 border rounded-lg overflow-hidden">
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-col gap-1 min-w-0">
-                      <Badge variant="outline" className="w-fit max-w-full truncate text-xs">
+                      <Badge variant="outline" className="w-fit max-w-full break-words whitespace-normal text-xs">
                         {compatibility.vehicules?.marque} {compatibility.vehicules?.modele}
                         {compatibility.vehicules?.motorisation && ` (${compatibility.vehicules?.motorisation})`}
                       </Badge>
-                      <span className="text-xs text-muted-foreground truncate">
+                      <span className="text-xs text-muted-foreground break-words whitespace-normal">
                         {compatibility.vehicules?.immatriculation}
                       </span>
                     </div>
