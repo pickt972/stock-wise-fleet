@@ -124,20 +124,20 @@ export function ArticleEmplacementsList({ articleReference, articleDesignation }
           <TransfertEmplacementDialog onTransfertCompleted={fetchArticleEmplacements} />
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 overflow-x-hidden">
         {emplacements.map((emplacement) => (
           <div
             key={`${emplacement.emplacement}-${emplacement.id}`}
-            className="flex items-center justify-between p-3 rounded-lg border bg-card"
+            className="flex items-center justify-between gap-2 p-3 rounded-lg border bg-card"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <div className="p-2 rounded-full bg-primary/10">
                 <Package className="h-4 w-4 text-primary" />
               </div>
-               <div>
+               <div className="min-w-0">
                  <Badge 
                    variant="outline"
-                   className={`text-xs ${getColorForText(emplacement.emplacement, 'location')}`}
+                   className={`text-xs max-w-[60vw] truncate ${getColorForText(emplacement.emplacement, 'location')}`}
                  >
                    {emplacement.emplacement}
                  </Badge>

@@ -139,12 +139,12 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
           Compatibilité Véhicules
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 overflow-x-hidden">
         <div className="space-y-3">
           <div>
             <Label htmlFor="vehicule-select">Ajouter un véhicule compatible</Label>
             <Select value={selectedVehiculeId} onValueChange={setSelectedVehiculeId}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Sélectionner un véhicule" />
               </SelectTrigger>
               <SelectContent>
@@ -189,14 +189,14 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
           ) : (
             <div className="space-y-2">
               {compatibilities.map((compatibility) => (
-                <div key={compatibility.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">
+                <div key={compatibility.id} className="flex items-center justify-between gap-2 p-3 border rounded-lg">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Badge variant="outline" className="max-w-[60vw] truncate">
                         {compatibility.vehicules?.marque} {compatibility.vehicules?.modele}
                         {compatibility.vehicules?.motorisation && ` (${compatibility.vehicules?.motorisation})`}
                       </Badge>
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-sm text-muted-foreground truncate">
                         {compatibility.vehicules?.immatriculation}
                       </span>
                     </div>

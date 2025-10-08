@@ -197,7 +197,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
         handleClose();
       }
     }}>
-      <DialogContent className="w-[98vw] max-w-[98vw] sm:w-full sm:max-w-[600px] max-h-[95vh] overflow-y-auto p-3 sm:p-6">
+      <DialogContent className="w-screen max-w-[100dvw] sm:max-w-[640px] sm:w-full rounded-none sm:rounded-lg max-h-[95dvh] overflow-y-auto overflow-x-hidden p-3 sm:p-6">
         <DialogHeader className="pb-3">
           <DialogTitle className="text-base sm:text-xl">Modifier l'article</DialogTitle>
           <DialogDescription className="text-xs sm:text-sm">
