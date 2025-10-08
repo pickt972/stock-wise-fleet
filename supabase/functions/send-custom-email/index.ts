@@ -39,7 +39,7 @@ const handler = async (req: Request): Promise<Response> => {
       .select("*")
       .eq("id", mailSettingId)
       .eq("is_active", true)
-      .single();
+      .maybeSingle();
 
     if (mailError || !mailSetting) {
       console.error("❌ Mail setting not found:", mailError);
@@ -49,34 +49,56 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("📧 Mail setting found:", mailSetting.name);
 
     // Créer le client SMTP avec les paramètres configurés
-    const client = new SMTPClient({
-      connection: {
-        hostname: mailSetting.smtp_host,
-        port: mailSetting.smtp_port,
-        tls: mailSetting.use_tls,
-        auth: {
-          username: mailSetting.smtp_username,
-          password: mailSetting.smtp_password,
+    const isImplicitTLS = mailSetting.smtp_port === 465;
+
+    const sendWith = async (hostname: string, port: number, tls: boolean) => {
+      const client = new SMTPClient({
+        connection: {
+          hostname,
+          port,
+          tls,
+          auth: {
+            username: mailSetting.smtp_username,
+            password: mailSetting.smtp_password,
+          },
         },
-      },
-    });
+      });
 
-    // Préparer le contenu HTML
-    const htmlContent = body && body.trim().length > 0 && body.includes('<')
-      ? body
-      : `<pre style="font-family: ui-sans-serif, system-ui; white-space: pre-wrap;">${body || ''}</pre>`;
+      // Préparer le contenu HTML
+      const htmlContent = body && body.trim().length > 0 && body.includes('<')
+        ? body
+        : `<pre style="font-family: ui-sans-serif, system-ui; white-space: pre-wrap;">${body || ''}</pre>`;
 
-    // Envoi via SMTP
-    await client.send({
-      from: mailSetting.smtp_username,
-      to: to,
-      subject: subject,
-      content: "auto",
-      html: htmlContent,
-    });
+      await client.send({
+        from: mailSetting.smtp_username,
+        to,
+        subject,
+        html: htmlContent,
+      });
 
-    await client.close();
-    console.log("✅ Email sent successfully via SMTP");
+      await client.close();
+    };
+
+    try {
+      // Première tentative avec les réglages fournis
+      await sendWith(mailSetting.smtp_host, mailSetting.smtp_port, isImplicitTLS);
+      console.log("✅ Email sent successfully via SMTP (first attempt)");
+    } catch (e: any) {
+      console.error("❌ SMTP send failed (first attempt):", e?.message || e);
+      // Fallback connu: certains serveurs refusent 587/STARTTLS avec denomailer
+      // On retente en TLS implicite sur 465 si possible
+      if (mailSetting.smtp_port === 587) {
+        try {
+          await sendWith(mailSetting.smtp_host, 465, true);
+          console.log("✅ Email sent successfully via SMTP (fallback 465/TLS)");
+        } catch (e2: any) {
+          console.error("❌ SMTP send failed (fallback):", e2?.message || e2);
+          throw e2;
+        }
+      } else {
+        throw e;
+      }
+    }
 
     
     // Log de l'envoi dans la base de données pour traçabilité

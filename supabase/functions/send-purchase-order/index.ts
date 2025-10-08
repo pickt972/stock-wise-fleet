@@ -185,7 +185,7 @@ const handler = async (req: Request): Promise<Response> => {
       .select("*")
       .eq("id", mailSettingId)
       .eq("is_active", true)
-      .single();
+      .maybeSingle();
 
     if (mailError || !mailSetting) {
       console.error("❌ Mail setting not found:", mailError);
@@ -196,29 +196,49 @@ const handler = async (req: Request): Promise<Response> => {
 
     const html = generatePurchaseOrderHTML(requestData);
 
-    // Créer le client SMTP avec les paramètres configurés
-    const client = new SMTPClient({
-      connection: {
-        hostname: mailSetting.smtp_host,
-        port: mailSetting.smtp_port,
-        tls: mailSetting.use_tls,
-        auth: {
-          username: mailSetting.smtp_username,
-          password: mailSetting.smtp_password,
+    const isImplicitTLS = mailSetting.smtp_port === 465;
+
+    const sendWith = async (hostname: string, port: number, tls: boolean) => {
+      const client = new SMTPClient({
+        connection: {
+          hostname,
+          port,
+          tls,
+          auth: {
+            username: mailSetting.smtp_username,
+            password: mailSetting.smtp_password,
+          },
         },
-      },
-    });
+      });
 
-    // Envoi via SMTP
-    await client.send({
-      from: mailSetting.smtp_username,
-      to: commande.email_fournisseur,
-      subject: `Bon de commande ${commande.numero_commande} - ${commande.fournisseur}`,
-      content: "auto",
-      html: html,
-    });
+      await client.send({
+        from: mailSetting.smtp_username,
+        to: commande.email_fournisseur,
+        subject: `Bon de commande ${commande.numero_commande} - ${commande.fournisseur}`,
+        html,
+      });
 
-    await client.close();
+      await client.close();
+    };
+
+    try {
+      await sendWith(mailSetting.smtp_host, mailSetting.smtp_port, isImplicitTLS);
+      console.log("✅ Email sent successfully via SMTP (first attempt)");
+    } catch (e: any) {
+      console.error("❌ SMTP send failed (first attempt):", e?.message || e);
+      if (mailSetting.smtp_port === 587) {
+        try {
+          await sendWith(mailSetting.smtp_host, 465, true);
+          console.log("✅ Email sent successfully via SMTP (fallback 465/TLS)");
+        } catch (e2: any) {
+          console.error("❌ SMTP send failed (fallback):", e2?.message || e2);
+          throw e2;
+        }
+      } else {
+        throw e;
+      }
+    }
+
     console.log("✅ Email sent successfully via SMTP");
 
     // Mettre à jour le statut de la commande après envoi réussi
