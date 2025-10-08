@@ -123,19 +123,18 @@ export default function Articles() {
             nom,
             description
           ),
-          article_fournisseurs (
+          article_fournisseurs!inner (
             id,
             fournisseur_id,
             est_principal,
             prix_fournisseur,
             actif,
-            fournisseurs (
+            fournisseurs!inner (
               id,
               nom
             )
           )
         `)
-        
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -222,9 +221,9 @@ export default function Articles() {
   };
 
   const getAllActiveFournisseurs = (article: Article) => {
-    if (article.article_fournisseurs) {
+    if (article.article_fournisseurs && article.article_fournisseurs.length > 0) {
       return article.article_fournisseurs
-        .filter(af => af.actif)
+        .filter(af => af.actif && af.fournisseurs)
         .map(af => af.fournisseurs.nom);
     }
     return article.fournisseurs ? [article.fournisseurs.nom] : [];
