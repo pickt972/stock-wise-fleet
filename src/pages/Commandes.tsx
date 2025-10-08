@@ -861,8 +861,15 @@ export default function Commandes() {
                                 min="1"
                                 value={item.quantite_commandee}
                                 onChange={(e) => {
-                                  const value = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
-                                  updateItem(index, 'quantite_commandee', value || 1);
+                                  const value = e.target.value === '' ? '' : e.target.value;
+                                  if (value === '') {
+                                    updateItem(index, 'quantite_commandee', 1);
+                                  } else {
+                                    const numValue = parseInt(value, 10);
+                                    if (!isNaN(numValue) && numValue > 0) {
+                                      updateItem(index, 'quantite_commandee', numValue);
+                                    }
+                                  }
                                 }}
                                 className="w-16 h-8 text-center"
                               />
@@ -949,17 +956,98 @@ export default function Commandes() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-sm text-muted-foreground">
-                {currentItems.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Search className="w-10 h-10 mx-auto mb-3 opacity-50" />
-                    <p>Aucun article ajouté</p>
-                    <p className="text-xs mt-1">Utilisez les boutons ci-dessus pour ajouter des articles</p>
-                  </div>
-                ) : (
-                  <p className="text-center py-2">{currentItems.length} article(s) dans la commande</p>
-                )}
-              </div>
+              {currentItems.length === 0 ? (
+                <div className="text-center py-8 text-sm text-muted-foreground">
+                  <Search className="w-10 h-10 mx-auto mb-3 opacity-50" />
+                  <p>Aucun article ajouté</p>
+                  <p className="text-xs mt-1">Utilisez les boutons ci-dessus pour ajouter des articles</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {currentItems.filter(item => !item.article_id).map((item, index) => (
+                    <div key={index} className="p-4 border rounded-lg space-y-3 bg-muted/20">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium text-sm">Saisie manuelle #{currentItems.filter((it, idx) => !it.article_id && idx <= index).length}</h4>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeItem(index)}
+                          className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <Label htmlFor={`designation-${index}`} className="text-xs">Désignation *</Label>
+                          <Input
+                            id={`designation-${index}`}
+                            value={item.designation}
+                            onChange={(e) => updateItem(index, 'designation', e.target.value)}
+                            placeholder="Nom de l'article"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`reference-${index}`} className="text-xs">Référence</Label>
+                          <Input
+                            id={`reference-${index}`}
+                            value={item.reference || ''}
+                            onChange={(e) => updateItem(index, 'reference', e.target.value)}
+                            placeholder="Référence"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`quantite-${index}`} className="text-xs">Quantité *</Label>
+                          <Input
+                            id={`quantite-${index}`}
+                            type="number"
+                            min="1"
+                            value={item.quantite_commandee}
+                            onChange={(e) => {
+                              const value = e.target.value === '' ? '' : e.target.value;
+                              if (value === '') {
+                                updateItem(index, 'quantite_commandee', 1);
+                              } else {
+                                const numValue = parseInt(value, 10);
+                                if (!isNaN(numValue) && numValue > 0) {
+                                  updateItem(index, 'quantite_commandee', numValue);
+                                }
+                              }
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`prix-${index}`} className="text-xs">Prix unitaire (€) *</Label>
+                          <Input
+                            id={`prix-${index}`}
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.prix_unitaire}
+                            onChange={(e) => {
+                              const value = e.target.value === '' ? '' : e.target.value;
+                              if (value === '') {
+                                updateItem(index, 'prix_unitaire', 0);
+                              } else {
+                                const numValue = parseFloat(value);
+                                if (!isNaN(numValue) && numValue >= 0) {
+                                  updateItem(index, 'prix_unitaire', numValue);
+                                }
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex justify-end pt-2">
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">Total ligne: </span>
+                          <span className="font-medium">{item.total_ligne.toFixed(2)} €</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
