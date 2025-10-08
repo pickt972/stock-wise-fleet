@@ -703,15 +703,16 @@ export default function Commandes() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold">Commandes</h1>
-            <div className="flex gap-2">
-              <Button onClick={() => setShowSmartOrder(true)} variant="outline">
+      <div className="space-y-4 sm:space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <h1 className="text-2xl sm:text-3xl font-bold">Commandes</h1>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button onClick={() => setShowSmartOrder(true)} variant="outline" className="w-full sm:w-auto">
                 <Brain className="w-4 h-4 mr-2" />
-                Commande intelligente
+                <span className="hidden sm:inline">Commande intelligente</span>
+                <span className="sm:hidden">Intelligence</span>
               </Button>
-              <Button onClick={() => setIsCreating(true)}>
+              <Button onClick={() => setIsCreating(true)} className="w-full sm:w-auto">
                 <Plus className="w-4 h-4 mr-2" />
                 Nouvelle commande
               </Button>
@@ -724,27 +725,28 @@ export default function Commandes() {
           </div>
         ) : (
 
-        <div className="grid gap-6">
+        <div className="grid gap-4 sm:gap-6">
           {commandes.length > 0 ? commandes.map((commande) => (
             <Card key={commande.id}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      {commande?.numero_commande || 'N/A'}
-                      <Badge variant={getStatusColor(commande?.status || 'brouillon') as any}>
+              <CardHeader className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="flex flex-wrap items-center gap-2 text-lg sm:text-xl">
+                      <span className="break-words">{commande?.numero_commande || 'N/A'}</span>
+                      <Badge variant={getStatusColor(commande?.status || 'brouillon') as any} className="shrink-0">
                         {getStatusLabel(commande?.status || 'brouillon')}
                       </Badge>
                     </CardTitle>
-                    <p className="text-muted-foreground">
+                    <p className="text-sm text-muted-foreground mt-1 break-words">
                       {commande?.fournisseur || 'Fournisseur non renseigné'} • {commande?.items?.length || 0} article(s)
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 self-start sm:self-auto">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => editCommande(commande)}
+                      className="shrink-0"
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
@@ -755,31 +757,32 @@ export default function Commandes() {
                         isOpen: true,
                         commande: commande
                       })}
+                      className="shrink-0"
                     >
-                      <Mail className="w-4 h-4 mr-2" />
-                      Bon de commande
+                      <Mail className="w-4 h-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Bon de commande</span>
                     </Button>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <CardContent className="p-4 sm:p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
-                    <h4 className="font-medium text-sm text-muted-foreground">Informations</h4>
-                    <p className="text-sm">Email: {commande?.email_fournisseur || "Non renseigné"}</p>
-                    <p className="text-sm">Tél: {commande?.telephone_fournisseur || "Non renseigné"}</p>
+                    <h4 className="font-medium text-sm text-muted-foreground mb-2">Informations</h4>
+                    <p className="text-sm break-words">Email: {commande?.email_fournisseur || "Non renseigné"}</p>
+                    <p className="text-sm break-words">Tél: {commande?.telephone_fournisseur || "Non renseigné"}</p>
                     <p className="text-sm">Date: {commande?.date_creation ? new Date(commande.date_creation).toLocaleDateString('fr-FR') : 'N/A'}</p>
                   </div>
                   <div>
-                    <h4 className="font-medium text-sm text-muted-foreground">Totaux</h4>
+                    <h4 className="font-medium text-sm text-muted-foreground mb-2">Totaux</h4>
                     <p className="text-sm">Total HT: {(commande?.total_ht || 0).toFixed(2)} €</p>
                     <p className="text-sm">TVA: {((commande?.total_ttc || 0) - (commande?.total_ht || 0)).toFixed(2)} €</p>
                     <p className="font-medium">Total TTC: {(commande?.total_ttc || 0).toFixed(2)} €</p>
                   </div>
-                  <div>
-                    <h4 className="font-medium text-sm text-muted-foreground">Articles</h4>
+                  <div className="sm:col-span-2 lg:col-span-1">
+                    <h4 className="font-medium text-sm text-muted-foreground mb-2">Articles</h4>
                     {(commande?.items || []).slice(0, 3).map((item, idx) => (
-                      <p key={idx} className="text-sm truncate">
+                      <p key={idx} className="text-sm break-words">
                         {item?.designation || 'Article sans nom'} × {item?.quantite_commandee || 0}
                       </p>
                     ))}
