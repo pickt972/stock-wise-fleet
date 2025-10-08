@@ -216,8 +216,9 @@ export default function Revisions() {
         return;
       }
 
-      // Créer les commandes
+      // Créer les commandes et collecter leurs IDs
       const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const createdCommandeIds: string[] = [];
       
       for (const [fournisseurId, orderData] of Object.entries(grouped)) {
         // Créer la commande
@@ -240,6 +241,9 @@ export default function Revisions() {
 
         if (commandeError) throw commandeError;
 
+        // Collecter l'ID de la commande créée
+        createdCommandeIds.push(commande.id);
+
         // Créer les items de commande
         const itemsToInsert = orderData.items.map((item: any) => ({
           commande_id: commande.id,
@@ -259,7 +263,7 @@ export default function Revisions() {
       }
 
       toast.success(`${Object.keys(grouped).length} commande(s) créée(s) pour ${piecesACommander.length} pièces`);
-      navigate('/commandes');
+      navigate('/commandes', { state: { openCommandeIds: createdCommandeIds } });
     } catch (error: any) {
       toast.error(`Erreur: ${error.message}`);
     }

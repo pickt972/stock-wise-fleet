@@ -161,6 +161,24 @@ export default function Commandes() {
     }
   }, [location.state]);
 
+  // Ouvrir automatiquement la/les commande(s) fraîchement créée(s)
+  const [handledOpenIds, setHandledOpenIds] = useState(false);
+  useEffect(() => {
+    const state: any = location.state as any;
+    const ids: string[] | undefined = state?.openCommandeIds;
+    if (!handledOpenIds && ids && ids.length > 0 && commandes.length > 0) {
+      const toOpen = commandes.find(c => ids.includes(c.id as string));
+      if (toOpen) {
+        editCommande(toOpen);
+        toast({
+          title: "Commandes créées",
+          description: `${ids.length} commande(s) créée(s). Ouverture de la première.`,
+        });
+      }
+      setHandledOpenIds(true);
+    }
+  }, [commandes, location.state, handledOpenIds]);
+
   const fetchCommandes = async () => {
     try {
       const { data: commandesData, error: commandesError } = await supabase
