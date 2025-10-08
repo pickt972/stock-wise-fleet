@@ -1,10 +1,13 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 interface EmailRequest {
   mailSettingId: string;
@@ -47,19 +50,21 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("📧 Mail setting found:", mailSetting.name);
 
-    // Simuler l'envoi d'email (ici vous pourriez intégrer avec un service SMTP réel)
-    // Pour l'instant, on va juste logger et retourner un succès
-    console.log("📧 Email would be sent with settings:", {
-      from: mailSetting.smtp_username,
-      to,
+    // Envoi réel via Resend
+    const emailResponse = await resend.emails.send({
+      from: `${mailSetting.name || 'Commande'} <onboarding@resend.dev>`,
+      to: [to],
       subject,
-      smtp_host: mailSetting.smtp_host,
-      smtp_port: mailSetting.smtp_port,
-      use_tls: mailSetting.use_tls
+      html: body && body.trim().length > 0 && body.includes('<')
+        ? body
+        : `<pre style="font-family: ui-sans-serif, system-ui; white-space: pre-wrap;">${body || ''}</pre>`,
     });
 
-    // Ici, vous pourriez intégrer avec un service comme Nodemailer ou SendGrid
-    // Pour l'instant, on simule l'envoi
+    if ((emailResponse as any)?.error) {
+      console.error("❌ Resend error:", (emailResponse as any).error);
+      throw new Error((emailResponse as any).error?.message || "Echec d'envoi d'email");
+    }
+
     
     // Log de l'envoi dans la base de données pour traçabilité
     if (commandeId) {
