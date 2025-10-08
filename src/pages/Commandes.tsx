@@ -780,17 +780,17 @@ export default function Commandes() {
           {/* Articles */}
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <CardTitle>Articles ({currentItems.length})</CardTitle>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                   <Popover open={articleSearchOpen} onOpenChange={setArticleSearchOpen}>
                     <PopoverTrigger asChild>
-                      <Button size="sm" variant="default">
+                      <Button size="sm" variant="default" className="w-full sm:w-auto">
                         <Search className="w-4 h-4 mr-2" />
                         Rechercher un article
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[400px] p-0" align="end">
+                    <PopoverContent className="w-[90vw] sm:w-[400px] p-0" align="end">
                       <Command>
                         <CommandInput placeholder="Rechercher un article..." />
                         <CommandList>
@@ -803,14 +803,14 @@ export default function Commandes() {
                                 onSelect={() => addArticleDirectly(article.id)}
                                 className="cursor-pointer"
                               >
-                                <div className="flex items-center justify-between w-full">
-                                  <div className="flex-1">
-                                    <div className="font-medium">{article.designation}</div>
-                                    <div className="text-sm text-muted-foreground">
+                                <div className="flex items-center justify-between w-full gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-medium truncate">{article.designation}</div>
+                                    <div className="text-sm text-muted-foreground truncate">
                                       Réf: {article.reference}
                                     </div>
                                   </div>
-                                  <div className="text-right ml-4">
+                                  <div className="text-right shrink-0 ml-2">
                                     <div className="font-medium">{article.prix_achat.toFixed(2)} €</div>
                                   </div>
                                 </div>
@@ -821,7 +821,7 @@ export default function Commandes() {
                       </Command>
                     </PopoverContent>
                   </Popover>
-                  <Button onClick={addItem} size="sm" variant="outline">
+                  <Button onClick={addItem} size="sm" variant="outline" className="w-full sm:w-auto">
                     <Plus className="w-4 h-4 mr-2" />
                     Saisie manuelle
                   </Button>
@@ -838,56 +838,62 @@ export default function Commandes() {
                   </div>
                 ) : (
                   currentItems.map((item, index) => (
-                    <div key={index} className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border rounded-lg bg-card">
-                      <div className="md:col-span-2">
-                        <Label>Article</Label>
-                        <Input
-                          placeholder="Désignation"
-                          value={item.designation}
-                          onChange={(e) => updateItem(index, 'designation', e.target.value)}
-                          className="font-medium"
-                        />
-                      </div>
-                      <div>
-                        <Label>Référence</Label>
-                        <Input
-                          value={item.reference || ""}
-                          onChange={(e) => updateItem(index, 'reference', e.target.value)}
-                          placeholder="REF-001"
-                        />
-                      </div>
-                      <div>
-                        <Label>Quantité</Label>
-                        <Input
-                          type="number"
-                          value={item.quantite_commandee}
-                          onChange={(e) => updateItem(index, 'quantite_commandee', parseInt(e.target.value) || 0)}
-                          min="1"
-                        />
-                      </div>
-                      <div>
-                        <Label>Prix unitaire</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={item.prix_unitaire}
-                          onChange={(e) => updateItem(index, 'prix_unitaire', parseFloat(e.target.value) || 0)}
-                          min="0"
-                        />
-                      </div>
-                      <div className="flex items-end justify-between">
-                        <div>
-                          <Label>Total</Label>
-                          <div className="font-medium text-lg">{item.total_ligne.toFixed(2)} €</div>
+                    <div key={index} className="flex flex-col gap-3 p-4 border rounded-lg bg-card">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <Label>Article</Label>
+                          <Input
+                            placeholder="Désignation"
+                            value={item.designation}
+                            onChange={(e) => updateItem(index, 'designation', e.target.value)}
+                            className="font-medium"
+                          />
                         </div>
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => removeItem(index)}
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10 mt-6 shrink-0"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <Label>Référence</Label>
+                          <Input
+                            value={item.reference || ""}
+                            onChange={(e) => updateItem(index, 'reference', e.target.value)}
+                            placeholder="REF-001"
+                          />
+                        </div>
+                        <div>
+                          <Label>Quantité</Label>
+                          <Input
+                            type="number"
+                            value={item.quantite_commandee}
+                            onChange={(e) => updateItem(index, 'quantite_commandee', parseInt(e.target.value) || 0)}
+                            min="1"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <Label>Prix unitaire</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={item.prix_unitaire}
+                            onChange={(e) => updateItem(index, 'prix_unitaire', parseFloat(e.target.value) || 0)}
+                            min="0"
+                          />
+                        </div>
+                        <div>
+                          <Label>Total ligne</Label>
+                          <div className="font-semibold text-lg h-10 flex items-center">{item.total_ligne.toFixed(2)} €</div>
+                        </div>
                       </div>
                     </div>
                   ))
