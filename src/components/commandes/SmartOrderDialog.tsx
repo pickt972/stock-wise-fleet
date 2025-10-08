@@ -207,6 +207,7 @@ export const SmartOrderDialog = ({ isOpen, onClose, onOrdersCreated }: SmartOrde
           designation: item.designation,
           reference: item.reference,
           quantite_commandee: item.quantite_commandee,
+          quantite_recue: 0,
           prix_unitaire: item.prix_unitaire,
           total_ligne: item.total_ligne
         }));
@@ -277,6 +278,7 @@ export const SmartOrderDialog = ({ isOpen, onClose, onOrdersCreated }: SmartOrde
         designation: item.designation,
         reference: item.reference,
         quantite_commandee: item.quantite_commandee,
+        quantite_recue: 0,
         prix_unitaire: item.prix_unitaire,
         total_ligne: item.total_ligne
       }));

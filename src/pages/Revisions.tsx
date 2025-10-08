@@ -274,6 +274,7 @@ export default function Revisions() {
           designation: item.designation,
           reference: item.reference,
           quantite_commandee: item.quantite_commandee,
+          quantite_recue: 0,
           prix_unitaire: item.prix_unitaire,
           total_ligne: item.total_ligne
         }));
