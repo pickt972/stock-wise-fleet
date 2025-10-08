@@ -66,6 +66,7 @@ const handler = async (req: Request): Promise<Response> => {
       await supabase
         .from("commandes")
         .update({ 
+          status: 'envoye',
           date_envoi: new Date().toISOString(),
           notes: `Email envoyé à ${to} le ${new Date().toLocaleString('fr-FR')}`
         })

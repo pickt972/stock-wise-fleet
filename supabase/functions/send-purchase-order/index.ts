@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -170,6 +171,11 @@ const handler = async (req: Request): Promise<Response> => {
     const requestData: PurchaseOrderRequest = await req.json();
     const { commande, items, sender } = requestData;
 
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
     if (!commande.email_fournisseur) {
       throw new Error("Email du fournisseur manquant");
     }
@@ -182,6 +188,22 @@ const handler = async (req: Request): Promise<Response> => {
       subject: `Bon de commande ${commande.numero_commande} - ${commande.fournisseur}`,
       html: html,
     });
+
+    if ((emailResponse as any)?.error) {
+      console.error("Resend error:", (emailResponse as any).error);
+      throw new Error((emailResponse as any).error?.message || "Echec d'envoi d'email");
+    }
+
+    // Mettre à jour le statut de la commande après envoi réussi
+    if (commande?.id) {
+      const { error: updateError } = await supabase
+        .from("commandes")
+        .update({ status: 'envoye', date_envoi: new Date().toISOString() })
+        .eq("id", commande.id);
+      if (updateError) {
+        console.error("Erreur lors de la mise à jour du statut de la commande:", updateError);
+      }
+    }
 
     console.log("Email sent successfully:", emailResponse);
 
