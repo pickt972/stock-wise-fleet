@@ -266,7 +266,7 @@ export default function Users() {
 
   return (
     <DashboardLayout>
-      <div className="p-4 md:p-6 space-y-4 md:space-y-6 max-w-full overflow-x-auto">
+      <div className="space-y-4 md:space-y-6">
         
         <div className="flex items-center justify-between">
           <CompactSortControls
@@ -380,14 +380,15 @@ export default function Users() {
               {users.length} utilisateur{users.length > 1 ? 's' : ''} enregistré{users.length > 1 ? 's' : ''}
             </CardDescription>
           </CardHeader>
-          <CardContent className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-32">Nom</TableHead>
-                  <TableHead className="hidden sm:table-cell">Nom d'utilisateur</TableHead>
-                  <TableHead className="min-w-24">Rôle</TableHead>
-                  <TableHead className="text-right min-w-32">Actions</TableHead>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nom</TableHead>
+                    <TableHead className="hidden sm:table-cell">Nom d'utilisateur</TableHead>
+                    <TableHead>Rôle</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
                <TableBody>
@@ -464,8 +465,9 @@ export default function Users() {
                      </TableCell>
                   </TableRow>
                 ))}
-              </TableBody>
+               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
 

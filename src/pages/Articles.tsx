@@ -342,7 +342,7 @@ export default function Articles() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-4 lg:space-y-6 w-full max-w-full overflow-x-hidden">
+      <div className="space-y-4 lg:space-y-6 w-full overflow-x-hidden">
       
       <div className="flex items-center justify-between">
         <CompactSortControls
@@ -626,10 +626,10 @@ export default function Articles() {
       </div>
 
       {/* Vue desktop en tableau */}
-      <Card className="w-full max-w-full hidden md:block">
+      <Card className="w-full hidden md:block">
         <CardContent className="p-0">
-          <div className="overflow-x-auto w-full">
-            <Table className="min-w-full">
+          <div className="overflow-x-auto">
+            <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-24 sm:w-28">Référence</TableHead>

@@ -32,12 +32,13 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          {/* Error boundary global pour éviter les écrans blancs */}
-          <GlobalErrorBoundary>
-            <Routes>
+        <div className="w-full overflow-x-hidden">
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            {/* Error boundary global pour éviter les écrans blancs */}
+            <GlobalErrorBoundary>
+              <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/dashboard" element={
@@ -120,6 +121,7 @@ const App = () => (
             </Routes>
           </GlobalErrorBoundary>
         </BrowserRouter>
+        </div>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>

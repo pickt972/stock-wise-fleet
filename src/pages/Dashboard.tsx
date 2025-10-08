@@ -8,7 +8,7 @@ import DashboardLayout from "./DashboardLayout";
 export default function Dashboard() {
   return (
     <DashboardLayout>
-      <div className="space-y-4 lg:space-y-6 w-full max-w-full overflow-x-hidden">
+      <div className="space-y-4 lg:space-y-6 w-full overflow-x-hidden">
         
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Tableau de bord</h1>

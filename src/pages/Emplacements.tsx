@@ -212,7 +212,7 @@ export default function Emplacements() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-4 lg:space-y-6 w-full max-w-full overflow-x-hidden">
+      <div className="space-y-4 lg:space-y-6 w-full overflow-x-hidden">
         <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0 flex-1">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Emplacements</h1>
@@ -298,13 +298,13 @@ export default function Emplacements() {
           </div>
         </div>
 
-        <Card className="w-full max-w-full">
+        <Card className="w-full">
           <CardHeader>
             <CardTitle>Liste des emplacements ({filteredEmplacements.length})</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto w-full">
-              <Table className="min-w-full">
+            <div className="overflow-x-auto">
+              <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-32 sm:w-40">Nom</TableHead>
