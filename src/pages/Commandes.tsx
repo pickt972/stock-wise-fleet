@@ -98,6 +98,7 @@ export default function Commandes() {
     user_id: undefined,
   });
   const [currentItems, setCurrentItems] = useState<CommandeItem[]>([]);
+  const [qtyDrafts, setQtyDrafts] = useState<Record<number, string>>({});
   const [purchaseOrderDialog, setPurchaseOrderDialog] = useState<{
     isOpen: boolean;
     commande?: Commande & { items: CommandeItem[] };
@@ -360,6 +361,17 @@ export default function Commandes() {
   const removeItem = (index: number) => {
     const newItems = currentItems.filter((_, i) => i !== index);
     setCurrentItems(newItems);
+
+    // Recalibrer les brouillons de quantités pour suivre les nouveaux index
+    setQtyDrafts((prev) => {
+      const updated: Record<number, string> = {};
+      Object.keys(prev).forEach((k) => {
+        const i = Number(k);
+        if (i < index) updated[i] = prev[i];
+        else if (i > index) updated[i - 1] = prev[i];
+      });
+      return updated;
+    });
     
     const { totalHT, totalTTC } = calculateTotals(newItems, currentCommande.tva_taux);
     setCurrentCommande(prev => ({
@@ -858,18 +870,24 @@ export default function Commandes() {
                             <div className="flex items-center gap-1 shrink-0">
                               <Input
                                 type="number"
+                                inputMode="numeric"
                                 min="1"
-                                value={item.quantite_commandee}
+                                value={qtyDrafts[index] ?? String(item.quantite_commandee)}
                                 onChange={(e) => {
-                                  const value = e.target.value === '' ? '' : e.target.value;
-                                  if (value === '') {
-                                    updateItem(index, 'quantite_commandee', 1);
-                                  } else {
-                                    const numValue = parseInt(value, 10);
-                                    if (!isNaN(numValue) && numValue > 0) {
-                                      updateItem(index, 'quantite_commandee', numValue);
-                                    }
+                                  const raw = e.target.value;
+                                  setQtyDrafts((prev) => ({ ...prev, [index]: raw }));
+                                  if (raw === '') return; // allow empty while typing
+                                  const num = parseInt(raw, 10);
+                                  if (!isNaN(num) && num > 0) {
+                                    updateItem(index, 'quantite_commandee', num);
                                   }
+                                }}
+                                onBlur={() => {
+                                  setQtyDrafts((prev) => {
+                                    const next = { ...prev };
+                                    delete next[index];
+                                    return next;
+                                  });
                                 }}
                                 className="w-16 h-8 text-center"
                               />
@@ -950,7 +968,7 @@ export default function Commandes() {
                   </Popover>
                   <Button onClick={addItem} size="sm" variant="outline" className="w-full sm:w-auto">
                     <Plus className="w-4 h-4 mr-2" />
-                    Saisie manuelle
+                    Nouvel article
                   </Button>
                 </div>
               </div>
@@ -1001,18 +1019,24 @@ export default function Commandes() {
                           <Input
                             id={`quantite-${index}`}
                             type="number"
+                            inputMode="numeric"
                             min="1"
-                            value={item.quantite_commandee}
+                            value={qtyDrafts[index] ?? String(item.quantite_commandee)}
                             onChange={(e) => {
-                              const value = e.target.value === '' ? '' : e.target.value;
-                              if (value === '') {
-                                updateItem(index, 'quantite_commandee', 1);
-                              } else {
-                                const numValue = parseInt(value, 10);
-                                if (!isNaN(numValue) && numValue > 0) {
-                                  updateItem(index, 'quantite_commandee', numValue);
-                                }
+                              const raw = e.target.value;
+                              setQtyDrafts((prev) => ({ ...prev, [index]: raw }));
+                              if (raw === '') return;
+                              const num = parseInt(raw, 10);
+                              if (!isNaN(num) && num > 0) {
+                                updateItem(index, 'quantite_commandee', num);
                               }
+                            }}
+                            onBlur={() => {
+                              setQtyDrafts((prev) => {
+                                const next = { ...prev };
+                                delete next[index];
+                                return next;
+                              });
                             }}
                           />
                         </div>
