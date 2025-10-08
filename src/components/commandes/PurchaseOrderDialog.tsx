@@ -240,6 +240,19 @@ export const PurchaseOrderDialog = ({ isOpen, onClose, commande, items }: Purcha
 
       if (error) throw error;
 
+      // Mettre à jour le statut de la commande à "envoyée"
+      const { error: updateError } = await supabase
+        .from("commandes")
+        .update({ 
+          status: "envoye",
+          date_envoi: new Date().toISOString()
+        })
+        .eq("id", commande.id);
+
+      if (updateError) {
+        console.error("Erreur lors de la mise à jour du statut:", updateError);
+      }
+
       toast({
         title: "Email envoyé",
         description: `Le bon de commande a été envoyé à ${commande?.email_fournisseur}`,
