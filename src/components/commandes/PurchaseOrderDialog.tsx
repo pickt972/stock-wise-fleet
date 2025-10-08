@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +40,40 @@ export const PurchaseOrderDialog = ({ isOpen, onClose, commande, items }: Purcha
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const { toast } = useToast();
+
+  // Pré-remplir les informations de l'utilisateur connecté
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          // Récupérer l'email de l'utilisateur
+          setSenderEmail(user.email || "");
+          
+          // Récupérer le profil pour obtenir le nom
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("first_name, last_name, username")
+            .eq("id", user.id)
+            .maybeSingle();
+          
+          if (profile) {
+            const fullName = [profile.first_name, profile.last_name]
+              .filter(Boolean)
+              .join(" ") || profile.username || "";
+            setSenderName(fullName);
+          }
+        }
+      } catch (error) {
+        console.error("Erreur lors de la récupération des informations utilisateur:", error);
+      }
+    };
+
+    if (isOpen) {
+      fetchUserInfo();
+    }
+  }, [isOpen]);
 
   const generatePurchaseOrderHTML = () => {
     return `
