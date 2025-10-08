@@ -10,10 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Trash2, ShoppingCart, Mail, Download, Edit, Brain, Search, Check } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, Mail, Download, Edit, Brain, Search, Check, ScanBarcode } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
 import { PurchaseOrderDialog } from "@/components/commandes/PurchaseOrderDialog";
 import { SmartOrderDialog } from "@/components/commandes/SmartOrderDialog";
 import {
@@ -34,6 +35,7 @@ interface Article {
   reference: string;
   prix_achat: number;
   fournisseur_id?: string;
+  code_barre?: string;
 }
 
 interface CommandeItem {
@@ -82,6 +84,7 @@ export default function Commandes() {
   const [editingCommande, setEditingCommande] = useState<(Commande & { items: CommandeItem[] }) | null>(null);
   const [showSmartOrder, setShowSmartOrder] = useState(false);
   const [articleSearchOpen, setArticleSearchOpen] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   const [currentCommande, setCurrentCommande] = useState<Commande>({
     fournisseur: "",
     email_fournisseur: "",
@@ -240,7 +243,7 @@ export default function Commandes() {
     try {
       const { data, error } = await supabase
         .from('articles')
-        .select('id, designation, reference, prix_achat, fournisseur_id')
+        .select('id, designation, reference, prix_achat, fournisseur_id, code_barre')
         .order('designation');
 
       if (error) throw error;
@@ -428,6 +431,69 @@ export default function Commandes() {
     }
     
     setArticleSearchOpen(false);
+  };
+
+  const handleBarcodeScan = (barcode: string) => {
+    setShowScanner(false);
+    
+    // Chercher l'article par code-barres
+    const article = filteredArticles.find(a => a.code_barre === barcode);
+    
+    if (!article) {
+      toast({
+        title: "Article non trouvé",
+        description: `Aucun article avec le code-barres ${barcode}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Vérifier si l'article n'est pas déjà dans la liste
+    const existingIndex = currentItems.findIndex(item => item.article_id === article.id);
+    if (existingIndex !== -1) {
+      // Incrémenter la quantité si l'article existe déjà
+      const newItems = [...currentItems];
+      newItems[existingIndex].quantite_commandee += 1;
+      newItems[existingIndex].total_ligne = newItems[existingIndex].quantite_commandee * newItems[existingIndex].prix_unitaire;
+      setCurrentItems(newItems);
+      
+      const { totalHT, totalTTC } = calculateTotals(newItems, currentCommande.tva_taux);
+      setCurrentCommande(prev => ({
+        ...prev,
+        total_ht: totalHT,
+        total_ttc: totalTTC
+      }));
+      
+      toast({
+        title: "Quantité mise à jour",
+        description: `${article.designation} : quantité augmentée`,
+      });
+    } else {
+      // Ajouter un nouvel article
+      const newItem: CommandeItem = {
+        article_id: article.id,
+        designation: article.designation,
+        reference: article.reference,
+        quantite_commandee: 1,
+        prix_unitaire: article.prix_achat,
+        total_ligne: article.prix_achat
+      };
+      
+      const newItems = [...currentItems, newItem];
+      setCurrentItems(newItems);
+      
+      const { totalHT, totalTTC } = calculateTotals(newItems, currentCommande.tva_taux);
+      setCurrentCommande(prev => ({
+        ...prev,
+        total_ht: totalHT,
+        total_ttc: totalTTC
+      }));
+      
+      toast({
+        title: "Article ajouté",
+        description: `${article.designation} scanné et ajouté`,
+      });
+    }
   };
 
   const saveCommande = async () => {
@@ -783,6 +849,15 @@ export default function Commandes() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <CardTitle>Articles ({currentItems.length})</CardTitle>
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  <Button 
+                    onClick={() => setShowScanner(true)} 
+                    size="sm" 
+                    variant="default"
+                    className="w-full sm:w-auto"
+                  >
+                    <ScanBarcode className="w-4 h-4 mr-2" />
+                    Scanner
+                  </Button>
                   <Popover open={articleSearchOpen} onOpenChange={setArticleSearchOpen}>
                     <PopoverTrigger asChild>
                       <Button size="sm" variant="default" className="w-full sm:w-auto">
