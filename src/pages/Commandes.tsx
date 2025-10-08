@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
 import { PurchaseOrderDialog } from "@/components/commandes/PurchaseOrderDialog";
 import { SmartOrderDialog } from "@/components/commandes/SmartOrderDialog";
+import { CreateArticleDialog } from "@/components/articles/CreateArticleDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -98,6 +99,7 @@ export default function Commandes() {
     user_id: undefined,
   });
   const [currentItems, setCurrentItems] = useState<CommandeItem[]>([]);
+  const [showCreateArticleDialog, setShowCreateArticleDialog] = useState(false);
   const [qtyDrafts, setQtyDrafts] = useState<Record<number, string>>({});
   const [purchaseOrderDialog, setPurchaseOrderDialog] = useState<{
     isOpen: boolean;
@@ -107,6 +109,7 @@ export default function Commandes() {
     isOpen: boolean;
     commande?: Commande & { items: CommandeItem[] };
   }>({ isOpen: false });
+  const [currentFournisseurId, setCurrentFournisseurId] = useState<string>("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -262,6 +265,7 @@ export default function Commandes() {
   const filterArticlesByFournisseur = async (fournisseurNom: string) => {
     if (!fournisseurNom) {
       setFilteredArticles(articles);
+      setCurrentFournisseurId("");
       return;
     }
 
@@ -270,8 +274,12 @@ export default function Commandes() {
       const fournisseur = fournisseurs.find(f => f.nom === fournisseurNom);
       if (!fournisseur) {
         setFilteredArticles(articles);
+        setCurrentFournisseurId("");
         return;
       }
+      
+      // Stocker l'ID du fournisseur actuel
+      setCurrentFournisseurId(fournisseur.id);
 
       // Récupérer les articles associés à ce fournisseur via article_fournisseurs
       const { data: articleFournisseurs, error } = await supabase
@@ -966,7 +974,7 @@ export default function Commandes() {
                       </Command>
                     </PopoverContent>
                   </Popover>
-                  <Button onClick={addItem} size="sm" variant="outline" className="w-full sm:w-auto">
+                  <Button onClick={() => setShowCreateArticleDialog(true)} size="sm" variant="outline" className="w-full sm:w-auto">
                     <Plus className="w-4 h-4 mr-2" />
                     Nouvel article
                   </Button>
@@ -1281,6 +1289,24 @@ export default function Commandes() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create Article Dialog */}
+      {showCreateArticleDialog && (
+        <CreateArticleDialog
+          open={showCreateArticleDialog}
+          onOpenChange={setShowCreateArticleDialog}
+          defaultFournisseurId={currentFournisseurId}
+          onArticleCreated={async () => {
+            await fetchArticles();
+            setShowCreateArticleDialog(false);
+            toast({
+              title: "Succès",
+              description: "Article créé avec succès",
+            });
+          }}
+          triggerButton={null as any}
+        />
+      )}
     </DashboardLayout>
   );
 }

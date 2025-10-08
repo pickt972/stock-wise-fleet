@@ -26,10 +26,21 @@ import { z } from "zod";
 interface CreateArticleDialogProps {
   onArticleCreated: () => void;
   triggerButton?: React.ReactNode;
+  defaultFournisseurId?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function CreateArticleDialog({ onArticleCreated, triggerButton }: CreateArticleDialogProps) {
-  const [open, setOpen] = useState(false);
+export function CreateArticleDialog({ 
+  onArticleCreated, 
+  triggerButton, 
+  defaultFournisseurId,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange 
+}: CreateArticleDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = controlledOnOpenChange ?? setInternalOpen;
   const [showScanner, setShowScanner] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [fournisseurs, setFournisseurs] = useState<any[]>([]);
@@ -99,8 +110,13 @@ const articleSchema = z.object({
       fetchFournisseurs();
       fetchCategories();
       fetchEmplacements();
+      
+      // Pré-remplir le fournisseur si fourni
+      if (defaultFournisseurId) {
+        setFormData(prev => ({ ...prev, fournisseurId: defaultFournisseurId }));
+      }
     }
-  }, [open]);
+  }, [open, defaultFournisseurId]);
 
   const [categories, setCategories] = useState<string[]>([]);
 
