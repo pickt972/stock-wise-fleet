@@ -1,7 +1,28 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
-import { refreshGoogleToken } from "../gmail-refresh-token/index.ts";
+
+async function refreshGoogleToken(refreshToken: string): Promise<{
+  access_token: string;
+  expires_in: number;
+}> {
+  const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: Deno.env.get("GOOGLE_CLIENT_ID") ?? "",
+      client_secret: Deno.env.get("GOOGLE_CLIENT_SECRET") ?? "",
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }),
+  });
+
+  if (!tokenResponse.ok) {
+    throw new Error("Failed to refresh Google token");
+  }
+
+  return await tokenResponse.json();
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
