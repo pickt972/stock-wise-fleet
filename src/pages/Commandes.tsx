@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Trash2, ShoppingCart, Mail, Download, Edit, Brain, Search, Check, ScanBarcode } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, Mail, Download, Edit, Brain, Search, Check, ScanBarcode, PackageCheck } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
 import { PurchaseOrderDialog } from "@/components/commandes/PurchaseOrderDialog";
 import { SmartOrderDialog } from "@/components/commandes/SmartOrderDialog";
 import { CreateArticleDialog } from "@/components/articles/CreateArticleDialog";
+import { ReceptionCommandeDialog } from "@/components/commandes/ReceptionCommandeDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -106,6 +107,10 @@ export default function Commandes() {
     commande?: Commande & { items: CommandeItem[] };
   }>({ isOpen: false });
   const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    commande?: Commande & { items: CommandeItem[] };
+  }>({ isOpen: false });
+  const [receptionDialog, setReceptionDialog] = useState<{
     isOpen: boolean;
     commande?: Commande & { items: CommandeItem[] };
   }>({ isOpen: false });
@@ -1223,6 +1228,20 @@ export default function Commandes() {
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
+                    {(commande?.status === 'envoye' || commande?.status === 'confirme' || commande?.status === 'recu_partiel') && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setReceptionDialog({
+                          isOpen: true,
+                          commande: commande
+                        })}
+                        className="shrink-0"
+                      >
+                        <PackageCheck className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Réceptionner</span>
+                      </Button>
+                    )}
                     {commande?.status === 'brouillon' && (
                       <Button
                         variant="outline"
@@ -1350,6 +1369,15 @@ export default function Commandes() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Reception Dialog */}
+      <ReceptionCommandeDialog
+        isOpen={receptionDialog.isOpen}
+        onClose={() => setReceptionDialog({ isOpen: false })}
+        commandeId={receptionDialog.commande?.id || ''}
+        commandeNumero={receptionDialog.commande?.numero_commande || ''}
+        onSuccess={fetchCommandes}
+      />
 
       {/* Create Article Dialog */}
       <CreateArticleDialog
