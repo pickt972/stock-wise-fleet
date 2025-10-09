@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, Plus, Pencil, Trash2 } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Mail } from "lucide-react";
 
 const mailSettingsSchema = z.object({
   name: z.string().min(1, "Le nom est requis"),
@@ -50,6 +50,7 @@ interface MailSetting {
 export function MailSettingsForm() {
   const [mailSettings, setMailSettings] = useState<MailSetting[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isConnectingGmail, setIsConnectingGmail] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const { toast } = useToast();
@@ -266,12 +267,52 @@ export function MailSettingsForm() {
         </div>
       )}
 
-      {/* Bouton pour ajouter un nouveau compte */}
+      {/* Options de connexion */}
       {!showForm && (
-        <Button onClick={() => setShowForm(true)} className="w-full">
-          <Plus className="h-4 w-4 mr-2" />
-          Ajouter un compte de messagerie
-        </Button>
+        <div className="space-y-3">
+          <Card className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-blue-200 dark:border-blue-800">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                  Connexion rapide Gmail
+                </h3>
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Connectez votre compte Gmail en un clic avec OAuth. Plus simple et plus sécurisé que la configuration SMTP manuelle.
+                </p>
+              </div>
+              <Button 
+                onClick={() => {
+                  setIsConnectingGmail(true);
+                  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+                  const redirectUri = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/gmail-oauth-callback`;
+                  const scope = "https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email";
+                  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent`;
+                  window.location.href = authUrl;
+                }}
+                disabled={isConnectingGmail}
+                className="shrink-0"
+              >
+                {isConnectingGmail && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                <Mail className="h-4 w-4 mr-2" />
+                Connecter Gmail
+              </Button>
+            </div>
+          </Card>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">ou</span>
+            </div>
+          </div>
+
+          <Button onClick={() => setShowForm(true)} variant="outline" className="w-full">
+            <Plus className="h-4 w-4 mr-2" />
+            Configuration SMTP manuelle (OVH, Outlook, etc.)
+          </Button>
+        </div>
       )}
 
       {/* Formulaire */}

@@ -623,6 +623,8 @@ export type Database = {
       }
       mail_settings: {
         Row: {
+          access_token: string | null
+          auth_type: string
           created_at: string
           id: string
           imap_host: string | null
@@ -631,15 +633,19 @@ export type Database = {
           imap_username: string | null
           is_active: boolean
           name: string
+          refresh_token: string | null
           smtp_host: string
           smtp_password: string | null
           smtp_port: number
           smtp_username: string
+          token_expiry: string | null
           updated_at: string
           use_tls: boolean
           user_id: string
         }
         Insert: {
+          access_token?: string | null
+          auth_type?: string
           created_at?: string
           id?: string
           imap_host?: string | null
@@ -648,15 +654,19 @@ export type Database = {
           imap_username?: string | null
           is_active?: boolean
           name: string
+          refresh_token?: string | null
           smtp_host: string
           smtp_password?: string | null
           smtp_port?: number
           smtp_username: string
+          token_expiry?: string | null
           updated_at?: string
           use_tls?: boolean
           user_id: string
         }
         Update: {
+          access_token?: string | null
+          auth_type?: string
           created_at?: string
           id?: string
           imap_host?: string | null
@@ -665,10 +675,12 @@ export type Database = {
           imap_username?: string | null
           is_active?: boolean
           name?: string
+          refresh_token?: string | null
           smtp_host?: string
           smtp_password?: string | null
           smtp_port?: number
           smtp_username?: string
+          token_expiry?: string | null
           updated_at?: string
           use_tls?: boolean
           user_id?: string

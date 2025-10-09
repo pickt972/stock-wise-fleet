@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { refreshGoogleToken } from "../gmail-refresh-token/index.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -48,55 +49,118 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("📧 Mail setting found:", mailSetting.name);
 
-    // Créer le client SMTP avec les paramètres configurés
-    const isImplicitTLS = mailSetting.smtp_port === 465;
+    // Vérifier si c'est OAuth et si le token doit être rafraîchi
+    let accessToken = mailSetting.access_token;
+    if (mailSetting.auth_type === "oauth") {
+      const tokenExpiry = new Date(mailSetting.token_expiry);
+      const now = new Date();
+      
+      // Rafraîchir si le token expire dans moins de 5 minutes
+      if (tokenExpiry.getTime() - now.getTime() < 5 * 60 * 1000) {
+        console.log("🔄 Refreshing Google OAuth token...");
+        const newTokens = await refreshGoogleToken(mailSetting.refresh_token);
+        accessToken = newTokens.access_token;
+        
+        const expiryDate = new Date();
+        expiryDate.setSeconds(expiryDate.getSeconds() + newTokens.expires_in);
+        
+        await supabase
+          .from("mail_settings")
+          .update({
+            access_token: newTokens.access_token,
+            token_expiry: expiryDate.toISOString(),
+          })
+          .eq("id", mailSettingId);
+      }
+    }
 
-    const sendWith = async (hostname: string, port: number, tls: boolean) => {
-      const client = new SMTPClient({
-        connection: {
-          hostname,
-          port,
-          tls,
-          auth: {
-            username: mailSetting.smtp_username,
-            password: mailSetting.smtp_password,
+    // Préparer le contenu HTML
+    const htmlContent = body && body.trim().length > 0 && body.includes('<')
+      ? body
+      : `<pre style="font-family: ui-sans-serif, system-ui; white-space: pre-wrap;">${body || ''}</pre>`;
+
+    // Envoi via OAuth Gmail ou SMTP
+    if (mailSetting.auth_type === "oauth") {
+      console.log("📧 Sending via Gmail API with OAuth...");
+      
+      // Créer le message au format RFC 2822
+      const message = [
+        `From: ${mailSetting.smtp_username}`,
+        `To: ${to}`,
+        `Subject: ${subject}`,
+        `MIME-Version: 1.0`,
+        `Content-Type: text/html; charset=utf-8`,
+        ``,
+        htmlContent,
+      ].join("\r\n");
+
+      const encodedMessage = btoa(unescape(encodeURIComponent(message)))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+
+      const gmailResponse = await fetch(
+        "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
           },
-        },
-      });
-
-      // Préparer le contenu HTML
-      const htmlContent = body && body.trim().length > 0 && body.includes('<')
-        ? body
-        : `<pre style="font-family: ui-sans-serif, system-ui; white-space: pre-wrap;">${body || ''}</pre>`;
-
-      await client.send({
-        from: mailSetting.smtp_username,
-        to,
-        subject,
-        html: htmlContent,
-      });
-
-      await client.close();
-    };
-
-    try {
-      // Première tentative avec les réglages fournis
-      await sendWith(mailSetting.smtp_host, mailSetting.smtp_port, isImplicitTLS);
-      console.log("✅ Email sent successfully via SMTP (first attempt)");
-    } catch (e: any) {
-      console.error("❌ SMTP send failed (first attempt):", e?.message || e);
-      // Fallback connu: certains serveurs refusent 587/STARTTLS avec denomailer
-      // On retente en TLS implicite sur 465 si possible
-      if (mailSetting.smtp_port === 587) {
-        try {
-          await sendWith(mailSetting.smtp_host, 465, true);
-          console.log("✅ Email sent successfully via SMTP (fallback 465/TLS)");
-        } catch (e2: any) {
-          console.error("❌ SMTP send failed (fallback):", e2?.message || e2);
-          throw e2;
+          body: JSON.stringify({ raw: encodedMessage }),
         }
-      } else {
-        throw e;
+      );
+
+      if (!gmailResponse.ok) {
+        const errorText = await gmailResponse.text();
+        console.error("❌ Gmail API error:", errorText);
+        throw new Error(`Gmail API error: ${gmailResponse.status}`);
+      }
+
+      console.log("✅ Email sent via Gmail API");
+    } else {
+      console.log("📧 Sending via SMTP...");
+      const isImplicitTLS = mailSetting.smtp_port === 465;
+
+      const sendWith = async (hostname: string, port: number, tls: boolean) => {
+        const client = new SMTPClient({
+          connection: {
+            hostname,
+            port,
+            tls,
+            auth: {
+              username: mailSetting.smtp_username,
+              password: mailSetting.smtp_password,
+            },
+          },
+        });
+
+        await client.send({
+          from: mailSetting.smtp_username,
+          to,
+          subject,
+          html: htmlContent,
+        });
+
+        await client.close();
+      };
+
+      try {
+        await sendWith(mailSetting.smtp_host, mailSetting.smtp_port, isImplicitTLS);
+        console.log("✅ Email sent successfully via SMTP");
+      } catch (e: any) {
+        console.error("❌ SMTP send failed (first attempt):", e?.message || e);
+        if (mailSetting.smtp_port === 587) {
+          try {
+            await sendWith(mailSetting.smtp_host, 465, true);
+            console.log("✅ Email sent via SMTP (fallback 465/TLS)");
+          } catch (e2: any) {
+            console.error("❌ SMTP send failed (fallback):", e2?.message || e2);
+            throw e2;
+          }
+        } else {
+          throw e;
+        }
       }
     }
 
