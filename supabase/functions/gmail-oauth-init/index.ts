@@ -12,7 +12,11 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { code, mailSettingId } = await req.json();
+    const { code } = await req.json();
+    
+    if (!code) {
+      throw new Error("Code d'autorisation manquant");
+    }
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -27,7 +31,7 @@ const handler = async (req: Request): Promise<Response> => {
         code,
         client_id: Deno.env.get("GOOGLE_CLIENT_ID") ?? "",
         client_secret: Deno.env.get("GOOGLE_CLIENT_SECRET") ?? "",
-        redirect_uri: `${Deno.env.get("SUPABASE_URL")}/functions/v1/gmail-oauth-callback`,
+        redirect_uri: "https://besoyrwozpzzhtxliyqz.supabase.co/functions/v1/gmail-oauth-callback",
         grant_type: "authorization_code",
       }),
     });
@@ -51,12 +55,24 @@ const handler = async (req: Request): Promise<Response> => {
 
     const userInfo = await userInfoResponse.json();
 
-    // Mettre à jour ou créer le mail_setting
+    // Obtenir l'utilisateur courant via le header Authorization
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      throw new Error("Non authentifié");
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    
+    if (userError || !user) {
+      throw new Error("Utilisateur non trouvé");
+    }
+
+    // Créer le mail_setting
     const { error: dbError } = await supabase
       .from("mail_settings")
-      .upsert({
-        id: mailSettingId || undefined,
-        user_id: (await supabase.auth.getUser()).data.user?.id,
+      .insert({
+        user_id: user.id,
         name: `Gmail - ${userInfo.email}`,
         auth_type: "oauth",
         smtp_username: userInfo.email,

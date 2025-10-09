@@ -9,5 +9,8 @@ verify_jwt = false
 [functions.gmail-oauth-init]
 verify_jwt = false
 
+[functions.gmail-oauth-callback]
+verify_jwt = false
+
 [functions.gmail-refresh-token]
 verify_jwt = false
