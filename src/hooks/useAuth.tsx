@@ -35,22 +35,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = async (userId: string) => {
     try {
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
-      const { data: roleData } = await supabase
+      if (profileError) {
+        console.error('Erreur profil:', profileError);
+      }
+
+      const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
+
+      if (roleError) {
+        console.error('Erreur rôle:', roleError);
+      }
 
       setProfile(profileData);
       setUserRole(roleData?.role || null);
     } catch (error) {
       console.error('Erreur lors de la récupération du profil:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
