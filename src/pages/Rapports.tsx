@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart3, Download, FileText, TrendingUp, Package, Users, Calendar, AlertTriangle, LineChart } from "lucide-react";
+import { BarChart3, Download, FileText, TrendingUp, Package, Users, Calendar, AlertTriangle, LineChart, History } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { StockAnomaliesReport } from "@/components/reports/StockAnomaliesReport";
 import { StockChartsReport } from "@/components/reports/StockChartsReport";
+import { ArticleHistoryReport } from "@/components/reports/ArticleHistoryReport";
 
 export default function Rapports() {
   const [selectedPeriod, setSelectedPeriod] = useState("30");
@@ -336,6 +337,14 @@ export default function Rapports() {
             <LineChart className="h-4 w-4 mr-2" />
             Graphiques
           </Button>
+          <Button
+            variant={selectedReport === "historique" ? "default" : "outline"}
+            onClick={() => setSelectedReport("historique")}
+            size="sm"
+          >
+            <History className="h-4 w-4 mr-2" />
+            Historique article
+          </Button>
         </div>
 
         {/* Affichage du rapport sélectionné */}
@@ -344,6 +353,7 @@ export default function Rapports() {
         {selectedReport === "commandes" && renderCommandesReport()}
         {selectedReport === "anomalies" && <StockAnomaliesReport />}
         {selectedReport === "charts" && <StockChartsReport />}
+        {selectedReport === "historique" && <ArticleHistoryReport />}
       </div>
     </DashboardLayout>
   );
