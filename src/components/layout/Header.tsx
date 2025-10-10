@@ -1,4 +1,4 @@
-import { Bell, User, Menu, Settings, LogOut } from "lucide-react";
+import { Bell, User, Menu, Settings, LogOut, Download } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import logo from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { usePWA } from "@/hooks/usePWA";
 import { GlobalSearch } from "@/components/GlobalSearch";
+import { OfflineSyncStatus } from "@/components/OfflineSyncStatus";
 import { useNavigate } from "react-router-dom";
 import { useAlerts } from "@/hooks/useAlerts";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -24,6 +25,7 @@ interface HeaderProps {
 
 export function Header({ onMenuClick }: HeaderProps) {
   const { user, profile, userRole, signOut } = useAuth();
+  const { isInstallable, installApp } = usePWA();
   const navigate = useNavigate();
   const { alerts } = useAlerts();
 
@@ -79,9 +81,37 @@ export function Header({ onMenuClick }: HeaderProps) {
               <p className="text-xs text-muted-foreground hidden sm:block truncate">Gestion des stocks</p>
             </div>
           </div>
+          
+          {/* Recherche globale - Desktop */}
+          <div className="hidden lg:block ml-4 max-w-md flex-1">
+            <GlobalSearch />
+          </div>
         </div>
 
-        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
+          {/* Statut de synchronisation hors ligne */}
+          <OfflineSyncStatus />
+          
+          {/* Bouton d'installation PWA */}
+          {isInstallable && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={installApp}
+                  className="hidden md:flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  <span className="hidden lg:inline">Installer</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Installer l'application sur votre appareil</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+          
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="sm" className="relative hidden sm:flex">
