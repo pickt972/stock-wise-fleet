@@ -15,7 +15,8 @@ import {
   Tag,
   Car,
   Wrench,
-  MapPin
+  MapPin,
+  Shield
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -34,6 +35,7 @@ const getNavigation = (permissions: any) => [
 ];
 
 const getAdminNavigation = (permissions: any) => [
+  { name: "Journal d'Audit", href: "/audit-logs", icon: Shield, show: permissions.viewReports },
   { name: "Paramètres", href: "/parametres", icon: Settings, show: permissions.viewReports || permissions.manageSettings },
 ];
 

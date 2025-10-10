@@ -22,6 +22,7 @@ import Inventaire from "./pages/Inventaire";
 import Rapports from "./pages/Rapports";
 import RolesPermissions from "./pages/RolesPermissions";
 import Emplacements from "./pages/Emplacements";
+import AuditLogs from "./pages/AuditLogs";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
@@ -119,6 +120,11 @@ const App = () => (
               <Route path="/roles-permissions" element={
                 <ProtectedRoute>
                   <RolesPermissions />
+                </ProtectedRoute>
+              } />
+              <Route path="/audit-logs" element={
+                <ProtectedRoute>
+                  <AuditLogs />
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
