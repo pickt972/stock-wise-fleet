@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { Resend } from "npm:resend@4.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -195,56 +195,24 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("📧 Mail setting found:", mailSetting.name);
 
     const html = generatePurchaseOrderHTML(requestData);
+    console.log("✉️ Sending purchase order via Resend");
+    // Send using Resend API (no SMTP/TLS issues)
+    const resend = new Resend(Deno.env.get("RESEND_API_KEY") as string);
 
-    const isImplicitTLS = mailSetting.smtp_port === 465;
+    const sendResult = await resend.emails.send({
+      from: "StockWise <onboarding@resend.dev>",
+      to: [commande.email_fournisseur],
+      subject: `Bon de commande ${commande.numero_commande} - ${commande.fournisseur}`,
+      html,
+      reply_to: sender.email,
+    });
 
-    const sendWith = async (hostname: string, port: number, tls: boolean) => {
-      const client = new SMTPClient({
-        connection: {
-          hostname,
-          port,
-          tls,
-          auth: {
-            username: mailSetting.smtp_username,
-            password: mailSetting.smtp_password,
-          },
-        },
-        // Désactiver la vérification stricte du certificat SSL
-        pool: {
-          size: 1,
-          timeout: 60000,
-        },
-      });
-
-      await client.send({
-        from: mailSetting.smtp_username,
-        to: commande.email_fournisseur,
-        subject: `Bon de commande ${commande.numero_commande} - ${commande.fournisseur}`,
-        html,
-      });
-
-      await client.close();
-    };
-
-    try {
-      await sendWith(mailSetting.smtp_host, mailSetting.smtp_port, isImplicitTLS);
-      console.log("✅ Email sent successfully via SMTP (first attempt)");
-    } catch (e: any) {
-      console.error("❌ SMTP send failed (first attempt):", e?.message || e);
-      if (mailSetting.smtp_port === 587) {
-        try {
-          await sendWith(mailSetting.smtp_host, 465, true);
-          console.log("✅ Email sent successfully via SMTP (fallback 465/TLS)");
-        } catch (e2: any) {
-          console.error("❌ SMTP send failed (fallback):", e2?.message || e2);
-          throw e2;
-        }
-      } else {
-        throw e;
-      }
+    if ((sendResult as any).error) {
+      console.error("❌ Resend send error:", (sendResult as any).error);
+      throw new Error((sendResult as any).error?.message || "Email send failed");
     }
 
-    console.log("✅ Email sent successfully via SMTP");
+    console.log("✅ Email sent successfully via Resend");
 
     // Mettre à jour le statut de la commande après envoi réussi
     if (commande?.id) {
