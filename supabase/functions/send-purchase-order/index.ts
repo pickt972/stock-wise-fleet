@@ -83,7 +83,7 @@ const generatePurchaseOrderHTML = (data: PurchaseOrderRequest) => {
     <body>
       <div class="header">
         <div class="company-info">
-          ${companyInfo.company_logo_url ? `<img src="${companyInfo.company_logo_url}" alt="Logo" style="max-height: 60px; margin-bottom: 10px;">` : ''}
+          ${companyInfo.company_logo_url ? `<img src="${companyInfo.company_logo_url}" alt="Logo" style="max-height: 60px; max-width: 200px; height: auto; width: auto; object-fit: contain; margin-bottom: 10px;">` : ''}
           <div class="company-name">${companyInfo.company_name}</div>
           <div class="company-details">
             ${companyInfo.company_address.replace(/\n/g, '<br>')}<br>
