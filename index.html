@@ -2,10 +2,18 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>StockAuto - Gestion des stocks automobile</title>
     <meta name="description" content="Application de gestion des stocks pour location automobile - Gérez vos pièces détachées, suivez vos mouvements et anticipez vos besoins" />
     <meta name="author" content="StockAuto" />
+    
+    <!-- PWA Configuration -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#1a1a1a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="StockAuto" />
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
     
     <!-- Google Fonts - Modern Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,5 +33,19 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Enregistrer le Service Worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('Service Worker enregistré:', registration);
+            })
+            .catch((error) => {
+              console.log('Erreur d\'enregistrement du Service Worker:', error);
+            });
+        });
+      }
+    </script>
   </body>
 </html>

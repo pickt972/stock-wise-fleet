@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
+import { usePWA } from "@/hooks/usePWA";
+import { GlobalSearch } from "@/components/GlobalSearch";
 import { useNavigate } from "react-router-dom";
 import { useAlerts } from "@/hooks/useAlerts";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
