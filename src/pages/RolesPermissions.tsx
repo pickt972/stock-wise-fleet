@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import DashboardLayout from "./DashboardLayout";
 import { RolesPermissionsMatrix } from "@/components/roles/RolesPermissionsMatrix";
+import { UserRolesManagement } from "@/components/roles/UserRolesManagement";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { Card, CardContent } from "@/components/ui/card";
 import { Shield } from "lucide-react";
@@ -45,10 +46,12 @@ export default function RolesPermissions() {
         <header>
           <h1 className="text-2xl md:text-3xl font-bold">Rôles et Permissions</h1>
           <p className="text-sm md:text-base text-muted-foreground">
-            Consultez les permissions accordées à chaque rôle dans l'application
+            Gérez les rôles des utilisateurs et consultez les permissions associées
           </p>
         </header>
 
+        <UserRolesManagement />
+        
         <RolesPermissionsMatrix />
       </main>
     </DashboardLayout>
