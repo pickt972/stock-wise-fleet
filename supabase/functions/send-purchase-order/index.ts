@@ -14,6 +14,8 @@ interface PurchaseOrderRequest {
     numero_commande: string;
     fournisseur: string;
     email_fournisseur: string;
+    telephone_fournisseur?: string;
+    adresse_fournisseur?: string;
     date_creation: string;
     total_ht: number;
     total_ttc: number;
@@ -99,8 +101,13 @@ const generatePurchaseOrderHTML = (data: PurchaseOrderRequest) => {
       </div>
       
       <div class="supplier-info">
-        <div class="info-label">Fournisseur :</div>
-        <div style="margin-top: 5px;">${commande.fournisseur}</div>
+        <div class="info-label">Fournisseur</div>
+        <div style="margin-top: 5px;">
+          <div>${commande.fournisseur}</div>
+          ${commande.email_fournisseur ? `<div>Email: ${commande.email_fournisseur}</div>` : ``}
+          ${commande.telephone_fournisseur ? `<div>Tél: ${commande.telephone_fournisseur}</div>` : ``}
+          ${commande.adresse_fournisseur ? `<div>${commande.adresse_fournisseur.replace(/\n/g, '<br>')}</div>` : ``}
+        </div>
       </div>
       
       <div class="info-section">
@@ -161,6 +168,70 @@ const generatePurchaseOrderHTML = (data: PurchaseOrderRequest) => {
   `;
 };
 
+// Sanitize HTML to avoid quoted-printable artefacts like "=20"
+const sanitizeHtml = (html: string) => {
+  return html
+    .replace(/\r\n/g, "\n") // normalize EOL
+    .replace(/[ \t]+$/gm, "") // remove trailing spaces at EOL
+    .replace(/\u00A0/g, " ") // replace NBSP with regular space
+    .replace(/\n{3,}/g, "\n\n"); // collapse excessive blank lines
+};
+
+// Plain-text fallback version of the purchase order
+const generatePurchaseOrderText = (data: PurchaseOrderRequest) => {
+  const { commande, items, sender, companySettings } = data;
+  const company = companySettings || {
+    company_name: sender.name,
+    company_address: "Adresse non configurée",
+    company_siret: "SIRET non configuré",
+    company_phone: "Téléphone non configuré",
+    company_email: sender.email,
+  };
+
+  const lines: string[] = [];
+  lines.push(
+    `BON DE COMMANDE`,
+    `N°: ${commande.numero_commande}`,
+    "",
+    `Entreprise: ${company.company_name}`,
+    company.company_address,
+    `SIRET: ${company.company_siret}`,
+    `Tél: ${company.company_phone}`,
+    `Email: ${company.company_email}`,
+    "",
+    `Fournisseur: ${commande.fournisseur}`,
+    `Date de commande: ${new Date(commande.date_creation).toLocaleDateString('fr-FR')}`,
+    `Commandé par: ${sender.name}`,
+    "",
+    "Articles:",
+  );
+
+  items.forEach((it, idx) => {
+    lines.push(
+      `${idx + 1}. ${it.designation} | Ref: ${it.reference || '-'} | Qté: ${it.quantite_commandee} | PU: ${it.prix_unitaire.toFixed(2)} € | Total: ${it.total_ligne.toFixed(2)} €`
+    );
+  });
+
+  lines.push(
+    "",
+    `Total HT: ${commande.total_ht.toFixed(2)} €`,
+    `TVA (${commande.tva_taux}%): ${(commande.total_ttc - commande.total_ht).toFixed(2)} €`,
+    `Total TTC: ${commande.total_ttc.toFixed(2)} €`,
+  );
+
+  if (commande.notes) {
+    lines.push("", "Notes:", commande.notes);
+  }
+
+  lines.push(
+    "",
+    "Merci de confirmer la réception et le délai de livraison.",
+    `Cordialement, ${company.company_name}`
+  );
+
+  return lines.join("\n");
+};
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -194,7 +265,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("📧 Mail setting found:", mailSetting.name);
 
-    const html = generatePurchaseOrderHTML(requestData);
+const rawHtml = generatePurchaseOrderHTML(requestData);
+const cleanedHtml = sanitizeHtml(rawHtml);
+const textAlt = generatePurchaseOrderText(requestData);
     
     // Envoi via SMTP avec les paramètres utilisateur
     console.log("📧 Sending via SMTP...");
@@ -217,7 +290,8 @@ const handler = async (req: Request): Promise<Response> => {
         from: mailSetting.smtp_username,
         to: commande.email_fournisseur,
         subject: `Bon de commande ${commande.numero_commande} - ${commande.fournisseur}`,
-        html,
+        html: cleanedHtml,
+        text: textAlt,
       });
 
       await client.close();
