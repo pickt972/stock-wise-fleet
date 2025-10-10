@@ -217,6 +217,7 @@ const handler = async (req: Request): Promise<Response> => {
         from: mailSetting.smtp_username,
         to: commande.email_fournisseur,
         subject: `Bon de commande ${commande.numero_commande} - ${commande.fournisseur}`,
+        content: "text/html; charset=utf-8",
         html,
       });
 
