@@ -20,7 +20,7 @@ import Parametres from "./pages/Parametres";
 import Alertes from "./pages/Alertes";
 import Inventaire from "./pages/Inventaire";
 import Rapports from "./pages/Rapports";
-
+import RolesPermissions from "./pages/RolesPermissions";
 import Emplacements from "./pages/Emplacements";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -114,6 +114,11 @@ const App = () => (
               <Route path="/emplacements" element={
                 <ProtectedRoute>
                   <Emplacements />
+                </ProtectedRoute>
+              } />
+              <Route path="/roles-permissions" element={
+                <ProtectedRoute>
+                  <RolesPermissions />
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
