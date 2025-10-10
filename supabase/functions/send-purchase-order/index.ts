@@ -209,6 +209,11 @@ const handler = async (req: Request): Promise<Response> => {
             password: mailSetting.smtp_password,
           },
         },
+        // Désactiver la vérification stricte du certificat SSL
+        pool: {
+          size: 1,
+          timeout: 60000,
+        },
       });
 
       await client.send({
@@ -252,9 +257,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    console.log("Email sent successfully:", emailResponse);
-
-    return new Response(JSON.stringify({ success: true, emailResponse }), {
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
