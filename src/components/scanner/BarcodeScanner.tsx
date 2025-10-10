@@ -4,7 +4,7 @@ import { Result } from "@zxing/library";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Camera, CameraOff, RotateCcw } from "lucide-react";
+import { Camera, CameraOff, RotateCcw, Flashlight, FlashlightOff, Maximize2, Minimize2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface BarcodeScannerProps {
@@ -23,7 +23,11 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
   const [lastScanResult, setLastScanResult] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [torchEnabled, setTorchEnabled] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [hasTorch, setHasTorch] = useState(false);
   const { toast } = useToast();
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -88,12 +92,10 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
   const startScanning = async (reader: BrowserMultiFormatReader, deviceId?: string) => {
     if (!videoRef.current) return;
 
-    // Gestion centralisée du résultat
     const handleResult = (result: Result | null, error?: Error) => {
       if (result && !isProcessing) {
         const scannedText = result.getText();
         
-        // Éviter les scans multiples du même code
         if (scannedText === lastScanResult) {
           return;
         }
@@ -101,10 +103,16 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
         setIsProcessing(true);
         setLastScanResult(scannedText);
         
-        // Arrêter le scan immédiatement
+        // Vibration haptique si disponible
+        if ('vibrate' in navigator) {
+          navigator.vibrate([100, 50, 100]);
+        }
+        
+        // Feedback sonore
+        playBeep();
+        
         stopScanning();
         
-        // Délai court pour stabiliser avant de notifier
         setTimeout(() => {
           onScanResult(scannedText);
           
@@ -132,6 +140,9 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
           handleResult
         );
         setScannerControls(controls);
+        
+        // Vérifier si la torche est disponible
+        checkTorchSupport();
         return;
       }
 
@@ -140,8 +151,9 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
         {
           video: {
             facingMode: { exact: "environment" },
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            aspectRatio: { ideal: 16/9 },
           },
           audio: false,
         } as any,
@@ -149,6 +161,7 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
         handleResult
       );
       setScannerControls(controls);
+      checkTorchSupport();
     } catch (error: any) {
       // Fallback si 'exact' n'est pas supporté
       if (error?.name === "OverconstrainedError" || error?.name === "ConstraintNotSatisfiedError") {
@@ -205,11 +218,85 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
     }
   };
 
+  const checkTorchSupport = async () => {
+    try {
+      const stream = videoRef.current?.srcObject as MediaStream;
+      if (stream) {
+        const track = stream.getVideoTracks()[0];
+        const capabilities = track.getCapabilities() as any;
+        setHasTorch(capabilities?.torch || false);
+      }
+    } catch (error) {
+      setHasTorch(false);
+    }
+  };
+
+  const toggleTorch = async () => {
+    try {
+      const stream = videoRef.current?.srcObject as MediaStream;
+      if (stream) {
+        const track = stream.getVideoTracks()[0];
+        await track.applyConstraints({
+          advanced: [{ torch: !torchEnabled } as any]
+        });
+        setTorchEnabled(!torchEnabled);
+      }
+    } catch (error) {
+      console.error("Erreur torche:", error);
+      toast({
+        title: "Torche non disponible",
+        description: "Votre appareil ne supporte pas la torche",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleFullscreen = () => {
+    if (!containerRef.current) return;
+
+    if (!isFullscreen) {
+      if (containerRef.current.requestFullscreen) {
+        containerRef.current.requestFullscreen();
+        setIsFullscreen(true);
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    }
+  };
+
+  const playBeep = () => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.1);
+    } catch (error) {
+      // Silently fail if audio is not available
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-md bg-background">
+    <div 
+      ref={containerRef}
+      className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4"
+    >
+      <Card className="w-full max-w-md bg-background shadow-2xl">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">
@@ -264,11 +351,23 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
                   <RotateCcw className="h-4 w-4 mr-2" />
                   Relancer
                 </Button>
-                {/* Pas de bouton Changer: caméra arrière uniquement */}
+                {hasTorch && (
+                  <Button onClick={toggleTorch} variant="outline" size="sm">
+                    {torchEnabled ? <FlashlightOff className="h-4 w-4" /> : <Flashlight className="h-4 w-4" />}
+                  </Button>
+                )}
+                <Button onClick={toggleFullscreen} variant="outline" size="sm">
+                  {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                </Button>
               </div>
 
-              <div className="text-center">
+              <div className="text-center space-y-2">
                 <p className="text-sm text-muted-foreground">Pointez la caméra vers un code-barres ou QR code</p>
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  {hasTorch && <span>• Torche disponible</span>}
+                  <span>• Détection automatique</span>
+                  <span>• Haute résolution</span>
+                </div>
               </div>
             </>
           )}
