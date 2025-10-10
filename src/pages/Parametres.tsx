@@ -13,6 +13,7 @@ import { VehiculesContent } from "@/components/admin/VehiculesContent";
 import { EmplacementsContent } from "@/components/admin/EmplacementsContent";
 import { FournisseursManagement } from "@/components/fournisseurs/FournisseursManagement";
 import { CategoriesManagement } from "@/components/categories/CategoriesManagement";
+import { RolesPermissionsMatrix } from "@/components/roles/RolesPermissionsMatrix";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -155,11 +156,26 @@ export default function Parametres() {
                   <CardDescription>Paramètres SMTP/IMAP pour l'envoi d'emails aux fournisseurs</CardDescription>
                 </CardHeader>
               </Card>
+
+              {permissions.manageUsers && (
+                <Card 
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => navigate('/roles-permissions')}
+                >
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-3 text-lg">
+                      <Settings className="h-5 w-5" />
+                      Rôles et Permissions
+                    </CardTitle>
+                    <CardDescription>Consultez la matrice des permissions par rôle</CardDescription>
+                  </CardHeader>
+                </Card>
+              )}
             </div>
           ) : (
             // Version desktop avec onglets
             <Tabs defaultValue="gestion" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="gestion" className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
                   Gestion
@@ -168,6 +184,12 @@ export default function Parametres() {
                   <MapPin className="h-4 w-4" />
                   Emplacements
                 </TabsTrigger>
+                {permissions.manageUsers && (
+                  <TabsTrigger value="roles" className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    Rôles
+                  </TabsTrigger>
+                )}
               </TabsList>
 
               <TabsContent value="gestion" className="space-y-6 mt-6">
@@ -280,8 +302,14 @@ export default function Parametres() {
                </TabsContent>
 
                <TabsContent value="emplacements" className="space-y-6 mt-6">
-                 <EmplacementsContent />
-               </TabsContent>
+                  <EmplacementsContent />
+                </TabsContent>
+
+                {permissions.manageUsers && (
+                  <TabsContent value="roles" className="space-y-6 mt-6">
+                    <RolesPermissionsMatrix />
+                  </TabsContent>
+                )}
             </Tabs>
           )}
         </div>
