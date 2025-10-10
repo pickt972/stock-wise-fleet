@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
-import { encode as encodeBase64 } from "https://deno.land/std@0.190.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -214,26 +213,11 @@ const handler = async (req: Request): Promise<Response> => {
         },
       });
 
-      const cleanedHtml = html
-        .replace(/[ \t]+\n/g, "\n")
-        .replace(/\u00A0/g, " ");
-      const base64Html = encodeBase64(new TextEncoder().encode(cleanedHtml));
-
       await client.send({
         from: mailSetting.smtp_username,
         to: commande.email_fournisseur,
         subject: `Bon de commande ${commande.numero_commande} - ${commande.fournisseur}`,
-        mimeContent: [
-          {
-            mimeType: 'text/html; charset="utf-8"',
-            content: base64Html,
-            transferEncoding: "base64",
-          },
-        ],
-        headers: {
-          "MIME-Version": "1.0",
-          "Content-Type": 'text/html; charset="utf-8"',
-        },
+        html,
       });
 
       await client.close();
