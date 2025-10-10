@@ -23,6 +23,7 @@ import Rapports from "./pages/Rapports";
 import RolesPermissions from "./pages/RolesPermissions";
 import Emplacements from "./pages/Emplacements";
 import AuditLogs from "./pages/AuditLogs";
+import JournalAudit from "./pages/JournalAudit";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
@@ -125,6 +126,11 @@ const App = () => (
               <Route path="/audit-logs" element={
                 <ProtectedRoute>
                   <AuditLogs />
+                </ProtectedRoute>
+              } />
+              <Route path="/journal-audit" element={
+                <ProtectedRoute>
+                  <JournalAudit />
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -35,7 +35,7 @@ const getNavigation = (permissions: any) => [
 ];
 
 const getAdminNavigation = (permissions: any) => [
-  { name: "Journal d'Audit", href: "/audit-logs", icon: Shield, show: permissions.viewReports },
+  { name: "Journal d'Audit", href: "/journal-audit", icon: Shield, show: permissions.viewReports },
   { name: "Paramètres", href: "/parametres", icon: Settings, show: permissions.viewReports || permissions.manageSettings },
 ];
 
