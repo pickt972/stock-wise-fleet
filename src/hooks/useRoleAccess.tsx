@@ -1,7 +1,73 @@
 import { useAuth } from "./useAuth";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+type PermissionKey = 'manageUsers' | 'manageSuppliers' | 'manageCategories' | 'manageVehicles' | 'viewReports' | 'manageSettings' | 'manageStock' | 'createOrders' | 'validateOrders';
 
 export function useRoleAccess() {
   const { userRole } = useAuth();
+  const [permissions, setPermissions] = useState<Record<PermissionKey, boolean>>({
+    manageUsers: false,
+    manageSuppliers: false,
+    manageCategories: false,
+    manageVehicles: false,
+    viewReports: false,
+    manageSettings: false,
+    manageStock: false,
+    createOrders: false,
+    validateOrders: false,
+  });
+
+  useEffect(() => {
+    async function fetchPermissions() {
+      if (!userRole) {
+        setPermissions({
+          manageUsers: false,
+          manageSuppliers: false,
+          manageCategories: false,
+          manageVehicles: false,
+          viewReports: false,
+          manageSettings: false,
+          manageStock: false,
+          createOrders: false,
+          validateOrders: false,
+        });
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('role_permissions')
+        .select('permission_key, enabled')
+        .eq('role', userRole);
+
+      if (error) {
+        console.error('Error fetching permissions:', error);
+        return;
+      }
+
+      const permissionsMap: Record<PermissionKey, boolean> = {
+        manageUsers: false,
+        manageSuppliers: false,
+        manageCategories: false,
+        manageVehicles: false,
+        viewReports: false,
+        manageSettings: false,
+        manageStock: false,
+        createOrders: false,
+        validateOrders: false,
+      };
+
+      data?.forEach(({ permission_key, enabled }) => {
+        if (permission_key in permissionsMap) {
+          permissionsMap[permission_key as PermissionKey] = enabled;
+        }
+      });
+
+      setPermissions(permissionsMap);
+    }
+
+    fetchPermissions();
+  }, [userRole]);
 
   const hasRole = (requiredRole: 'admin' | 'chef_agence' | 'magasinier') => {
     return userRole === requiredRole;
@@ -15,17 +81,6 @@ export function useRoleAccess() {
   const isChefAgence = () => userRole === 'chef_agence';
   const isMagasinier = () => userRole === 'magasinier';
 
-  // Permissions par fonctionnalité
-  const canManageUsers = () => isAdmin();
-  const canManageSuppliers = () => isAdmin() || isChefAgence();
-  const canManageCategories = () => isAdmin() || isChefAgence();
-  const canManageVehicles = () => isAdmin() || isChefAgence();
-  const canViewReports = () => isAdmin() || isChefAgence();
-  const canManageSettings = () => isAdmin();
-  const canManageStock = () => true; // Tous les rôles
-  const canCreateOrders = () => isAdmin() || isChefAgence();
-  const canValidateOrders = () => isAdmin();
-
   return {
     userRole,
     hasRole,
@@ -33,16 +88,6 @@ export function useRoleAccess() {
     isAdmin,
     isChefAgence,
     isMagasinier,
-    permissions: {
-      manageUsers: canManageUsers(),
-      manageSuppliers: canManageSuppliers(),
-      manageCategories: canManageCategories(),
-      manageVehicles: canManageVehicles(),
-      viewReports: canViewReports(),
-      manageSettings: canManageSettings(),
-      manageStock: canManageStock(),
-      createOrders: canCreateOrders(),
-      validateOrders: canValidateOrders(),
-    }
+    permissions
   };
 }
