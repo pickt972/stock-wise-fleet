@@ -327,7 +327,7 @@ export function MailSettingsForm() {
                 </p>
               </div>
               <Button 
-                onClick={() => {
+                onClick={async () => {
                   if (!user) {
                     toast({
                       title: "Erreur",
@@ -336,20 +336,37 @@ export function MailSettingsForm() {
                     });
                     return;
                   }
+                  
                   setIsConnectingGmail(true);
                   
-                  // Configuration OAuth Google
-                  const projectUrl = window.location.origin;
-                  const redirectUri = `https://besoyrwozpzzhtxliyqz.supabase.co/functions/v1/gmail-oauth-callback`;
-                  const scope = encodeURIComponent("https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email");
-                  
-                  // Redirection vers Google OAuth (les credentials seront ajoutés comme secrets Supabase)
-                  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=YOUR_CLIENT_ID&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent&state=${user.id}`;
-                  
-                  toast({
-                    title: "Configuration requise",
-                    description: "Ajoutez GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET dans les secrets Supabase",
-                  });
+                  try {
+                    // Récupérer le CLIENT_ID depuis les secrets
+                    const { data: secretData, error: secretError } = await supabase.functions.invoke("get-google-client-id");
+                    
+                    if (secretError || !secretData?.clientId) {
+                      toast({
+                        title: "Configuration requise",
+                        description: "Ajoutez GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET dans les secrets Supabase",
+                        variant: "destructive",
+                      });
+                      setIsConnectingGmail(false);
+                      return;
+                    }
+                    
+                    const redirectUri = `https://besoyrwozpzzhtxliyqz.supabase.co/functions/v1/gmail-oauth-callback`;
+                    const scope = encodeURIComponent("https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email");
+                    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${secretData.clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent&state=${user.id}`;
+                    
+                    window.location.href = authUrl;
+                  } catch (error) {
+                    console.error("Erreur lors de l'initialisation OAuth:", error);
+                    toast({
+                      title: "Erreur",
+                      description: "Impossible de se connecter à Gmail",
+                      variant: "destructive",
+                    });
+                    setIsConnectingGmail(false);
+                  }
                 }}
                 disabled={isConnectingGmail}
                 className="shrink-0"
