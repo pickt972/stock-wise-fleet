@@ -10,11 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
-import { Car, Plus, Edit, Trash2, Package } from "lucide-react";
+import { Car, Plus, Edit, Trash2, Package, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "./DashboardLayout";
 import type { Tables } from "@/integrations/supabase/types";
+import { formatImmatriculation, validateImmatriculation, getRegionInfo } from "@/lib/plateUtils";
 
 type Vehicule = Tables<"vehicules">;
 type Article = Tables<"articles">;
@@ -35,30 +36,8 @@ export default function Vehicules() {
     actif: true,
   });
 
-  // Fonction de formatage de l'immatriculation
-  const formatImmatriculation = (value: string) => {
-    // Supprimer tous les caractères non alphanumériques et convertir en majuscules
-    const cleaned = value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-    
-    // Format français standard: AA-000-AA (2 lettres, 3 chiffres, 2 lettres)
-    let formatted = '';
-    
-    for (let i = 0; i < cleaned.length && i < 7; i++) {
-      // Ajouter les tirets aux bonnes positions
-      if (i === 2 || i === 5) {
-        formatted += '-';
-      }
-      formatted += cleaned[i];
-    }
-    
-    return formatted;
-  };
-
-  const validateImmatriculation = (value: string) => {
-    // Regex pour valider le format français AA-000-AA
-    const regex = /^[A-Z]{2}-[0-9]{3}-[A-Z]{2}$/;
-    return regex.test(value);
-  };
+  // Région détectée à partir de la plaque
+  const regionInfo = formData.immatriculation ? getRegionInfo(formData.immatriculation) : null;
 
   const { data: vehicules = [] } = useQuery({
     queryKey: ["vehicules"],
@@ -291,12 +270,20 @@ export default function Vehicules() {
                       : ""
                     }
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Format: AA-000-AA (2 lettres, 3 chiffres, 2 lettres)
-                  </p>
+                  <div className="flex items-start justify-between gap-2 mt-1">
+                    <p className="text-xs text-muted-foreground">
+                      Format SIV: AA-000-AA (2 lettres, 3 chiffres, 2 lettres)
+                    </p>
+                    {regionInfo && validateImmatriculation(formData.immatriculation) && (
+                      <div className="flex items-center gap-1 text-xs text-primary">
+                        <MapPin className="h-3 w-3" />
+                        <span className="font-medium">{regionInfo}</span>
+                      </div>
+                    )}
+                  </div>
                   {formData.immatriculation && !validateImmatriculation(formData.immatriculation) && (
                     <p className="text-xs text-destructive mt-1">
-                      Format d'immatriculation invalide
+                      ⚠️ Format d'immatriculation invalide
                     </p>
                   )}
                 </div>
