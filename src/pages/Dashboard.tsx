@@ -57,31 +57,27 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Analytics Grid */}
+        {/* Prévisions & Alertes */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 w-full">
           {/* Prévisions */}
           <StockForecast />
           
-          {/* Distribution */}
-          <StockDistribution />
+          {/* Alertes */}
+          <AlertsList />
         </div>
 
-        {/* KPIs & Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 w-full">
-          {/* KPIs Avancés */}
-          <div className="lg:col-span-1">
-            <AdvancedKPIs />
-          </div>
-
-          {/* Alertes */}
-          <div className="lg:col-span-1">
-            <AlertsList />
-          </div>
+        {/* Distribution & KPIs */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 w-full">
+          {/* Distribution */}
+          <StockDistribution />
           
-          {/* Mouvements récents */}
-          <div className="lg:col-span-1">
-            <RecentMovements />
-          </div>
+          {/* KPIs Avancés */}
+          <AdvancedKPIs />
+        </div>
+
+        {/* Mouvements récents */}
+        <div className="w-full">
+          <RecentMovements />
         </div>
       </div>
     </DashboardLayout>
