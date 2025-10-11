@@ -35,17 +35,30 @@ export default function Vehicules() {
     actif: true,
   });
 
-  // Formatage simple de l'immatriculation
+  // Fonction de formatage de l'immatriculation
   const formatImmatriculation = (value: string) => {
+    // Supprimer tous les caractères non alphanumériques et convertir en majuscules
     const cleaned = value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+    
+    // Format français standard: AA-000-AA (2 lettres, 3 chiffres, 2 lettres)
     let formatted = '';
+    
     for (let i = 0; i < cleaned.length && i < 7; i++) {
-      if (i === 2 || i === 5) formatted += '-';
+      // Ajouter les tirets aux bonnes positions
+      if (i === 2 || i === 5) {
+        formatted += '-';
+      }
       formatted += cleaned[i];
     }
+    
     return formatted;
   };
 
+  const validateImmatriculation = (value: string) => {
+    // Regex pour valider le format français AA-000-AA
+    const regex = /^[A-Z]{2}-[0-9]{3}-[A-Z]{2}$/;
+    return regex.test(value);
+  };
 
   const { data: vehicules = [] } = useQuery({
     queryKey: ["vehicules"],
@@ -164,7 +177,7 @@ export default function Vehicules() {
       marque: vehicule.marque,
       modele: vehicule.modele,
       motorisation: vehicule.motorisation || "",
-      immatriculation: vehicule.immatriculation,
+      immatriculation: formatImmatriculation(vehicule.immatriculation), // Formater lors de l'édition
       annee: vehicule.annee?.toString() || "",
       notes: vehicule.notes || "",
       actif: vehicule.actif,
@@ -173,6 +186,12 @@ export default function Vehicules() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Vérifier le format de l'immatriculation
+    if (!validateImmatriculation(formData.immatriculation)) {
+      toast.error("Le format de l'immatriculation doit être AA-000-AA");
+      return;
+    }
     
     if (editingVehicule) {
       updateMutation.mutate({ id: editingVehicule.id, data: formData });
@@ -267,7 +286,19 @@ export default function Vehicules() {
                     placeholder="AB-123-CD"
                     maxLength={9}
                     required
+                    className={formData.immatriculation && !validateImmatriculation(formData.immatriculation) 
+                      ? "border-destructive focus:border-destructive" 
+                      : ""
+                    }
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Format: AA-000-AA (2 lettres, 3 chiffres, 2 lettres)
+                  </p>
+                  {formData.immatriculation && !validateImmatriculation(formData.immatriculation) && (
+                    <p className="text-xs text-destructive mt-1">
+                      Format d'immatriculation invalide
+                    </p>
+                  )}
                 </div>
 
                 <div>

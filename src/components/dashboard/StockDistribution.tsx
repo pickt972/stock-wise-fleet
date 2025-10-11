@@ -20,20 +20,22 @@ export function StockDistribution() {
 
   const fetchDistribution = async () => {
     try {
-      // Utiliser fonction SQL optimisée
-      const { data: counts, error } = await supabase
-        .rpc('get_stock_distribution_counts');
+      const { data: articles } = await supabase
+        .from("articles")
+        .select("stock, stock_min");
 
-      if (error) throw error;
+      if (!articles) return;
 
-      const result = counts?.[0];
-      if (!result) return;
+      const excellent = articles.filter(a => a.stock > a.stock_min * 2).length;
+      const bon = articles.filter(a => a.stock > a.stock_min && a.stock <= a.stock_min * 2).length;
+      const faible = articles.filter(a => a.stock > 0 && a.stock <= a.stock_min).length;
+      const rupture = articles.filter(a => a.stock === 0).length;
 
       setData([
-        { name: "Excellent", value: result.excellent, color: "hsl(var(--chart-1))" },
-        { name: "Bon", value: result.bon, color: "hsl(var(--chart-2))" },
-        { name: "Faible", value: result.faible, color: "hsl(var(--chart-3))" },
-        { name: "Rupture", value: result.rupture, color: "hsl(var(--chart-4))" },
+        { name: "Excellent", value: excellent, color: "hsl(var(--chart-1))" },
+        { name: "Bon", value: bon, color: "hsl(var(--chart-2))" },
+        { name: "Faible", value: faible, color: "hsl(var(--chart-3))" },
+        { name: "Rupture", value: rupture, color: "hsl(var(--chart-4))" },
       ]);
     } catch (error) {
       console.error("Erreur distribution:", error);

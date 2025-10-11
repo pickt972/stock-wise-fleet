@@ -6,6 +6,7 @@ import { StockForecast } from "@/components/dashboard/StockForecast";
 import { AdvancedKPIs } from "@/components/dashboard/AdvancedKPIs";
 import { StockDistribution } from "@/components/dashboard/StockDistribution";
 import { useRealTimeStats } from "@/hooks/useRealTimeStats";
+
 import DashboardLayout from "./DashboardLayout";
 
 export default function Dashboard() {
@@ -58,13 +59,19 @@ export default function Dashboard() {
 
         {/* Prévisions & Alertes */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 w-full">
+          {/* Prévisions */}
           <StockForecast />
+          
+          {/* Alertes */}
           <AlertsList />
         </div>
 
         {/* Distribution & KPIs */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 w-full">
+          {/* Distribution */}
           <StockDistribution />
+          
+          {/* KPIs Avancés */}
           <AdvancedKPIs />
         </div>
 

@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAlerts } from "@/hooks/useAlerts";
 import { supabase } from "@/integrations/supabase/client";
-import { useState, memo } from "react";
+import { useState } from "react";
 import { DraftOrderCheckDialog } from "@/components/commandes/DraftOrderCheckDialog";
 
-export const AlertsList = memo(function AlertsList() {
+export function AlertsList() {
   const navigate = useNavigate();
   const { alerts, alertsByCategory, isLoading } = useAlerts();
   const [draftDialog, setDraftDialog] = useState<{
@@ -194,4 +194,4 @@ export const AlertsList = memo(function AlertsList() {
       />
     </>
   );
-});
+}

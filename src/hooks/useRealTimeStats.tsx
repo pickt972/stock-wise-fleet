@@ -37,49 +37,70 @@ export function useRealTimeStats() {
 
   const fetchStats = async () => {
     try {
-      // Utiliser la fonction SQL agrégée pour performances optimales
-      const { data: aggregates, error } = await supabase
-        .rpc('get_dashboard_aggregates');
+      // Articles totaux et valeur
+      const { data: articles, error: articlesError } = await supabase
+        .from("articles")
+        .select("stock, prix_achat, stock_min");
 
-      if (error) throw error;
+      if (articlesError) throw articlesError;
 
-      const agg = aggregates?.[0];
-      if (!agg) return;
+      const totalArticles = articles?.reduce((sum, a) => sum + a.stock, 0) || 0;
+      const totalValue = articles?.reduce((sum, a) => sum + (a.stock * a.prix_achat), 0) || 0;
+      const lowStockCount = articles?.filter(a => a.stock > 0 && a.stock <= a.stock_min).length || 0;
+      const criticalStockCount = articles?.filter(a => a.stock <= 2).length || 0;
 
-      const totalArticles = Number(agg.total_stock) || 0;
-      const totalValue = Number(agg.total_value) || 0;
-      const lowStockCount = agg.low_stock_count || 0;
-      const criticalStockCount = agg.critical_stock_count || 0;
-      const recentMovements = agg.recent_movements_count || 0;
-      const previousMovements = agg.previous_movements_count || 0;
+      // Mouvements récents (derniers 7 jours)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-      // Calcul taux de rotation
-      const rotationRate = totalArticles > 0 
-        ? parseFloat((recentMovements / totalArticles * 100).toFixed(2))
+      const { data: movements, error: movementsError } = await supabase
+        .from("stock_movements")
+        .select("*")
+        .gte("created_at", sevenDaysAgo.toISOString());
+
+      if (movementsError) throw movementsError;
+
+      // Calcul du taux de rotation (simplifié)
+      const recentMovements = movements?.length || 0;
+      const rotationRate = articles && articles.length > 0 
+        ? parseFloat((recentMovements / articles.length).toFixed(2))
         : 0;
 
-      // Tendances
-      const movementsTrend = previousMovements > 0
-        ? Math.round(((recentMovements - previousMovements) / previousMovements) * 100)
+      // Alertes actives (stocks faibles et critiques)
+      const activeAlerts = lowStockCount + criticalStockCount;
+
+      // Calculer les tendances (comparaison avec la période précédente)
+      const fourteenDaysAgo = new Date();
+      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+      const { data: oldMovements } = await supabase
+        .from("stock_movements")
+        .select("*")
+        .gte("created_at", fourteenDaysAgo.toISOString())
+        .lt("created_at", sevenDaysAgo.toISOString());
+
+      const oldMovementsCount = oldMovements?.length || 0;
+      const movementsTrend = oldMovementsCount > 0
+        ? Math.round(((recentMovements - oldMovementsCount) / oldMovementsCount) * 100)
         : 0;
 
       setStats({
         totalArticles,
         totalValue,
-        activeAlerts: lowStockCount + criticalStockCount,
+        activeAlerts,
         rotationRate,
         lowStockCount,
         criticalStockCount,
         recentMovements,
         trends: {
           articles: movementsTrend,
-          value: Math.round(Math.random() * 20 - 5),
+          value: Math.round(Math.random() * 20 - 5), // Simplifié
           alerts: -Math.round(Math.random() * 15),
           rotation: Math.round(Math.random() * 10),
         },
       });
     } catch (error) {
-      console.error("Erreur stats:", error);
+      console.error("Erreur lors du chargement des stats:", error);
     } finally {
       setIsLoading(false);
     }
@@ -88,8 +109,8 @@ export function useRealTimeStats() {
   useEffect(() => {
     fetchStats();
 
-    // Polling toutes les 60 secondes pour réduire la charge
-    const interval = setInterval(fetchStats, 60000);
+    // Polling toutes les 30 secondes au lieu de temps réel
+    const interval = setInterval(fetchStats, 30000);
 
     return () => {
       clearInterval(interval);
