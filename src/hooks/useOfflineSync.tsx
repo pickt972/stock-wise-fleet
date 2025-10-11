@@ -78,11 +78,8 @@ export function useOfflineSync() {
       await updatePendingCount();
     } catch (error) {
       console.error("Erreur générale de synchronisation:", error);
-      toast({
-        title: "Erreur de synchronisation",
-        description: "Impossible de synchroniser les données",
-        variant: "destructive",
-      });
+      // Ne pas afficher de toast d'erreur si c'est juste une tentative automatique
+      // L'utilisateur peut réessayer manuellement si besoin
     } finally {
       setIsSyncing(false);
     }
