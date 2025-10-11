@@ -182,19 +182,24 @@ export default function Commandes() {
         }
         
         // Si pas de commande existante, créer une nouvelle
-        setCurrentItems(prefilledItems.map((item: any) => ({
+        const newItems = prefilledItems.map((item: any) => ({
           ...item,
           quantite_commandee: item.quantite_commandee || item.quantite,
           total_ligne: (item.quantite_commandee || item.quantite) * item.prix_unitaire
-        })));
+        }));
+        setCurrentItems(newItems);
         
-        const { totalHT, totalTTC } = calculateTotals(prefilledItems, currentCommande.tva_taux);
+        const { totalHT, totalTTC } = calculateTotals(newItems as any, currentCommande.tva_taux);
         setCurrentCommande(prev => ({
           ...prev,
           fournisseur: fournisseurName || "",
           total_ht: totalHT,
           total_ttc: totalTTC
         }));
+        
+        if (fournisseurName) {
+          filterArticlesByFournisseur(fournisseurName);
+        }
         
         setIsCreating(true);
         
@@ -265,9 +270,14 @@ export default function Commandes() {
         setCurrentItems([newItem]);
         setCurrentCommande(prev => ({
           ...prev,
+          fournisseur: fournisseurNom || prev.fournisseur || "",
           total_ht: preSelectedArticle.prix_achat,
           total_ttc: preSelectedArticle.prix_achat * (1 + prev.tva_taux / 100)
         }));
+        
+        if (fournisseurNom) {
+          filterArticlesByFournisseur(fournisseurNom);
+        }
         
         setIsCreating(true);
         
