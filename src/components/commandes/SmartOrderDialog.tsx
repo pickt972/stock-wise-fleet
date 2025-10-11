@@ -175,62 +175,107 @@ export const SmartOrderDialog = ({ isOpen, onClose, onOrdersCreated }: SmartOrde
     try {
       const { data: { user } } = await supabase.auth.getUser();
       const createdCommandeIds: string[] = [];
+      const updatedCommandeIds: string[] = [];
       
       for (const [fournisseurId, orderData] of Object.entries(groupedOrders)) {
-        // Créer la commande
-        const { data: commande, error: commandeError } = await supabase
+        // Vérifier s'il existe une commande en brouillon pour ce fournisseur
+        const { data: existingDrafts } = await supabase
           .from('commandes')
-          .insert([{
-            fournisseur: orderData.fournisseur.nom,
-            email_fournisseur: orderData.fournisseur.email,
-            telephone_fournisseur: orderData.fournisseur.telephone,
-            adresse_fournisseur: orderData.fournisseur.adresse,
-            status: 'brouillon',
-            total_ht: orderData.total_ht,
-            total_ttc: orderData.total_ttc,
-            tva_taux: 20,
-            user_id: user?.id,
-            numero_commande: '' // Sera généré par le trigger
-          }])
-          .select()
-          .single();
+          .select('id, numero_commande')
+          .eq('fournisseur', orderData.fournisseur.nom)
+          .eq('status', 'brouillon')
+          .order('created_at', { ascending: false })
+          .limit(1);
 
-        if (commandeError) throw commandeError;
+        if (existingDrafts && existingDrafts.length > 0) {
+          // Ajouter les items à la commande existante
+          const existingCommande = existingDrafts[0];
+          
+          const itemsToInsert = orderData.items.map(item => ({
+            commande_id: existingCommande.id,
+            article_id: item.article_id,
+            designation: item.designation,
+            reference: item.reference,
+            quantite_commandee: item.quantite_commandee,
+            quantite_recue: 0,
+            prix_unitaire: item.prix_unitaire,
+            total_ligne: item.total_ligne
+          }));
 
-        // Collecter l'ID
-        createdCommandeIds.push(commande.id);
+          const { error: itemsError } = await supabase
+            .from('commande_items')
+            .insert(itemsToInsert);
 
-        // Créer les items de commande
-        const itemsToInsert = orderData.items.map(item => ({
-          commande_id: commande.id,
-          article_id: item.article_id,
-          designation: item.designation,
-          reference: item.reference,
-          quantite_commandee: item.quantite_commandee,
-          quantite_recue: 0,
-          prix_unitaire: item.prix_unitaire,
-          total_ligne: item.total_ligne
-        }));
+          if (itemsError) throw itemsError;
+          
+          updatedCommandeIds.push(existingCommande.id);
+        } else {
+          // Créer une nouvelle commande
+          const { data: commande, error: commandeError } = await supabase
+            .from('commandes')
+            .insert([{
+              fournisseur: orderData.fournisseur.nom,
+              email_fournisseur: orderData.fournisseur.email,
+              telephone_fournisseur: orderData.fournisseur.telephone,
+              adresse_fournisseur: orderData.fournisseur.adresse,
+              status: 'brouillon',
+              total_ht: orderData.total_ht,
+              total_ttc: orderData.total_ttc,
+              tva_taux: 20,
+              user_id: user?.id,
+              numero_commande: '' // Sera généré par le trigger
+            }])
+            .select()
+            .single();
 
-        const { error: itemsError } = await supabase
-          .from('commande_items')
-          .insert(itemsToInsert);
+          if (commandeError) throw commandeError;
 
-        if (itemsError) throw itemsError;
+          createdCommandeIds.push(commande.id);
+
+          const itemsToInsert = orderData.items.map(item => ({
+            commande_id: commande.id,
+            article_id: item.article_id,
+            designation: item.designation,
+            reference: item.reference,
+            quantite_commandee: item.quantite_commandee,
+            quantite_recue: 0,
+            prix_unitaire: item.prix_unitaire,
+            total_ligne: item.total_ligne
+          }));
+
+          const { error: itemsError } = await supabase
+            .from('commande_items')
+            .insert(itemsToInsert);
+
+          if (itemsError) throw itemsError;
+        }
+      }
+
+      const totalCreated = createdCommandeIds.length;
+      const totalUpdated = updatedCommandeIds.length;
+      
+      let description = '';
+      if (totalCreated > 0 && totalUpdated > 0) {
+        description = `${totalCreated} commande(s) créée(s) et ${totalUpdated} commande(s) mise(s) à jour`;
+      } else if (totalCreated > 0) {
+        description = `${totalCreated} commande(s) créée(s) avec succès`;
+      } else {
+        description = `${totalUpdated} commande(s) mise(s) à jour avec les nouveaux articles`;
       }
 
       toast({
         title: "Succès",
-        description: `${Object.keys(groupedOrders).length} commande(s) créée(s) avec succès`,
+        description,
       });
 
       onOrdersCreated();
       onClose();
       
-      // Ouvrir la première commande créée
-      if (createdCommandeIds.length > 0) {
+      // Ouvrir la première commande créée ou mise à jour
+      const firstCommandeId = createdCommandeIds[0] || updatedCommandeIds[0];
+      if (firstCommandeId) {
         setTimeout(() => {
-          window.location.hash = `#commande-${createdCommandeIds[0]}`;
+          window.location.hash = `#commande-${firstCommandeId}`;
         }, 500);
       }
     } catch (error: any) {
@@ -251,29 +296,48 @@ export const SmartOrderDialog = ({ isOpen, onClose, onOrdersCreated }: SmartOrde
       const { data: { user } } = await supabase.auth.getUser();
       const orderData = groupedOrders[fournisseurId];
       
-      // Créer la commande
-      const { data: commande, error: commandeError } = await supabase
+      // Vérifier s'il existe une commande en brouillon pour ce fournisseur
+      const { data: existingDrafts } = await supabase
         .from('commandes')
-        .insert([{
-          fournisseur: orderData.fournisseur.nom,
-          email_fournisseur: orderData.fournisseur.email,
-          telephone_fournisseur: orderData.fournisseur.telephone,
-          adresse_fournisseur: orderData.fournisseur.adresse,
-          status: 'brouillon',
-          total_ht: orderData.total_ht,
-          total_ttc: orderData.total_ttc,
-          tva_taux: 20,
-          user_id: user?.id,
-          numero_commande: ''
-        }])
-        .select()
-        .single();
+        .select('id, numero_commande')
+        .eq('fournisseur', orderData.fournisseur.nom)
+        .eq('status', 'brouillon')
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-      if (commandeError) throw commandeError;
+      let commandeId: string;
+      let isUpdate = false;
+
+      if (existingDrafts && existingDrafts.length > 0) {
+        // Ajouter à la commande existante
+        commandeId = existingDrafts[0].id;
+        isUpdate = true;
+      } else {
+        // Créer une nouvelle commande
+        const { data: commande, error: commandeError } = await supabase
+          .from('commandes')
+          .insert([{
+            fournisseur: orderData.fournisseur.nom,
+            email_fournisseur: orderData.fournisseur.email,
+            telephone_fournisseur: orderData.fournisseur.telephone,
+            adresse_fournisseur: orderData.fournisseur.adresse,
+            status: 'brouillon',
+            total_ht: orderData.total_ht,
+            total_ttc: orderData.total_ttc,
+            tva_taux: 20,
+            user_id: user?.id,
+            numero_commande: ''
+          }])
+          .select()
+          .single();
+
+        if (commandeError) throw commandeError;
+        commandeId = commande.id;
+      }
 
       // Créer les items
       const itemsToInsert = orderData.items.map(item => ({
-        commande_id: commande.id,
+        commande_id: commandeId,
         article_id: item.article_id,
         designation: item.designation,
         reference: item.reference,
@@ -291,7 +355,9 @@ export const SmartOrderDialog = ({ isOpen, onClose, onOrdersCreated }: SmartOrde
 
       toast({
         title: "Succès",
-        description: `Commande créée pour ${orderData.fournisseur.nom}`,
+        description: isUpdate 
+          ? `Articles ajoutés à la commande existante de ${orderData.fournisseur.nom}`
+          : `Commande créée pour ${orderData.fournisseur.nom}`,
       });
 
       // Retirer ce fournisseur de la liste

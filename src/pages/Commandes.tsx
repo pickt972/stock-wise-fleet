@@ -128,55 +128,154 @@ export default function Commandes() {
 
   // Gérer les articles pré-remplis depuis les alertes et inventaire
   useEffect(() => {
-    if (location.state?.prefilledItems) {
-      const { prefilledItems, source } = location.state;
-      setCurrentItems(prefilledItems.map((item: any) => ({
-        ...item,
-        total_ligne: item.quantite_commandee * item.prix_unitaire
-      })));
+    const handlePrefilledItems = async () => {
+      if (location.state?.prefilledItems) {
+        const { prefilledItems, source, fournisseurNom } = location.state;
+        
+        // Vérifier s'il existe une commande en brouillon pour ce fournisseur
+        if (fournisseurNom) {
+          const { data: existingDrafts } = await supabase
+            .from('commandes')
+            .select('*, commande_items(*)')
+            .eq('fournisseur', fournisseurNom)
+            .eq('status', 'brouillon')
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          if (existingDrafts && existingDrafts.length > 0) {
+            const existingCommande = existingDrafts[0];
+            
+            // Ajouter les nouveaux items à la commande existante
+            const itemsToInsert = prefilledItems.map((item: any) => ({
+              commande_id: existingCommande.id,
+              article_id: item.article_id,
+              designation: item.designation,
+              reference: item.reference,
+              quantite_commandee: item.quantite_commandee,
+              quantite_recue: 0,
+              prix_unitaire: item.prix_unitaire,
+              total_ligne: item.quantite_commandee * item.prix_unitaire
+            }));
+
+            const { error } = await supabase
+              .from('commande_items')
+              .insert(itemsToInsert);
+
+            if (!error) {
+              toast({
+                title: "Articles ajoutés",
+                description: `${prefilledItems.length} article(s) ajouté(s) à la commande existante`,
+              });
+              
+              // Recharger les commandes et ouvrir la commande mise à jour
+              await fetchCommandes();
+              setTimeout(() => {
+                const updatedCommande = commandes.find(c => c.id === existingCommande.id);
+                if (updatedCommande) {
+                  editCommande(updatedCommande);
+                }
+              }, 500);
+              return;
+            }
+          }
+        }
+        
+        // Si pas de commande existante, créer une nouvelle
+        setCurrentItems(prefilledItems.map((item: any) => ({
+          ...item,
+          total_ligne: item.quantite_commandee * item.prix_unitaire
+        })));
+        
+        const { totalHT, totalTTC } = calculateTotals(prefilledItems, currentCommande.tva_taux);
+        setCurrentCommande(prev => ({
+          ...prev,
+          total_ht: totalHT,
+          total_ttc: totalTTC
+        }));
+        
+        setIsCreating(true);
+        
+        toast({
+          title: source === 'alerts' ? "Articles d'alerte ajoutés" : "Article d'alerte ajouté",
+          description: `${prefilledItems.length} article(s) ajouté(s) à la commande`,
+        });
+      }
       
-      const { totalHT, totalTTC } = calculateTotals(prefilledItems, currentCommande.tva_taux);
-      setCurrentCommande(prev => ({
-        ...prev,
-        total_ht: totalHT,
-        total_ttc: totalTTC
-      }));
-      
-      setIsCreating(true);
-      
-      // Message d'information
-      toast({
-        title: source === 'alerts' ? "Articles d'alerte ajoutés" : "Article d'alerte ajouté",
-        description: `${prefilledItems.length} article(s) ajouté(s) à la commande depuis les alertes`,
-      });
-    }
+      // Gérer l'article pré-sélectionné depuis l'inventaire
+      if (location.state?.preSelectedArticle) {
+        const { preSelectedArticle, fournisseurNom } = location.state;
+        
+        // Vérifier s'il existe une commande en brouillon pour ce fournisseur
+        if (fournisseurNom) {
+          const { data: existingDrafts } = await supabase
+            .from('commandes')
+            .select('*, commande_items(*)')
+            .eq('fournisseur', fournisseurNom)
+            .eq('status', 'brouillon')
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          if (existingDrafts && existingDrafts.length > 0) {
+            const existingCommande = existingDrafts[0];
+            
+            const { error } = await supabase
+              .from('commande_items')
+              .insert([{
+                commande_id: existingCommande.id,
+                article_id: preSelectedArticle.id,
+                designation: preSelectedArticle.designation,
+                reference: preSelectedArticle.reference,
+                quantite_commandee: 1,
+                quantite_recue: 0,
+                prix_unitaire: preSelectedArticle.prix_achat,
+                total_ligne: preSelectedArticle.prix_achat
+              }]);
+
+            if (!error) {
+              toast({
+                title: "Article ajouté",
+                description: `${preSelectedArticle.designation} ajouté à la commande existante`,
+              });
+              
+              await fetchCommandes();
+              setTimeout(() => {
+                const updatedCommande = commandes.find(c => c.id === existingCommande.id);
+                if (updatedCommande) {
+                  editCommande(updatedCommande);
+                }
+              }, 500);
+              return;
+            }
+          }
+        }
+        
+        // Si pas de commande existante, créer une nouvelle
+        const newItem: CommandeItem = {
+          article_id: preSelectedArticle.id,
+          designation: preSelectedArticle.designation,
+          reference: preSelectedArticle.reference,
+          quantite_commandee: 1,
+          prix_unitaire: preSelectedArticle.prix_achat,
+          total_ligne: preSelectedArticle.prix_achat
+        };
+        
+        setCurrentItems([newItem]);
+        setCurrentCommande(prev => ({
+          ...prev,
+          total_ht: preSelectedArticle.prix_achat,
+          total_ttc: preSelectedArticle.prix_achat * (1 + prev.tva_taux / 100)
+        }));
+        
+        setIsCreating(true);
+        
+        toast({
+          title: "Article ajouté",
+          description: `${preSelectedArticle.designation} ajouté à la commande`,
+        });
+      }
+    };
     
-    // Gérer l'article pré-sélectionné depuis l'inventaire
-    if (location.state?.preSelectedArticle) {
-      const { preSelectedArticle } = location.state;
-      const newItem: CommandeItem = {
-        article_id: preSelectedArticle.id,
-        designation: preSelectedArticle.designation,
-        reference: preSelectedArticle.reference,
-        quantite_commandee: 1,
-        prix_unitaire: preSelectedArticle.prix_achat,
-        total_ligne: preSelectedArticle.prix_achat
-      };
-      
-      setCurrentItems([newItem]);
-      setCurrentCommande(prev => ({
-        ...prev,
-        total_ht: preSelectedArticle.prix_achat,
-        total_ttc: preSelectedArticle.prix_achat * (1 + prev.tva_taux / 100)
-      }));
-      
-      setIsCreating(true);
-      
-      toast({
-        title: "Article ajouté",
-        description: `${preSelectedArticle.designation} ajouté à la commande`,
-      });
-    }
+    handlePrefilledItems();
   }, [location.state]);
 
   // Ouvrir automatiquement la/les commande(s) fraîchement créée(s)
