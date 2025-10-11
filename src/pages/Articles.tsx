@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Search, Filter, Edit, Trash2, AlertTriangle, X, Layers } from "lucide-react";
+import { Search, Filter, Edit, Trash2, AlertTriangle, X, Layers, ShoppingCart } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { CompactSortControls } from "@/components/ui/compact-sort-controls";
 import { Button } from "@/components/ui/button";
@@ -107,6 +108,7 @@ export default function Articles() {
   
   const { toast } = useToast();
   const { getColorForText } = useColorPreferences();
+  const navigate = useNavigate();
 
   const fetchArticles = async () => {
     try {
@@ -338,6 +340,34 @@ export default function Articles() {
 
   const hasActiveFilters = Object.values(filters).some(value => value !== "") || debouncedSearchTerm !== "";
 
+  const handleOrderArticle = (article: Article) => {
+    const principalFournisseur = getPrincipalFournisseur(article);
+    const principalPrice = getPrincipalPrice(article);
+    
+    if (!principalFournisseur) {
+      toast({
+        title: "Aucun fournisseur",
+        description: "Veuillez d'abord associer un fournisseur à cet article",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Naviguer vers la page commandes avec les données pré-remplies
+    navigate('/commandes', {
+      state: {
+        prefilledItems: [{
+          article_id: article.id,
+          reference: article.reference,
+          designation: article.designation,
+          quantite: Math.max(article.stock_max - article.stock, 1),
+          prix_unitaire: principalPrice,
+        }],
+        fournisseur: principalFournisseur,
+      }
+    });
+  };
+
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -560,6 +590,15 @@ export default function Articles() {
                     </div>
                     
                     <div className="flex gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-9 w-9 p-0"
+                        onClick={() => handleOrderArticle(article)}
+                      >
+                        <ShoppingCart className="h-4 w-4" />
+                      </Button>
+                      
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button 
@@ -728,6 +767,25 @@ export default function Articles() {
                         </TableCell>
                       <TableCell className="text-right">
                          <div className="flex justify-end gap-1">
+                           <TooltipProvider>
+                             <Tooltip>
+                               <TooltipTrigger asChild>
+                                 <Button 
+                                   variant="ghost" 
+                                   size="sm" 
+                                   className="h-8 w-8 p-0"
+                                   onClick={() => handleOrderArticle(article)}
+                                   aria-label="Commander l'article"
+                                 >
+                                   <ShoppingCart className="h-3 w-3 md:h-4 md:w-4" />
+                                 </Button>
+                               </TooltipTrigger>
+                               <TooltipContent>
+                                 <p>Commander l'article</p>
+                               </TooltipContent>
+                             </Tooltip>
+                           </TooltipProvider>
+                           
                            <Dialog>
                              <DialogTrigger asChild>
                                <TooltipProvider>
