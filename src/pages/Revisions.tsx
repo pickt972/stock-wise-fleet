@@ -44,6 +44,12 @@ export default function Revisions() {
   const [selectedArticles, setSelectedArticles] = useState<Set<string>>(new Set());
   const [showSortieDialog, setShowSortieDialog] = useState(false);
   const [articleQuantities, setArticleQuantities] = useState<Record<string, number>>({});
+  const [useNonRegisteredVehicle, setUseNonRegisteredVehicle] = useState(false);
+  const [nonRegisteredVehicle, setNonRegisteredVehicle] = useState({
+    marque: "",
+    modele: "",
+    motorisation: "",
+  });
 
   const { data: vehicules = [] } = useQuery({
     queryKey: ["vehicules-actifs"],
@@ -60,8 +66,19 @@ export default function Revisions() {
   });
 
   const { data: articlesCompatibles = [], isLoading: loadingArticles } = useQuery({
-    queryKey: ["articles-compatibles", selectedGroup],
+    queryKey: ["articles-compatibles", selectedGroup, useNonRegisteredVehicle],
     queryFn: async () => {
+      // Si on utilise un véhicule non enregistré, on retourne tous les articles
+      if (useNonRegisteredVehicle) {
+        const { data, error } = await supabase
+          .from("articles")
+          .select("*")
+          .order("designation", { ascending: true });
+        
+        if (error) throw error;
+        return data;
+      }
+      
       if (!selectedGroup || selectedGroup.vehicules.length === 0) return [];
       
       const vehiculeIds = selectedGroup.vehicules.map(v => v.id);
@@ -80,7 +97,7 @@ export default function Revisions() {
       if (error) throw error;
       return data;
     },
-    enabled: !!selectedGroup,
+    enabled: !!selectedGroup || useNonRegisteredVehicle,
   });
 
   // Grouper les véhicules par marque/modèle/motorisation
@@ -120,7 +137,27 @@ export default function Revisions() {
   };
 
   const handleRevisionAnalysis = (group: VehiculeGroup) => {
+    setUseNonRegisteredVehicle(false);
     setSelectedGroup(group);
+    setIsAnalyzing(true);
+    setSelectedArticles(new Set());
+    setArticleQuantities({});
+  };
+
+  const handleNonRegisteredVehicleRevision = () => {
+    if (!nonRegisteredVehicle.marque || !nonRegisteredVehicle.modele) {
+      toast.error("Veuillez renseigner au moins la marque et le modèle");
+      return;
+    }
+    
+    setUseNonRegisteredVehicle(true);
+    setSelectedGroup({
+      marque: nonRegisteredVehicle.marque,
+      modele: nonRegisteredVehicle.modele,
+      motorisation: nonRegisteredVehicle.motorisation || null,
+      count: 1,
+      vehicules: []
+    });
     setIsAnalyzing(true);
     setSelectedArticles(new Set());
     setArticleQuantities({});
@@ -425,6 +462,48 @@ export default function Revisions() {
                     Aucun véhicule actif enregistré
                   </div>
                 )}
+
+                {/* Section pour véhicule non enregistré */}
+                <div className="pt-4 border-t">
+                  <h4 className="font-medium mb-3">Véhicule non enregistré</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="marque-temp">Marque *</Label>
+                      <Input
+                        id="marque-temp"
+                        value={nonRegisteredVehicle.marque}
+                        onChange={(e) => setNonRegisteredVehicle(prev => ({ ...prev, marque: e.target.value }))}
+                        placeholder="Peugeot, Renault..."
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="modele-temp">Modèle *</Label>
+                      <Input
+                        id="modele-temp"
+                        value={nonRegisteredVehicle.modele}
+                        onChange={(e) => setNonRegisteredVehicle(prev => ({ ...prev, modele: e.target.value }))}
+                        placeholder="208, Clio..."
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="motorisation-temp">Motorisation</Label>
+                      <Input
+                        id="motorisation-temp"
+                        value={nonRegisteredVehicle.motorisation}
+                        onChange={(e) => setNonRegisteredVehicle(prev => ({ ...prev, motorisation: e.target.value }))}
+                        placeholder="Essence, Diesel..."
+                      />
+                    </div>
+                    <Button 
+                      onClick={handleNonRegisteredVehicleRevision}
+                      className="w-full"
+                      variant="outline"
+                    >
+                      <Wrench className="h-4 w-4 mr-2" />
+                      Analyser ce véhicule
+                    </Button>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

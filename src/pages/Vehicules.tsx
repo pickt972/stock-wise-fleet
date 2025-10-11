@@ -10,19 +10,21 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
-import { Car, Plus, Edit, Trash2 } from "lucide-react";
+import { Car, Plus, Edit, Trash2, Package } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "./DashboardLayout";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Vehicule = Tables<"vehicules">;
+type Article = Tables<"articles">;
 
 export default function Vehicules() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingVehicule, setEditingVehicule] = useState<Vehicule | null>(null);
+  const [viewingVehiculeId, setViewingVehiculeId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     marque: "",
     modele: "",
@@ -69,6 +71,28 @@ export default function Vehicules() {
       if (error) throw error;
       return data;
     },
+  });
+
+  const { data: compatibleArticles = [] } = useQuery({
+    queryKey: ["vehicule-articles", viewingVehiculeId],
+    queryFn: async () => {
+      if (!viewingVehiculeId) return [];
+      
+      const { data, error } = await supabase
+        .from("articles")
+        .select(`
+          *,
+          article_vehicules!inner (
+            notes,
+            vehicule_id
+          )
+        `)
+        .eq("article_vehicules.vehicule_id", viewingVehiculeId);
+      
+      if (error) throw error;
+      return data as Article[];
+    },
+    enabled: !!viewingVehiculeId,
   });
 
   const createMutation = useMutation({
@@ -355,6 +379,13 @@ export default function Vehicules() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => setViewingVehiculeId(vehicule.id)}
+                        >
+                          <Package className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => {
                             handleEdit(vehicule);
                             setIsCreateOpen(true);
@@ -385,6 +416,56 @@ export default function Vehicules() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Dialog pour voir les pièces compatibles */}
+      <Dialog open={!!viewingVehiculeId} onOpenChange={(open) => !open && setViewingVehiculeId(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Pièces compatibles</DialogTitle>
+            <DialogDescription>
+              {viewingVehiculeId && (() => {
+                const vehicule = vehicules.find(v => v.id === viewingVehiculeId);
+                return vehicule ? `${vehicule.marque} ${vehicule.modele} ${vehicule.motorisation ? `(${vehicule.motorisation})` : ''} - ${vehicule.immatriculation}` : '';
+              })()}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 overflow-y-auto">
+            {compatibleArticles.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Aucune pièce compatible enregistrée pour ce véhicule
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Référence</TableHead>
+                    <TableHead>Désignation</TableHead>
+                    <TableHead>Marque</TableHead>
+                    <TableHead>Stock</TableHead>
+                    <TableHead>Prix d'achat</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {compatibleArticles.map((article) => (
+                    <TableRow key={article.id}>
+                      <TableCell className="font-medium">{article.reference}</TableCell>
+                      <TableCell>{article.designation}</TableCell>
+                      <TableCell>{article.marque}</TableCell>
+                      <TableCell>
+                        <Badge variant={article.stock <= article.stock_min ? "destructive" : "default"}>
+                          {article.stock}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{article.prix_achat.toFixed(2)} €</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
