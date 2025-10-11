@@ -109,31 +109,11 @@ export function useRealTimeStats() {
   useEffect(() => {
     fetchStats();
 
-    // Mise à jour en temps réel
-    const channel = supabase
-      .channel("realtime-stats")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "articles",
-        },
-        () => fetchStats()
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "stock_movements",
-        },
-        () => fetchStats()
-      )
-      .subscribe();
+    // Polling toutes les 30 secondes au lieu de temps réel
+    const interval = setInterval(fetchStats, 30000);
 
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   }, []);
 

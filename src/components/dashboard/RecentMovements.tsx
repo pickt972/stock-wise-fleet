@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { ArrowDownToLine, ArrowUpFromLine, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,13 +25,18 @@ interface Movement {
   };
 }
 
-export function RecentMovements() {
+export const RecentMovements = memo(function RecentMovements() {
   const [movements, setMovements] = useState<Movement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchMovements();
+    
+    // Polling toutes les 60 secondes
+    const interval = setInterval(fetchMovements, 60000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const fetchMovements = async () => {
@@ -164,4 +169,4 @@ export function RecentMovements() {
       </CardContent>
     </Card>
   );
-}
+});
