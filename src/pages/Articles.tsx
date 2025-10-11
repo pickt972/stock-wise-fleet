@@ -95,6 +95,10 @@ export default function Articles() {
   const [deletingArticleId, setDeletingArticleId] = useState<string | null>(null);
   const [selectedArticleForEdit, setSelectedArticleForEdit] = useState<Article | null>(null);
   const [selectedArticleForFournisseurs, setSelectedArticleForFournisseurs] = useState<Article | null>(null);
+  const [selectedArticleForOrder, setSelectedArticleForOrder] = useState<Article | null>(null);
+  const [showFournisseurDialog, setShowFournisseurDialog] = useState(false);
+  const [fournisseurs, setFournisseurs] = useState<Array<{ id: string; nom: string }>>([]);
+  const [selectedFournisseurForOrder, setSelectedFournisseurForOrder] = useState<string>("");
   
   // États des filtres
   const [filters, setFilters] = useState({
@@ -152,8 +156,24 @@ export default function Articles() {
     }
   };
 
+  const fetchFournisseurs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('fournisseurs')
+        .select('id, nom')
+        .eq('actif', true)
+        .order('nom');
+
+      if (error) throw error;
+      setFournisseurs(data || []);
+    } catch (error: any) {
+      console.error('Erreur lors du chargement des fournisseurs:', error);
+    }
+  };
+
   useEffect(() => {
     fetchArticles();
+    fetchFournisseurs();
   }, []);
 
   // Debouncing pour la recherche
@@ -345,11 +365,9 @@ export default function Articles() {
     const principalPrice = getPrincipalPrice(article);
     
     if (!principalFournisseur) {
-      toast({
-        title: "Aucun fournisseur",
-        description: "Veuillez d'abord associer un fournisseur à cet article",
-        variant: "destructive",
-      });
+      // Ouvrir le dialog pour sélectionner un fournisseur
+      setSelectedArticleForOrder(article);
+      setShowFournisseurDialog(true);
       return;
     }
 
@@ -366,6 +384,32 @@ export default function Articles() {
         fournisseur: principalFournisseur,
       }
     });
+  };
+
+  const handleConfirmOrderWithFournisseur = () => {
+    if (!selectedArticleForOrder || !selectedFournisseurForOrder) return;
+
+    const selectedFournisseur = fournisseurs.find(f => f.id === selectedFournisseurForOrder);
+    if (!selectedFournisseur) return;
+
+    const principalPrice = getPrincipalPrice(selectedArticleForOrder);
+
+    navigate('/commandes', {
+      state: {
+        prefilledItems: [{
+          article_id: selectedArticleForOrder.id,
+          reference: selectedArticleForOrder.reference,
+          designation: selectedArticleForOrder.designation,
+          quantite: Math.max(selectedArticleForOrder.stock_max - selectedArticleForOrder.stock, 1),
+          prix_unitaire: principalPrice,
+        }],
+        fournisseur: selectedFournisseur.nom,
+      }
+    });
+
+    setShowFournisseurDialog(false);
+    setSelectedArticleForOrder(null);
+    setSelectedFournisseurForOrder("");
   };
 
   if (isLoading) {
@@ -590,24 +634,14 @@ export default function Articles() {
                     </div>
                     
                     <div className="flex gap-1">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-9 w-9 p-0"
-                              onClick={() => handleOrderArticle(article)}
-                              disabled={!principalFournisseur}
-                            >
-                              <ShoppingCart className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{principalFournisseur ? "Commander l'article" : "Aucun fournisseur associé"}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-9 w-9 p-0"
+                        onClick={() => handleOrderArticle(article)}
+                      >
+                        <ShoppingCart className="h-4 w-4" />
+                      </Button>
                       
                       <Dialog>
                         <DialogTrigger asChild>
@@ -786,13 +820,12 @@ export default function Articles() {
                                    className="h-8 w-8 p-0"
                                    onClick={() => handleOrderArticle(article)}
                                    aria-label="Commander l'article"
-                                   disabled={!principalFournisseur}
                                  >
                                    <ShoppingCart className="h-3 w-3 md:h-4 md:w-4" />
                                  </Button>
                                </TooltipTrigger>
                                <TooltipContent>
-                                 <p>{principalFournisseur ? "Commander l'article" : "Aucun fournisseur associé"}</p>
+                                 <p>Commander l'article</p>
                                </TooltipContent>
                              </Tooltip>
                            </TooltipProvider>
@@ -910,6 +943,59 @@ export default function Articles() {
           }} 
         />
       )}
+
+      {/* Dialog de sélection de fournisseur pour commander */}
+      <Dialog open={showFournisseurDialog} onOpenChange={setShowFournisseurDialog}>
+        <DialogContent className="w-[90vw] max-w-md">
+          <DialogHeader>
+            <DialogTitle>Sélectionner un fournisseur</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {selectedArticleForOrder && (
+              <div className="text-sm text-muted-foreground">
+                <p className="font-medium text-foreground mb-2">Article: {selectedArticleForOrder.designation}</p>
+                <p>Référence: {selectedArticleForOrder.reference}</p>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="fournisseur-select">Fournisseur</Label>
+              <Select 
+                value={selectedFournisseurForOrder} 
+                onValueChange={setSelectedFournisseurForOrder}
+              >
+                <SelectTrigger id="fournisseur-select">
+                  <SelectValue placeholder="Choisir un fournisseur" />
+                </SelectTrigger>
+                <SelectContent>
+                  {fournisseurs.map((fournisseur) => (
+                    <SelectItem key={fournisseur.id} value={fournisseur.id}>
+                      {fournisseur.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowFournisseurDialog(false);
+                setSelectedArticleForOrder(null);
+                setSelectedFournisseurForOrder("");
+              }}
+            >
+              Annuler
+            </Button>
+            <Button 
+              onClick={handleConfirmOrderWithFournisseur}
+              disabled={!selectedFournisseurForOrder}
+            >
+              Continuer
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       </DashboardLayout>
   );
 }
