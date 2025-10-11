@@ -35,6 +35,17 @@ export default function Vehicules() {
     actif: true,
   });
 
+  // Formatage simple de l'immatriculation
+  const formatImmatriculation = (value: string) => {
+    const cleaned = value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+    let formatted = '';
+    for (let i = 0; i < cleaned.length && i < 7; i++) {
+      if (i === 2 || i === 5) formatted += '-';
+      formatted += cleaned[i];
+    }
+    return formatted;
+  };
+
 
   const { data: vehicules = [] } = useQuery({
     queryKey: ["vehicules"],
@@ -249,8 +260,12 @@ export default function Vehicules() {
                   <Input
                     id="immatriculation"
                     value={formData.immatriculation}
-                    onChange={(e) => setFormData(prev => ({ ...prev, immatriculation: e.target.value }))}
+                    onChange={(e) => {
+                      const formatted = formatImmatriculation(e.target.value);
+                      setFormData(prev => ({ ...prev, immatriculation: formatted }));
+                    }}
                     placeholder="AB-123-CD"
+                    maxLength={9}
                     required
                   />
                 </div>
