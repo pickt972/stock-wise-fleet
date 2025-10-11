@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from "recharts";
 import { TrendingUp, Calendar } from "lucide-react";
@@ -12,7 +12,7 @@ interface ForecastData {
   confidence: number;
 }
 
-export function StockForecast() {
+export const StockForecast = memo(function StockForecast() {
   const [forecastData, setForecastData] = useState<ForecastData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -172,4 +172,4 @@ export function StockForecast() {
       </CardContent>
     </Card>
   );
-}
+});

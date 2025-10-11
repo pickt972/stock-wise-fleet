@@ -88,8 +88,8 @@ export function useRealTimeStats() {
   useEffect(() => {
     fetchStats();
 
-    // Polling toutes les 30 secondes au lieu de temps réel
-    const interval = setInterval(fetchStats, 30000);
+    // Polling toutes les 60 secondes pour réduire la charge
+    const interval = setInterval(fetchStats, 60000);
 
     return () => {
       clearInterval(interval);
