@@ -590,14 +590,24 @@ export default function Articles() {
                     </div>
                     
                     <div className="flex gap-1">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-9 w-9 p-0"
-                        onClick={() => handleOrderArticle(article)}
-                      >
-                        <ShoppingCart className="h-4 w-4" />
-                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-9 w-9 p-0"
+                              onClick={() => handleOrderArticle(article)}
+                              disabled={!principalFournisseur}
+                            >
+                              <ShoppingCart className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{principalFournisseur ? "Commander l'article" : "Aucun fournisseur associé"}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                       
                       <Dialog>
                         <DialogTrigger asChild>
@@ -776,12 +786,13 @@ export default function Articles() {
                                    className="h-8 w-8 p-0"
                                    onClick={() => handleOrderArticle(article)}
                                    aria-label="Commander l'article"
+                                   disabled={!principalFournisseur}
                                  >
                                    <ShoppingCart className="h-3 w-3 md:h-4 md:w-4" />
                                  </Button>
                                </TooltipTrigger>
                                <TooltipContent>
-                                 <p>Commander l'article</p>
+                                 <p>{principalFournisseur ? "Commander l'article" : "Aucun fournisseur associé"}</p>
                                </TooltipContent>
                              </Tooltip>
                            </TooltipProvider>
