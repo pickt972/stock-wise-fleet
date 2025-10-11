@@ -321,7 +321,7 @@ export default function Articles() {
     [...new Set([
       ...articles.map(article => article.emplacement),
       ...articles.map(article => article.emplacements?.nom)
-    ])].filter(Boolean), 
+    ])].filter(Boolean).filter(e => typeof e === 'string' && e.trim() !== ''), 
     [articles]
   );
 
@@ -488,8 +488,8 @@ export default function Articles() {
                   <SelectContent>
                     <SelectItem value="">Tous les emplacements</SelectItem>
                     {uniqueEmplacements.map((emplacement) => (
-                      <SelectItem key={emplacement} value={emplacement}>
-                        {emplacement}
+                      <SelectItem key={emplacement || ''} value={emplacement || ''}>
+                        {emplacement || 'Non défini'}
                       </SelectItem>
                     ))}
                   </SelectContent>
