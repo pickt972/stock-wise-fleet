@@ -130,14 +130,15 @@ export default function Commandes() {
   useEffect(() => {
     const handlePrefilledItems = async () => {
       if (location.state?.prefilledItems) {
-        const { prefilledItems, source, fournisseurNom } = location.state;
+        const { prefilledItems, source, fournisseurNom, fournisseur } = location.state;
+        const fournisseurName = fournisseurNom || fournisseur;
         
         // Vérifier s'il existe une commande en brouillon pour ce fournisseur
-        if (fournisseurNom) {
+        if (fournisseurName) {
           const { data: existingDrafts } = await supabase
             .from('commandes')
             .select('*, commande_items(*)')
-            .eq('fournisseur', fournisseurNom)
+            .eq('fournisseur', fournisseurName)
             .eq('status', 'brouillon')
             .order('created_at', { ascending: false })
             .limit(1);
@@ -151,10 +152,10 @@ export default function Commandes() {
               article_id: item.article_id,
               designation: item.designation,
               reference: item.reference,
-              quantite_commandee: item.quantite_commandee,
+              quantite_commandee: item.quantite_commandee || item.quantite,
               quantite_recue: 0,
               prix_unitaire: item.prix_unitaire,
-              total_ligne: item.quantite_commandee * item.prix_unitaire
+              total_ligne: (item.quantite_commandee || item.quantite) * item.prix_unitaire
             }));
 
             const { error } = await supabase
@@ -183,12 +184,14 @@ export default function Commandes() {
         // Si pas de commande existante, créer une nouvelle
         setCurrentItems(prefilledItems.map((item: any) => ({
           ...item,
-          total_ligne: item.quantite_commandee * item.prix_unitaire
+          quantite_commandee: item.quantite_commandee || item.quantite,
+          total_ligne: (item.quantite_commandee || item.quantite) * item.prix_unitaire
         })));
         
         const { totalHT, totalTTC } = calculateTotals(prefilledItems, currentCommande.tva_taux);
         setCurrentCommande(prev => ({
           ...prev,
+          fournisseur: fournisseurName || "",
           total_ht: totalHT,
           total_ttc: totalTTC
         }));
