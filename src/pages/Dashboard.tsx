@@ -1,24 +1,12 @@
-import { Suspense, lazy } from "react";
 import { Package, TrendingUp, AlertTriangle, DollarSign } from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AlertsList } from "@/components/dashboard/AlertsList";
+import { RecentMovements } from "@/components/dashboard/RecentMovements";
+import { StockForecast } from "@/components/dashboard/StockForecast";
+import { AdvancedKPIs } from "@/components/dashboard/AdvancedKPIs";
+import { StockDistribution } from "@/components/dashboard/StockDistribution";
 import { useRealTimeStats } from "@/hooks/useRealTimeStats";
 import DashboardLayout from "./DashboardLayout";
-
-// Lazy load des composants lourds
-const AlertsList = lazy(() => import("@/components/dashboard/AlertsList").then(m => ({ default: m.AlertsList })));
-const RecentMovements = lazy(() => import("@/components/dashboard/RecentMovements").then(m => ({ default: m.RecentMovements })));
-const StockForecast = lazy(() => import("@/components/dashboard/StockForecast").then(m => ({ default: m.StockForecast })));
-const AdvancedKPIs = lazy(() => import("@/components/dashboard/AdvancedKPIs").then(m => ({ default: m.AdvancedKPIs })));
-const StockDistribution = lazy(() => import("@/components/dashboard/StockDistribution").then(m => ({ default: m.StockDistribution })));
-
-const ComponentSkeleton = () => (
-  <div className="space-y-3">
-    <Skeleton className="h-8 w-48" />
-    <Skeleton className="h-32 w-full" />
-    <Skeleton className="h-24 w-full" />
-  </div>
-);
 
 export default function Dashboard() {
   const { stats, isLoading } = useRealTimeStats();
@@ -70,31 +58,19 @@ export default function Dashboard() {
 
         {/* Prévisions & Alertes */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 w-full">
-          <Suspense fallback={<ComponentSkeleton />}>
-            <StockForecast />
-          </Suspense>
-          
-          <Suspense fallback={<ComponentSkeleton />}>
-            <AlertsList />
-          </Suspense>
+          <StockForecast />
+          <AlertsList />
         </div>
 
         {/* Distribution & KPIs */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 w-full">
-          <Suspense fallback={<ComponentSkeleton />}>
-            <StockDistribution />
-          </Suspense>
-          
-          <Suspense fallback={<ComponentSkeleton />}>
-            <AdvancedKPIs />
-          </Suspense>
+          <StockDistribution />
+          <AdvancedKPIs />
         </div>
 
         {/* Mouvements récents */}
         <div className="w-full">
-          <Suspense fallback={<ComponentSkeleton />}>
-            <RecentMovements />
-          </Suspense>
+          <RecentMovements />
         </div>
       </div>
     </DashboardLayout>
