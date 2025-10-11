@@ -130,11 +130,11 @@ export default function Commandes() {
   useEffect(() => {
     const handlePrefilledItems = async () => {
       if (location.state?.prefilledItems) {
-        const { prefilledItems, source, fournisseurNom, fournisseur } = location.state;
+        const { prefilledItems, source, fournisseurNom, fournisseur, forceNewOrder } = location.state;
         const fournisseurName = fournisseurNom || fournisseur;
         
-        // Vérifier s'il existe une commande en brouillon pour ce fournisseur
-        if (fournisseurName) {
+        // Vérifier s'il existe une commande en brouillon pour ce fournisseur (sauf si forceNewOrder)
+        if (fournisseurName && !forceNewOrder) {
           const { data: existingDrafts } = await supabase
             .from('commandes')
             .select('*, commande_items(*)')
