@@ -10,12 +10,11 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
-import { Car, Plus, Edit, Trash2, Package, MapPin } from "lucide-react";
+import { Car, Plus, Edit, Trash2, Package } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "./DashboardLayout";
 import type { Tables } from "@/integrations/supabase/types";
-import { formatImmatriculation, validateImmatriculation, getRegionInfo } from "@/lib/plateUtils";
 
 type Vehicule = Tables<"vehicules">;
 type Article = Tables<"articles">;
@@ -36,8 +35,6 @@ export default function Vehicules() {
     actif: true,
   });
 
-  // Région détectée à partir de la plaque
-  const regionInfo = formData.immatriculation ? getRegionInfo(formData.immatriculation) : null;
 
   const { data: vehicules = [] } = useQuery({
     queryKey: ["vehicules"],
@@ -156,7 +153,7 @@ export default function Vehicules() {
       marque: vehicule.marque,
       modele: vehicule.modele,
       motorisation: vehicule.motorisation || "",
-      immatriculation: formatImmatriculation(vehicule.immatriculation), // Formater lors de l'édition
+      immatriculation: vehicule.immatriculation,
       annee: vehicule.annee?.toString() || "",
       notes: vehicule.notes || "",
       actif: vehicule.actif,
@@ -165,12 +162,6 @@ export default function Vehicules() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Vérifier le format de l'immatriculation
-    if (!validateImmatriculation(formData.immatriculation)) {
-      toast.error("Le format de l'immatriculation doit être AA-000-AA");
-      return;
-    }
     
     if (editingVehicule) {
       updateMutation.mutate({ id: editingVehicule.id, data: formData });
@@ -258,34 +249,10 @@ export default function Vehicules() {
                   <Input
                     id="immatriculation"
                     value={formData.immatriculation}
-                    onChange={(e) => {
-                      const formatted = formatImmatriculation(e.target.value);
-                      setFormData(prev => ({ ...prev, immatriculation: formatted }));
-                    }}
+                    onChange={(e) => setFormData(prev => ({ ...prev, immatriculation: e.target.value }))}
                     placeholder="AB-123-CD"
-                    maxLength={9}
                     required
-                    className={formData.immatriculation && !validateImmatriculation(formData.immatriculation) 
-                      ? "border-destructive focus:border-destructive" 
-                      : ""
-                    }
                   />
-                  <div className="flex items-start justify-between gap-2 mt-1">
-                    <p className="text-xs text-muted-foreground">
-                      Format SIV: AA-000-AA (2 lettres, 3 chiffres, 2 lettres)
-                    </p>
-                    {regionInfo && validateImmatriculation(formData.immatriculation) && (
-                      <div className="flex items-center gap-1 text-xs text-primary">
-                        <MapPin className="h-3 w-3" />
-                        <span className="font-medium">{regionInfo}</span>
-                      </div>
-                    )}
-                  </div>
-                  {formData.immatriculation && !validateImmatriculation(formData.immatriculation) && (
-                    <p className="text-xs text-destructive mt-1">
-                      ⚠️ Format d'immatriculation invalide
-                    </p>
-                  )}
                 </div>
 
                 <div>
