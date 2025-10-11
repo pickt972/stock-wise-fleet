@@ -223,28 +223,28 @@ export default function JournalAudit() {
         </Card>
 
         {/* Statistiques */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center p-4 bg-muted rounded-lg">
-            <div className="text-2xl font-bold">{filteredLogs.length}</div>
-            <div className="text-sm text-muted-foreground">Événements</div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+          <div className="text-center p-3 sm:p-4 bg-muted rounded-lg">
+            <div className="text-xl sm:text-2xl font-bold">{filteredLogs.length}</div>
+            <div className="text-xs sm:text-sm text-muted-foreground">Événements</div>
           </div>
-          <div className="text-center p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="text-2xl font-bold text-green-600">
+          <div className="text-center p-3 sm:p-4 bg-green-50 border border-green-200 rounded-lg dark:bg-green-950/20 dark:border-green-900/30">
+            <div className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">
               {filteredLogs.filter(l => l.action === 'INSERT').length}
             </div>
-            <div className="text-sm text-green-600">Créations</div>
+            <div className="text-xs sm:text-sm text-green-600 dark:text-green-400">Créations</div>
           </div>
-          <div className="text-center p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">
+          <div className="text-center p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg dark:bg-blue-950/20 dark:border-blue-900/30">
+            <div className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
               {filteredLogs.filter(l => l.action === 'UPDATE' || l.action === 'UPDATE_STATUS').length}
             </div>
-            <div className="text-sm text-blue-600">Modifications</div>
+            <div className="text-xs sm:text-sm text-blue-600 dark:text-blue-400">Modifications</div>
           </div>
-          <div className="text-center p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="text-2xl font-bold text-red-600">
+          <div className="text-center p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg dark:bg-red-950/20 dark:border-red-900/30">
+            <div className="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">
               {filteredLogs.filter(l => l.action === 'DELETE').length}
             </div>
-            <div className="text-sm text-red-600">Suppressions</div>
+            <div className="text-xs sm:text-sm text-red-600 dark:text-red-400">Suppressions</div>
           </div>
         </div>
 
@@ -265,52 +265,93 @@ export default function JournalAudit() {
             ) : filteredLogs.length === 0 ? (
               <p className="text-center py-8 text-muted-foreground">Aucun événement trouvé</p>
             ) : (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date & Heure</TableHead>
-                      <TableHead>Action</TableHead>
-                      <TableHead>Table</TableHead>
-                      <TableHead>Détails</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredLogs.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell className="font-mono text-sm">
-                          {new Date(log.created_at).toLocaleString('fr-FR', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit'
-                          })}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={getActionColor(log.action)}>
-                            {getActionLabel(log.action)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-medium">{getTableLabel(log.table_name)}</span>
-                        </TableCell>
-                        <TableCell>
-                          <details className="cursor-pointer">
-                            <summary className="text-sm text-muted-foreground hover:text-foreground">
-                              Voir les détails
-                            </summary>
-                            <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto max-h-40">
-                              {formatChanges(log)}
-                            </pre>
-                          </details>
-                        </TableCell>
+              <>
+                {/* Vue Desktop - Tableau */}
+                <div className="hidden md:block rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date & Heure</TableHead>
+                        <TableHead>Action</TableHead>
+                        <TableHead>Table</TableHead>
+                        <TableHead>Détails</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredLogs.map((log) => (
+                        <TableRow key={log.id}>
+                          <TableCell className="font-mono text-sm">
+                            {new Date(log.created_at).toLocaleString('fr-FR', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit'
+                            })}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={getActionColor(log.action)}>
+                              {getActionLabel(log.action)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className="font-medium">{getTableLabel(log.table_name)}</span>
+                          </TableCell>
+                          <TableCell>
+                            <details className="cursor-pointer">
+                              <summary className="text-sm text-muted-foreground hover:text-foreground">
+                                Voir les détails
+                              </summary>
+                              <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto max-h-40">
+                                {formatChanges(log)}
+                              </pre>
+                            </details>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Vue Mobile - Cartes */}
+                <div className="md:hidden space-y-3">
+                  {filteredLogs.map((log) => (
+                    <Card key={log.id} className="p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge variant={getActionColor(log.action)} className="text-xs">
+                                {getActionLabel(log.action)}
+                              </Badge>
+                              <span className="font-medium text-sm">{getTableLabel(log.table_name)}</span>
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1 font-mono">
+                              {new Date(log.created_at).toLocaleString('fr-FR', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <details className="cursor-pointer">
+                          <summary className="text-sm text-muted-foreground hover:text-foreground">
+                            Voir les détails
+                          </summary>
+                          <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto max-h-40">
+                            {formatChanges(log)}
+                          </pre>
+                        </details>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
