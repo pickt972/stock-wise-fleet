@@ -1442,6 +1442,12 @@ export default function Commandes() {
       <PurchaseOrderDialog
         isOpen={purchaseOrderDialog.isOpen}
         onClose={() => setPurchaseOrderDialog({ isOpen: false })}
+        onEmailSent={() => {
+          setPurchaseOrderDialog({ isOpen: false });
+          setIsCreating(false);
+          setEditingCommande(null);
+          fetchCommandes();
+        }}
         commande={purchaseOrderDialog.commande as any}
         items={purchaseOrderDialog.commande?.items || []}
       />

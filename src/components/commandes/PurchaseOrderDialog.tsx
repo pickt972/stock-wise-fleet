@@ -13,6 +13,7 @@ import { PurchaseOrderPreview } from "./PurchaseOrderPreview";
 interface PurchaseOrderDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  onEmailSent?: () => void;
   commande: {
     id: string;
     numero_commande: string;
@@ -33,7 +34,7 @@ interface PurchaseOrderDialogProps {
   }>;
 }
 
-export const PurchaseOrderDialog = ({ isOpen, onClose, commande, items }: PurchaseOrderDialogProps) => {
+export const PurchaseOrderDialog = ({ isOpen, onClose, onEmailSent, commande, items }: PurchaseOrderDialogProps) => {
   const [senderName, setSenderName] = useState("");
   const [senderEmail, setSenderEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -275,6 +276,7 @@ export const PurchaseOrderDialog = ({ isOpen, onClose, commande, items }: Purcha
       });
       
       onClose();
+      onEmailSent?.();
     } catch (error: any) {
       console.error('Error sending email:', error);
       toast({
