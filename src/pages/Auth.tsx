@@ -105,6 +105,8 @@ export default function Auth() {
           title: "Connexion réussie",
           description: "Bienvenue dans StockAuto !",
         });
+        // Redirection explicite vers dashboard après connexion réussie
+        navigate("/dashboard", { replace: true });
       }
     } catch (error) {
       toast({
