@@ -158,6 +158,17 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    /* Support for iOS safe areas */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Ensure root container respects safe areas on iOS */
+  #root {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
   }
 
   /* Modern typography hierarchy */
