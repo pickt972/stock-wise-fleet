@@ -19,6 +19,7 @@ import { PurchaseOrderDialog } from "@/components/commandes/PurchaseOrderDialog"
 import { SmartOrderDialog } from "@/components/commandes/SmartOrderDialog";
 import { CreateArticleDialog } from "@/components/articles/CreateArticleDialog";
 import { ReceptionCommandeDialog } from "@/components/commandes/ReceptionCommandeDialog";
+import { useRoleAccess } from "@/hooks/useRoleAccess";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -116,6 +117,7 @@ export default function Commandes() {
   }>({ isOpen: false });
   const [currentFournisseurId, setCurrentFournisseurId] = useState<string>("");
   const { toast } = useToast();
+  const { isAdmin } = useRoleAccess();
 
   useEffect(() => {
     const loadData = async () => {
@@ -1375,18 +1377,20 @@ export default function Commandes() {
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
                     )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPurchaseOrderDialog({
-                        isOpen: true,
-                        commande: commande
-                      })}
-                      className="shrink-0"
-                    >
-                      <Mail className="w-4 h-4 sm:mr-2" />
-                      <span className="hidden sm:inline">Bon de commande</span>
-                    </Button>
+                    {isAdmin() && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPurchaseOrderDialog({
+                          isOpen: true,
+                          commande: commande
+                        })}
+                        className="shrink-0"
+                      >
+                        <Mail className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Envoyer la commande</span>
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardHeader>
