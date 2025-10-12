@@ -1364,7 +1364,7 @@ export default function Commandes() {
                         <span className="hidden sm:inline">Réceptionner</span>
                       </Button>
                     )}
-                    {commande?.status === 'brouillon' && (
+                    {commande?.status === 'brouillon' && isAdmin() && (
                       <Button
                         variant="outline"
                         size="sm"
