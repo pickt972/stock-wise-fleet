@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PasswordInput } from "@/components/ui/password-input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
@@ -27,11 +28,12 @@ interface EditUserDialogProps {
 
 export default function EditUserDialog({ user, isOpen, onOpenChange, onUserUpdated }: EditUserDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState<{ firstName: string; lastName: string; username: string; role: UserRole }>({
+  const [formData, setFormData] = useState<{ firstName: string; lastName: string; username: string; role: UserRole; newPassword: string }>({
     firstName: user?.first_name || "",
     lastName: user?.last_name || "",
     username: user?.username || "",
     role: (user?.role as UserRole) || "magasinier",
+    newPassword: "",
   });
   const { toast } = useToast();
 
@@ -43,6 +45,7 @@ export default function EditUserDialog({ user, isOpen, onOpenChange, onUserUpdat
         lastName: user.last_name,
         username: user.username,
         role: (user.role as UserRole) || 'magasinier',
+        newPassword: "",
       });
     }
   }, [user]);
@@ -95,9 +98,25 @@ export default function EditUserDialog({ user, isOpen, onOpenChange, onUserUpdat
         if (roleError) throw roleError;
       }
 
+      // Si un nouveau mot de passe est fourni, le réinitialiser
+      if (formData.newPassword) {
+        const { error: passwordError } = await supabase.functions.invoke('admin-reset-password', {
+          body: {
+            userId: user.id,
+            newPassword: formData.newPassword,
+          }
+        });
+
+        if (passwordError) {
+          throw new Error("Erreur lors de la réinitialisation du mot de passe: " + passwordError.message);
+        }
+      }
+
       toast({
         title: "Utilisateur modifié",
-        description: "Les informations ont été mises à jour avec succès",
+        description: formData.newPassword 
+          ? "Les informations et le mot de passe ont été mis à jour avec succès"
+          : "Les informations ont été mises à jour avec succès",
       });
 
       onUserUpdated();
@@ -167,6 +186,15 @@ export default function EditUserDialog({ user, isOpen, onOpenChange, onUserUpdat
                 <SelectItem value="admin">Administrateur</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-password">Nouveau mot de passe (optionnel)</Label>
+            <PasswordInput
+              id="edit-password"
+              value={formData.newPassword}
+              onChange={(e) => setFormData({...formData, newPassword: e.target.value})}
+              placeholder="Laisser vide pour ne pas changer"
+            />
           </div>
         </div>
         <DialogFooter>
