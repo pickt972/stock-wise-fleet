@@ -85,7 +85,7 @@ const articleSchema = z.object({
     try {
       const { data, error } = await supabase
         .from('fournisseurs')
-        .select('id, nom')
+        .select('*')
         .eq('actif', true)
         .order('nom');
 
@@ -100,7 +100,7 @@ const articleSchema = z.object({
     try {
       const { data, error } = await supabase
         .from('emplacements')
-        .select('id, nom')
+        .select('*')
         .eq('actif', true)
         .order('nom');
 
@@ -146,7 +146,7 @@ const articleSchema = z.object({
     try {
       const { data, error } = await supabase
         .from('categories')
-        .select('nom')
+        .select('*')
         .eq('actif', true)
         .order('nom');
 
