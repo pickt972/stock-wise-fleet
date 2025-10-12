@@ -16,9 +16,10 @@ import { CategoriesManagement } from "@/components/categories/CategoriesManageme
 import { RolesPermissionsMatrix } from "@/components/roles/RolesPermissionsMatrix";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 
 export default function Parametres() {
-  const { permissions } = useRoleAccess();
+  const { permissions, isMagasinier } = useRoleAccess();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [showCompanySettings, setShowCompanySettings] = useState(false);
@@ -36,6 +37,23 @@ export default function Parametres() {
       document.head.appendChild(m);
     }
   }, []);
+
+  // Si l'utilisateur est magasinier, afficher uniquement le changement de mot de passe
+  if (isMagasinier()) {
+    return (
+      <DashboardLayout>
+        <main className="p-4 md:p-6 space-y-4 md:space-y-6">
+          <header>
+            <h1 className="text-2xl md:text-3xl font-bold">Paramètres</h1>
+            <p className="text-sm md:text-base text-muted-foreground">
+              Mon profil
+            </p>
+          </header>
+          <ChangePasswordForm />
+        </main>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
