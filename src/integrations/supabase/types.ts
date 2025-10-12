@@ -726,6 +726,96 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_settings: {
+        Row: {
+          created_at: string | null
+          critical_stock_threshold: number | null
+          email_enabled: boolean | null
+          id: string
+          low_stock_threshold: number | null
+          notification_email: string | null
+          notify_on_critical_stock: boolean | null
+          notify_on_inventory_completed: boolean | null
+          notify_on_low_stock: boolean | null
+          notify_on_order_received: boolean | null
+          notify_on_order_sent: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          critical_stock_threshold?: number | null
+          email_enabled?: boolean | null
+          id?: string
+          low_stock_threshold?: number | null
+          notification_email?: string | null
+          notify_on_critical_stock?: boolean | null
+          notify_on_inventory_completed?: boolean | null
+          notify_on_low_stock?: boolean | null
+          notify_on_order_received?: boolean | null
+          notify_on_order_sent?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          critical_stock_threshold?: number | null
+          email_enabled?: boolean | null
+          id?: string
+          low_stock_threshold?: number | null
+          notification_email?: string | null
+          notify_on_critical_stock?: boolean | null
+          notify_on_inventory_completed?: boolean | null
+          notify_on_low_stock?: boolean | null
+          notify_on_order_received?: boolean | null
+          notify_on_order_sent?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          related_id: string | null
+          related_table: string | null
+          severity: string
+          title: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          related_id?: string | null
+          related_table?: string | null
+          severity: string
+          title: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          related_id?: string | null
+          related_table?: string | null
+          severity?: string
+          title?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -925,6 +1015,26 @@ export type Database = {
       get_auth_user_id_by_email: {
         Args: { _email: string }
         Returns: string
+      }
+      get_dashboard_aggregates: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          critical_stock_count: number
+          low_stock_count: number
+          previous_movements_count: number
+          recent_movements_count: number
+          total_stock: number
+          total_value: number
+        }[]
+      }
+      get_stock_distribution_counts: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          bon: number
+          excellent: number
+          faible: number
+          rupture: number
+        }[]
       }
       get_user_role: {
         Args: { _user_id: string }
