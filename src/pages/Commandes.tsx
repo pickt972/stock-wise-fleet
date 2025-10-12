@@ -633,7 +633,7 @@ export default function Commandes() {
     }
   };
 
-  const saveCommande = async () => {
+  const saveCommande = async (saveAsDraft: boolean = false) => {
     if (!currentCommande.fournisseur || currentItems.length === 0) {
       toast({
         title: "Erreur",
@@ -645,6 +645,9 @@ export default function Commandes() {
 
     try {
       let commandeId: string;
+      
+      // Déterminer le statut en fonction du paramètre
+      const finalStatus = saveAsDraft ? 'brouillon' : currentCommande.status;
 
       if (editingCommande) {
         const updatePayload = {
@@ -653,7 +656,7 @@ export default function Commandes() {
           telephone_fournisseur: currentCommande.telephone_fournisseur || "",
           adresse_fournisseur: currentCommande.adresse_fournisseur || "",
           notes: currentCommande.notes || "",
-          status: currentCommande.status,
+          status: finalStatus,
           total_ht: currentCommande.total_ht,
           total_ttc: currentCommande.total_ttc,
           tva_taux: currentCommande.tva_taux,
@@ -680,7 +683,7 @@ export default function Commandes() {
           telephone_fournisseur: currentCommande.telephone_fournisseur || "",
           adresse_fournisseur: currentCommande.adresse_fournisseur || "",
           notes: currentCommande.notes || "",
-          status: currentCommande.status,
+          status: finalStatus,
           total_ht: currentCommande.total_ht,
           total_ttc: currentCommande.total_ttc,
           tva_taux: currentCommande.tva_taux,
@@ -712,7 +715,9 @@ export default function Commandes() {
 
       toast({
         title: "Succès",
-        description: editingCommande ? "Commande modifiée" : "Commande créée",
+        description: saveAsDraft 
+          ? "Commande sauvegardée en brouillon" 
+          : (editingCommande ? "Commande modifiée" : "Commande créée"),
       });
 
       // Reset
@@ -1261,7 +1266,10 @@ export default function Commandes() {
             }}>
               Annuler
             </Button>
-            <Button onClick={saveCommande}>
+            <Button variant="secondary" onClick={() => saveCommande(true)}>
+              Sauvegarder en brouillon
+            </Button>
+            <Button onClick={() => saveCommande(false)}>
               {editingCommande ? 'Valider' : 'Créer'} la commande
             </Button>
           </div>
