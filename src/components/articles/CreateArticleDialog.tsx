@@ -23,6 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
 import { CreateFournisseurDialog } from "@/components/fournisseurs/CreateFournisseurDialog";
 import { CreateCategorieDialog } from "@/components/categories/CreateCategorieDialog";
+import { CreateVehiculeDialog } from "@/components/vehicules/CreateVehiculeDialog";
 import { z } from "zod";
 interface CreateArticleDialogProps {
   onArticleCreated: () => void;
@@ -46,8 +47,10 @@ export function CreateArticleDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [fournisseurs, setFournisseurs] = useState<any[]>([]);
   const [emplacements, setEmplacements] = useState<any[]>([]);
+  const [vehicules, setVehicules] = useState<any[]>([]);
   const [showFournisseurDialog, setShowFournisseurDialog] = useState(false);
   const [showCategorieDialog, setShowCategorieDialog] = useState(false);
+  const [showVehiculeDialog, setShowVehiculeDialog] = useState(false);
   const [priceType, setPriceType] = useState<"HT" | "TTC">("HT");
   const [tvaTaux, setTvaTaux] = useState(0);
   const [formData, setFormData] = useState({
@@ -108,11 +111,27 @@ const articleSchema = z.object({
     }
   };
 
+  const fetchVehicules = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('vehicules')
+        .select('id, immatriculation, marque, modele')
+        .eq('actif', true)
+        .order('immatriculation');
+
+      if (error) throw error;
+      setVehicules(data || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des véhicules:', error);
+    }
+  };
+
   useEffect(() => {
     if (open) {
       fetchFournisseurs();
       fetchCategories();
       fetchEmplacements();
+      fetchVehicules();
       
       // Pré-remplir le fournisseur si fourni
       if (defaultFournisseurId) {
@@ -527,6 +546,13 @@ const articleSchema = z.object({
         onCategorieCreated={(nom) => {
           fetchCategories();
           setFormData(prev => ({ ...prev, categorie: nom }));
+        }}
+      />
+
+      <CreateVehiculeDialog
+        onVehiculeCreated={fetchVehicules}
+        onVehiculeSelected={() => {
+          setShowVehiculeDialog(false);
         }}
       />
     </Dialog>
