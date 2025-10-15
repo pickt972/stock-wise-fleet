@@ -65,6 +65,7 @@ export function CreateArticleDialog({
     emplacementId: "",
     fournisseurId: "",
   });
+  const [selectedVehicules, setSelectedVehicules] = useState<string[]>([]);
 
 const { toast } = useToast();
 
@@ -193,7 +194,7 @@ const articleSchema = z.object({
       const data = parsed.data;
       const { data: userData } = await supabase.auth.getUser();
 
-      const { error } = await supabase
+      const { data: newArticle, error } = await supabase
         .from('articles')
         .insert([{
           reference: data.reference.trim(),
@@ -207,9 +208,28 @@ const articleSchema = z.object({
           emplacement_id: data.emplacementId ? data.emplacementId : null,
           fournisseur_id: data.fournisseurId ? data.fournisseurId : null,
           user_id: userData?.user?.id
-        }]);
+        }])
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Ajouter les compatibilités véhicules si sélectionnées
+      if (selectedVehicules.length > 0 && newArticle) {
+        const vehicleCompatibilities = selectedVehicules.map(vehiculeId => ({
+          article_id: newArticle.id,
+          vehicule_id: vehiculeId,
+          user_id: userData?.user?.id
+        }));
+
+        const { error: vehicleError } = await supabase
+          .from('article_vehicules')
+          .insert(vehicleCompatibilities);
+
+        if (vehicleError) {
+          console.error('Erreur lors de l\'ajout des compatibilités véhicules:', vehicleError);
+        }
+      }
 
       toast({
         title: "Succès",
@@ -228,6 +248,7 @@ const articleSchema = z.object({
         emplacementId: "",
         fournisseurId: "",
       });
+      setSelectedVehicules([]);
 
       setOpen(false);
       onArticleCreated();
@@ -404,6 +425,69 @@ const articleSchema = z.object({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="vehicules">Véhicules compatibles</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs"
+                  onClick={() => setShowVehiculeDialog(true)}
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Nouveau véhicule
+                </Button>
+              </div>
+              <Select
+                value="_multiple"
+                onValueChange={(value) => {
+                  if (value !== "_multiple" && !selectedVehicules.includes(value)) {
+                    setSelectedVehicules([...selectedVehicules, value]);
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue>
+                    {selectedVehicules.length === 0 
+                      ? "Sélectionner des véhicules" 
+                      : `${selectedVehicules.length} véhicule(s) sélectionné(s)`}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="bg-popover border border-border shadow-medium z-[60] max-h-[200px] overflow-y-auto">
+                  {vehicules.filter(v => !selectedVehicules.includes(v.id)).map((vehicule) => (
+                    <SelectItem key={vehicule.id} value={vehicule.id}>
+                      {vehicule.marque} {vehicule.modele} - {vehicule.immatriculation}
+                    </SelectItem>
+                  ))}
+                  {vehicules.filter(v => !selectedVehicules.includes(v.id)).length === 0 && (
+                    <div className="p-2 text-sm text-muted-foreground text-center">
+                      {vehicules.length === 0 ? "Aucun véhicule disponible" : "Tous les véhicules sélectionnés"}
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
+              {selectedVehicules.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {selectedVehicules.map((vehiculeId) => {
+                    const vehicule = vehicules.find(v => v.id === vehiculeId);
+                    return vehicule ? (
+                      <div key={vehiculeId} className="flex items-center gap-1 bg-secondary text-secondary-foreground px-2 py-1 rounded text-xs">
+                        <span>{vehicule.marque} {vehicule.modele}</span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedVehicules(selectedVehicules.filter(id => id !== vehiculeId))}
+                          className="hover:text-destructive"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
