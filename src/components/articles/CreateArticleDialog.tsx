@@ -550,10 +550,9 @@ const articleSchema = z.object({
       />
 
       <CreateVehiculeDialog
+        open={showVehiculeDialog}
+        onOpenChange={setShowVehiculeDialog}
         onVehiculeCreated={fetchVehicules}
-        onVehiculeSelected={() => {
-          setShowVehiculeDialog(false);
-        }}
       />
     </Dialog>
   );

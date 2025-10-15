@@ -53,6 +53,7 @@ export default function Sorties() {
     vehiculeId: "",
   });
   const [vehicules, setVehicules] = useState<any[]>([]);
+  const [showVehiculeDialog, setShowVehiculeDialog] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -341,10 +342,16 @@ export default function Sorties() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="vehicule">Véhicule (optionnel)</Label>
-                    <CreateVehiculeDialog 
-                      onVehiculeCreated={fetchVehicules}
-                      onVehiculeSelected={(vehiculeId) => setFormData(prev => ({ ...prev, vehiculeId }))}
-                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => setShowVehiculeDialog(true)}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Nouveau véhicule
+                    </Button>
                   </div>
                   <Select
                     value={formData.vehiculeId}
@@ -470,6 +477,16 @@ export default function Sorties() {
           </CardContent>
         </Card>
       </div>
+
+      <CreateVehiculeDialog
+        open={showVehiculeDialog}
+        onOpenChange={setShowVehiculeDialog}
+        onVehiculeCreated={fetchVehicules}
+        onVehiculeSelected={(vehiculeId) => {
+          setFormData(prev => ({ ...prev, vehiculeId }));
+          setShowVehiculeDialog(false);
+        }}
+      />
     </DashboardLayout>
   );
 }

@@ -144,14 +144,11 @@ export function VehiculesContent() {
           ))}
         </div>
 
-        {isCreateDialogOpen && (
-          <CreateVehiculeDialog
-            onVehiculeCreated={() => {
-              fetchVehicules();
-              setIsCreateDialogOpen(false);
-            }}
-          />
-        )}
+        <CreateVehiculeDialog
+          open={isCreateDialogOpen}
+          onOpenChange={setIsCreateDialogOpen}
+          onVehiculeCreated={fetchVehicules}
+        />
       </CardContent>
     </Card>
   );

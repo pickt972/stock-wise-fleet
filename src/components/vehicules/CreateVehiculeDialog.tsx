@@ -9,12 +9,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 
 interface CreateVehiculeDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onVehiculeCreated: () => void;
   onVehiculeSelected?: (vehiculeId: string) => void;
 }
 
-export function CreateVehiculeDialog({ onVehiculeCreated, onVehiculeSelected }: CreateVehiculeDialogProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function CreateVehiculeDialog({ open, onOpenChange, onVehiculeCreated, onVehiculeSelected }: CreateVehiculeDialogProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState({
     immatriculation: "",
@@ -111,7 +112,7 @@ export function CreateVehiculeDialog({ onVehiculeCreated, onVehiculeSelected }: 
         notes: "",
       });
 
-      setIsOpen(false);
+      onOpenChange(false);
       onVehiculeCreated();
     } catch (error: any) {
       toast({
@@ -125,13 +126,7 @@ export function CreateVehiculeDialog({ onVehiculeCreated, onVehiculeSelected }: 
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="text-xs">
-          <Plus className="h-3 w-3 mr-1" />
-          Nouveau véhicule
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Créer un nouveau véhicule</DialogTitle>
@@ -225,7 +220,7 @@ export function CreateVehiculeDialog({ onVehiculeCreated, onVehiculeSelected }: 
             <Button
               type="button"
               variant="outline"
-              onClick={() => setIsOpen(false)}
+              onClick={() => onOpenChange(false)}
               className="w-full sm:w-auto"
             >
               Annuler
