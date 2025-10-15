@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { useAutoLogout } from "@/hooks/useAutoLogout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
 import Index from "./pages/Index";
@@ -39,10 +40,16 @@ const queryClient = new QueryClient({
   },
 });
 
+function AppContent() {
+  useAutoLogout();
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
+        <AppContent />
         <div className="w-full overflow-x-hidden">
           <Toaster />
           <Sonner />
