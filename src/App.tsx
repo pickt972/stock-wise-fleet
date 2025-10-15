@@ -49,11 +49,11 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <AppContent />
         <div className="w-full overflow-x-hidden">
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <AppContent />
             <GlobalErrorBoundary>
                 <Routes>
                   <Route path="/" element={<Index />} />
