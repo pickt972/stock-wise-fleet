@@ -327,20 +327,30 @@ export default function Articles() {
 
   // Obtenir les valeurs uniques pour les filtres
   const uniqueCategories = useMemo(() => 
-    [...new Set(articles.map(article => article.categorie))].filter(Boolean), 
+    [...new Set(articles.map(article => article.categorie))]
+      .filter(cat => cat && typeof cat === 'string' && cat.trim() !== ''), 
     [articles]
   );
+  
   const uniqueMarques = useMemo(() => 
-    [...new Set(articles.map(article => article.marque))].filter(Boolean), 
+    [...new Set(articles.map(article => article.marque))]
+      .filter(marque => marque && typeof marque === 'string' && marque.trim() !== ''), 
     [articles]
   );
-  const uniqueEmplacements = useMemo(() => 
-    [...new Set([
-      ...articles.map(article => article.emplacement),
-      ...articles.map(article => article.emplacements?.nom)
-    ])].filter(Boolean).filter(e => typeof e === 'string' && e.trim() !== ''), 
-    [articles]
-  );
+  
+  const uniqueEmplacements = useMemo(() => {
+    const emplacements = articles.flatMap(article => {
+      const emps = [];
+      if (article.emplacement && typeof article.emplacement === 'string' && article.emplacement.trim() !== '') {
+        emps.push(article.emplacement);
+      }
+      if (article.emplacements?.nom && typeof article.emplacements.nom === 'string' && article.emplacements.nom.trim() !== '') {
+        emps.push(article.emplacements.nom);
+      }
+      return emps;
+    });
+    return [...new Set(emplacements)];
+  }, [articles]);
 
   const clearFilters = useCallback(() => {
     setFilters({
