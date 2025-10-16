@@ -16,7 +16,8 @@ import {
   Car,
   Wrench,
   MapPin,
-  Shield
+  Shield,
+  History
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ const getNavigation = (permissions: any) => [
   { name: "Sorties", href: "/sorties", icon: ArrowUpFromLine, show: permissions.manageStock },
   { name: "Inventaire", href: "/inventaire", icon: ClipboardList, show: permissions.manageStock },
   { name: "Rapports", href: "/rapports", icon: BarChart3, show: permissions.viewReports },
+  { name: "Historique Articles", href: "/historique-articles", icon: History, show: permissions.viewReports },
 ];
 
 const getAdminNavigation = (permissions: any) => [

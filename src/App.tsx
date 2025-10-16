@@ -27,6 +27,7 @@ import RolesPermissions from "./pages/RolesPermissions";
 import Emplacements from "./pages/Emplacements";
 import AuditLogs from "./pages/AuditLogs";
 import JournalAudit from "./pages/JournalAudit";
+import ArticleHistory from "./pages/ArticleHistory";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -146,6 +147,11 @@ const App = () => (
               <Route path="/journal-audit" element={
                 <ProtectedRoute>
                   <JournalAudit />
+                </ProtectedRoute>
+              } />
+              <Route path="/historique-articles" element={
+                <ProtectedRoute>
+                  <ArticleHistory />
                 </ProtectedRoute>
               } />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

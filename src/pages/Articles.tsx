@@ -48,6 +48,7 @@ import { ArticleFournisseursManagement } from "@/components/articles/ArticleFour
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useColorPreferences } from "@/hooks/useColorPreferences";
+import { useRoleAccess } from "@/hooks/useRoleAccess";
 
 interface Article {
   id: string;
@@ -112,7 +113,10 @@ export default function Articles() {
   
   const { toast } = useToast();
   const { getColorForText } = useColorPreferences();
+  const { hasAnyRole } = useRoleAccess();
   const navigate = useNavigate();
+
+  const canModifyArticles = hasAnyRole(['admin', 'chef_agence']);
 
   const fetchArticles = async () => {
     try {
@@ -667,40 +671,44 @@ export default function Articles() {
                         </DialogContent>
                       </Dialog>
                       
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-9 w-9 p-0" 
-                        onClick={() => setSelectedArticleForEdit(article)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                      {canModifyArticles && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-9 w-9 p-0" 
+                          onClick={() => setSelectedArticleForEdit(article)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
                       
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="w-[90vw] max-w-md">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle className="text-base">Confirmer la suppression</AlertDialogTitle>
-                            <AlertDialogDescription className="text-sm">
-                              Êtes-vous sûr de vouloir supprimer l'article "{article.designation}" (Réf: {article.reference}) ?
-                              Cette action est irréversible.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-                            <AlertDialogCancel className="w-full sm:w-auto">Annuler</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDeleteArticle(article.id)}
-                              className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              Supprimer
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                      {canModifyArticles && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="w-[90vw] max-w-md">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="text-base">Confirmer la suppression</AlertDialogTitle>
+                              <AlertDialogDescription className="text-sm">
+                                Êtes-vous sûr de vouloir supprimer l'article "{article.designation}" (Réf: {article.reference}) ?
+                                Cette action est irréversible.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                              <AlertDialogCancel className="w-full sm:w-auto">Annuler</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteArticle(article.id)}
+                                className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Supprimer
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -861,60 +869,64 @@ export default function Articles() {
                                 />
                               )}
                             </DialogContent>
-                          </Dialog>
-                           <TooltipProvider>
-                             <Tooltip>
-                               <TooltipTrigger asChild>
-                                 <Button 
-                                   variant="ghost" 
-                                   size="sm" 
-                                   className="h-8 w-8 p-0" 
-                                   onClick={() => setSelectedArticleForEdit(article)}
-                                   aria-label="Modifier l'article"
-                                 >
-                                   <Edit className="h-3 w-3 md:h-4 md:w-4" />
-                                 </Button>
-                               </TooltipTrigger>
-                               <TooltipContent>
-                                 <p>Modifier l'article</p>
-                               </TooltipContent>
-                             </Tooltip>
-                           </TooltipProvider>
-                           <AlertDialog>
-                             <AlertDialogTrigger asChild>
-                               <TooltipProvider>
-                                 <Tooltip>
-                                   <TooltipTrigger asChild>
-                                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                       <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
-                                     </Button>
-                                   </TooltipTrigger>
-                                   <TooltipContent>
-                                     <p>Supprimer l'article</p>
-                                   </TooltipContent>
-                                 </Tooltip>
-                               </TooltipProvider>
-                             </AlertDialogTrigger>
-                            <AlertDialogContent className="w-[90vw] max-w-md">
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Êtes-vous sûr de vouloir supprimer l'article "{article.designation}" (Réf: {article.reference}) ?
-                                  Cette action est irréversible.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                               <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-                                <AlertDialogCancel className="w-full sm:w-auto">Annuler</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDeleteArticle(article.id)}
-                                  className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Supprimer
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
+                           </Dialog>
+                            {canModifyArticles && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="h-8 w-8 p-0" 
+                                      onClick={() => setSelectedArticleForEdit(article)}
+                                      aria-label="Modifier l'article"
+                                    >
+                                      <Edit className="h-3 w-3 md:h-4 md:w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Modifier l'article</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                            {canModifyArticles && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                          <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Supprimer l'article</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="w-[90vw] max-w-md">
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Êtes-vous sûr de vouloir supprimer l'article "{article.designation}" (Réf: {article.reference}) ?
+                                      Cette action est irréversible.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                                    <AlertDialogCancel className="w-full sm:w-auto">Annuler</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeleteArticle(article.id)}
+                                      className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Supprimer
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
                       </TableCell>
                     </TableRow>
                   );
