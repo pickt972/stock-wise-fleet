@@ -516,11 +516,15 @@ export default function Articles() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">Toutes les catégories</SelectItem>
-                    {uniqueCategories.map((categorie) => (
-                      <SelectItem key={categorie} value={categorie}>
-                        {categorie}
-                      </SelectItem>
-                    ))}
+                    {uniqueCategories.map((categorie) => {
+                      if (typeof categorie !== 'string' || categorie.trim() === '') return null;
+                      const val = categorie.trim();
+                      return (
+                        <SelectItem key={`cat-${val}`} value={val}>
+                          {val}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
@@ -536,11 +540,15 @@ export default function Articles() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">Toutes les marques</SelectItem>
-                    {uniqueMarques.map((marque) => (
-                      <SelectItem key={marque} value={marque}>
-                        {marque}
-                      </SelectItem>
-                    ))}
+                    {uniqueMarques.map((marque) => {
+                      if (typeof marque !== 'string' || marque.trim() === '') return null;
+                      const val = marque.trim();
+                      return (
+                        <SelectItem key={`marque-${val}`} value={val}>
+                          {val}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
@@ -574,11 +582,15 @@ export default function Articles() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">Tous les emplacements</SelectItem>
-                    {uniqueEmplacements.map((emplacement) => (
-                      <SelectItem key={emplacement} value={emplacement}>
-                        {emplacement}
-                      </SelectItem>
-                    ))}
+                    {uniqueEmplacements.map((emplacement) => {
+                      if (typeof emplacement !== 'string' || emplacement.trim() === '') return null;
+                      const val = emplacement.trim();
+                      return (
+                        <SelectItem key={`emp-${val}`} value={val}>
+                          {val}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
