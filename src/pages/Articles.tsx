@@ -109,6 +109,7 @@ export default function Articles() {
   });
   const [currentSort, setCurrentSort] = useState('designation');
   const [currentDirection, setCurrentDirection] = useState<'asc' | 'desc'>('asc');
+  const ALL_VALUE = "__all__" as const;
   
   const { toast } = useToast();
   const { getColorForText } = useColorPreferences();
@@ -508,14 +509,14 @@ export default function Articles() {
               <div>
                 <Label htmlFor="filter-categorie">Catégorie</Label>
                 <Select 
-                  value={filters.categorie} 
-                  onValueChange={(value) => setFilters(prev => ({ ...prev, categorie: value }))}
+                  value={filters.categorie || ALL_VALUE} 
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, categorie: value === ALL_VALUE ? "" : value }))}
                 >
                   <SelectTrigger id="filter-categorie">
                     <SelectValue placeholder="Toutes les catégories" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Toutes les catégories</SelectItem>
+                    <SelectItem value={ALL_VALUE}>Toutes les catégories</SelectItem>
                     {uniqueCategories.map((categorie) => {
                       if (typeof categorie !== 'string' || categorie.trim() === '') return null;
                       const val = categorie.trim();
@@ -532,14 +533,14 @@ export default function Articles() {
               <div>
                 <Label htmlFor="filter-marque">Marque</Label>
                 <Select 
-                  value={filters.marque} 
-                  onValueChange={(value) => setFilters(prev => ({ ...prev, marque: value }))}
+                  value={filters.marque || ALL_VALUE} 
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, marque: value === ALL_VALUE ? "" : value }))}
                 >
                   <SelectTrigger id="filter-marque">
                     <SelectValue placeholder="Toutes les marques" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Toutes les marques</SelectItem>
+                    <SelectItem value={ALL_VALUE}>Toutes les marques</SelectItem>
                     {uniqueMarques.map((marque) => {
                       if (typeof marque !== 'string' || marque.trim() === '') return null;
                       const val = marque.trim();
@@ -556,14 +557,14 @@ export default function Articles() {
               <div>
                 <Label htmlFor="filter-stock">Statut du stock</Label>
                 <Select 
-                  value={filters.stockStatus} 
-                  onValueChange={(value) => setFilters(prev => ({ ...prev, stockStatus: value }))}
+                  value={filters.stockStatus || ALL_VALUE} 
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, stockStatus: value === ALL_VALUE ? "" : value }))}
                 >
                   <SelectTrigger id="filter-stock">
                     <SelectValue placeholder="Tous les statuts" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tous les statuts</SelectItem>
+                    <SelectItem value={ALL_VALUE}>Tous les statuts</SelectItem>
                     <SelectItem value="ok">Stock OK</SelectItem>
                     <SelectItem value="faible">Stock faible</SelectItem>
                     <SelectItem value="rupture">Rupture de stock</SelectItem>
@@ -574,14 +575,14 @@ export default function Articles() {
               <div>
                 <Label htmlFor="filter-emplacement">Emplacement</Label>
                 <Select 
-                  value={filters.emplacement} 
-                  onValueChange={(value) => setFilters(prev => ({ ...prev, emplacement: value }))}
+                  value={filters.emplacement || ALL_VALUE} 
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, emplacement: value === ALL_VALUE ? "" : value }))}
                 >
                   <SelectTrigger id="filter-emplacement">
                     <SelectValue placeholder="Tous les emplacements" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tous les emplacements</SelectItem>
+                    <SelectItem value={ALL_VALUE}>Tous les emplacements</SelectItem>
                     {uniqueEmplacements.map((emplacement) => {
                       if (typeof emplacement !== 'string' || emplacement.trim() === '') return null;
                       const val = emplacement.trim();
