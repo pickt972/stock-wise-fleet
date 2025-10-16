@@ -192,6 +192,24 @@ const articleSchema = z.object({
       }
 
       const data = parsed.data;
+      
+      // Vérifier si un article avec cette référence existe déjà
+      const { data: existingArticle } = await supabase
+        .from('articles')
+        .select('id')
+        .eq('reference', data.reference.trim())
+        .maybeSingle();
+
+      if (existingArticle) {
+        toast({
+          title: "Erreur",
+          description: "Cet article existe déjà",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       const { data: userData } = await supabase.auth.getUser();
 
       const { data: newArticle, error } = await supabase
