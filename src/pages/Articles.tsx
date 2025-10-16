@@ -438,48 +438,57 @@ export default function Articles() {
         <CreateArticleDialog onArticleCreated={handleArticleCreated} />
       </div>
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:gap-4">
-        <div className="relative flex-1 min-w-0">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher un article..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-full"
-          />
+      <Card className="p-4 bg-primary/5 border-primary/20">
+        <div className="flex flex-col gap-3 lg:flex-row lg:gap-4">
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-primary" />
+            <Input
+              placeholder="Tapez pour filtrer les articles en temps réel..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-11 w-full text-base border-2 border-primary/30 focus:border-primary"
+              autoFocus
+            />
+          </div>
+          <div className="flex gap-2">
+            <Collapsible open={showFilters} onOpenChange={setShowFilters}>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" className="w-full lg:w-auto flex-shrink-0">
+                  <Filter className="mr-2 h-4 w-4" />
+                  Filtres avancés
+                  {Object.values(filters).some(value => value !== "") && (
+                    <Badge variant="secondary" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                      !
+                    </Badge>
+                  )}
+                </Button>
+              </CollapsibleTrigger>
+            </Collapsible>
+            
+            {hasActiveFilters && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" onClick={clearFilters}>
+                      <X className="h-4 w-4 mr-1" />
+                      Effacer
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Effacer tous les filtres</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Collapsible open={showFilters} onOpenChange={setShowFilters}>
-            <CollapsibleTrigger asChild>
-              <Button variant="outline" className="w-full lg:w-auto flex-shrink-0">
-                <Filter className="mr-2 h-4 w-4" />
-                Filtres
-                {hasActiveFilters && (
-                  <Badge variant="secondary" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                    !
-                  </Badge>
-                )}
-              </Button>
-            </CollapsibleTrigger>
-          </Collapsible>
-          
-          {hasActiveFilters && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="sm" onClick={clearFilters}>
-                    <X className="h-4 w-4 mr-1" />
-                    Effacer
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Effacer tous les filtres</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-        </div>
-      </div>
+
+        {searchTerm && (
+          <div className="mt-2 text-sm text-muted-foreground">
+            {sortedArticles.length} article{sortedArticles.length > 1 ? 's' : ''} trouvé{sortedArticles.length > 1 ? 's' : ''}
+          </div>
+        )}
+      </Card>
 
       {/* Panneau de filtres */}
       <Collapsible open={showFilters} onOpenChange={setShowFilters}>
@@ -570,8 +579,7 @@ export default function Articles() {
 
       {/* Scanner d'articles */}
       <ArticleScanner onArticleFound={(article) => {
-        // Optionnel: faire quelque chose quand un article est trouvé
-        console.log('Article trouvé:', article);
+        setSearchTerm(article.designation);
       }} />
 
       {/* Vue mobile en cartes */}
