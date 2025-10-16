@@ -575,8 +575,8 @@ export default function Articles() {
                   <SelectContent>
                     <SelectItem value="">Tous les emplacements</SelectItem>
                     {uniqueEmplacements.map((emplacement) => (
-                      <SelectItem key={emplacement || ''} value={emplacement || ''}>
-                        {emplacement || 'Non défini'}
+                      <SelectItem key={emplacement} value={emplacement}>
+                        {emplacement}
                       </SelectItem>
                     ))}
                   </SelectContent>
