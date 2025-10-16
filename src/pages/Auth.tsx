@@ -200,28 +200,6 @@ export default function Auth() {
               </Button>
             </div>
 
-            <div className="mt-4 text-center">
-              <Button
-                variant="outline"
-                onClick={async () => {
-                  try {
-                    const { data, error } = await supabase.functions.invoke('seed-users');
-                    if (error) throw error;
-                    if (!data?.ok) {
-                      const firstErr = data?.results?.find((r: any) => r.status !== 'ok')?.error || 'Initialisation partielle ou échouée';
-                      toast({ title: 'Erreur', description: firstErr, variant: 'destructive' });
-                      return;
-                    }
-                    toast({ title: 'Comptes initialisés', description: 'Réessayez la connexion.' });
-                    await fetchAvailableUsers();
-                  } catch (e: any) {
-                    toast({ title: 'Erreur', description: e.message, variant: 'destructive' });
-                  }
-                }}
-              >
-                Initialiser les comptes
-              </Button>
-            </div>
           </CardContent>
         </Card>
 
@@ -237,7 +215,7 @@ export default function Auth() {
                   </p>
                 </>
               ) : (
-                <p>Cliquez sur "Initialiser les comptes" pour créer les utilisateurs de test</p>
+                <p>Aucun utilisateur disponible. Contactez un administrateur.</p>
               )}
             </div>
           </div>
