@@ -115,12 +115,6 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
         
         setTimeout(() => {
           onScanResult(scannedText);
-          
-          toast({
-            title: "Code scanné !",
-            description: `Code détecté: ${scannedText}`,
-          });
-          
           setIsProcessing(false);
         }, 100);
       }
