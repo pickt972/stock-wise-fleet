@@ -89,7 +89,6 @@ interface Article {
 
 export default function Articles() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [articles, setArticles] = useState<Article[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
@@ -180,14 +179,6 @@ export default function Articles() {
     fetchFournisseurs();
   }, []);
 
-  // Debouncing pour la recherche
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 150); // 150ms de délai
-
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
 
   // Recharger les articles quand la page devient visible
   useEffect(() => {
@@ -301,11 +292,11 @@ export default function Articles() {
 
   const filteredArticles = useMemo(() => {
     return articles.filter(article => {
-      // Filtre de recherche textuelle avec le terme debouncé
-      const matchesSearch = debouncedSearchTerm === "" || 
-        article.designation.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-        article.reference.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-        article.marque.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
+      // Filtre de recherche textuelle instantanée
+      const matchesSearch = searchTerm === "" || 
+        article.designation.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        article.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        article.marque.toLowerCase().includes(searchTerm.toLowerCase());
 
       // Filtres avancés
       const matchesCategorie = filters.categorie === "" || article.categorie === filters.categorie;
@@ -328,7 +319,7 @@ export default function Articles() {
 
       return matchesSearch && matchesCategorie && matchesMarque && matchesEmplacement && matchesStockStatus;
     });
-  }, [articles, debouncedSearchTerm, filters]);
+  }, [articles, searchTerm, filters]);
 
   const sortedArticles = useMemo(() => {
     return applySorting(filteredArticles);
@@ -359,10 +350,9 @@ export default function Articles() {
       emplacement: "",
     });
     setSearchTerm("");
-    setDebouncedSearchTerm("");
   }, []);
 
-  const hasActiveFilters = Object.values(filters).some(value => value !== "") || debouncedSearchTerm !== "";
+  const hasActiveFilters = Object.values(filters).some(value => value !== "") || searchTerm !== "";
 
   const handleOrderArticle = (article: Article) => {
     const principalFournisseur = getPrincipalFournisseur(article);
