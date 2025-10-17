@@ -275,7 +275,9 @@ export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedAr
                 <SelectValue placeholder="Sélectionner un article" />
               </SelectTrigger>
               <SelectContent>
-                {articles.map((article) => (
+                {articles
+                  .filter(article => article.stock > 0) // Ne montrer que les articles avec du stock
+                  .map((article) => (
                   <SelectItem key={article.id} value={article.id}>
                     {article.reference} - {article.designation} (Stock: {article.stock})
                   </SelectItem>

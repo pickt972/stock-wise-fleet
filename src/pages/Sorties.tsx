@@ -172,7 +172,25 @@ export default function Sorties() {
 
     // Vérifier le stock disponible
     const selectedArticle = articles.find(a => a.id === formData.articleId);
-    if (selectedArticle && selectedArticle.stock < formData.quantity) {
+    if (!selectedArticle) {
+      toast({
+        title: "Erreur",
+        description: "Article non trouvé",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (selectedArticle.stock <= 0) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de sortir un article en rupture de stock",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (selectedArticle.stock < formData.quantity) {
       toast({
         title: "Erreur",
         description: `Stock insuffisant. Stock disponible: ${selectedArticle.stock}`,
@@ -293,7 +311,9 @@ export default function Sorties() {
                       <SelectValue placeholder="Sélectionner un article" />
                     </SelectTrigger>
                     <SelectContent>
-                      {articles.map((article) => (
+                      {articles
+                        .filter(article => article.stock > 0) // Filtrer les articles en rupture
+                        .map((article) => (
                         <SelectItem key={article.id} value={article.id}>
                           {article.reference} - {article.designation} (Stock: {article.stock})
                         </SelectItem>

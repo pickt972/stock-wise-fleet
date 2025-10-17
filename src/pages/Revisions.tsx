@@ -376,19 +376,35 @@ export default function Revisions() {
     mutationFn: async () => {
       if (!user) throw new Error("Utilisateur non connecté");
 
-      const mouvements = Array.from(selectedArticles).map(articleId => {
+      // Vérifier le stock disponible pour chaque article AVANT la sortie
+      const articlesAvecStock = [];
+      for (const articleId of selectedArticles) {
         const article = articlesCompatibles.find(a => a.id === articleId);
         const quantity = articleQuantities[articleId] || 1;
         
-        return {
-          article_id: articleId,
-          type: 'sortie',
-          motif: 'révision',
-          quantity: -quantity, // Négatif pour une sortie
-          user_id: user.id,
-          vehicule_id: selectedGroup?.vehicules[0]?.id || null
-        };
-      });
+        if (!article) {
+          throw new Error(`Article non trouvé: ${articleId}`);
+        }
+        
+        if (article.stock <= 0) {
+          throw new Error(`L'article "${article.designation}" est en rupture de stock`);
+        }
+        
+        if (article.stock < quantity) {
+          throw new Error(`Stock insuffisant pour "${article.designation}". Stock disponible: ${article.stock}, demandé: ${quantity}`);
+        }
+        
+        articlesAvecStock.push({ articleId, article, quantity });
+      }
+
+      const mouvements = articlesAvecStock.map(({ articleId, quantity }) => ({
+        article_id: articleId,
+        type: 'sortie',
+        motif: 'révision',
+        quantity: -quantity, // Négatif pour une sortie
+        user_id: user.id,
+        vehicule_id: selectedGroup?.vehicules[0]?.id || null
+      }));
 
       // Créer les mouvements de stock
       const { error } = await supabase
@@ -398,8 +414,7 @@ export default function Revisions() {
       if (error) throw error;
 
       // Mettre à jour le stock des articles
-      for (const articleId of selectedArticles) {
-        const quantity = articleQuantities[articleId] || 1;
+      for (const { articleId, quantity } of articlesAvecStock) {
         await supabase.rpc('update_article_stock', {
           article_id: articleId,
           quantity_change: -quantity
