@@ -412,6 +412,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
           <ArticleEmplacementsList 
             articleReference={article.reference}
             articleDesignation={article.designation}
+            articleId={article.id}
           />
 
           <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t">

@@ -17,9 +17,10 @@ interface ArticleEmplacement {
 interface ArticleEmplacementsListProps {
   articleReference: string;
   articleDesignation: string;
+  articleId?: string;
 }
 
-export function ArticleEmplacementsList({ articleReference, articleDesignation }: ArticleEmplacementsListProps) {
+export function ArticleEmplacementsList({ articleReference, articleDesignation, articleId }: ArticleEmplacementsListProps) {
   const [emplacements, setEmplacements] = useState<ArticleEmplacement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { getColorForText } = useColorPreferences();
@@ -121,7 +122,10 @@ export function ArticleEmplacementsList({ articleReference, articleDesignation }
               {articleDesignation} - Total: {totalStock} unité(s)
             </CardDescription>
           </div>
-          <TransfertEmplacementDialog onTransfertCompleted={fetchArticleEmplacements} />
+          <TransfertEmplacementDialog 
+            onTransfertCompleted={fetchArticleEmplacements} 
+            preselectedArticleId={articleId}
+          />
         </div>
       </CardHeader>
       <CardContent className="space-y-3 overflow-x-hidden">

@@ -28,9 +28,10 @@ interface Emplacement {
 
 interface TransfertEmplacementDialogProps {
   onTransfertCompleted?: () => void;
+  preselectedArticleId?: string;
 }
 
-export function TransfertEmplacementDialog({ onTransfertCompleted }: TransfertEmplacementDialogProps) {
+export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedArticleId }: TransfertEmplacementDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [articles, setArticles] = useState<Article[]>([]);
@@ -48,8 +49,11 @@ export function TransfertEmplacementDialog({ onTransfertCompleted }: TransfertEm
     if (isOpen) {
       fetchArticles();
       fetchEmplacements();
+      if (preselectedArticleId) {
+        setFormData(prev => ({ ...prev, articleId: preselectedArticleId }));
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, preselectedArticleId]);
 
   const fetchArticles = async () => {
     try {
