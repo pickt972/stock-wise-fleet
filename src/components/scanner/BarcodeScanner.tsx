@@ -119,7 +119,12 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
         }, 100);
       }
 
-      if (error && !(error.name === "NotFoundException")) {
+      if (error) {
+        const msg = (error as any)?.message || '';
+        if (error.name === "NotFoundException" || msg.includes("No MultiFormat Readers")) {
+          // erreurs de décodage transitoires: on ignore pour éviter le spam console
+          return;
+        }
         console.error("Erreur de scan:", error);
       }
     };

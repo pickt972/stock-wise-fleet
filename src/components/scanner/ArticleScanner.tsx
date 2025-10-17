@@ -28,6 +28,7 @@ export function ArticleScanner({ onArticleFound }: ArticleScannerProps) {
   const [showScanner, setShowScanner] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [foundArticle, setFoundArticle] = useState<Article | null>(null);
+  const [suggestions, setSuggestions] = useState<Article[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const { toast } = useToast();
 
@@ -36,11 +37,17 @@ export function ArticleScanner({ onArticleFound }: ArticleScannerProps) {
 
     setIsSearching(true);
     try {
-      // Chercher par référence OU par code-barres
+      // Normaliser l'entrée
+      const raw = reference.trim();
+      const numeric = raw.replace(/\D/g, '');
+      const isNumeric = numeric.length > 0 && /\d+/.test(numeric);
+      const q = isNumeric ? numeric : raw;
+
+      // Chercher par référence OU par code-barres (exact)
       const { data, error } = await supabase
         .from('articles')
         .select('*')
-        .or(`reference.eq.${reference.trim()},code_barre.eq.${reference.trim()}`)
+        .or(`reference.eq.${q},code_barre.eq.${q}`)
         .maybeSingle();
 
       if (error) {
@@ -57,7 +64,7 @@ export function ArticleScanner({ onArticleFound }: ArticleScannerProps) {
         }
       } else if (!data) {
         // Aucun résultat exact -> tenter des solutions de repli
-        const q = reference.trim();
+        // q normalisé défini plus haut
 
         // 1) Correspondance partielle sur reference/code_barre (gestion des écarts de clé EAN)
         const likeKey = q.length > 8 ? q.slice(0, q.length - 1) : q;
