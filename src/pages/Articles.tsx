@@ -45,6 +45,7 @@ import { CreateArticleDialog } from "@/components/articles/CreateArticleDialog";
 import { EditArticleDialog } from "@/components/articles/EditArticleDialog";
 import { ArticleScanner } from "@/components/scanner/ArticleScanner";
 import { ArticleFournisseursManagement } from "@/components/articles/ArticleFournisseursManagement";
+import { TransfertEmplacementDialog } from "@/components/transferts/TransfertEmplacementDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useColorPreferences } from "@/hooks/useColorPreferences";
@@ -452,7 +453,10 @@ export default function Articles() {
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">Articles</h1>
           <p className="text-sm lg:text-base text-muted-foreground">Gérez votre inventaire d'articles</p>
         </div>
-        <CreateArticleDialog onArticleCreated={handleArticleCreated} />
+        <div className="flex gap-2 flex-wrap">
+          <TransfertEmplacementDialog onTransfertCompleted={fetchArticles} />
+          <CreateArticleDialog onArticleCreated={handleArticleCreated} />
+        </div>
       </div>
 
       <Card className="p-4 bg-primary/5 border-primary/20">
