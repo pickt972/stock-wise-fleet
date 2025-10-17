@@ -37,23 +37,24 @@ export function ArticleScanner({ onArticleFound }: ArticleScannerProps) {
 
   const searchArticle = async (reference: string) => {
     if (!reference.trim()) return;
-    // Normaliser l'entrée et dédoublonner les recherches rapprochées
+    
+    // Normaliser l'entrée
     const raw = reference.trim();
     const numeric = raw.replace(/\D/g, '');
-    const isNumeric = numeric.length > 0 && /\d+/.test(numeric);
-    const q = isNumeric ? numeric : raw;
+    const q = numeric.length >= 8 ? numeric : raw;
 
+    // Éviter les recherches en double rapprochées
     const now = Date.now();
-    if (q === lastQueryRef.current && now - lastSearchAtRef.current < 2500) {
-      return; // éviter les requêtes et toasts répétés pour la même valeur
+    if (q === lastQueryRef.current && now - lastSearchAtRef.current < 2000) {
+      console.log("Recherche ignorée (doublon):", q);
+      return;
     }
     lastQueryRef.current = q;
     lastSearchAtRef.current = now;
 
     setIsSearching(true);
     try {
-
-      // Chercher par référence OU par code-barres (exact)
+      // Recherche exacte
       const { data, error } = await supabase
         .from('articles')
         .select('*')
@@ -61,109 +62,52 @@ export function ArticleScanner({ onArticleFound }: ArticleScannerProps) {
         .maybeSingle();
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          // Plusieurs lignes retournées quand un objet unique est attendu
-          toast({
-            title: "Plusieurs résultats",
-            description: `Plusieurs articles correspondent à "${reference}". Affinez la recherche.`,
-            variant: "destructive",
-          });
-          setFoundArticle(null);
-        } else {
-          throw error;
-        }
-      } else if (!data) {
-        // Aucun résultat exact -> tenter des solutions de repli
-        // q normalisé défini plus haut
+        throw error;
+      }
 
-        // 1) Correspondance partielle sur reference/code_barre (gestion des écarts de clé EAN)
-        const likeKey = q.length > 8 ? q.slice(0, q.length - 1) : q;
-        const { data: partials, error: partialErr } = await supabase
-          .from('articles')
-          .select('*')
-          .or(`reference.ilike.%${likeKey}%,code_barre.ilike.%${likeKey}%`)
-          .limit(5);
-
-        if (partialErr) {
-          throw partialErr;
-        }
-
-        if (partials && partials.length > 0) {
-          const first = partials[0];
-          setFoundArticle(first);
-          onArticleFound?.(first);
-          toast({
-            title: "Correspondance partielle",
-            description: `${first.designation} - ${first.marque}`,
-          });
-        } else {
-          // 2) Recherche via la référence fournisseur
-          const { data: af, error: afErr } = await supabase
-            .from('article_fournisseurs')
-            .select('article_id')
-            .eq('reference_fournisseur', q)
-            .limit(1);
-
-          if (afErr) {
-            throw afErr;
-          }
-
-          if (af && af.length > 0 && af[0].article_id) {
-            const { data: artById, error: artErr } = await supabase
-              .from('articles')
-              .select('*')
-              .eq('id', af[0].article_id)
-              .maybeSingle();
-
-            if (artErr) {
-              throw artErr;
-            }
-
-            if (artById) {
-              setFoundArticle(artById);
-              onArticleFound?.(artById);
-              toast({
-                title: "Article trouvé (réf. fournisseur)",
-                description: `${artById.designation} - ${artById.marque}`,
-              });
-            } else {
-              const now2 = Date.now();
-              if (now2 - notFoundToastAtRef.current > 2500) {
-                toast({
-                  title: "Article non trouvé",
-                  description: `Aucun article trouvé avec: ${q}`,
-                  variant: "destructive",
-                });
-                notFoundToastAtRef.current = now2;
-              }
-              setFoundArticle(null);
-            }
-          } else {
-            const now3 = Date.now();
-            if (now3 - notFoundToastAtRef.current > 2500) {
-              toast({
-                title: "Article non trouvé",
-                description: `Aucun article trouvé avec: ${q}`,
-                variant: "destructive",
-              });
-              notFoundToastAtRef.current = now3;
-            }
-            setFoundArticle(null);
-          }
-        }
-      } else {
+      if (data) {
+        // Trouvé!
         setFoundArticle(data);
         onArticleFound?.(data);
         toast({
-          title: "Article trouvé !",
+          title: "Article trouvé",
           description: `${data.designation} - ${data.marque}`,
         });
+      } else {
+        // Recherche partielle
+        const likeKey = q.length > 8 ? q.slice(0, -1) : q;
+        const { data: partials } = await supabase
+          .from('articles')
+          .select('*')
+          .or(`reference.ilike.%${likeKey}%,code_barre.ilike.%${likeKey}%`)
+          .limit(3);
+
+        if (partials && partials.length > 0) {
+          setFoundArticle(partials[0]);
+          onArticleFound?.(partials[0]);
+          toast({
+            title: "Correspondance partielle",
+            description: `${partials[0].designation} - ${partials[0].marque}`,
+          });
+        } else {
+          // Pas trouvé
+          const now2 = Date.now();
+          if (now2 - notFoundToastAtRef.current > 3000) {
+            toast({
+              title: "Article non trouvé",
+              description: `Code: ${q}`,
+              variant: "destructive",
+            });
+            notFoundToastAtRef.current = now2;
+          }
+          setFoundArticle(null);
+        }
       }
     } catch (error: any) {
-      console.error('Erreur lors de la recherche:', error);
+      console.error('Erreur recherche:', error);
       toast({
         title: "Erreur",
-        description: "Erreur lors de la recherche de l'article",
+        description: "Erreur lors de la recherche",
         variant: "destructive",
       });
     } finally {
@@ -206,7 +150,7 @@ export function ArticleScanner({ onArticleFound }: ArticleScannerProps) {
             <Input
               placeholder="Référence de l'article ou scanner..."
               value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); lastQueryRef.current = ""; }}
+              onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
