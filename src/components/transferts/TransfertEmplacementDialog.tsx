@@ -32,7 +32,7 @@ interface TransfertEmplacementDialogProps {
 }
 
 export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedArticleId }: TransfertEmplacementDialogProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(!!preselectedArticleId);
   const [isCreating, setIsCreating] = useState(false);
   const [articles, setArticles] = useState<Article[]>([]);
   const [emplacements, setEmplacements] = useState<Emplacement[]>([]);
@@ -44,6 +44,12 @@ export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedAr
 
   const { toast } = useToast();
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (preselectedArticleId) {
+      setIsOpen(true);
+    }
+  }, [preselectedArticleId]);
 
   useEffect(() => {
     if (isOpen) {
