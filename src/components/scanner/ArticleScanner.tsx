@@ -105,8 +105,8 @@ export function ArticleScanner({ onArticleFound }: ArticleScannerProps) {
         } else {
           // Pas trouvé
           const now2 = Date.now();
-          if (now2 - notFoundToastAtRef.current > 3000) {
-            toast({
+          if (now2 - notFoundToastAtRef.current > 4000) {
+            maybeToast(`nf:${q}` ,{
               title: "Article non trouvé",
               description: `Code: ${q}`,
               variant: "destructive",
