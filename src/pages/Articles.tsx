@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Search, Filter, Edit, Trash2, AlertTriangle, X, Layers, ShoppingCart } from "lucide-react";
+import { Search, Filter, Edit, Trash2, AlertTriangle, X, Layers, ShoppingCart, ArrowLeftRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { CompactSortControls } from "@/components/ui/compact-sort-controls";
@@ -97,7 +97,9 @@ export default function Articles() {
   const [selectedArticleForEdit, setSelectedArticleForEdit] = useState<Article | null>(null);
   const [selectedArticleForFournisseurs, setSelectedArticleForFournisseurs] = useState<Article | null>(null);
   const [selectedArticleForOrder, setSelectedArticleForOrder] = useState<Article | null>(null);
+  const [selectedArticleForTransfert, setSelectedArticleForTransfert] = useState<Article | null>(null);
   const [showFournisseurDialog, setShowFournisseurDialog] = useState(false);
+  const [showTransfertDialog, setShowTransfertDialog] = useState(false);
   const [fournisseurs, setFournisseurs] = useState<Array<{ id: string; nom: string }>>([]);
   const [selectedFournisseurForOrder, setSelectedFournisseurForOrder] = useState<string>("");
   
@@ -678,6 +680,18 @@ export default function Articles() {
                         <ShoppingCart className="h-4 w-4" />
                       </Button>
                       
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-9 w-9 p-0"
+                        onClick={() => {
+                          setSelectedArticleForTransfert(article);
+                          setShowTransfertDialog(true);
+                        }}
+                      >
+                        <ArrowLeftRight className="h-4 w-4" />
+                      </Button>
+                      
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button 
@@ -849,27 +863,49 @@ export default function Articles() {
                           </div>
                         </TableCell>
                       <TableCell className="text-right">
-                         <div className="flex justify-end gap-1">
-                           <TooltipProvider>
-                             <Tooltip>
-                               <TooltipTrigger asChild>
-                                 <Button 
-                                   variant="ghost" 
-                                   size="sm" 
-                                   className="h-8 w-8 p-0"
-                                   onClick={() => handleOrderArticle(article)}
-                                   aria-label="Commander l'article"
-                                 >
-                                   <ShoppingCart className="h-3 w-3 md:h-4 md:w-4" />
-                                 </Button>
-                               </TooltipTrigger>
-                               <TooltipContent>
-                                 <p>Commander l'article</p>
-                               </TooltipContent>
-                             </Tooltip>
-                           </TooltipProvider>
-                           
-                           <Dialog>
+                          <div className="flex justify-end gap-1">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => handleOrderArticle(article)}
+                                    aria-label="Commander l'article"
+                                  >
+                                    <ShoppingCart className="h-3 w-3 md:h-4 md:w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Commander l'article</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => {
+                                      setSelectedArticleForTransfert(article);
+                                      setShowTransfertDialog(true);
+                                    }}
+                                    aria-label="Transférer l'article"
+                                  >
+                                    <ArrowLeftRight className="h-3 w-3 md:h-4 md:w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Transférer l'article</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            
+                            <Dialog>
                              <DialogTrigger asChild>
                                <TooltipProvider>
                                  <Tooltip>
@@ -984,6 +1020,19 @@ export default function Articles() {
             fetchArticles();
             setSelectedArticleForEdit(null);
           }} 
+        />
+      )}
+
+      {/* Dialog de transfert d'article */}
+      {selectedArticleForTransfert && showTransfertDialog && (
+        <TransfertEmplacementDialog 
+          key={selectedArticleForTransfert.id}
+          onTransfertCompleted={() => {
+            fetchArticles();
+            setShowTransfertDialog(false);
+            setSelectedArticleForTransfert(null);
+          }}
+          preselectedArticleId={selectedArticleForTransfert.id}
         />
       )}
 
