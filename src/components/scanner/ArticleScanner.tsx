@@ -56,13 +56,76 @@ export function ArticleScanner({ onArticleFound }: ArticleScannerProps) {
           throw error;
         }
       } else if (!data) {
-        // Aucun résultat trouvé avec maybeSingle -> data === null et pas d'erreur
-        toast({
-          title: "Article non trouvé",
-          description: `Aucun article trouvé avec: ${reference}`,
-          variant: "destructive",
-        });
-        setFoundArticle(null);
+        // Aucun résultat exact -> tenter des solutions de repli
+        const q = reference.trim();
+
+        // 1) Correspondance partielle sur reference/code_barre (gestion des écarts de clé EAN)
+        const likeKey = q.length > 8 ? q.slice(0, q.length - 1) : q;
+        const { data: partials, error: partialErr } = await supabase
+          .from('articles')
+          .select('*')
+          .or(`reference.ilike.%${likeKey}%,code_barre.ilike.%${likeKey}%`)
+          .limit(5);
+
+        if (partialErr) {
+          throw partialErr;
+        }
+
+        if (partials && partials.length > 0) {
+          const first = partials[0];
+          setFoundArticle(first);
+          onArticleFound?.(first);
+          toast({
+            title: "Correspondance partielle",
+            description: `${first.designation} - ${first.marque}`,
+          });
+        } else {
+          // 2) Recherche via la référence fournisseur
+          const { data: af, error: afErr } = await supabase
+            .from('article_fournisseurs')
+            .select('article_id')
+            .eq('reference_fournisseur', q)
+            .limit(1);
+
+          if (afErr) {
+            throw afErr;
+          }
+
+          if (af && af.length > 0 && af[0].article_id) {
+            const { data: artById, error: artErr } = await supabase
+              .from('articles')
+              .select('*')
+              .eq('id', af[0].article_id)
+              .maybeSingle();
+
+            if (artErr) {
+              throw artErr;
+            }
+
+            if (artById) {
+              setFoundArticle(artById);
+              onArticleFound?.(artById);
+              toast({
+                title: "Article trouvé (réf. fournisseur)",
+                description: `${artById.designation} - ${artById.marque}`,
+              });
+            } else {
+              toast({
+                title: "Article non trouvé",
+                description: `Aucun article trouvé avec: ${q}`,
+                variant: "destructive",
+              });
+              setFoundArticle(null);
+            }
+          } else {
+            toast({
+              title: "Article non trouvé",
+              description: `Aucun article trouvé avec: ${q}`,
+              variant: "destructive",
+            });
+            setFoundArticle(null);
+          }
+        }
       } else {
         setFoundArticle(data);
         onArticleFound?.(data);
