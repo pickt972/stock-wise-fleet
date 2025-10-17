@@ -22,7 +22,8 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
   const [lastScanResult, setLastScanResult] = useState<string>("");
-  const [isProcessing, setIsProcessing] = useState(false);
+  const isProcessingRef = useRef(false);
+  const lastScanResultRef = useRef<string>("");
   const [torchEnabled, setTorchEnabled] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hasTorch, setHasTorch] = useState(false);
@@ -93,36 +94,36 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
     if (!videoRef.current) return;
 
     const handleResult = (result: Result | null, error?: Error) => {
-      if (result && !isProcessing) {
+      if (result) {
         const scannedText = result.getText();
-        
-        if (scannedText === lastScanResult) {
+        // Ignore duplicate consecutive results
+        if (scannedText === lastScanResultRef.current) {
           return;
         }
-        
-        setIsProcessing(true);
+        if (isProcessingRef.current) {
+          return;
+        }
+        isProcessingRef.current = true;
+        lastScanResultRef.current = scannedText;
         setLastScanResult(scannedText);
-        
-        // Vibration haptique si disponible
+
         if ('vibrate' in navigator) {
           navigator.vibrate([100, 50, 100]);
         }
-        
-        // Feedback sonore
         playBeep();
-        
         stopScanning();
-        
         setTimeout(() => {
-          onScanResult(scannedText);
-          setIsProcessing(false);
+          try {
+            onScanResult(scannedText);
+          } finally {
+            isProcessingRef.current = false;
+          }
         }, 100);
       }
 
       if (error) {
         const msg = (error as any)?.message || '';
         if (error.name === "NotFoundException" || msg.includes("No MultiFormat Readers")) {
-          // erreurs de décodage transitoires: on ignore pour éviter le spam console
           return;
         }
         console.error("Erreur de scan:", error);
@@ -193,6 +194,14 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
       scannerControls?.stop();
     } catch (e) {
       // ignore
+    }
+    // Stop any remaining video tracks as extra safety
+    const stream = videoRef.current?.srcObject as MediaStream | undefined;
+    if (stream) {
+      stream.getTracks().forEach((t) => t.stop());
+      if (videoRef.current) {
+        (videoRef.current as any).srcObject = null;
+      }
     }
     setScannerControls(null);
     setIsScanning(false);
