@@ -29,10 +29,17 @@ interface Emplacement {
 interface TransfertEmplacementDialogProps {
   onTransfertCompleted?: () => void;
   preselectedArticleId?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedArticleId }: TransfertEmplacementDialogProps) {
-  const [isOpen, setIsOpen] = useState(!!preselectedArticleId);
+export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedArticleId, open, onOpenChange }: TransfertEmplacementDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(!!preselectedArticleId);
+  const isDialogOpen = open !== undefined ? open : internalOpen;
+  const handleOpenChange = (value: boolean) => {
+    if (onOpenChange) onOpenChange(value);
+    else setInternalOpen(value);
+  };
   const [isCreating, setIsCreating] = useState(false);
   const [articles, setArticles] = useState<Article[]>([]);
   const [emplacements, setEmplacements] = useState<Emplacement[]>([]);
@@ -47,19 +54,19 @@ export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedAr
 
   useEffect(() => {
     if (preselectedArticleId) {
-      setIsOpen(true);
+      handleOpenChange(true);
     }
   }, [preselectedArticleId]);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isDialogOpen) {
       fetchArticles();
       fetchEmplacements();
       if (preselectedArticleId) {
         setFormData(prev => ({ ...prev, articleId: preselectedArticleId }));
       }
     }
-  }, [isOpen, preselectedArticleId]);
+  }, [isDialogOpen, preselectedArticleId]);
 
   const fetchArticles = async () => {
     try {
@@ -233,7 +240,7 @@ export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedAr
         emplacementDestinationId: "",
       });
 
-      setIsOpen(false);
+      handleOpenChange(false);
       onTransfertCompleted?.();
     } catch (error: any) {
       toast({
@@ -249,7 +256,7 @@ export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedAr
   const selectedArticle = articles.find(a => a.id === formData.articleId);
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline" className="bg-background hover:bg-accent flex-shrink-0 px-3 h-9 text-sm whitespace-nowrap">
           <ArrowLeftRight className="mr-2 h-4 w-4" />
@@ -331,7 +338,7 @@ export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedAr
             <Button
               type="button"
               variant="outline"
-              onClick={() => setIsOpen(false)}
+              onClick={() => handleOpenChange(false)}
               className="w-full sm:w-auto"
             >
               Annuler

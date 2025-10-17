@@ -1024,17 +1024,19 @@ export default function Articles() {
       )}
 
       {/* Dialog de transfert d'article */}
-      {selectedArticleForTransfert && showTransfertDialog && (
-        <TransfertEmplacementDialog 
-          key={selectedArticleForTransfert.id}
-          onTransfertCompleted={() => {
-            fetchArticles();
-            setShowTransfertDialog(false);
-            setSelectedArticleForTransfert(null);
-          }}
-          preselectedArticleId={selectedArticleForTransfert.id}
-        />
-      )}
+      <TransfertEmplacementDialog 
+        open={showTransfertDialog}
+        onOpenChange={(open) => {
+          setShowTransfertDialog(open);
+          if (!open) setSelectedArticleForTransfert(null);
+        }}
+        onTransfertCompleted={() => {
+          fetchArticles();
+          setShowTransfertDialog(false);
+          setSelectedArticleForTransfert(null);
+        }}
+        preselectedArticleId={selectedArticleForTransfert?.id}
+      />
 
       {/* Dialog de sélection de fournisseur pour commander */}
       <Dialog open={showFournisseurDialog} onOpenChange={setShowFournisseurDialog}>
