@@ -45,15 +45,24 @@ export function ArticleScanner({ onArticleFound }: ArticleScannerProps) {
 
       if (error) {
         if (error.code === 'PGRST116') {
+          // Plusieurs lignes retournées quand un objet unique est attendu
           toast({
-            title: "Article non trouvé",
-            description: `Aucun article trouvé avec la référence: ${reference}`,
+            title: "Plusieurs résultats",
+            description: `Plusieurs articles correspondent à "${reference}". Affinez la recherche.`,
             variant: "destructive",
           });
           setFoundArticle(null);
         } else {
           throw error;
         }
+      } else if (!data) {
+        // Aucun résultat trouvé avec maybeSingle -> data === null et pas d'erreur
+        toast({
+          title: "Article non trouvé",
+          description: `Aucun article trouvé avec: ${reference}`,
+          variant: "destructive",
+        });
+        setFoundArticle(null);
       } else {
         setFoundArticle(data);
         onArticleFound?.(data);
