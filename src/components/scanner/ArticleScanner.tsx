@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { QrCode, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,17 +31,27 @@ export function ArticleScanner({ onArticleFound }: ArticleScannerProps) {
   const [suggestions, setSuggestions] = useState<Article[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const { toast } = useToast();
+  const lastQueryRef = useRef<string>("");
+  const lastSearchAtRef = useRef<number>(0);
+  const notFoundToastAtRef = useRef<number>(0);
 
   const searchArticle = async (reference: string) => {
     if (!reference.trim()) return;
+    // Normaliser l'entrée et dédoublonner les recherches rapprochées
+    const raw = reference.trim();
+    const numeric = raw.replace(/\D/g, '');
+    const isNumeric = numeric.length > 0 && /\d+/.test(numeric);
+    const q = isNumeric ? numeric : raw;
+
+    const now = Date.now();
+    if (q === lastQueryRef.current && now - lastSearchAtRef.current < 2500) {
+      return; // éviter les requêtes et toasts répétés pour la même valeur
+    }
+    lastQueryRef.current = q;
+    lastSearchAtRef.current = now;
 
     setIsSearching(true);
     try {
-      // Normaliser l'entrée
-      const raw = reference.trim();
-      const numeric = raw.replace(/\D/g, '');
-      const isNumeric = numeric.length > 0 && /\d+/.test(numeric);
-      const q = isNumeric ? numeric : raw;
 
       // Chercher par référence OU par code-barres (exact)
       const { data, error } = await supabase
@@ -117,19 +127,27 @@ export function ArticleScanner({ onArticleFound }: ArticleScannerProps) {
                 description: `${artById.designation} - ${artById.marque}`,
               });
             } else {
+              const now2 = Date.now();
+              if (now2 - notFoundToastAtRef.current > 2500) {
+                toast({
+                  title: "Article non trouvé",
+                  description: `Aucun article trouvé avec: ${q}`,
+                  variant: "destructive",
+                });
+                notFoundToastAtRef.current = now2;
+              }
+              setFoundArticle(null);
+            }
+          } else {
+            const now3 = Date.now();
+            if (now3 - notFoundToastAtRef.current > 2500) {
               toast({
                 title: "Article non trouvé",
                 description: `Aucun article trouvé avec: ${q}`,
                 variant: "destructive",
               });
-              setFoundArticle(null);
+              notFoundToastAtRef.current = now3;
             }
-          } else {
-            toast({
-              title: "Article non trouvé",
-              description: `Aucun article trouvé avec: ${q}`,
-              variant: "destructive",
-            });
             setFoundArticle(null);
           }
         }
@@ -164,6 +182,7 @@ export function ArticleScanner({ onArticleFound }: ArticleScannerProps) {
   };
 
   const handleSearch = () => {
+    if (isSearching) return;
     searchArticle(searchQuery);
   };
 
@@ -187,8 +206,13 @@ export function ArticleScanner({ onArticleFound }: ArticleScannerProps) {
             <Input
               placeholder="Référence de l'article ou scanner..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              onChange={(e) => { setSearchQuery(e.target.value); lastQueryRef.current = ""; }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (!isSearching) handleSearch();
+                }
+              }}
               className="flex-1"
             />
             <Button
