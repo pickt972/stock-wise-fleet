@@ -34,6 +34,19 @@ export function ArticleScanner({ onArticleFound }: ArticleScannerProps) {
   const lastQueryRef = useRef<string>("");
   const lastSearchAtRef = useRef<number>(0);
   const notFoundToastAtRef = useRef<number>(0);
+  const lastToastKeyRef = useRef<string | null>(null);
+  const lastToastAtRef = useRef<number>(0);
+
+  const maybeToast = (
+    key: string,
+    opts: { title: string; description?: string; variant?: "default" | "destructive" }
+  ) => {
+    const now = Date.now();
+    if (lastToastKeyRef.current === key && now - lastToastAtRef.current < 2500) return;
+    lastToastKeyRef.current = key;
+    lastToastAtRef.current = now;
+    toast(opts);
+  };
 
   const searchArticle = async (reference: string) => {
     if (!reference.trim()) return;
@@ -69,7 +82,7 @@ export function ArticleScanner({ onArticleFound }: ArticleScannerProps) {
         // Trouvé!
         setFoundArticle(data);
         onArticleFound?.(data);
-        toast({
+        maybeToast(`found:${data.id}`, {
           title: "Article trouvé",
           description: `${data.designation} - ${data.marque}`,
         });
@@ -85,7 +98,7 @@ export function ArticleScanner({ onArticleFound }: ArticleScannerProps) {
         if (partials && partials.length > 0) {
           setFoundArticle(partials[0]);
           onArticleFound?.(partials[0]);
-          toast({
+          maybeToast(`partial:${partials[0].id}`,{
             title: "Correspondance partielle",
             description: `${partials[0].designation} - ${partials[0].marque}`,
           });
