@@ -36,13 +36,14 @@ export function ArticleScanner({ onArticleFound }: ArticleScannerProps) {
   const notFoundToastAtRef = useRef<number>(0);
   const lastToastKeyRef = useRef<string | null>(null);
   const lastToastAtRef = useRef<number>(0);
+  const processingScanRef = useRef<boolean>(false);
 
   const maybeToast = (
     key: string,
     opts: { title: string; description?: string; variant?: "default" | "destructive" }
   ) => {
     const now = Date.now();
-    if (lastToastKeyRef.current === key && now - lastToastAtRef.current < 2500) return;
+    if (lastToastKeyRef.current === key && now - lastToastAtRef.current < 5000) return;
     lastToastKeyRef.current = key;
     lastToastAtRef.current = now;
     toast(opts);
@@ -105,8 +106,8 @@ export function ArticleScanner({ onArticleFound }: ArticleScannerProps) {
         } else {
           // Pas trouvé
           const now2 = Date.now();
-          if (now2 - notFoundToastAtRef.current > 4000) {
-            maybeToast(`nf:${q}` ,{
+          if (now2 - notFoundToastAtRef.current > 5000) {
+            maybeToast('nf-global' ,{
               title: "Article non trouvé",
               description: `Code: ${q}`,
               variant: "destructive",
@@ -129,12 +130,16 @@ export function ArticleScanner({ onArticleFound }: ArticleScannerProps) {
   };
 
   const handleScanResult = (scannedCode: string) => {
+    if (processingScanRef.current || isSearching) return;
+    processingScanRef.current = true;
     setShowScanner(false);
     setSearchQuery(scannedCode);
     
     // Délai pour laisser le scanner se fermer proprement
     setTimeout(() => {
-      searchArticle(scannedCode);
+      searchArticle(scannedCode).finally(() => {
+        processingScanRef.current = false;
+      });
     }, 200);
   };
 
