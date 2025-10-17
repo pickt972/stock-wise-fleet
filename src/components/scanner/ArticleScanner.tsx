@@ -36,11 +36,12 @@ export function ArticleScanner({ onArticleFound }: ArticleScannerProps) {
 
     setIsSearching(true);
     try {
+      // Chercher par référence OU par code-barres
       const { data, error } = await supabase
         .from('articles')
         .select('*')
-        .eq('reference', reference.trim())
-        .single();
+        .or(`reference.eq.${reference.trim()},code_barre.eq.${reference.trim()}`)
+        .maybeSingle();
 
       if (error) {
         if (error.code === 'PGRST116') {
