@@ -199,6 +199,11 @@ export default function Articles() {
 
   const handleDeleteArticle = async (articleId: string) => {
     try {
+      // Supprimer d'abord les dépendances
+      await supabase.from('article_fournisseurs').delete().eq('article_id', articleId);
+      await supabase.from('article_vehicules').delete().eq('article_id', articleId);
+      
+      // Supprimer l'article
       const { error } = await supabase
         .from('articles')
         .delete()
@@ -213,9 +218,10 @@ export default function Articles() {
       
       fetchArticles();
     } catch (error: any) {
+      console.error('Erreur de suppression:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de supprimer l'article",
+        description: error.message || "Impossible de supprimer l'article. Il est peut-être référencé dans des commandes ou mouvements de stock.",
         variant: "destructive",
       });
     } finally {
