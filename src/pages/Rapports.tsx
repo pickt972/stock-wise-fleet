@@ -399,8 +399,8 @@ export default function Rapports() {
             size="sm"
             className="w-full sm:w-auto"
           >
-            <Package className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Stock</span>
+            <Package className="h-4 w-4 mr-2" />
+            Stock
           </Button>
           <Button
             variant={selectedReport === "movements" ? "default" : "outline"}
@@ -408,8 +408,8 @@ export default function Rapports() {
             size="sm"
             className="w-full sm:w-auto"
           >
-            <TrendingUp className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Mouvements</span>
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Mouvements
           </Button>
           <Button
             variant={selectedReport === "commandes" ? "default" : "outline"}
@@ -417,8 +417,8 @@ export default function Rapports() {
             size="sm"
             className="w-full sm:w-auto"
           >
-            <FileText className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Commandes</span>
+            <FileText className="h-4 w-4 mr-2" />
+            Commandes
           </Button>
           <Button
             variant={selectedReport === "anomalies" ? "default" : "outline"}
@@ -426,8 +426,8 @@ export default function Rapports() {
             size="sm"
             className="w-full sm:w-auto"
           >
-            <AlertTriangle className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Anomalies</span>
+            <AlertTriangle className="h-4 w-4 mr-2" />
+            Anomalies
           </Button>
           <Button
             variant={selectedReport === "charts" ? "default" : "outline"}
@@ -435,8 +435,8 @@ export default function Rapports() {
             size="sm"
             className="w-full sm:w-auto"
           >
-            <LineChart className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Graphiques</span>
+            <LineChart className="h-4 w-4 mr-2" />
+            Graphiques
           </Button>
           <Button
             variant={selectedReport === "historique" ? "default" : "outline"}
@@ -444,8 +444,8 @@ export default function Rapports() {
             size="sm"
             className="w-full sm:w-auto"
           >
-            <History className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Historique</span>
+            <History className="h-4 w-4 mr-2" />
+            Historique
           </Button>
         </div>
 
