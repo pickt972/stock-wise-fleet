@@ -20,6 +20,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
 import { CreateFournisseurDialog } from "@/components/fournisseurs/CreateFournisseurDialog";
 import { CreateCategorieDialog } from "@/components/categories/CreateCategorieDialog";
@@ -40,6 +41,7 @@ export function CreateArticleDialog({
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange 
 }: CreateArticleDialogProps) {
+  const { isAdmin } = useRoleAccess();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = controlledOnOpenChange ?? setInternalOpen;
@@ -570,7 +572,14 @@ const articleSchema = z.object({
                 value={formData.stock}
                 onChange={(e) => setFormData(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
                 onFocus={(e) => e.target.select()}
+                disabled={!isAdmin()}
+                className={!isAdmin() ? 'bg-muted cursor-not-allowed' : ''}
               />
+              {!isAdmin() && (
+                <p className="text-xs text-muted-foreground">
+                  Réservé aux administrateurs
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="stockMin">Stock minimum</Label>

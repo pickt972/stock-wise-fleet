@@ -21,6 +21,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Edit } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useRoleAccess } from "@/hooks/useRoleAccess";
 import ArticleVehicleCompatibility from "./ArticleVehicleCompatibility";
 import { ArticleEmplacementsList } from "./ArticleEmplacementsList";
 
@@ -69,6 +70,7 @@ const fetchCategories = async (): Promise<string[]> => {
 
 export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDialogProps) {
   console.count("[EditArticleDialog] render");
+  const { isAdmin } = useRoleAccess();
   const [open, setOpen] = useState(true); // Start open since it's rendered conditionally
   const [isLoading, setIsLoading] = useState(false);
   const [fournisseurs, setFournisseurs] = useState<any[]>([]);
@@ -303,18 +305,22 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="stock" className="text-xs sm:text-sm">Stock actuel (information)</Label>
+            <Label htmlFor="stock" className="text-xs sm:text-sm">Stock actuel</Label>
             <Input
               id="stock"
               type="number"
               min="0"
               value={formData.stock}
-              disabled
-              className="bg-muted h-11 text-base"
+              onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
+              onFocus={(e) => e.target.select()}
+              disabled={!isAdmin()}
+              className={`h-11 text-base ${!isAdmin() ? 'bg-muted cursor-not-allowed' : ''}`}
             />
-            <p className="text-[10px] sm:text-xs text-muted-foreground">
-              Le stock ne peut être modifié que par les entrées, sorties et transferts
-            </p>
+            {!isAdmin() && (
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
+                Seuls les administrateurs peuvent modifier le stock initial
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 gap-3">
