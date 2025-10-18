@@ -34,7 +34,10 @@ export default function ArticleHistory() {
 
       let movementsQuery = supabase
         .from("audit_logs")
-        .select("*")
+        .select(`
+          *,
+          article:articles!audit_logs_record_id_fkey(designation, categorie)
+        `)
         .eq("table_name", "stock_movements");
 
       // Appliquer les filtres de date
@@ -150,10 +153,15 @@ export default function ArticleHistory() {
     const oldValues = log.old_values as any;
     const values = newValues || oldValues;
     
-    // Pour les mouvements de stock, afficher la quantité et le motif
+    // Pour les mouvements de stock, afficher la désignation, catégorie, quantité et motif
     if (log.table_name === "stock_movements") {
       const quantity = values?.quantity || "";
       const motif = values?.motif || "";
+      const articleInfo = log.article?.[0];
+      
+      if (articleInfo) {
+        return `${articleInfo.designation} - ${articleInfo.categorie} (${quantity} unités) - ${motif}`;
+      }
       return `${quantity ? `${quantity} unités` : ""} ${motif ? `- ${motif}` : ""}`;
     }
     
