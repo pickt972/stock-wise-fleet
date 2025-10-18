@@ -444,8 +444,8 @@ export default function Revisions() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Sélection des véhicules */}
-          <Card>
+          {/* Sélection des véhicules - Masquée sur mobile quand un véhicule est sélectionné */}
+          <Card className={selectedGroup ? "hidden lg:block" : ""}>
             <CardHeader>
               <CardTitle>Véhicules par Type</CardTitle>
             </CardHeader>
@@ -523,10 +523,25 @@ export default function Revisions() {
             </CardContent>
           </Card>
 
-          {/* Analyse des pièces */}
-          <Card>
-            <CardHeader>
+          {/* Analyse des pièces - Affichée en plein écran sur mobile quand un véhicule est sélectionné */}
+          <Card className={selectedGroup ? "lg:col-start-2" : "hidden lg:block lg:col-start-2"}>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Analyse des Pièces</CardTitle>
+              {selectedGroup && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedGroup(null);
+                    setIsAnalyzing(false);
+                    setSelectedArticles(new Set());
+                    setArticleQuantities({});
+                  }}
+                  className="lg:hidden"
+                >
+                  Retour
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               {!selectedGroup ? (
