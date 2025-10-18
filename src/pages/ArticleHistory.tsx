@@ -35,18 +35,12 @@ export default function ArticleHistory() {
       // Construire la requête de base pour les articles et mouvements
       let articlesQuery = supabase
         .from("audit_logs")
-        .select(`
-          *,
-          profiles:user_id (username, first_name, last_name)
-        `)
+        .select("*")
         .eq("table_name", "articles");
 
       let movementsQuery = supabase
         .from("audit_logs")
-        .select(`
-          *,
-          profiles:user_id (username, first_name, last_name)
-        `)
+        .select("*")
         .eq("table_name", "stock_movements");
 
       // Appliquer les filtres de date
@@ -177,11 +171,11 @@ export default function ArticleHistory() {
   };
 
   const getUserDisplay = (log: any) => {
-    const profile = log.profiles;
+    const profile = users?.find?.((u: any) => u.id === log.user_id);
     if (profile) {
       return profile.first_name && profile.last_name
         ? `${profile.first_name} ${profile.last_name}`
-        : profile.username || "Utilisateur inconnu";
+        : profile.username || "Utilisateur";
     }
     return "Système";
   };
