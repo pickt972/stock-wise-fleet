@@ -167,7 +167,7 @@ export function ArticleHistoryReport() {
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 px-2 sm:px-6">
         {/* Sélection de l'article et du filtre */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -204,22 +204,22 @@ export function ArticleHistoryReport() {
 
         {/* Statistiques */}
         {selectedArticle && stats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-muted rounded-lg">
-              <div className="text-2xl font-bold">{stats.stockActuel}</div>
-              <div className="text-sm text-muted-foreground">Stock actuel</div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="text-center p-3 bg-muted rounded-lg">
+              <div className="text-xl md:text-2xl font-bold">{stats.stockActuel}</div>
+              <div className="text-xs md:text-sm text-muted-foreground">Stock actuel</div>
             </div>
-            <div className="text-center p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{stats.totalEntrees}</div>
-              <div className="text-sm text-green-600">Total entrées</div>
+            <div className="text-center p-3 bg-green-50 border border-green-200 rounded-lg">
+              <div className="text-xl md:text-2xl font-bold text-green-600">{stats.totalEntrees}</div>
+              <div className="text-xs md:text-sm text-green-600">Total entrées</div>
             </div>
-            <div className="text-center p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="text-2xl font-bold text-red-600">{stats.totalSorties}</div>
-              <div className="text-sm text-red-600">Total sorties</div>
+            <div className="text-center p-3 bg-red-50 border border-red-200 rounded-lg">
+              <div className="text-xl md:text-2xl font-bold text-red-600">{stats.totalSorties}</div>
+              <div className="text-xs md:text-sm text-red-600">Total sorties</div>
             </div>
-            <div className="text-center p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{stats.totalCommandes}</div>
-              <div className="text-sm text-blue-600">Commandes</div>
+            <div className="text-center p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="text-xl md:text-2xl font-bold text-blue-600">{stats.totalCommandes}</div>
+              <div className="text-xs md:text-sm text-blue-600">Commandes</div>
             </div>
           </div>
         )}

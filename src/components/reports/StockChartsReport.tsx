@@ -159,7 +159,7 @@ export function StockChartsReport() {
             Visualisation des entrées et sorties de stock
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-2 sm:px-6">
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={movementsTrend}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -213,7 +213,7 @@ export function StockChartsReport() {
               Valeur du stock par catégorie
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-2 sm:px-6">
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
                 <Pie
@@ -253,7 +253,7 @@ export function StockChartsReport() {
               Répartition des articles par niveau de stock
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-2 sm:px-6">
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
                 <Pie
@@ -294,8 +294,9 @@ export function StockChartsReport() {
             Articles avec le plus de mouvements sur 30 jours
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={400}>
+        <CardContent className="px-2 sm:px-6">
+          <div className="overflow-x-auto">
+            <ResponsiveContainer width="100%" height={400}>
             <BarChart data={topArticles} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
@@ -323,7 +324,8 @@ export function StockChartsReport() {
                 radius={[0, 4, 4, 0]}
               />
             </BarChart>
-          </ResponsiveContainer>
+            </ResponsiveContainer>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "./DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { StockChartsReport } from "@/components/reports/StockChartsReport";
 import { ArticleHistoryReport } from "@/components/reports/ArticleHistoryReport";
 
 export default function Rapports() {
+  const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState("30");
   const [selectedReport, setSelectedReport] = useState("stock");
 
@@ -316,7 +318,11 @@ export default function Rapports() {
             </TableHeader>
             <TableBody>
               {commandesData.slice(0, 10).map((commande) => (
-                <TableRow key={commande.id}>
+                <TableRow 
+                  key={commande.id}
+                  className="cursor-pointer hover:bg-accent"
+                  onClick={() => navigate('/commandes')}
+                >
                   <TableCell className="font-medium">{commande.numero_commande}</TableCell>
                   <TableCell>{commande.fournisseur}</TableCell>
                   <TableCell>
@@ -335,7 +341,11 @@ export default function Rapports() {
         {/* Version mobile avec cartes */}
         <div className="md:hidden space-y-3">
           {commandesData.slice(0, 10).map((commande) => (
-            <Card key={commande.id}>
+            <Card 
+              key={commande.id} 
+              className="cursor-pointer hover:bg-accent transition-colors"
+              onClick={() => navigate('/commandes')}
+            >
               <CardContent className="p-4">
                 <div className="flex justify-between items-start mb-2">
                   <div>

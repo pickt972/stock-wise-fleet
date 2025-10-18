@@ -230,20 +230,20 @@ export function StockAnomaliesReport() {
           Analyse automatique des problèmes de stock basée sur les inventaires
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 px-2 sm:px-6">
         {/* Statistiques des anomalies */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="text-center p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-            <div className="text-2xl font-bold text-destructive">{criticalCount}</div>
-            <div className="text-sm text-destructive">Critique</div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="text-center p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <div className="text-xl md:text-2xl font-bold text-destructive">{criticalCount}</div>
+            <div className="text-xs md:text-sm text-destructive">Critique</div>
           </div>
-          <div className="text-center p-4 bg-warning/10 border border-warning/20 rounded-lg">
-            <div className="text-2xl font-bold text-warning">{warningCount}</div>
-            <div className="text-sm text-warning">Attention</div>
+          <div className="text-center p-3 bg-warning/10 border border-warning/20 rounded-lg">
+            <div className="text-xl md:text-2xl font-bold text-warning">{warningCount}</div>
+            <div className="text-xs md:text-sm text-warning">Attention</div>
           </div>
-          <div className="text-center p-4 bg-muted border rounded-lg">
-            <div className="text-2xl font-bold text-muted-foreground">{infoCount}</div>
-            <div className="text-sm text-muted-foreground">Information</div>
+          <div className="text-center p-3 bg-muted border rounded-lg">
+            <div className="text-xl md:text-2xl font-bold text-muted-foreground">{infoCount}</div>
+            <div className="text-xs md:text-sm text-muted-foreground">Information</div>
           </div>
         </div>
 
@@ -259,50 +259,82 @@ export function StockAnomaliesReport() {
 
         {/* Liste des anomalies */}
         {anomalies.length > 0 && (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Sévérité</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Article</TableHead>
-                  <TableHead>Référence</TableHead>
-                  <TableHead>Stock actuel</TableHead>
-                  <TableHead>Détails</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {anomalies.map((anomaly) => (
-                  <TableRow key={anomaly.id}>
-                    <TableCell>
-                      <Badge variant={getSeverityColor(anomaly.severity)}>
+          <>
+            {/* Version desktop avec tableau */}
+            <div className="hidden md:block rounded-md border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Sévérité</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Article</TableHead>
+                    <TableHead>Référence</TableHead>
+                    <TableHead>Stock actuel</TableHead>
+                    <TableHead>Détails</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {anomalies.map((anomaly) => (
+                    <TableRow key={anomaly.id}>
+                      <TableCell>
+                        <Badge variant={getSeverityColor(anomaly.severity)}>
+                          {anomaly.severity === 'critical' ? 'Critique' : 
+                           anomaly.severity === 'warning' ? 'Attention' : 'Info'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {getAnomalyIcon(anomaly.type)}
+                          <span className="text-sm">{getAnomalyLabel(anomaly.type)}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium max-w-xs truncate">
+                        {anomaly.article.designation}
+                      </TableCell>
+                      <TableCell>{anomaly.article.reference}</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={anomaly.article.stock < 0 ? 'destructive' : 'outline'}>
+                          {anomaly.article.stock}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {anomaly.details}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Version mobile avec cartes */}
+            <div className="md:hidden space-y-3">
+              {anomalies.map((anomaly) => (
+                <Card key={anomaly.id}>
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <Badge variant={getSeverityColor(anomaly.severity)} className="mb-2">
                         {anomaly.severity === 'critical' ? 'Critique' : 
                          anomaly.severity === 'warning' ? 'Attention' : 'Info'}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getAnomalyIcon(anomaly.type)}
-                        <span className="text-sm">{getAnomalyLabel(anomaly.type)}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium max-w-xs truncate">
-                      {anomaly.article.designation}
-                    </TableCell>
-                    <TableCell>{anomaly.article.reference}</TableCell>
-                    <TableCell className="text-center">
                       <Badge variant={anomaly.article.stock < 0 ? 'destructive' : 'outline'}>
-                        {anomaly.article.stock}
+                        Stock: {anomaly.article.stock}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      {getAnomalyIcon(anomaly.type)}
+                      <span className="text-sm font-medium">{getAnomalyLabel(anomaly.type)}</span>
+                    </div>
+                    <div className="text-sm mb-1">
+                      <span className="font-medium">{anomaly.article.reference}</span> - {anomaly.article.designation}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
                       {anomaly.details}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </>
         )}
       </CardContent>
     </Card>
