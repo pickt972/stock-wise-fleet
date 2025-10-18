@@ -308,6 +308,7 @@ export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedAr
               max={selectedArticle?.stock || 1}
               value={formData.quantity}
               onChange={(e) => setFormData(prev => ({ ...prev, quantity: parseInt(e.target.value) || 1 }))}
+              onFocus={(e) => e.target.select()}
               required
             />
           </div>
