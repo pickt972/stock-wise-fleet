@@ -28,7 +28,15 @@ export default function JournalAudit() {
       
       let query = supabase
         .from('audit_logs')
-        .select('*')
+        .select(`
+          *,
+          user:user_id (
+            id,
+            first_name,
+            last_name,
+            username
+          )
+        `)
         .gte('created_at', daysAgo.toISOString())
         .order('created_at', { ascending: false })
         .limit(500);
@@ -48,6 +56,15 @@ export default function JournalAudit() {
     }
   });
 
+  const getUserDisplay = (log: any) => {
+    if (!log.user) return 'Système';
+    const user = Array.isArray(log.user) ? log.user[0] : log.user;
+    if (user?.first_name && user?.last_name) {
+      return `${user.first_name} ${user.last_name}`;
+    }
+    return user?.username || 'Utilisateur';
+  };
+
   const filteredLogs = auditLogs.filter(log => {
     if (!searchTerm) return true;
     return (
@@ -62,7 +79,7 @@ export default function JournalAudit() {
     
     filteredLogs.forEach(log => {
       const date = new Date(log.created_at).toLocaleString('fr-FR');
-      csvContent += `${date},${log.user_id || 'Système'},${log.action},${log.table_name},"${JSON.stringify(log.new_values || {})}"\n`;
+      csvContent += `${date},${getUserDisplay(log)},${log.action},${log.table_name},"${JSON.stringify(log.new_values || {})}"\n`;
     });
 
     const encodedUri = encodeURI(csvContent);
@@ -272,6 +289,7 @@ export default function JournalAudit() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Date & Heure</TableHead>
+                        <TableHead>Agent</TableHead>
                         <TableHead>Action</TableHead>
                         <TableHead>Table</TableHead>
                         <TableHead>Détails</TableHead>
@@ -289,6 +307,9 @@ export default function JournalAudit() {
                               minute: '2-digit',
                               second: '2-digit'
                             })}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {getUserDisplay(log)}
                           </TableCell>
                           <TableCell>
                             <Badge variant={getActionColor(log.action)}>
@@ -326,6 +347,9 @@ export default function JournalAudit() {
                                 {getActionLabel(log.action)}
                               </Badge>
                               <span className="font-medium text-sm">{getTableLabel(log.table_name)}</span>
+                            </div>
+                            <div className="text-xs font-medium mt-1">
+                              Par: {getUserDisplay(log)}
                             </div>
                             <div className="text-xs text-muted-foreground mt-1 font-mono">
                               {new Date(log.created_at).toLocaleString('fr-FR', {

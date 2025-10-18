@@ -28,7 +28,15 @@ export default function AuditLogs() {
       
       let query = supabase
         .from('audit_logs')
-        .select('*')
+        .select(`
+          *,
+          user:user_id (
+            id,
+            first_name,
+            last_name,
+            username
+          )
+        `)
         .gte('created_at', daysAgo.toISOString())
         .order('created_at', { ascending: false })
         .limit(500);
@@ -48,12 +56,21 @@ export default function AuditLogs() {
     }
   });
 
+  const getUserDisplay = (log: any) => {
+    if (!log.user) return 'Système';
+    const user = Array.isArray(log.user) ? log.user[0] : log.user;
+    if (user?.first_name && user?.last_name) {
+      return `${user.first_name} ${user.last_name}`;
+    }
+    return user?.username || 'Utilisateur';
+  };
+
   const handleExport = () => {
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Date,Utilisateur,Action,Table,ID Enregistrement\n";
+    csvContent += "Date,Agent,Action,Table,ID Enregistrement\n";
     
     auditLogs.forEach(log => {
-      csvContent += `${format(new Date(log.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })},${log.user_id || 'Système'},${log.action},${log.table_name},${log.record_id || 'N/A'}\n`;
+      csvContent += `${format(new Date(log.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })},${getUserDisplay(log)},${log.action},${log.table_name},${log.record_id || 'N/A'}\n`;
     });
 
     const encodedUri = encodeURI(csvContent);
@@ -224,10 +241,10 @@ export default function AuditLogs() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Date & Heure</TableHead>
+                      <TableHead>Agent</TableHead>
                       <TableHead>Action</TableHead>
                       <TableHead>Table</TableHead>
                       <TableHead>ID Enregistrement</TableHead>
-                      <TableHead>Utilisateur</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -235,6 +252,9 @@ export default function AuditLogs() {
                       <TableRow key={log.id}>
                         <TableCell className="font-medium">
                           {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss', { locale: fr })}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {getUserDisplay(log)}
                         </TableCell>
                         <TableCell>
                           {getActionBadge(log.action)}
@@ -244,9 +264,6 @@ export default function AuditLogs() {
                         </TableCell>
                         <TableCell className="font-mono text-xs">
                           {log.record_id ? log.record_id.substring(0, 8) + '...' : '-'}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">
-                          {log.user_id ? log.user_id.substring(0, 8) + '...' : 'Système'}
                         </TableCell>
                       </TableRow>
                     ))}
