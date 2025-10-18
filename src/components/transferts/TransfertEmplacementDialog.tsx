@@ -173,16 +173,29 @@ export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedAr
 
       if (entreeError) throw entreeError;
 
-      // Diminuer le stock de l'article source
-      const { error: updateSourceError } = await supabase
-        .from('articles')
-        .update({ 
-          stock: selectedArticle.stock - formData.quantity,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', formData.articleId);
+      // Calculer le nouveau stock
+      const newStock = selectedArticle.stock - formData.quantity;
 
-      if (updateSourceError) throw updateSourceError;
+      if (newStock === 0) {
+        // Supprimer l'article source si le stock atteint zéro
+        const { error: deleteSourceError } = await supabase
+          .from('articles')
+          .delete()
+          .eq('id', formData.articleId);
+
+        if (deleteSourceError) throw deleteSourceError;
+      } else {
+        // Diminuer le stock de l'article source
+        const { error: updateSourceError } = await supabase
+          .from('articles')
+          .update({ 
+            stock: newStock,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', formData.articleId);
+
+        if (updateSourceError) throw updateSourceError;
+      }
 
       // Vérifier s'il existe déjà un article avec la même référence dans l'emplacement de destination
       const emplacementDestinationData = emplacements.find(e => e.id === formData.emplacementDestinationId);
