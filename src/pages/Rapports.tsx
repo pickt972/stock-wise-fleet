@@ -83,23 +83,24 @@ export default function Rapports() {
           État actuel du stock et articles en alerte
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="text-center p-4 bg-muted rounded-lg">
-            <div className="text-2xl font-bold">{stockData.length}</div>
-            <div className="text-sm text-muted-foreground">Articles au catalogue</div>
+      <CardContent className="px-2 sm:px-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+          <div className="text-center p-3 bg-muted rounded-lg">
+            <div className="text-xl md:text-2xl font-bold">{stockData.length}</div>
+            <div className="text-xs md:text-sm text-muted-foreground">Articles au catalogue</div>
           </div>
-          <div className="text-center p-4 bg-muted rounded-lg">
-            <div className="text-2xl font-bold">{totalStockValue.toFixed(2)} €</div>
-            <div className="text-sm text-muted-foreground">Valeur totale du stock</div>
+          <div className="text-center p-3 bg-muted rounded-lg">
+            <div className="text-xl md:text-2xl font-bold">{totalStockValue.toFixed(2)} €</div>
+            <div className="text-xs md:text-sm text-muted-foreground">Valeur totale du stock</div>
           </div>
-          <div className="text-center p-4 bg-orange-50 border border-orange-200 rounded-lg">
-            <div className="text-2xl font-bold text-orange-600">{lowStockItems}</div>
-            <div className="text-sm text-orange-600">Articles en stock faible</div>
+          <div className="text-center p-3 bg-orange-50 border border-orange-200 rounded-lg">
+            <div className="text-xl md:text-2xl font-bold text-orange-600">{lowStockItems}</div>
+            <div className="text-xs md:text-sm text-orange-600">Articles en stock faible</div>
           </div>
         </div>
 
-        <div className="rounded-md border">
+        {/* Version desktop avec tableau */}
+        <div className="hidden md:block rounded-md border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -134,6 +135,44 @@ export default function Rapports() {
             </TableBody>
           </Table>
         </div>
+
+        {/* Version mobile avec cartes */}
+        <div className="md:hidden space-y-3">
+          {stockData.slice(0, 10).map((article) => {
+            const stockValue = article.stock * article.prix_achat;
+            const isLowStock = article.stock <= article.stock_min;
+            
+            return (
+              <Card key={article.id}>
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{article.reference}</div>
+                      <div className="text-xs text-muted-foreground line-clamp-2">{article.designation}</div>
+                    </div>
+                    <Badge variant={isLowStock ? "destructive" : "default"} className="ml-2">
+                      {isLowStock ? "Faible" : "OK"}
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div>
+                      <div className="text-muted-foreground">Stock</div>
+                      <div className="font-medium">{article.stock}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Min.</div>
+                      <div className="font-medium">{article.stock_min}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Valeur</div>
+                      <div className="font-medium">{stockValue.toFixed(2)} €</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </CardContent>
     </Card>
   );
@@ -149,23 +188,24 @@ export default function Rapports() {
           Mouvements de stock sur les {selectedPeriod} derniers jours
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div className="text-center p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="text-2xl font-bold text-green-600">
+      <CardContent className="px-2 sm:px-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+          <div className="text-center p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="text-xl md:text-2xl font-bold text-green-600">
               {movementsData.filter(m => m.type === 'entree').length}
             </div>
-            <div className="text-sm text-green-600">Entrées</div>
+            <div className="text-xs md:text-sm text-green-600">Entrées</div>
           </div>
-          <div className="text-center p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="text-2xl font-bold text-red-600">
+          <div className="text-center p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="text-xl md:text-2xl font-bold text-red-600">
               {movementsData.filter(m => m.type === 'sortie').length}
             </div>
-            <div className="text-sm text-red-600">Sorties</div>
+            <div className="text-xs md:text-sm text-red-600">Sorties</div>
           </div>
         </div>
 
-        <div className="rounded-md border">
+        {/* Version desktop avec tableau */}
+        <div className="hidden md:block rounded-md border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -197,6 +237,36 @@ export default function Rapports() {
             </TableBody>
           </Table>
         </div>
+
+        {/* Version mobile avec cartes */}
+        <div className="md:hidden space-y-3">
+          {movementsData.slice(0, 10).map((movement) => (
+            <Card key={movement.id}>
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(movement.created_at).toLocaleDateString('fr-FR')}
+                  </div>
+                  <Badge variant={movement.type === 'entree' ? 'default' : 'secondary'}>
+                    {movement.type === 'entree' ? 'Entrée' : 'Sortie'}
+                  </Badge>
+                </div>
+                <div className="text-sm font-medium mb-2 line-clamp-2">
+                  {movement.articles?.reference} - {movement.articles?.designation}
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <div>
+                    <span className="text-muted-foreground">Quantité: </span>
+                    <span className="font-medium">{movement.quantity}</span>
+                  </div>
+                  <div className="text-muted-foreground line-clamp-1 ml-2">
+                    {movement.motif}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );
@@ -212,27 +282,28 @@ export default function Rapports() {
           Commandes créées sur les {selectedPeriod} derniers jours
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="text-center p-4 bg-muted rounded-lg">
-            <div className="text-2xl font-bold">{commandesData.length}</div>
-            <div className="text-sm text-muted-foreground">Commandes totales</div>
+      <CardContent className="px-2 sm:px-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+          <div className="text-center p-3 bg-muted rounded-lg">
+            <div className="text-xl md:text-2xl font-bold">{commandesData.length}</div>
+            <div className="text-xs md:text-sm text-muted-foreground">Commandes totales</div>
           </div>
-          <div className="text-center p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">
+          <div className="text-center p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="text-xl md:text-2xl font-bold text-blue-600">
               {commandesData.reduce((sum, cmd) => sum + cmd.total_ht, 0).toFixed(2)} €
             </div>
-            <div className="text-sm text-blue-600">Montant total HT</div>
+            <div className="text-xs md:text-sm text-blue-600">Montant total HT</div>
           </div>
-          <div className="text-center p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="text-2xl font-bold text-green-600">
+          <div className="text-center p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="text-xl md:text-2xl font-bold text-green-600">
               {commandesData.filter(cmd => cmd.status === 'recu_complet').length}
             </div>
-            <div className="text-sm text-green-600">Commandes reçues</div>
+            <div className="text-xs md:text-sm text-green-600">Commandes reçues</div>
           </div>
         </div>
 
-        <div className="rounded-md border">
+        {/* Version desktop avec tableau */}
+        <div className="hidden md:block rounded-md border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -259,6 +330,31 @@ export default function Rapports() {
               ))}
             </TableBody>
           </Table>
+        </div>
+
+        {/* Version mobile avec cartes */}
+        <div className="md:hidden space-y-3">
+          {commandesData.slice(0, 10).map((commande) => (
+            <Card key={commande.id}>
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <div className="font-medium text-sm">{commande.numero_commande}</div>
+                    <div className="text-xs text-muted-foreground">{commande.fournisseur}</div>
+                  </div>
+                  <Badge variant="outline" className="ml-2">{commande.status}</Badge>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <div className="text-muted-foreground">
+                    {new Date(commande.created_at).toLocaleDateString('fr-FR')}
+                  </div>
+                  <div className="font-medium">
+                    {commande.total_ht.toFixed(2)} €
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </CardContent>
     </Card>
@@ -296,54 +392,60 @@ export default function Rapports() {
         </div>
 
         {/* Sélecteur de rapport */}
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
           <Button
             variant={selectedReport === "stock" ? "default" : "outline"}
             onClick={() => setSelectedReport("stock")}
             size="sm"
+            className="w-full sm:w-auto"
           >
-            <Package className="h-4 w-4 mr-2" />
-            Stock
+            <Package className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Stock</span>
           </Button>
           <Button
             variant={selectedReport === "movements" ? "default" : "outline"}
             onClick={() => setSelectedReport("movements")}
             size="sm"
+            className="w-full sm:w-auto"
           >
-            <TrendingUp className="h-4 w-4 mr-2" />
-            Mouvements
+            <TrendingUp className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Mouvements</span>
           </Button>
           <Button
             variant={selectedReport === "commandes" ? "default" : "outline"}
             onClick={() => setSelectedReport("commandes")}
             size="sm"
+            className="w-full sm:w-auto"
           >
-            <FileText className="h-4 w-4 mr-2" />
-            Commandes
+            <FileText className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Commandes</span>
           </Button>
           <Button
             variant={selectedReport === "anomalies" ? "default" : "outline"}
             onClick={() => setSelectedReport("anomalies")}
             size="sm"
+            className="w-full sm:w-auto"
           >
-            <AlertTriangle className="h-4 w-4 mr-2" />
-            Anomalies
+            <AlertTriangle className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Anomalies</span>
           </Button>
           <Button
             variant={selectedReport === "charts" ? "default" : "outline"}
             onClick={() => setSelectedReport("charts")}
             size="sm"
+            className="w-full sm:w-auto"
           >
-            <LineChart className="h-4 w-4 mr-2" />
-            Graphiques
+            <LineChart className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Graphiques</span>
           </Button>
           <Button
             variant={selectedReport === "historique" ? "default" : "outline"}
             onClick={() => setSelectedReport("historique")}
             size="sm"
+            className="w-full sm:w-auto"
           >
-            <History className="h-4 w-4 mr-2" />
-            Historique article
+            <History className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Historique</span>
           </Button>
         </div>
 
