@@ -173,18 +173,24 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
         emplacement: formData.emplacement,
         fournisseur_id: formData.fournisseur_id === "none" ? null : formData.fournisseur_id,
       };
-
-      // Seuls les administrateurs peuvent modifier le stock initial
-      if (isAdmin()) {
-        updateData.stock = formData.stock;
-      }
-
       const { error } = await supabase
         .from('articles')
         .update(updateData)
         .eq('id', article.id);
 
       if (error) throw error;
+
+      // Si l'admin a modifié le stock initial, on applique la variation via la fonction sécurisée
+      if (isAdmin() && formData.stock !== article.stock) {
+        const delta = (formData.stock ?? 0) - (article.stock ?? 0);
+        if (delta !== 0) {
+          const { error: stockError } = await supabase.rpc('update_article_stock', {
+            article_id: article.id,
+            quantity_change: delta,
+          });
+          if (stockError) throw stockError;
+        }
+      }
 
       toast({
         title: "Article modifié",
