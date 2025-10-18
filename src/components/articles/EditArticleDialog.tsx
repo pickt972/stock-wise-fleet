@@ -161,20 +161,27 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
     setIsLoading(true);
 
     try {
+      // Préparer les données de mise à jour
+      const updateData: any = {
+        reference: formData.reference,
+        designation: formData.designation,
+        marque: formData.marque,
+        categorie: formData.categorie,
+        stock_min: formData.stock_min,
+        stock_max: formData.stock_max,
+        prix_achat: formData.prix_achat,
+        emplacement: formData.emplacement,
+        fournisseur_id: formData.fournisseur_id === "none" ? null : formData.fournisseur_id,
+      };
+
+      // Seuls les administrateurs peuvent modifier le stock initial
+      if (isAdmin()) {
+        updateData.stock = formData.stock;
+      }
+
       const { error } = await supabase
         .from('articles')
-        .update({
-          reference: formData.reference,
-          designation: formData.designation,
-          marque: formData.marque,
-          categorie: formData.categorie,
-          // Ne pas mettre à jour le stock ici: il est géré par les mouvements/entrées/sorties et transferts
-          stock_min: formData.stock_min,
-          stock_max: formData.stock_max,
-          prix_achat: formData.prix_achat,
-          emplacement: formData.emplacement,
-          fournisseur_id: formData.fournisseur_id === "none" ? null : formData.fournisseur_id,
-        })
+        .update(updateData)
         .eq('id', article.id);
 
       if (error) throw error;
