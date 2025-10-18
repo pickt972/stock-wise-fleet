@@ -34,10 +34,7 @@ export default function ArticleHistory() {
 
       let movementsQuery = supabase
         .from("audit_logs")
-        .select(`
-          *,
-          article:articles!audit_logs_record_id_fkey(designation, categorie)
-        `)
+        .select("*")
         .eq("table_name", "stock_movements");
 
       // Appliquer les filtres de date
@@ -77,11 +74,45 @@ export default function ArticleHistory() {
       if (movementsResult.error) throw movementsResult.error;
 
       // Combiner les deux types de logs
-      let combinedLogs = [
+      let combinedLogs: any[] = [
         ...(articlesResult.data || []),
         ...(movementsResult.data || [])
       ];
 
+      // Enrichir les mouvements de stock avec désignation et catégorie
+      try {
+        const movementArticleIds = Array.from(new Set(
+          combinedLogs
+            .filter((l: any) => l.table_name === "stock_movements")
+            .map((l: any) => {
+              const nv = (l.new_values as any) || {};
+              const ov = (l.old_values as any) || {};
+              return nv.article_id || ov.article_id;
+            })
+            .filter(Boolean)
+        ));
+
+        if (movementArticleIds.length > 0) {
+          const { data: articlesInfo } = await supabase
+            .from("articles")
+            .select("id, designation, categorie")
+            .in("id", movementArticleIds as string[]);
+
+          const articlesMap = new Map((articlesInfo || []).map((a: any) => [a.id, a]));
+          combinedLogs = combinedLogs.map((log: any) => {
+            if (log.table_name === "stock_movements") {
+              const values = (log.new_values as any) || (log.old_values as any) || {};
+              const art = articlesMap.get(values.article_id);
+              if (art) {
+                return { ...log, _articleDesignation: art.designation, _articleCategorie: art.categorie };
+              }
+            }
+            return log;
+          });
+        }
+      } catch (_) {
+        // Ignorer les erreurs d'enrichissement
+      }
       // Filtrer par action si nécessaire
       if (actionFilter !== "all") {
         combinedLogs = combinedLogs.filter(log => log.action === actionFilter);
@@ -157,10 +188,11 @@ export default function ArticleHistory() {
     if (log.table_name === "stock_movements") {
       const quantity = values?.quantity || "";
       const motif = values?.motif || "";
-      const articleInfo = log.article?.[0];
+      const designation = (log as any)._articleDesignation;
+      const categorie = (log as any)._articleCategorie;
       
-      if (articleInfo) {
-        return `${articleInfo.designation} - ${articleInfo.categorie} (${quantity} unités) - ${motif}`;
+      if (designation && categorie) {
+        return `${designation} - ${categorie} ${quantity ? `(${quantity} unités)` : ""}${motif ? ` - ${motif}` : ""}`;
       }
       return `${quantity ? `${quantity} unités` : ""} ${motif ? `- ${motif}` : ""}`;
     }
