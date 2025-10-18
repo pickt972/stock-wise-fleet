@@ -194,22 +194,11 @@ export default function Entrees() {
 
       if (entryError) throw entryError;
 
-      // Récupérer le stock actuel et le mettre à jour
-      const { data: currentArticle, error: fetchError } = await supabase
-        .from('articles')
-        .select('stock')
-        .eq('id', formData.articleId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      const { error: updateError } = await supabase
-        .from('articles')
-        .update({ 
-          stock: currentArticle.stock + formData.quantity,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', formData.articleId);
+      // Mettre à jour le stock via la fonction sécurisée
+      const { error: updateError } = await supabase.rpc('update_article_stock', {
+        article_id: formData.articleId,
+        quantity_change: formData.quantity, // Positif pour une entrée
+      });
 
       if (updateError) throw updateError;
 
