@@ -28,27 +28,28 @@ export default function ArticleHistory() {
   const [articleFilter, setArticleFilter] = useState<string>("");
   const [dateFilter, setDateFilter] = useState<string>("all");
 
-  // Récupérer tous les logs d'audit pour les articles
+  // Récupérer tous les logs d'audit pour les articles ET les mouvements de stock
   const { data: auditLogs, isLoading } = useQuery({
     queryKey: ["article-history", actionFilter, userFilter, articleFilter, dateFilter],
     queryFn: async () => {
-      let query = supabase
+      // Construire la requête de base pour les articles et mouvements
+      let articlesQuery = supabase
         .from("audit_logs")
         .select(`
           *,
           profiles:user_id (username, first_name, last_name)
         `)
-        .eq("table_name", "articles")
-        .order("created_at", { ascending: false });
+        .eq("table_name", "articles");
 
-      if (actionFilter !== "all") {
-        query = query.eq("action", actionFilter);
-      }
+      let movementsQuery = supabase
+        .from("audit_logs")
+        .select(`
+          *,
+          profiles:user_id (username, first_name, last_name)
+        `)
+        .eq("table_name", "stock_movements");
 
-      if (userFilter !== "all") {
-        query = query.eq("user_id", userFilter);
-      }
-
+      // Appliquer les filtres de date
       if (dateFilter !== "all") {
         const now = new Date();
         let startDate = new Date();
@@ -65,15 +66,39 @@ export default function ArticleHistory() {
             break;
         }
         
-        query = query.gte("created_at", startDate.toISOString());
+        articlesQuery = articlesQuery.gte("created_at", startDate.toISOString());
+        movementsQuery = movementsQuery.gte("created_at", startDate.toISOString());
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
+      // Appliquer le filtre utilisateur
+      if (userFilter !== "all") {
+        articlesQuery = articlesQuery.eq("user_id", userFilter);
+        movementsQuery = movementsQuery.eq("user_id", userFilter);
+      }
 
-      // Filtrer par référence ou désignation d'article si nécessaire
+      // Récupérer les données
+      const [articlesResult, movementsResult] = await Promise.all([
+        articlesQuery,
+        movementsQuery
+      ]);
+
+      if (articlesResult.error) throw articlesResult.error;
+      if (movementsResult.error) throw movementsResult.error;
+
+      // Combiner les deux types de logs
+      let combinedLogs = [
+        ...(articlesResult.data || []),
+        ...(movementsResult.data || [])
+      ];
+
+      // Filtrer par action si nécessaire
+      if (actionFilter !== "all") {
+        combinedLogs = combinedLogs.filter(log => log.action === actionFilter);
+      }
+
+      // Filtrer par référence ou désignation d'article
       if (articleFilter) {
-        return data.filter(log => {
+        combinedLogs = combinedLogs.filter(log => {
           const newValues = log.new_values as any;
           const oldValues = log.old_values as any;
           const searchTerm = articleFilter.toLowerCase();
@@ -82,12 +107,16 @@ export default function ArticleHistory() {
             newValues?.reference?.toLowerCase().includes(searchTerm) ||
             newValues?.designation?.toLowerCase().includes(searchTerm) ||
             oldValues?.reference?.toLowerCase().includes(searchTerm) ||
-            oldValues?.designation?.toLowerCase().includes(searchTerm)
+            oldValues?.designation?.toLowerCase().includes(searchTerm) ||
+            newValues?.article_id?.toLowerCase().includes(searchTerm)
           );
         });
       }
 
-      return data;
+      // Trier par date décroissante
+      combinedLogs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      return combinedLogs;
     },
   });
 
@@ -104,8 +133,19 @@ export default function ArticleHistory() {
     },
   });
 
-  const getActionBadge = (action: string) => {
-    switch (action) {
+  const getActionBadge = (log: any) => {
+    // Pour les mouvements de stock, afficher le type (entrée/sortie)
+    if (log.table_name === "stock_movements") {
+      const movementType = (log.new_values as any)?.type || (log.old_values as any)?.type;
+      if (movementType === "entree") {
+        return <Badge variant="default" className="bg-green-500">Entrée</Badge>;
+      } else if (movementType === "sortie") {
+        return <Badge variant="default" className="bg-orange-500">Sortie</Badge>;
+      }
+    }
+    
+    // Pour les articles, afficher l'action
+    switch (log.action) {
       case "INSERT":
         return <Badge variant="default" className="bg-green-500">Création</Badge>;
       case "UPDATE":
@@ -113,7 +153,7 @@ export default function ArticleHistory() {
       case "DELETE":
         return <Badge variant="destructive">Suppression</Badge>;
       default:
-        return <Badge variant="outline">{action}</Badge>;
+        return <Badge variant="outline">{log.action}</Badge>;
     }
   };
 
@@ -122,6 +162,14 @@ export default function ArticleHistory() {
     const oldValues = log.old_values as any;
     const values = newValues || oldValues;
     
+    // Pour les mouvements de stock, afficher la quantité et le motif
+    if (log.table_name === "stock_movements") {
+      const quantity = values?.quantity || "";
+      const motif = values?.motif || "";
+      return `${quantity ? `${quantity} unités` : ""} ${motif ? `- ${motif}` : ""}`;
+    }
+    
+    // Pour les articles, afficher référence et désignation
     if (values?.reference && values?.designation) {
       return `${values.reference} - ${values.designation}`;
     }
@@ -283,15 +331,18 @@ export default function ArticleHistory() {
                         <TableCell>
                           {format(new Date(log.created_at), "dd/MM/yyyy HH:mm", { locale: fr })}
                         </TableCell>
-                        <TableCell>{getActionBadge(log.action)}</TableCell>
+                        <TableCell>{getActionBadge(log)}</TableCell>
                         <TableCell className="font-medium">{getArticleInfo(log)}</TableCell>
                         <TableCell>{getUserDisplay(log)}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {log.action === "UPDATE" && (
+                          {log.table_name === "stock_movements" && (
+                            <span>Mouvement de stock</span>
+                          )}
+                          {log.table_name === "articles" && log.action === "UPDATE" && (
                             <span>Champs modifiés: {Object.keys((log.new_values as any) || {}).join(", ")}</span>
                           )}
-                          {log.action === "INSERT" && <span>Article créé</span>}
-                          {log.action === "DELETE" && <span>Article supprimé</span>}
+                          {log.table_name === "articles" && log.action === "INSERT" && <span>Article créé</span>}
+                          {log.table_name === "articles" && log.action === "DELETE" && <span>Article supprimé</span>}
                         </TableCell>
                       </TableRow>
                     ))}
