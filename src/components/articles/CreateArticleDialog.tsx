@@ -193,17 +193,53 @@ const articleSchema = z.object({
 
       const data = parsed.data;
       
-      // Vérifier si un article avec cette référence existe déjà
-      const { data: existingArticle } = await supabase
+      // Uniformiser les formats (trim, minuscules pour comparaison)
+      const normalizedRef = data.reference.trim().toLowerCase().replace(/\s+/g, '');
+      const normalizedDesignation = data.designation.trim().toLowerCase().replace(/\s+/g, ' ');
+      const normalizedMarque = data.marque.trim().toLowerCase().replace(/\s+/g, ' ');
+      
+      // Vérifier les doublons par référence (normalisée)
+      const { data: existingByRef } = await supabase
         .from('articles')
-        .select('id')
-        .eq('reference', data.reference.trim())
+        .select('id, reference, designation, marque')
         .maybeSingle();
 
-      if (existingArticle) {
+      if (existingByRef) {
+        const allArticles = await supabase
+          .from('articles')
+          .select('id, reference, designation, marque');
+        
+        const duplicate = allArticles.data?.find(article => {
+          const articleRef = article.reference.toLowerCase().replace(/\s+/g, '');
+          return articleRef === normalizedRef;
+        });
+
+        if (duplicate) {
+          toast({
+            title: "Doublon détecté",
+            description: `Un article avec la référence "${duplicate.reference}" existe déjà`,
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
+      
+      // Vérifier les doublons par désignation + marque similaire
+      const { data: allArticles } = await supabase
+        .from('articles')
+        .select('id, reference, designation, marque');
+
+      const similarArticle = allArticles?.find(article => {
+        const artDesignation = article.designation.trim().toLowerCase().replace(/\s+/g, ' ');
+        const artMarque = article.marque.trim().toLowerCase().replace(/\s+/g, ' ');
+        return artDesignation === normalizedDesignation && artMarque === normalizedMarque;
+      });
+
+      if (similarArticle) {
         toast({
-          title: "Erreur",
-          description: "Cet article existe déjà",
+          title: "Doublon détecté",
+          description: `Un article similaire existe déjà (Réf: ${similarArticle.reference})`,
           variant: "destructive",
         });
         setIsLoading(false);
@@ -308,7 +344,10 @@ const articleSchema = z.object({
                 <Input
                   id="reference"
                   value={formData.reference}
-                  onChange={(e) => setFormData(prev => ({ ...prev, reference: e.target.value }))}
+                  onChange={(e) => setFormData(prev => ({ 
+                    ...prev, 
+                    reference: e.target.value.trim().toUpperCase() 
+                  }))}
                   placeholder="HM-530"
                   required
                   className="flex-1"
@@ -329,7 +368,13 @@ const articleSchema = z.object({
               <Input
                 id="marque"
                 value={formData.marque}
-                onChange={(e) => setFormData(prev => ({ ...prev, marque: e.target.value }))}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\s+/g, ' ');
+                  setFormData(prev => ({ 
+                    ...prev, 
+                    marque: value.charAt(0).toUpperCase() + value.slice(1).toLowerCase()
+                  }));
+                }}
                 placeholder="Castrol"
                 required
               />
@@ -341,7 +386,13 @@ const articleSchema = z.object({
             <Input
               id="designation"
               value={formData.designation}
-              onChange={(e) => setFormData(prev => ({ ...prev, designation: e.target.value }))}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\s+/g, ' ');
+                setFormData(prev => ({ 
+                  ...prev, 
+                  designation: value.charAt(0).toUpperCase() + value.slice(1)
+                }));
+              }}
               placeholder="Huile moteur 5W30"
               required
             />
