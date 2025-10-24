@@ -170,6 +170,16 @@ export default function Sorties() {
       return;
     }
 
+    // Valider la quantité
+    if (formData.quantity <= 0) {
+      toast({
+        title: "Erreur",
+        description: "La quantité doit être supérieure à 0",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Vérifier le stock disponible
     const selectedArticle = articles.find(a => a.id === formData.articleId);
     if (!selectedArticle) {
@@ -181,19 +191,10 @@ export default function Sorties() {
       return;
     }
 
-    if (selectedArticle.stock <= 0) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de sortir un article en rupture de stock",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (selectedArticle.stock < formData.quantity) {
       toast({
-        title: "Erreur",
-        description: `Stock insuffisant. Stock disponible: ${selectedArticle.stock}`,
+        title: "Stock insuffisant",
+        description: `Stock disponible: ${selectedArticle.stock} unité${selectedArticle.stock > 1 ? 's' : ''}. Vous tentez de sortir ${formData.quantity} unité${formData.quantity > 1 ? 's' : ''}.`,
         variant: "destructive",
       });
       return;
@@ -201,7 +202,18 @@ export default function Sorties() {
 
     setIsCreating(true);
     try {
-      // Créer la sortie de stock
+      // Mettre à jour le stock via la fonction sécurisée AVANT de créer le mouvement
+      const { data: rpcData, error: updateError } = await supabase.rpc('update_article_stock', {
+        article_id: formData.articleId,
+        quantity_change: -formData.quantity, // Négatif pour une sortie
+      });
+
+      if (updateError) {
+        console.error('Erreur RPC update_article_stock:', updateError);
+        throw new Error(updateError.message || "Erreur lors de la mise à jour du stock");
+      }
+
+      // Créer la sortie de stock APRÈS la mise à jour du stock
       const { error: exitError } = await supabase
         .from('stock_movements')
         .insert([{
@@ -213,15 +225,10 @@ export default function Sorties() {
           vehicule_id: formData.vehiculeId || null,
         }]);
 
-      if (exitError) throw exitError;
-
-      // Mettre à jour le stock via la fonction sécurisée
-      const { error: updateError } = await supabase.rpc('update_article_stock', {
-        article_id: formData.articleId,
-        quantity_change: -formData.quantity, // Négatif pour une sortie
-      });
-
-      if (updateError) throw updateError;
+      if (exitError) {
+        console.error('Erreur insertion stock_movements:', exitError);
+        throw new Error(exitError.message || "Erreur lors de l'enregistrement du mouvement");
+      }
 
       toast({
         title: "Succès",
