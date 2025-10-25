@@ -8,49 +8,49 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Modern color palette inspired by contemporary design systems */
-    --background: 220 13% 98%;
-    --foreground: 224 71% 4%;
+    /* Refonte ergonomique - Palette moderne */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 224 71% 4%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 224 71% 4%;
+    --popover-foreground: 222 47% 11%;
 
-    /* Primary: Modern purple-blue gradient */
-    --primary: 250 84% 60%;
+    /* Primary: Blue moderne #3B82F6 */
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 250 84% 85%;
-    --primary-glow: 250 84% 75%;
+    --primary-light: 217 91% 85%;
+    --primary-glow: 217 91% 75%;
 
-    /* Secondary: Sophisticated teal */
-    --secondary: 197 37% 24%;
+    /* Secondary: Neutral Gray #6B7280 */
+    --secondary: 220 9% 46%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 210 40% 98%;
+    --muted-foreground: 215 16% 47%;
 
-    /* Accent: Electric cyan */
-    --accent: 180 100% 70%;
-    --accent-foreground: 220 9% 15%;
+    /* Accent: Light Blue */
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
 
-    /* Status colors with modern vibrancy */
-    --success: 142 76% 36%;
+    /* Status colors - Specs exactes */
+    --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
     --success-light: 142 76% 93%;
 
-    --warning: 32 95% 44%;
+    --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
     --warning-light: 48 96% 89%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     --destructive-light: 0 93% 94%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 250 84% 60%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 217 91% 60%;
 
     /* Modern gradients */
     --gradient-primary: linear-gradient(135deg, hsl(250, 84%, 60%), hsl(270, 91%, 65%));
