@@ -14,6 +14,7 @@ import Articles from "./pages/Articles";
 import ArticleDetail from "./pages/ArticleDetail";
 import Operations from "./pages/Operations";
 import ScannerHub from "./pages/ScannerHub";
+import HistoriqueMouvements from "./pages/HistoriqueMouvements";
 import Revisions from "./pages/Revisions";
 import Fournisseurs from "./pages/Fournisseurs";
 import Commandes from "./pages/Commandes";
@@ -85,6 +86,11 @@ const App = () => (
                   <Route path="/scanner" element={
                     <ProtectedRoute>
                       <ScannerHub />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/historique" element={
+                    <ProtectedRoute>
+                      <HistoriqueMouvements />
                     </ProtectedRoute>
                   } />
               <Route path="/revisions" element={

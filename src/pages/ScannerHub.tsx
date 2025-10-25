@@ -53,8 +53,16 @@ export default function ScannerHub() {
     SORTIE: ['Installation', 'Réparation', 'Maintenance', 'Transfert sortant', 'Autre'],
     INVENTAIRE: [],
     COMMANDE: [],
-    REVISION: []
+    REVISION: ['Excellent', 'Bon', 'Usé', 'Endommagé', 'Obsolète']
   };
+
+  const [inventoryItems, setInventoryItems] = useState<any[]>([]);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [countedQuantity, setCountedQuantity] = useState(0);
+  const [condition, setCondition] = useState('');
+  const [locationCorrect, setLocationCorrect] = useState<boolean | null>(null);
+  const [requiresMaintenance, setRequiresMaintenance] = useState(false);
+  const [requiresRemoval, setRequiresRemoval] = useState(false);
 
   useEffect(() => {
     // Récupérer le mode depuis l'état de navigation
@@ -178,6 +186,102 @@ export default function ScannerHub() {
     }
   };
 
+  const handleConfirmInventory = async () => {
+    if (!scannedArticle || !sessionId) return;
+
+    setIsProcessing(true);
+    try {
+      const discrepancy = countedQuantity - scannedArticle.stock;
+
+      const { error } = await supabase
+        .from('inventaire_items')
+        .insert({
+          inventaire_id: sessionId,
+          article_id: scannedArticle.id,
+          stock_theorique: scannedArticle.stock,
+          stock_compte: countedQuantity,
+          ecart: discrepancy,
+          notes: notes || null,
+        });
+
+      if (error) throw error;
+
+      const status = discrepancy === 0 ? '✓ Match!' : `⚠️ Écart: ${discrepancy > 0 ? '+' : ''}${discrepancy}`;
+      
+      toast({
+        title: "Article inventorié",
+        description: status,
+      });
+
+      setInventoryItems([...inventoryItems, {
+        article: scannedArticle.designation,
+        expected: scannedArticle.stock,
+        counted: countedQuantity,
+        discrepancy
+      }]);
+
+      // Réinitialiser
+      setScannedArticle(null);
+      setCountedQuantity(0);
+      setNotes('');
+      setShowScanner(true);
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleConfirmRevision = async () => {
+    if (!scannedArticle || !condition) return;
+
+    setIsProcessing(true);
+    try {
+      // Créer ou récupérer une session d'audit
+      if (!sessionId) {
+        const { data: auditData, error: auditError } = await supabase
+          .from('inventaires')
+          .insert({
+            location: 'SIEGE' as any,
+            status: 'OPEN' as any,
+            statut: 'en_cours',
+            date_inventaire: new Date().toISOString().split('T')[0],
+          })
+          .select()
+          .single();
+
+        if (auditError) throw auditError;
+        setSessionId(auditData.id);
+      }
+
+      toast({
+        title: "Article révisé",
+        description: `État: ${condition}`,
+      });
+
+      // Réinitialiser
+      setScannedArticle(null);
+      setCondition('');
+      setLocationCorrect(null);
+      setRequiresMaintenance(false);
+      setRequiresRemoval(false);
+      setNotes('');
+      setShowScanner(true);
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleConfirmAction = () => {
     switch (mode) {
       case 'CONSULTER':
@@ -188,11 +292,46 @@ export default function ScannerHub() {
       case 'SORTIE':
         handleConfirmSortie();
         break;
+      case 'INVENTAIRE':
+        handleConfirmInventory();
+        break;
+      case 'REVISION':
+        handleConfirmRevision();
+        break;
       default:
         toast({
           title: "Mode non implémenté",
           description: `Mode ${mode} en cours de développement`,
         });
+    }
+  };
+
+  const startInventorySession = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('inventaires')
+        .insert({
+          location: 'SIEGE' as any,
+          status: 'OPEN' as any,
+          statut: 'en_cours',
+          date_inventaire: new Date().toISOString().split('T')[0],
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setSessionId(data.id);
+      toast({
+        title: "Session démarrée",
+        description: `Inventaire #${data.id.slice(0, 8)}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -214,8 +353,39 @@ export default function ScannerHub() {
           {/* Subtitle */}
           <p className="text-sm text-muted-foreground text-center">{getSubtitle()}</p>
 
+          {/* Session info pour INVENTAIRE */}
+          {mode === 'INVENTAIRE' && !sessionId && (
+            <Card className="bg-muted">
+              <CardContent className="p-4 text-center">
+                <p className="text-sm text-muted-foreground mb-3">Démarrer une session d'inventaire</p>
+                <ActionButton
+                  variant="primary"
+                  size="lg"
+                  onClick={startInventorySession}
+                >
+                  Démarrer session
+                </ActionButton>
+              </CardContent>
+            </Card>
+          )}
+
+          {mode === 'INVENTAIRE' && sessionId && (
+            <Card className="bg-primary/5 border-primary">
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Session:</span>
+                  <Badge className="bg-primary text-primary-foreground">#{sessionId.slice(0, 8)}</Badge>
+                </div>
+                <div className="flex items-center justify-between text-sm mt-1">
+                  <span className="text-muted-foreground">Articles scannés:</span>
+                  <span className="font-semibold">{inventoryItems.length}</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Bouton Scanner */}
-          {!scannedArticle && (
+          {!scannedArticle && (mode !== 'INVENTAIRE' || sessionId) && (
             <ActionButton
               variant="primary"
               size="xxl"
@@ -305,6 +475,143 @@ export default function ScannerHub() {
                   </>
                 )}
 
+                {mode === 'INVENTAIRE' && (
+                  <>
+                    <div className="p-3 bg-muted rounded-lg">
+                      <p className="text-xs text-muted-foreground">Quantité en BD: <span className="font-semibold text-foreground">{scannedArticle.stock} unités</span></p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">Quantité comptée:</Label>
+                      <div className="flex items-center gap-2">
+                        <ActionButton
+                          variant="secondary"
+                          size="lg"
+                          icon={<Minus className="h-4 w-4" />}
+                          onClick={() => setCountedQuantity(Math.max(0, countedQuantity - 1))}
+                        />
+                        <Input
+                          type="number"
+                          value={countedQuantity}
+                          onChange={(e) => setCountedQuantity(Math.max(0, parseInt(e.target.value) || 0))}
+                          className="text-center text-lg font-semibold h-11 border-2"
+                        />
+                        <ActionButton
+                          variant="secondary"
+                          size="lg"
+                          icon={<Plus className="h-4 w-4" />}
+                          onClick={() => setCountedQuantity(countedQuantity + 1)}
+                        />
+                      </div>
+                    </div>
+
+                    {countedQuantity !== scannedArticle.stock && (
+                      <div className="p-3 bg-warning/10 border border-warning rounded-lg">
+                        <p className="text-sm font-semibold text-warning">
+                          ⚠️ Écart: {countedQuantity - scannedArticle.stock > 0 ? '+' : ''}{countedQuantity - scannedArticle.stock}
+                        </p>
+                      </div>
+                    )}
+
+                    {countedQuantity === scannedArticle.stock && countedQuantity > 0 && (
+                      <div className="p-3 bg-success/10 border border-success rounded-lg">
+                        <p className="text-sm font-semibold text-success">
+                          ✓ Match! Continuer inventaire
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">Notes discrepancy (si écart):</Label>
+                      <Textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Raison de l'écart..."
+                        className="min-h-[60px] border-2"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {mode === 'REVISION' && (
+                  <>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">État général:</Label>
+                      <Select value={condition} onValueChange={setCondition}>
+                        <SelectTrigger className="h-11 border-2">
+                          <SelectValue placeholder="Sélectionner un état" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {motifsMap.REVISION.map((c) => (
+                            <SelectItem key={c} value={c}>
+                              {c}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">Emplacement correct?</Label>
+                      <div className="flex gap-3">
+                        <ActionButton
+                          variant={locationCorrect === true ? "success" : "secondary"}
+                          size="lg"
+                          className="flex-1"
+                          onClick={() => setLocationCorrect(true)}
+                        >
+                          Oui
+                        </ActionButton>
+                        <ActionButton
+                          variant={locationCorrect === false ? "warning" : "secondary"}
+                          size="lg"
+                          className="flex-1"
+                          onClick={() => setLocationCorrect(false)}
+                        >
+                          Non
+                        </ActionButton>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="maintenance"
+                          checked={requiresMaintenance}
+                          onChange={(e) => setRequiresMaintenance(e.target.checked)}
+                          className="h-4 w-4 rounded border-2"
+                        />
+                        <Label htmlFor="maintenance" className="text-sm cursor-pointer">
+                          ☑️ Demande maintenance
+                        </Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="removal"
+                          checked={requiresRemoval}
+                          onChange={(e) => setRequiresRemoval(e.target.checked)}
+                          className="h-4 w-4 rounded border-2"
+                        />
+                        <Label htmlFor="removal" className="text-sm cursor-pointer">
+                          ☑️ À retirer du stock
+                        </Label>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">Notes:</Label>
+                      <Textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Observations..."
+                        className="min-h-[60px] border-2"
+                      />
+                    </div>
+                  </>
+                )}
+
                 {/* Actions */}
                 <div className="flex gap-3 pt-4">
                   <ActionButton
@@ -312,7 +619,11 @@ export default function ScannerHub() {
                     size="xl"
                     className="flex-1"
                     onClick={handleConfirmAction}
-                    disabled={isProcessing || (mode === 'SORTIE' && !motif)}
+                    disabled={
+                      isProcessing || 
+                      (mode === 'SORTIE' && !motif) ||
+                      (mode === 'REVISION' && !condition)
+                    }
                   >
                     {mode === 'CONSULTER' ? 'Voir détails' : '✅ Confirmer'}
                   </ActionButton>
@@ -325,6 +636,11 @@ export default function ScannerHub() {
                       setQuantity(1);
                       setMotif('');
                       setNotes('');
+                      setCountedQuantity(0);
+                      setCondition('');
+                      setLocationCorrect(null);
+                      setRequiresMaintenance(false);
+                      setRequiresRemoval(false);
                       setShowScanner(true);
                     }}
                     disabled={isProcessing}

@@ -84,7 +84,7 @@ export default function Dashboard() {
             size="xxl"
             className="w-full"
             icon={<BarChart3 className="h-6 w-6" />}
-            onClick={() => navigate('/rapports')}
+            onClick={() => navigate('/historique')}
           >
             Historique/Rapports
           </ActionButton>
