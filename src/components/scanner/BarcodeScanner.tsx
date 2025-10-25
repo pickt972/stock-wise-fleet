@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Camera, CameraOff, RotateCcw, Flashlight, FlashlightOff, Maximize2, Minimize2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { requestCameraPermission } from "@/lib/permissionManager";
 
 interface BarcodeScannerProps {
   onScanResult: (result: string) => void;
@@ -44,6 +45,19 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
 
   const initializeScanner = async () => {
     try {
+      // Request camera permissions (cached if already granted)
+      const permissionGranted = await requestCameraPermission();
+      
+      if (!permissionGranted) {
+        setHasPermission(false);
+        toast({
+          title: "Permission refusée",
+          description: "Veuillez autoriser l'accès à la caméra dans les paramètres",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const reader = new BrowserMultiFormatReader();
       setCodeReader(reader);
 

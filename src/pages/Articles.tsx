@@ -1,13 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
-import { Search, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/ui/page-header";
-import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { SearchWithScanner } from "@/components/SearchWithScanner";
 import DashboardLayout from "./DashboardLayout";
 
 interface Article {
@@ -97,24 +97,12 @@ export default function Articles() {
         <PageHeader title="Stocks" showBackButton onBack={() => navigate('/dashboard')} />
         
         <div className="max-w-3xl mx-auto px-4 py-4 space-y-4">
-          {/* Barre de recherche */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-              placeholder="Chercher..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-11 pl-10 pr-10 text-base border-2"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm("")}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            )}
-          </div>
+          {/* Barre de recherche avec scanner */}
+          <SearchWithScanner
+            placeholder="Chercher article..."
+            value={searchTerm}
+            onChange={setSearchTerm}
+          />
 
           {/* Filtres rapides */}
           <div className="flex gap-2 overflow-x-auto pb-2">
