@@ -12,6 +12,8 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Articles from "./pages/Articles";
 import ArticleDetail from "./pages/ArticleDetail";
+import Operations from "./pages/Operations";
+import ScannerHub from "./pages/ScannerHub";
 import Revisions from "./pages/Revisions";
 import Fournisseurs from "./pages/Fournisseurs";
 import Commandes from "./pages/Commandes";
@@ -73,6 +75,16 @@ const App = () => (
                   <Route path="/articles/:id" element={
                     <ProtectedRoute>
                       <ArticleDetail />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/operations" element={
+                    <ProtectedRoute>
+                      <Operations />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/scanner" element={
+                    <ProtectedRoute>
+                      <ScannerHub />
                     </ProtectedRoute>
                   } />
               <Route path="/revisions" element={

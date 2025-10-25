@@ -75,7 +75,7 @@ class OfflineStorage {
       const transaction = this.db!.transaction(['pendingOperations'], 'readonly');
       const store = transaction.objectStore('pendingOperations');
       const index = store.index('synced');
-      const request = index.getAll(IDBKeyRange.only(false));
+      const request = index.getAll(IDBKeyRange.only(0)); // 0 = false pour IndexedDB
 
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
@@ -190,7 +190,7 @@ class OfflineStorage {
       const transaction = this.db!.transaction(['pendingOperations'], 'readwrite');
       const store = transaction.objectStore('pendingOperations');
       const index = store.index('synced');
-      const request = index.openCursor(IDBKeyRange.only(true));
+      const request = index.openCursor(IDBKeyRange.only(1)); // 1 = true pour IndexedDB
 
       request.onsuccess = (event) => {
         const cursor = (event.target as IDBRequest).result;

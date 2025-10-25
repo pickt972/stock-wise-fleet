@@ -53,6 +53,16 @@ export default function Dashboard() {
             variant="primary"
             size="xxl"
             className="w-full"
+            icon={<Package className="h-6 w-6" />}
+            onClick={() => navigate('/operations')}
+          >
+            📷 Opérations Scanner
+          </ActionButton>
+
+          <ActionButton
+            variant="secondary"
+            size="xxl"
+            className="w-full"
             icon={<FileText className="h-6 w-6" />}
             onClick={() => navigate('/articles')}
           >
