@@ -289,13 +289,13 @@ export default function Entrees() {
               </Label>
               <Select
                 value={formData.fournisseurId}
-                onValueChange={(value) => setFormData({ ...formData, fournisseurId: value })}
+                onValueChange={(value) => setFormData({ ...formData, fournisseurId: value === 'none' ? '' : value })}
               >
                 <SelectTrigger id="fournisseur" className="h-11 border-2">
                   <SelectValue placeholder="Aucun fournisseur" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Aucun</SelectItem>
+                  <SelectItem value="none">Aucun</SelectItem>
                   {fournisseurs.map((fournisseur) => (
                     <SelectItem key={fournisseur.id} value={fournisseur.id}>
                       {fournisseur.nom}

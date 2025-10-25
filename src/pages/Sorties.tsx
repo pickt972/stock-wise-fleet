@@ -288,13 +288,13 @@ export default function Sorties() {
               </Label>
               <Select
                 value={formData.vehiculeId}
-                onValueChange={(value) => setFormData({ ...formData, vehiculeId: value })}
+                onValueChange={(value) => setFormData({ ...formData, vehiculeId: value === 'none' ? '' : value })}
               >
                 <SelectTrigger id="vehicule" className="h-11 border-2">
                   <SelectValue placeholder="Aucun véhicule" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Aucun</SelectItem>
+                  <SelectItem value="none">Aucun</SelectItem>
                   {vehicules.map((vehicule) => (
                     <SelectItem key={vehicule.id} value={vehicule.id}>
                       {vehicule.immatriculation} - {vehicule.marque} {vehicule.modele}
