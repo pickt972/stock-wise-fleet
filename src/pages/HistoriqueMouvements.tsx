@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import jsPDF from "jspdf";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -140,6 +141,58 @@ export default function HistoriqueMouvements() {
     }
   };
 
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    const title = 'Historique des Mouvements';
+    const date = new Date().toLocaleDateString('fr-FR');
+    
+    // En-tête
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text(title, 10, 10);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(`Genere le ${date}`, 10, 20);
+    doc.text(`Nombre total de mouvements: ${filteredMovements.length}`, 10, 25);
+    
+    // Ligne de séparation
+    doc.line(10, 28, 200, 28);
+    
+    // Mouvements
+    let y = 35;
+    filteredMovements.forEach((movement, index) => {
+      // Vérifier si on doit créer une nouvelle page
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      
+      const dateStr = format(new Date(movement.created_at), 'dd/MM/yyyy HH:mm', { locale: fr });
+      const typeStr = movement.type === 'entree' ? 'ENTREE' : 'SORTIE';
+      const articleStr = movement.articles?.designation || 'Article inconnu';
+      const qtyStr = `Qte: ${movement.quantity}`;
+      
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${index + 1}. ${dateStr}`, 10, y);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Type: ${typeStr}`, 10, y + 5);
+      doc.text(`Article: ${articleStr}`, 10, y + 10);
+      doc.text(`${qtyStr} - Motif: ${movement.motif || 'N/A'}`, 10, y + 15);
+      
+      y += 22;
+    });
+    
+    // Sauvegarde
+    doc.save(`historique-mouvements-${date}.pdf`);
+    
+    toast({
+      title: "✅ Export PDF réussi",
+      description: `${filteredMovements.length} mouvements exportés`,
+    });
+  };
+
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -192,6 +245,17 @@ export default function HistoriqueMouvements() {
               <div className="text-xs text-muted-foreground text-center pt-2">
                 {filteredMovements.length} mouvement(s) affiché(s)
               </div>
+              
+              {filteredMovements.length > 0 && (
+                <Button
+                  onClick={exportToPDF}
+                  variant="outline"
+                  className="w-full mt-3"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Exporter en PDF
+                </Button>
+              )}
             </div>
           </Card>
 

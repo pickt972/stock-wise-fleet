@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function Inventaire() {
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   const [activeInventaire, setActiveInventaire] = useState<any>(null);
   const [showNewSession, setShowNewSession] = useState(false);
   const [inventaireStats, setInventaireStats] = useState({ total: 0, counted: 0, remaining: 0 });
@@ -111,9 +113,9 @@ export default function Inventaire() {
   });
 
   const filteredArticles = articles.filter(article =>
-    article.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    article.designation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    article.marque.toLowerCase().includes(searchTerm.toLowerCase())
+    article.reference.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+    article.designation.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+    article.marque.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
   );
 
   const totalValue = articles.reduce((sum, article) => sum + (article.stock * article.prix_achat), 0);

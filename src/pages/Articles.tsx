@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +24,7 @@ interface Article {
 
 export default function Articles() {
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   const [articles, setArticles] = useState<Article[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<string>("tous");
@@ -61,11 +63,11 @@ export default function Articles() {
 
   const filteredArticles = useMemo(() => {
     return articles.filter(article => {
-      // Filtre de recherche
-      const matchesSearch = searchTerm === "" || 
-        article.designation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        article.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        article.marque.toLowerCase().includes(searchTerm.toLowerCase());
+      // Filtre de recherche avec debounce
+      const matchesSearch = debouncedSearchTerm === "" || 
+        article.designation.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        article.reference.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        article.marque.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
 
       // Filtre par statut stock
       if (activeFilter === "tous") return matchesSearch;
@@ -73,7 +75,7 @@ export default function Articles() {
       const status = getStockStatus(article.stock, article.stock_min);
       return matchesSearch && status.filter === activeFilter;
     });
-  }, [articles, searchTerm, activeFilter]);
+  }, [articles, debouncedSearchTerm, activeFilter]);
 
   const filters = [
     { id: "tous", label: "Tous" },
