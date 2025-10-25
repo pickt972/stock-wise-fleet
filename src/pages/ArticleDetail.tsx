@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "./DashboardLayout";
+import { ArticleDetailSkeleton } from "@/components/ui/skeletons/ArticleDetailSkeleton";
 import { EditArticleDialog } from "@/components/articles/EditArticleDialog";
 import {
   DropdownMenu,
@@ -128,9 +129,7 @@ export default function ArticleDetail() {
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg text-muted-foreground">Chargement...</div>
-        </div>
+        <ArticleDetailSkeleton />
       </DashboardLayout>
     );
   }

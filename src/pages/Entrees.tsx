@@ -151,9 +151,14 @@ export default function Entrees() {
         throw new Error(entryError.message || "Erreur lors de l'enregistrement du mouvement");
       }
 
+      // Récupérer les détails de l'article pour le toast
+      const selectedArticle = articles.find(a => a.id === formData.articleId);
+      
       toast({
-        title: "Succès",
-        description: "Entrée de stock enregistrée avec succès",
+        title: "✅ Stock ajouté avec succès",
+        description: selectedArticle 
+          ? `${quantity}x ${selectedArticle.designation}`
+          : "Entrée de stock enregistrée avec succès",
       });
 
       // Retour au dashboard

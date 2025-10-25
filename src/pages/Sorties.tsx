@@ -152,9 +152,14 @@ export default function Sorties() {
         throw new Error(exitError.message || "Erreur lors de l'enregistrement du mouvement");
       }
 
+      // Récupérer les détails de l'article pour le toast
+      const selectedArticle = articles.find(a => a.id === formData.articleId);
+      
       toast({
-        title: "Succès",
-        description: "Sortie de stock enregistrée avec succès",
+        title: "✅ Retrait effectué",
+        description: selectedArticle 
+          ? `${quantity}x ${selectedArticle.designation}`
+          : "Sortie de stock enregistrée avec succès",
       });
 
       // Retour au dashboard

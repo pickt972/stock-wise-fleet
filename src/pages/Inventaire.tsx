@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, Package, AlertTriangle, TrendingUp, ShoppingCart, FileText, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "./DashboardLayout";
+import { ArticleListSkeleton } from "@/components/ui/skeletons/ArticleListSkeleton";
 import { useNavigate } from "react-router-dom";
 import { InventaireSession } from "@/components/inventaire/InventaireSession";
 import { InventaireTable } from "@/components/inventaire/InventaireTable";
@@ -237,8 +238,8 @@ export default function Inventaire() {
                     <TableBody>
                       {isLoading ? (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center">
-                            Chargement...
+                          <TableCell colSpan={8}>
+                            <ArticleListSkeleton />
                           </TableCell>
                         </TableRow>
                       ) : filteredArticles.length === 0 ? (

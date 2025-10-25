@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "./DashboardLayout";
+import { AlertsSkeleton } from "@/components/ui/skeletons/AlertsSkeleton";
 import { useAlerts, Alert, CategoryAlerts } from "@/hooks/useAlerts";
 
 export default function Alertes() {
@@ -91,9 +92,9 @@ export default function Alertes() {
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg text-muted-foreground">Chargement des alertes...</div>
-        </div>
+        <main className="p-4 md:p-6">
+          <AlertsSkeleton />
+        </main>
       </DashboardLayout>
     );
   }

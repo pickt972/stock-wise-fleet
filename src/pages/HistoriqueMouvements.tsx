@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "./DashboardLayout";
+import { ArticleListSkeleton } from "@/components/ui/skeletons/ArticleListSkeleton";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { FileText, Download } from "lucide-react";
@@ -142,8 +143,8 @@ export default function HistoriqueMouvements() {
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg text-muted-foreground">Chargement...</div>
+        <div className="max-w-3xl mx-auto px-4 py-6">
+          <ArticleListSkeleton />
         </div>
       </DashboardLayout>
     );
