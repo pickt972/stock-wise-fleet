@@ -13,6 +13,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -49,6 +59,7 @@ export default function Sorties() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState("");
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const motifs = [
     "Installation",
@@ -120,6 +131,20 @@ export default function Sorties() {
       return;
     }
 
+    const quantity = parseInt(formData.quantity);
+    const selectedArticle = articles.find(a => a.id === formData.articleId);
+    
+    // Vérifier si la sortie représente plus de 30% du stock
+    if (selectedArticle && quantity > selectedArticle.stock * 0.3) {
+      setShowConfirmDialog(true);
+      return;
+    }
+
+    executeSubmit();
+  };
+
+  const executeSubmit = async () => {
+    setShowConfirmDialog(false);
     setIsCreating(true);
     try {
       const quantity = parseInt(formData.quantity);
@@ -373,6 +398,34 @@ export default function Sorties() {
           </div>
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>⚠️ Confirmer sortie importante</AlertDialogTitle>
+            <AlertDialogDescription>
+              Vous allez retirer {formData.quantity} unités{' '}
+              {(() => {
+                const selectedArticle = articles.find(a => a.id === formData.articleId);
+                if (selectedArticle) {
+                  const percentage = ((parseInt(formData.quantity) / selectedArticle.stock) * 100).toFixed(1);
+                  return `(${percentage}% du stock actuel de ${selectedArticle.stock} unités)`;
+                }
+                return '';
+              })()}.
+              <br /><br />
+              Êtes-vous sûr de vouloir continuer?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={executeSubmit}>
+              Confirmer la sortie
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }

@@ -198,8 +198,15 @@ export default function HistoriqueMouvements() {
           {/* Liste des mouvements */}
           {filteredMovements.length === 0 ? (
             <Card>
-              <CardContent className="p-8 text-center text-muted-foreground">
-                Aucun mouvement trouvé pour ces critères
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="text-6xl mb-4">📋</div>
+                <h3 className="text-lg font-semibold mb-2">Aucun mouvement trouvé</h3>
+                <p className="text-sm text-muted-foreground mb-6">
+                  Commencez par ajouter du stock pour voir l'historique
+                </p>
+                <Button onClick={() => navigate('/entrees')}>
+                  ➕ Ajouter du stock
+                </Button>
               </CardContent>
             </Card>
           ) : (

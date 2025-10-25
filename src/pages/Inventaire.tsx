@@ -244,8 +244,14 @@ export default function Inventaire() {
                         </TableRow>
                       ) : filteredArticles.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center">
-                            Aucun article trouvé
+                          <TableCell colSpan={8}>
+                            <div className="flex flex-col items-center justify-center py-12 text-center">
+                              <div className="text-6xl mb-4">🔍</div>
+                              <h3 className="text-lg font-semibold mb-2">Aucun article trouvé</h3>
+                              <p className="text-sm text-muted-foreground">
+                                Vérifiez votre recherche ou ajoutez de nouveaux articles
+                              </p>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ) : (

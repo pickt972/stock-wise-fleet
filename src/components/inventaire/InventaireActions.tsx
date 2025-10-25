@@ -26,6 +26,7 @@ interface InventaireActionsProps {
 
 export function InventaireActions({ inventaire, remainingItems, onStatusChange }: InventaireActionsProps) {
   const [isUpdating, setIsUpdating] = useState(false);
+  const [discrepancies, setDiscrepancies] = useState<number>(0);
   const { toast } = useToast();
 
   const getStatusBadge = (statut: string) => {
@@ -38,6 +39,29 @@ export function InventaireActions({ inventaire, remainingItems, onStatusChange }
         return <Badge variant="default" className="bg-green-100 text-green-800">Validé</Badge>;
       default:
         return <Badge>{statut}</Badge>;
+    }
+  };
+
+  const checkDiscrepancies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('inventaire_items')
+        .select('stock_theorique, stock_compte')
+        .eq('inventaire_id', inventaire.id)
+        .not('stock_theorique', 'is', null)
+        .not('stock_compte', 'is', null);
+
+      if (error) throw error;
+
+      const discrepancyCount = data?.filter(
+        item => item.stock_theorique !== item.stock_compte
+      ).length || 0;
+
+      setDiscrepancies(discrepancyCount);
+      return discrepancyCount;
+    } catch (error) {
+      console.error('Erreur lors de la vérification des écarts:', error);
+      return 0;
     }
   };
 
@@ -56,8 +80,10 @@ export function InventaireActions({ inventaire, remainingItems, onStatusChange }
       if (error) throw error;
 
       toast({
-        title: "Inventaire clôturé",
-        description: "L'inventaire a été clôturé avec succès.",
+        title: "✅ Inventaire clôturé",
+        description: discrepancies > 0 
+          ? `Inventaire clôturé avec ${discrepancies} écart(s) détecté(s).`
+          : "L'inventaire a été clôturé avec succès.",
       });
 
       onStatusChange();
@@ -194,6 +220,7 @@ export function InventaireActions({ inventaire, remainingItems, onStatusChange }
                     variant="outline" 
                     disabled={!canClose || isUpdating}
                     className="w-full"
+                    onClick={() => checkDiscrepancies()}
                   >
                     <Lock className="h-4 w-4 mr-2" />
                     Clôturer l'inventaire
@@ -201,16 +228,29 @@ export function InventaireActions({ inventaire, remainingItems, onStatusChange }
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Clôturer l'inventaire</AlertDialogTitle>
+                    <AlertDialogTitle>
+                      {discrepancies > 0 ? "⚠️ Écarts détectés" : "Clôturer l'inventaire"}
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                      Êtes-vous sûr de vouloir clôturer cet inventaire ? 
-                      Cette action empêchera toute modification ultérieure des comptages.
+                      {discrepancies > 0 ? (
+                        <>
+                          <strong>{discrepancies} article(s) avec écarts détectés.</strong>
+                          <br /><br />
+                          Êtes-vous sûr de vouloir clôturer l'inventaire malgré les écarts?
+                          Cette action empêchera toute modification ultérieure des comptages.
+                        </>
+                      ) : (
+                        <>
+                          Êtes-vous sûr de vouloir clôturer cet inventaire?
+                          Cette action empêchera toute modification ultérieure des comptages.
+                        </>
+                      )}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Annuler</AlertDialogCancel>
                     <AlertDialogAction onClick={closeInventaire}>
-                      Clôturer
+                      {discrepancies > 0 ? "Confirmer et clôturer" : "Clôturer"}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>

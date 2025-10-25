@@ -269,12 +269,12 @@ export default function Alertes() {
               ))
             ) : (
               <Card>
-                <CardContent className="text-center py-12">
-                  <AlertTriangle className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Aucune alerte</h3>
-                  <p className="text-muted-foreground">
+                <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="text-6xl mb-4">✅</div>
+                  <h3 className="text-lg font-semibold mb-2">Aucune alerte</h3>
+                  <p className="text-sm text-muted-foreground">
                     {selectedCategory === "all" 
-                      ? "Aucune alerte de stock actuellement" 
+                      ? "Tous vos stocks sont OK!" 
                       : `Aucune alerte pour la catégorie "${selectedCategory}"`
                     }
                   </p>
