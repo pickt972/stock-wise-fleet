@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { SearchWithScanner } from "@/components/SearchWithScanner";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Package, AlertTriangle, TrendingUp, ShoppingCart, FileText, Plus } from "lucide-react";
@@ -211,13 +212,11 @@ export default function Inventaire() {
                 <CardTitle>Articles en stock</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center space-x-2 mb-4">
-                  <Search className="h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Rechercher un article..."
+                <div className="mb-4">
+                  <SearchWithScanner
+                    placeholder="Scanner ou rechercher un article..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="flex-1"
+                    onChange={setSearchTerm}
                   />
                 </div>
 

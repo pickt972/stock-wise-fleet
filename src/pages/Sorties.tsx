@@ -5,6 +5,7 @@ import { ActionButton } from "@/components/ui/action-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { SearchWithScanner } from "@/components/SearchWithScanner";
 import {
   Select,
   SelectContent,
@@ -47,6 +48,7 @@ export default function Sorties() {
     notes: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [searchQuery, setSearchQuery] = useState("");
 
   const motifs = [
     "Installation",
@@ -191,6 +193,29 @@ export default function Sorties() {
         <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
           {/* Formulaire */}
           <div className="space-y-4">
+            {/* Scanner ou recherche rapide */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">
+                Scanner ou rechercher
+              </Label>
+              <SearchWithScanner
+                placeholder="Scanner ou chercher un article..."
+                value={searchQuery}
+                onChange={(value) => {
+                  setSearchQuery(value);
+                  // Rechercher l'article par code-barre ou référence
+                  const foundArticle = articles.find(
+                    a => a.reference?.toLowerCase().includes(value.toLowerCase()) ||
+                         a.designation?.toLowerCase().includes(value.toLowerCase())
+                  );
+                  if (foundArticle) {
+                    setFormData({ ...formData, articleId: foundArticle.id });
+                    setErrors({ ...errors, articleId: "" });
+                  }
+                }}
+              />
+            </div>
+
             {/* Article */}
             <div className="space-y-2">
               <Label htmlFor="article" className="text-sm font-semibold">
