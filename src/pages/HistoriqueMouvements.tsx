@@ -2,11 +2,21 @@ import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "./DashboardLayout";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { FileText, Download } from "lucide-react";
 
 interface Movement {
   id: string;
@@ -14,6 +24,7 @@ interface Movement {
   quantity: number;
   motif: string;
   created_at: string;
+  article_id: string;
   articles: {
     designation: string;
     reference: string;
@@ -21,9 +32,13 @@ interface Movement {
 }
 
 export default function HistoriqueMouvements() {
+  const navigate = useNavigate();
   const [movements, setMovements] = useState<Movement[]>([]);
+  const [filteredMovements, setFilteredMovements] = useState<Movement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const [filterType, setFilterType] = useState<string>("all");
+  const [filterPeriod, setFilterPeriod] = useState<string>("all");
 
   useEffect(() => {
     fetchMovements();
@@ -39,6 +54,7 @@ export default function HistoriqueMouvements() {
           quantity,
           motif,
           created_at,
+          article_id,
           articles (
             designation,
             reference
@@ -49,6 +65,7 @@ export default function HistoriqueMouvements() {
 
       if (error) throw error;
       setMovements(data || []);
+      setFilteredMovements(data || []);
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -58,6 +75,46 @@ export default function HistoriqueMouvements() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    applyFilters();
+  }, [filterType, filterPeriod, movements]);
+
+  const applyFilters = () => {
+    let filtered = [...movements];
+
+    // Filtre par type
+    if (filterType !== "all") {
+      filtered = filtered.filter(m => m.type === filterType);
+    }
+
+    // Filtre par période
+    if (filterPeriod !== "all") {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      filtered = filtered.filter(m => {
+        const movementDate = new Date(m.created_at);
+        
+        switch (filterPeriod) {
+          case "today":
+            return movementDate >= today;
+          case "week":
+            const weekAgo = new Date(today);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            return movementDate >= weekAgo;
+          case "month":
+            const monthAgo = new Date(today);
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            return movementDate >= monthAgo;
+          default:
+            return true;
+        }
+      });
+    }
+
+    setFilteredMovements(filtered);
   };
 
   const getTypeIcon = (type: string) => {
@@ -97,16 +154,64 @@ export default function HistoriqueMouvements() {
       <div className="min-h-screen bg-background">
         <PageHeader title="Historique" showBackButton />
         
-        <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
-          {movements.length === 0 ? (
+        <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+          {/* Filtres */}
+          <Card className="p-4">
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold">Filtres</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground">Type d'opération</label>
+                  <Select value={filterType} onValueChange={setFilterType}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Tous" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous</SelectItem>
+                      <SelectItem value="entree">Entrées</SelectItem>
+                      <SelectItem value="sortie">Sorties</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground">Période</label>
+                  <Select value={filterPeriod} onValueChange={setFilterPeriod}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Tous" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous</SelectItem>
+                      <SelectItem value="today">Aujourd'hui</SelectItem>
+                      <SelectItem value="week">Cette semaine</SelectItem>
+                      <SelectItem value="month">Ce mois</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground text-center pt-2">
+                {filteredMovements.length} mouvement(s) affiché(s)
+              </div>
+            </div>
+          </Card>
+
+          {/* Liste des mouvements */}
+          {filteredMovements.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center text-muted-foreground">
-                Aucun mouvement enregistré
+                Aucun mouvement trouvé pour ces critères
               </CardContent>
             </Card>
           ) : (
-            movements.map((movement) => (
-              <Card key={movement.id} className="hover:bg-accent/50 transition-colors">
+            filteredMovements.map((movement) => (
+              <Card 
+                key={movement.id} 
+                className="hover:bg-accent/50 transition-colors cursor-pointer"
+                onClick={() => {
+                  if (movement.article_id) {
+                    navigate(`/articles/${movement.article_id}`);
+                  }
+                }}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
                     <div className="text-2xl">{getTypeIcon(movement.type)}</div>
@@ -123,6 +228,23 @@ export default function HistoriqueMouvements() {
                       <p className="text-xs text-muted-foreground">
                         {format(new Date(movement.created_at), "dd/MM/yyyy 'à' HH:mm", { locale: fr })}
                       </p>
+                      
+                      {/* Boutons d'action */}
+                      <div className="flex gap-2 mt-3">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (movement.article_id) {
+                              navigate(`/articles/${movement.article_id}`);
+                            }
+                          }}
+                        >
+                          <FileText className="h-3 w-3 mr-1" />
+                          Voir article
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </CardContent>

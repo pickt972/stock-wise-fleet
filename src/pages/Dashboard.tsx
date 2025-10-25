@@ -28,23 +28,32 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* KPI Cards - Maximum 3 cartes */}
+        {/* KPI Cards - Maximum 3 cartes - CLIQUABLES */}
         <div className="grid grid-cols-3 gap-4">
-          <KPICard
-            icon={<Package className="h-6 w-6" />}
-            value={isLoading ? "..." : stats.totalArticles}
-            label="Articles"
-          />
-          <KPICard
-            icon={<AlertTriangle className="h-6 w-6" />}
-            value={isLoading ? "..." : stats.activeAlerts}
-            label="Alertes"
-          />
-          <KPICard
-            icon={<RotateCcw className="h-6 w-6" />}
-            value={lastUpdate}
-            label="Mise à jour"
-          />
+          <div onClick={() => navigate('/articles')} className="cursor-pointer">
+            <KPICard
+              icon={<Package className="h-6 w-6" />}
+              value={isLoading ? "..." : stats.totalArticles}
+              label="Articles"
+              className="hover:bg-muted/60 transition-colors"
+            />
+          </div>
+          <div onClick={() => navigate('/alertes')} className="cursor-pointer">
+            <KPICard
+              icon={<AlertTriangle className="h-6 w-6" />}
+              value={isLoading ? "..." : stats.activeAlerts}
+              label="Alertes"
+              className="hover:bg-destructive/10 transition-colors"
+            />
+          </div>
+          <div onClick={() => navigate('/historique')} className="cursor-pointer">
+            <KPICard
+              icon={<RotateCcw className="h-6 w-6" />}
+              value={lastUpdate}
+              label="Mise à jour"
+              className="hover:bg-muted/60 transition-colors"
+            />
+          </div>
         </div>
 
         {/* Main Actions - Boutons XXL empilés verticalement */}
