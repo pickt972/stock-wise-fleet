@@ -250,6 +250,7 @@ export default function Sorties() {
                     }
                   }
                 }}
+                onArticleNotFound={() => {}}
                 returnTo="/sorties"
               />
             </div>
