@@ -20,6 +20,16 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "./DashboardLayout";
 import { Camera, Plus, Minus } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type ScanMode = 'CONSULTER' | 'SORTIE' | 'INVENTAIRE' | 'COMMANDE' | 'REVISION';
 
@@ -63,6 +73,10 @@ export default function ScannerHub() {
   const [locationCorrect, setLocationCorrect] = useState<boolean | null>(null);
   const [requiresMaintenance, setRequiresMaintenance] = useState(false);
   const [requiresRemoval, setRequiresRemoval] = useState(false);
+  
+  // États pour dialog "Article non trouvé"
+  const [scannedNotFoundCode, setScannedNotFoundCode] = useState("");
+  const [showNotFoundDialog, setShowNotFoundDialog] = useState(false);
 
   useEffect(() => {
     // Récupérer le mode depuis l'état de navigation
@@ -112,11 +126,10 @@ export default function ScannerHub() {
           description: data.designation,
         });
       } else {
-        toast({
-          title: "Article non trouvé",
-          description: "Code non reconnu",
-          variant: "destructive",
-        });
+        // Article non trouvé - afficher dialog pour créer
+        setScannedNotFoundCode(scannedCode);
+        setShowNotFoundDialog(true);
+        setShowScanner(false);
       }
     } catch (error: any) {
       toast({
@@ -342,6 +355,12 @@ export default function ScannerHub() {
       return <Badge className="bg-warning text-warning-foreground">Stock faible</Badge>;
     }
     return <Badge className="bg-success text-success-foreground">OK</Badge>;
+  };
+
+  const handleCreateArticle = () => {
+    setShowNotFoundDialog(false);
+    const currentPath = window.location.pathname;
+    navigate(`/articles/new?reference=${encodeURIComponent(scannedNotFoundCode)}&returnTo=${encodeURIComponent(currentPath)}`);
   };
 
   return (
@@ -658,6 +677,26 @@ export default function ScannerHub() {
             onClose={() => setShowScanner(false)}
             onScanResult={handleScanResult}
           />
+
+          {/* Dialog Article Non Trouvé */}
+          <AlertDialog open={showNotFoundDialog} onOpenChange={setShowNotFoundDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>📦 Article non trouvé</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Aucun article avec le code: <strong>{scannedNotFoundCode}</strong>
+                  <br/><br/>
+                  Voulez-vous créer cet article?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleCreateArticle}>
+                  ➕ Créer article
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </DashboardLayout>
