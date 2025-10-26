@@ -220,6 +220,7 @@ export default function Inventaire() {
                     placeholder="Scanner ou rechercher un article..."
                     value={searchTerm}
                     onChange={setSearchTerm}
+                    returnTo="/inventaire"
                   />
                 </div>
 

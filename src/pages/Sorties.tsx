@@ -233,16 +233,24 @@ export default function Sorties() {
                 value={searchQuery}
                 onChange={(value) => {
                   setSearchQuery(value);
-                  // Rechercher l'article par code-barre ou référence
-                  const foundArticle = articles.find(
-                    a => a.reference?.toLowerCase().includes(value.toLowerCase()) ||
-                         a.designation?.toLowerCase().includes(value.toLowerCase())
-                  );
+                  // Si c'est un ID d'article, l'utiliser directement
+                  const foundArticle = articles.find(a => a.id === value);
                   if (foundArticle) {
-                    setFormData({ ...formData, articleId: foundArticle.id });
+                    setFormData({ ...formData, articleId: value });
                     setErrors({ ...errors, articleId: "" });
+                  } else {
+                    // Sinon, rechercher par référence ou désignation
+                    const searchResult = articles.find(
+                      a => a.reference?.toLowerCase().includes(value.toLowerCase()) ||
+                           a.designation?.toLowerCase().includes(value.toLowerCase())
+                    );
+                    if (searchResult) {
+                      setFormData({ ...formData, articleId: searchResult.id });
+                      setErrors({ ...errors, articleId: "" });
+                    }
                   }
                 }}
+                returnTo="/sorties"
               />
             </div>
 

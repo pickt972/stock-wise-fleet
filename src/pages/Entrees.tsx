@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/components/ui/page-header";
 import { ActionButton } from "@/components/ui/action-button";
 import { Input } from "@/components/ui/input";
@@ -32,12 +32,15 @@ interface Fournisseur {
 export default function Entrees() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { user } = useAuth();
   const [articles, setArticles] = useState<Article[]>([]);
   const [fournisseurs, setFournisseurs] = useState<Fournisseur[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [sku, setSku] = useState(searchParams.get('sku') || "");
+  const returnTo = searchParams.get('returnTo');
   const [formData, setFormData] = useState({
     articleId: "",
     quantity: "",
@@ -161,8 +164,14 @@ export default function Entrees() {
           : "Entrée de stock enregistrée avec succès",
       });
 
-      // Retour au dashboard
-      navigate('/dashboard');
+      // Rediriger vers la page d'origine ou dashboard
+      setTimeout(() => {
+        if (returnTo) {
+          navigate(returnTo);
+        } else {
+          navigate('/dashboard');
+        }
+      }, 1000);
     } catch (error: any) {
       console.error('Erreur lors de la création de l\'entrée:', error);
       toast({
@@ -197,6 +206,23 @@ export default function Entrees() {
         <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
           {/* Formulaire - un champ par ligne */}
           <div className="space-y-4">
+            {/* Code-barres/SKU (optionnel) */}
+            <div className="space-y-2">
+              <Label htmlFor="sku" className="text-sm font-semibold">
+                Code-barres/SKU (optionnel)
+              </Label>
+              <Input
+                id="sku"
+                placeholder="Ex: ABC123456789"
+                value={sku}
+                onChange={(e) => setSku(e.target.value)}
+                className="h-11 border-2"
+              />
+              <p className="text-xs text-muted-foreground">
+                Ce code sera enregistré avec l'article
+              </p>
+            </div>
+
             {/* Article */}
             <div className="space-y-2">
               <Label htmlFor="article" className="text-sm font-semibold">
