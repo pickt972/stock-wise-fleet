@@ -30,6 +30,7 @@ interface CreateArticleDialogProps {
   onArticleCreated: () => void;
   triggerButton?: React.ReactNode;
   defaultFournisseurId?: string;
+  defaultReference?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
@@ -38,6 +39,7 @@ export function CreateArticleDialog({
   onArticleCreated, 
   triggerButton, 
   defaultFournisseurId,
+  defaultReference,
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange 
 }: CreateArticleDialogProps) {
@@ -140,8 +142,13 @@ const articleSchema = z.object({
       if (defaultFournisseurId) {
         setFormData(prev => ({ ...prev, fournisseurId: defaultFournisseurId }));
       }
+      
+      // Pré-remplir la référence/code-barres si fourni
+      if (defaultReference) {
+        setFormData(prev => ({ ...prev, reference: defaultReference.toUpperCase() }));
+      }
     }
-  }, [open, defaultFournisseurId]);
+  }, [open, defaultFournisseurId, defaultReference]);
 
   const [categories, setCategories] = useState<string[]>([]);
 

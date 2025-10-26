@@ -12,6 +12,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Articles from "./pages/Articles";
 import ArticleDetail from "./pages/ArticleDetail";
+import ArticlesNew from "./pages/ArticlesNew";
 import Operations from "./pages/Operations";
 import ScannerHub from "./pages/ScannerHub";
 import HistoriqueMouvements from "./pages/HistoriqueMouvements";
@@ -71,6 +72,11 @@ const App = () => (
                   <Route path="/articles" element={
                     <ProtectedRoute>
                       <Articles />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/articles/new" element={
+                    <ProtectedRoute>
+                      <ArticlesNew />
                     </ProtectedRoute>
                   } />
                   <Route path="/articles/:id" element={

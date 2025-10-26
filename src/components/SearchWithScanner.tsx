@@ -92,7 +92,7 @@ export const SearchWithScanner = ({
   const handleCreateArticle = () => {
     setShowNotFoundDialog(false);
     const currentPath = returnTo || window.location.pathname;
-    navigate(`/entrees?sku=${encodeURIComponent(scannedNotFoundCode)}&returnTo=${encodeURIComponent(currentPath)}`);
+    navigate(`/articles/new?reference=${encodeURIComponent(scannedNotFoundCode)}&returnTo=${encodeURIComponent(currentPath)}`);
   };
   
   return (
