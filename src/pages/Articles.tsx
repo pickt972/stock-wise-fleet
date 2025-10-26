@@ -104,6 +104,8 @@ export default function Articles() {
             placeholder="Chercher article..."
             value={searchTerm}
             onChange={setSearchTerm}
+            onArticleNotFound={() => {}}
+            returnTo="/articles"
           />
 
           {/* Filtres rapides */}

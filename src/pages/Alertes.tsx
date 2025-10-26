@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, Package, TrendingDown, ArrowLeft, ShoppingCart, Filter, Grid, List } from "lucide-react";
+import { SearchWithScanner } from "@/components/SearchWithScanner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ export default function Alertes() {
   const { highPriorityAlerts, mediumPriorityAlerts, alertsByCategory, isLoading } = useAlerts();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"overview" | "category">("overview");
+  const [filterArticle, setFilterArticle] = useState<string>("");
 
   useEffect(() => {
     document.title = "Alertes | StockAuto";
@@ -56,6 +58,19 @@ export default function Alertes() {
   const filteredCategoriesAlerts = selectedCategory === "all" 
     ? alertsByCategory 
     : alertsByCategory.filter(cat => cat.category === selectedCategory);
+
+  // Filtrer par article
+  const filteredHighPriorityAlerts = highPriorityAlerts.filter(alert =>
+    filterArticle === "" ||
+    alert.article.designation.toLowerCase().includes(filterArticle.toLowerCase()) ||
+    alert.article.reference.toLowerCase().includes(filterArticle.toLowerCase())
+  );
+
+  const filteredMediumPriorityAlerts = mediumPriorityAlerts.filter(alert =>
+    filterArticle === "" ||
+    alert.article.designation.toLowerCase().includes(filterArticle.toLowerCase()) ||
+    alert.article.reference.toLowerCase().includes(filterArticle.toLowerCase())
+  );
 
   const renderAlertCard = (alert: Alert) => (
     <div key={alert.id} className="flex items-start justify-between p-4 bg-background rounded-lg border border-border hover:bg-muted/50 transition-colors">
@@ -124,6 +139,17 @@ export default function Alertes() {
           </p>
         </div>
 
+        {/* Recherche par article */}
+        <div className="w-full">
+          <SearchWithScanner
+            placeholder="Filtrer par article..."
+            value={filterArticle}
+            onChange={setFilterArticle}
+            onArticleNotFound={() => {}}
+            returnTo="/alertes"
+          />
+        </div>
+
         {/* Contrôles de vue */}
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <Tabs value={viewMode} onValueChange={(value: any) => setViewMode(value)} className="w-full sm:w-auto">
@@ -163,13 +189,13 @@ export default function Alertes() {
           <TabsContent value="overview" className="space-y-6">
             {/* Vue générale - comme avant */}
             {/* Alertes urgentes */}
-            {highPriorityAlerts.length > 0 && (
+            {filteredHighPriorityAlerts.length > 0 && (
               <section>
                 <Card className="border-destructive bg-destructive/5">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0">
                     <CardTitle className="text-destructive flex items-center gap-2">
                       <Package className="h-5 w-5" />
-                      Alertes urgentes ({highPriorityAlerts.length})
+                      Alertes urgentes ({filteredHighPriorityAlerts.length})
                     </CardTitle>
                     <Button
                       onClick={() => handleCreateOrderForAlerts(highPriorityAlerts)}
@@ -181,20 +207,20 @@ export default function Alertes() {
                     </Button>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {highPriorityAlerts.map(renderAlertCard)}
+                    {filteredHighPriorityAlerts.map(renderAlertCard)}
                   </CardContent>
                 </Card>
               </section>
             )}
 
             {/* Alertes d'attention */}
-            {mediumPriorityAlerts.length > 0 && (
+            {filteredMediumPriorityAlerts.length > 0 && (
               <section>
                 <Card className="border-warning bg-warning/5">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0">
                     <CardTitle className="text-warning flex items-center gap-2">
                       <TrendingDown className="h-5 w-5" />
-                      Stocks faibles ({mediumPriorityAlerts.length})
+                      Stocks faibles ({filteredMediumPriorityAlerts.length})
                     </CardTitle>
                     <Button
                       onClick={() => handleCreateOrderForAlerts(mediumPriorityAlerts)}
@@ -207,7 +233,7 @@ export default function Alertes() {
                     </Button>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {mediumPriorityAlerts.map(renderAlertCard)}
+                    {filteredMediumPriorityAlerts.map(renderAlertCard)}
                   </CardContent>
                 </Card>
               </section>

@@ -4,6 +4,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { SearchWithScanner } from "@/components/SearchWithScanner";
 import {
   Select,
   SelectContent,
@@ -41,6 +43,7 @@ export default function HistoriqueMouvements() {
   const { toast } = useToast();
   const [filterType, setFilterType] = useState<string>("all");
   const [filterPeriod, setFilterPeriod] = useState<string>("all");
+  const [filterArticle, setFilterArticle] = useState<string>("");
 
   useEffect(() => {
     fetchMovements();
@@ -81,7 +84,7 @@ export default function HistoriqueMouvements() {
 
   useEffect(() => {
     applyFilters();
-  }, [filterType, filterPeriod, movements]);
+  }, [filterType, filterPeriod, filterArticle, movements]);
 
   const applyFilters = () => {
     let filtered = [...movements];
@@ -114,6 +117,15 @@ export default function HistoriqueMouvements() {
             return true;
         }
       });
+    }
+
+    // Filtre par article
+    if (filterArticle.trim() !== "") {
+      const searchLower = filterArticle.toLowerCase();
+      filtered = filtered.filter(m => 
+        m.articles?.designation?.toLowerCase().includes(searchLower) ||
+        m.articles?.reference?.toLowerCase().includes(searchLower)
+      );
     }
 
     setFilteredMovements(filtered);
@@ -213,6 +225,19 @@ export default function HistoriqueMouvements() {
           <Card className="p-4">
             <div className="space-y-3">
               <h3 className="text-sm font-semibold">Filtres</h3>
+              
+              {/* Recherche par article */}
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground">Rechercher un article</label>
+                <SearchWithScanner
+                  placeholder="Filtrer par article..."
+                  value={filterArticle}
+                  onChange={setFilterArticle}
+                  onArticleNotFound={() => {}}
+                  returnTo="/historique"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <label className="text-xs text-muted-foreground">Type d'opération</label>

@@ -15,6 +15,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
+import { SearchWithScanner } from "@/components/SearchWithScanner";
 import { PurchaseOrderDialog } from "@/components/commandes/PurchaseOrderDialog";
 import { SmartOrderDialog } from "@/components/commandes/SmartOrderDialog";
 import { CreateArticleDialog } from "@/components/articles/CreateArticleDialog";
@@ -88,6 +89,7 @@ export default function Commandes() {
   const [showSmartOrder, setShowSmartOrder] = useState(false);
   const [articleSearchOpen, setArticleSearchOpen] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [articleSearchQuery, setArticleSearchQuery] = useState("");
   const [currentCommande, setCurrentCommande] = useState<Commande>({
     fournisseur: "",
     email_fournisseur: "",
@@ -1091,53 +1093,20 @@ export default function Commandes() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <CardTitle>Ajouter des articles</CardTitle>
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                  <Button 
-                    onClick={() => { setArticleSearchOpen(false); setShowScanner(true); toast({ title: "Ouverture du scanner" }); }} 
-                    size="sm" 
-                    variant="default"
-                    className="w-full sm:w-auto"
-                  >
-                    <ScanBarcode className="w-4 h-4 mr-2" />
-                    Scanner
-                  </Button>
-                  <Popover open={articleSearchOpen} onOpenChange={setArticleSearchOpen}>
-                    <PopoverTrigger asChild>
-                      <Button size="sm" variant="default" className="w-full sm:w-auto">
-                        <Search className="w-4 h-4 mr-2" />
-                        Rechercher un article
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[90vw] sm:w-[400px] p-0" align="end">
-                      <Command>
-                        <CommandInput placeholder="Rechercher un article..." />
-                        <CommandList>
-                          <CommandEmpty>Aucun article trouvé.</CommandEmpty>
-                          <CommandGroup>
-                            {filteredArticles.map((article) => (
-                              <CommandItem
-                                key={article.id}
-                                value={`${article.designation} ${article.reference}`}
-                                onSelect={() => addArticleDirectly(article.id)}
-                                className="cursor-pointer"
-                              >
-                                <div className="flex items-center justify-between w-full gap-2">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-medium truncate">{article.designation}</div>
-                                    <div className="text-sm text-muted-foreground truncate">
-                                      Réf: {article.reference}
-                                    </div>
-                                  </div>
-                                  <div className="text-right shrink-0 ml-2">
-                                    <div className="font-medium">{article.prix_achat.toFixed(2)} €</div>
-                                  </div>
-                                </div>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                  <SearchWithScanner
+                    placeholder="Chercher ou scanner article..."
+                    value={articleSearchQuery}
+                    onChange={(value) => {
+                      setArticleSearchQuery(value);
+                      // Si c'est un ID d'article (UUID), l'ajouter directement
+                      if (value.length === 36 && value.includes('-')) {
+                        addArticleDirectly(value);
+                        setArticleSearchQuery("");
+                      }
+                    }}
+                    onArticleNotFound={() => {}}
+                    returnTo="/commandes"
+                  />
                   <Button onClick={() => setShowCreateArticleDialog(true)} size="sm" variant="outline" className="w-full sm:w-auto">
                     <Plus className="w-4 h-4 mr-2" />
                     Nouvel article

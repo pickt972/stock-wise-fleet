@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Wrench, AlertTriangle, CheckCircle, ShoppingCart, Package, Minus } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { SearchWithScanner } from "@/components/SearchWithScanner";
 import DashboardLayout from "./DashboardLayout";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -50,6 +51,7 @@ export default function Revisions() {
     modele: "",
     motorisation: "",
   });
+  const [articleSearchQuery, setArticleSearchQuery] = useState("");
 
   const { data: vehicules = [] } = useQuery({
     queryKey: ["vehicules-actifs"],
@@ -596,8 +598,25 @@ export default function Revisions() {
                         Pièces compatibles ({articlesCompatibles.length})
                       </h4>
                       
+                      {/* Recherche d'article */}
+                      <div className="mb-3">
+                        <SearchWithScanner
+                          placeholder="Chercher ou scanner un article..."
+                          value={articleSearchQuery}
+                          onChange={setArticleSearchQuery}
+                          onArticleNotFound={() => {}}
+                          returnTo="/revisions"
+                        />
+                      </div>
+                      
                       <div className="max-h-64 overflow-y-auto space-y-2">
-                        {articlesCompatibles.map((article) => {
+                        {articlesCompatibles
+                          .filter(article => 
+                            articleSearchQuery === "" ||
+                            article.designation.toLowerCase().includes(articleSearchQuery.toLowerCase()) ||
+                            article.reference.toLowerCase().includes(articleSearchQuery.toLowerCase())
+                          )
+                          .map((article) => {
                           const analyse = analyseStock(article, typeof quantiteRevision === "number" ? quantiteRevision : 1);
                           const isSelected = selectedArticles.has(article.id);
                           return (
