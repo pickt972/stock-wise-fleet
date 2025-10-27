@@ -90,7 +90,12 @@ export const SearchWithScanner = ({
   };
   
   const handleCreateArticle = () => {
+    // Fermer dialog et nettoyer states AVANT redirection
     setShowNotFoundDialog(false);
+    setScannedNotFoundCode("");
+    setShowScanner(false);
+    
+    // PUIS rediriger
     const currentPath = returnTo || window.location.pathname;
     navigate(`/articles/new?reference=${encodeURIComponent(scannedNotFoundCode)}&returnTo=${encodeURIComponent(currentPath)}`);
   };
