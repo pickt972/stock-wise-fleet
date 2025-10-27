@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Camera, CameraOff, RotateCcw, Flashlight, FlashlightOff, Maximize2, Minimize2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { requestCameraPermission } from "@/lib/permissionManager";
+import { requestCameraPermission, isCameraPermissionGranted } from "@/lib/permissionManager";
 
 interface BarcodeScannerProps {
   onScanResult: (result: string) => void;
@@ -45,6 +45,9 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
 
   const initializeScanner = async () => {
     try {
+      // Vérifier si la permission est déjà en cache
+      const alreadyGranted = isCameraPermissionGranted();
+      
       // Request camera permissions (cached if already granted)
       const permissionGranted = await requestCameraPermission();
       
@@ -61,18 +64,22 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
       const reader = new BrowserMultiFormatReader();
       setCodeReader(reader);
 
-      // Demander les permissions de caméra avec contrainte stricte pour la caméra arrière
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "environment", // Force l'utilisation de la caméra arrière
-        },
-        audio: false,
-      });
+      // Si permission déjà en cache, ne pas redemander avec getUserMedia
+      // Sinon, getUserMedia sera appelé automatiquement par le reader
+      if (!alreadyGranted) {
+        // Première fois: demander explicitement pour obtenir la liste des devices
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: "environment", // Force l'utilisation de la caméra arrière
+          },
+          audio: false,
+        });
+        
+        // Arrêter le stream temporaire
+        stream.getTracks().forEach((track) => track.stop());
+      }
 
       setHasPermission(true);
-
-      // Arrêter le stream temporaire
-      stream.getTracks().forEach((track) => track.stop());
 
       // Obtenir la liste des caméras disponibles (méthode statique)
       const videoDevices = await BrowserMultiFormatReader.listVideoInputDevices();
