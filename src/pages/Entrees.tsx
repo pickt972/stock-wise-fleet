@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchWithScanner } from "@/components/SearchWithScanner";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -206,54 +207,32 @@ export default function Entrees() {
         <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
           {/* Formulaire - un champ par ligne */}
           <div className="space-y-4">
-            {/* Code-barres/SKU (optionnel) */}
-            <div className="space-y-2">
-              <Label htmlFor="sku" className="text-sm font-semibold">
-                Code-barres/SKU (optionnel)
-              </Label>
-              <Input
-                id="sku"
-                placeholder="Ex: ABC123456789"
-                value={sku}
-                onChange={(e) => setSku(e.target.value)}
-                className="h-11 border-2"
-              />
-              <p className="text-xs text-muted-foreground">
-                Ce code sera enregistré avec l'article
-              </p>
-            </div>
-
-            {/* Article */}
+            {/* Article avec Scanner */}
             <div className="space-y-2">
               <Label htmlFor="article" className="text-sm font-semibold">
                 Article *
               </Label>
-              <Select
+              <SearchWithScanner
+                placeholder="Scanner ou chercher un article..."
                 value={formData.articleId}
-                onValueChange={(value) => {
+                onChange={(value) => {
                   setFormData({ ...formData, articleId: value });
                   setErrors({ ...errors, articleId: "" });
                 }}
-              >
-                <SelectTrigger 
-                  id="article"
-                  className={`h-11 border-2 ${errors.articleId ? 'border-destructive' : ''}`}
-                >
-                  <SelectValue placeholder="Sélectionner un article" />
-                </SelectTrigger>
-                <SelectContent>
-                  {articles.map((article) => (
-                    <SelectItem key={article.id} value={article.id}>
-                      {article.designation} - Stock: {article.stock}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onArticleNotFound={(barcode) => {
+                  // Dialog géré automatiquement par SearchWithScanner
+                }}
+                returnTo="/entrees"
+                className={errors.articleId ? 'border-destructive' : ''}
+              />
               {errors.articleId && (
                 <p className="text-xs text-destructive flex items-center gap-1">
                   <span>⚠️</span> {errors.articleId}
                 </p>
               )}
+              <p className="text-xs text-muted-foreground">
+                Scannez un code-barres ou recherchez par nom
+              </p>
             </div>
 
             {/* Quantité */}
