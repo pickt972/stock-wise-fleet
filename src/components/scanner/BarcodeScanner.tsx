@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Camera, CameraOff, RotateCcw, Flashlight, FlashlightOff, Maximize2, Minimize2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { requestCameraPermission, isCameraPermissionGranted } from "@/lib/permissionManager";
+import { requestCameraPermission } from "@/lib/permissionManager";
 
 interface BarcodeScannerProps {
   onScanResult: (result: string) => void;
@@ -45,12 +45,9 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
 
   const initializeScanner = async () => {
     try {
-      // Vérifier si la permission est déjà en cache
-      const alreadyGranted = isCameraPermissionGranted();
-      
-      // Request camera permissions (cached if already granted)
+      // Demander/valider la permission via le permissionManager (dédupliqué)
       const permissionGranted = await requestCameraPermission();
-      
+
       if (!permissionGranted) {
         setHasPermission(false);
         toast({
@@ -63,21 +60,6 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
 
       const reader = new BrowserMultiFormatReader();
       setCodeReader(reader);
-
-      // Si permission déjà en cache, ne pas redemander avec getUserMedia
-      // Sinon, getUserMedia sera appelé automatiquement par le reader
-      if (!alreadyGranted) {
-        // Première fois: demander explicitement pour obtenir la liste des devices
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "environment", // Force l'utilisation de la caméra arrière
-          },
-          audio: false,
-        });
-        
-        // Arrêter le stream temporaire
-        stream.getTracks().forEach((track) => track.stop());
-      }
 
       setHasPermission(true);
 
