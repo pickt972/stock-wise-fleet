@@ -1,11 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { PackageMinus } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
-import { ActionButton } from "@/components/ui/action-button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { SearchWithScanner } from "@/components/SearchWithScanner";
 import {
   Select,
   SelectContent,
@@ -13,89 +10,85 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
+import { ExitList } from "@/components/stock/ExitList";
+import { ExitStats } from "@/components/stock/ExitStats";
+import { SearchWithScanner } from "@/components/SearchWithScanner";
 import DashboardLayout from "./DashboardLayout";
 
-interface Article {
-  id: string;
-  reference: string;
-  designation: string;
-  stock: number;
-}
-
-interface Vehicule {
-  id: string;
-  marque: string;
-  modele: string;
-  immatriculation: string;
-}
-
 export default function Sorties() {
-  const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [vehicules, setVehicules] = useState<Vehicule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isCreating, setIsCreating] = useState(false);
-  const [formData, setFormData] = useState({
-    articleId: "",
-    quantity: "",
-    motif: "",
-    vehiculeId: "",
-    notes: "",
-  });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-
-  const motifs = [
-    "Installation",
-    "Réparation",
-    "Maintenance",
-    "Transfert sortant",
-    "Autre"
-  ];
+  const [exits, setExits] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [exitTypeFilter, setExitTypeFilter] = useState("all");
+  const [dateRange, setDateRange] = useState("all");
+  const [selectedArticleId, setSelectedArticleId] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [searchValue, setSearchValue] = useState("");
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchExits();
+  }, [searchTerm, exitTypeFilter, dateRange]);
 
-  const fetchData = async () => {
+  const fetchExits = async () => {
+    setIsLoading(true);
     try {
-      const [articlesRes, vehiculesRes] = await Promise.all([
-        supabase
-          .from('articles')
-          .select('id, reference, designation, stock')
-          .order('designation'),
-        supabase
-          .from('vehicules')
-          .select('id, marque, modele, immatriculation')
-          .eq('actif', true)
-          .order('immatriculation')
-      ]);
+      let query = supabase
+        .from("stock_exits")
+        .select(`
+          *,
+          vehicules(immatriculation, marque, modele),
+          profiles!stock_exits_created_by_fkey(first_name, last_name),
+          stock_exit_items(
+            *,
+            articles(reference, designation)
+          )
+        `)
+        .order("exit_date", { ascending: false });
 
-      if (articlesRes.error) throw articlesRes.error;
-      if (vehiculesRes.error) throw vehiculesRes.error;
+      // Filtres
+      if (exitTypeFilter !== "all") {
+        query = query.eq("exit_type", exitTypeFilter);
+      }
 
-      setArticles(articlesRes.data || []);
-      setVehicules(vehiculesRes.data || []);
+      if (dateRange === "today") {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        query = query.gte("exit_date", today.toISOString());
+      } else if (dateRange === "week") {
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        query = query.gte("exit_date", weekAgo.toISOString());
+      } else if (dateRange === "month") {
+        const monthAgo = new Date();
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+        query = query.gte("exit_date", monthAgo.toISOString());
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      let filteredData = data || [];
+
+      // Recherche
+      if (searchTerm) {
+        filteredData = filteredData.filter(
+          (exit) =>
+            exit.exit_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            exit.vehicules?.immatriculation?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+
+      setExits(filteredData);
     } catch (error: any) {
+      console.error("Erreur chargement sorties:", error);
       toast({
         title: "Erreur",
-        description: "Impossible de charger les données",
+        description: "Impossible de charger les sorties",
         variant: "destructive",
       });
     } finally {
@@ -103,113 +96,107 @@ export default function Sorties() {
     }
   };
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
+  const calculateStats = () => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    if (!formData.articleId) {
-      newErrors.articleId = "Veuillez sélectionner un article";
-    }
-    if (!formData.quantity || parseInt(formData.quantity) <= 0) {
-      newErrors.quantity = "La quantité doit être supérieure à 0";
-    }
-    if (!formData.motif) {
-      newErrors.motif = "Veuillez sélectionner un motif";
-    }
+    const activeExits = exits.filter((e) => e.status === "active");
 
-    // Vérifier le stock disponible
-    const selectedArticle = articles.find(a => a.id === formData.articleId);
-    if (selectedArticle && parseInt(formData.quantity) > selectedArticle.stock) {
-      newErrors.quantity = `Stock insuffisant. Disponible: ${selectedArticle.stock}`;
-    }
+    const todayCount = activeExits.filter(
+      (e) => new Date(e.exit_date) >= today
+    ).length;
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const monthCount = activeExits.filter(
+      (e) => new Date(e.exit_date) >= firstDayOfMonth
+    ).length;
+
+    const rentalCount = activeExits.filter(
+      (e) => e.exit_type === "location_accessoire" && e.return_status === "en_cours"
+    ).length;
+
+    return { todayCount, monthCount, rentalCount };
   };
 
-  const handleSubmit = async () => {
-    if (!validateForm()) {
-      return;
-    }
-
-    const quantity = parseInt(formData.quantity);
-    const selectedArticle = articles.find(a => a.id === formData.articleId);
-    
-    // Vérifier si la sortie représente plus de 30% du stock
-    if (selectedArticle && quantity > selectedArticle.stock * 0.3) {
-      setShowConfirmDialog(true);
-      return;
-    }
-
-    executeSubmit();
-  };
-
-  const executeSubmit = async () => {
-    setShowConfirmDialog(false);
-    setIsCreating(true);
-    try {
-      const quantity = parseInt(formData.quantity);
-
-      // Mettre à jour le stock via la fonction sécurisée AVANT de créer le mouvement
-      const { data: rpcData, error: updateError } = await supabase.rpc('update_article_stock', {
-        article_id: formData.articleId,
-        quantity_change: -quantity, // Négatif pour une sortie
+  const handleQuickExit = async () => {
+    if (!selectedArticleId || !quantity || parseInt(quantity) <= 0) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez sélectionner un article et une quantité valide",
+        variant: "destructive",
       });
+      return;
+    }
 
-      if (updateError) {
-        console.error('Erreur RPC update_article_stock:', updateError);
-        throw new Error(updateError.message || "Erreur lors de la mise à jour du stock");
-      }
-
-      // Créer la sortie de stock APRÈS la mise à jour du stock
-      const { error: exitError } = await supabase
-        .from('stock_movements')
+    try {
+      // Créer une sortie rapide de type "consommation"
+      const { data: exit, error: exitError } = await supabase
+        .from("stock_exits")
         .insert([{
-          article_id: formData.articleId,
-          type: 'sortie',
-          quantity: quantity,
-          motif: formData.motif,
-          user_id: user?.id,
-          vehicule_id: formData.vehiculeId || null,
+          exit_number: "",
+          exit_type: "consommation",
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+        }])
+        .select()
+        .single();
+
+      if (exitError) throw exitError;
+
+      // Créer l'item
+      const { error: itemError } = await supabase
+        .from("stock_exit_items")
+        .insert([{
+          exit_id: exit.id,
+          article_id: selectedArticleId,
+          quantity: parseInt(quantity),
         }]);
 
-      if (exitError) {
-        console.error('Erreur insertion stock_movements:', exitError);
-        throw new Error(exitError.message || "Erreur lors de l'enregistrement du mouvement");
-      }
+      if (itemError) throw itemError;
 
-      // Récupérer les détails de l'article pour le toast
-      const selectedArticle = articles.find(a => a.id === formData.articleId);
-      
       toast({
-        title: "✅ Retrait effectué",
-        description: selectedArticle 
-          ? `${quantity}x ${selectedArticle.designation}`
-          : "Sortie de stock enregistrée avec succès",
+        title: "✅ Sortie enregistrée",
+        description: `Article sorti du stock`,
       });
 
-      // Retour au dashboard
-      navigate('/dashboard');
+      setSelectedArticleId("");
+      setQuantity("");
+      setSearchValue("");
+      fetchExits();
     } catch (error: any) {
-      console.error('Erreur lors de la création de la sortie:', error);
+      console.error("Erreur sortie:", error);
       toast({
         title: "Erreur",
         description: error.message || "Impossible d'enregistrer la sortie",
         variant: "destructive",
       });
-    } finally {
-      setIsCreating(false);
     }
   };
 
-  const handleCancel = () => {
-    navigate('/dashboard');
+  const handleSearchChange = async (value: string) => {
+    setSearchValue(value);
+    
+    // Rechercher l'article par code-barres ou référence
+    if (value.length > 2) {
+      const { data, error } = await supabase
+        .from("articles")
+        .select("id")
+        .or(`code_barre.eq.${value},reference.ilike.%${value}%`)
+        .single();
+      
+      if (data && !error) {
+        setSelectedArticleId(data.id);
+      }
+    }
   };
+
+  const stats = calculateStats();
 
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg text-muted-foreground">Chargement...</div>
+        <PageHeader title="Sorties de stock" />
+        <div className="flex items-center justify-center py-12">
+          <p>Chargement...</p>
         </div>
       </DashboardLayout>
     );
@@ -217,224 +204,98 @@ export default function Sorties() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-background">
-        <PageHeader title="Sortie de stock" showBackButton />
-        
-        <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
-          {/* Formulaire */}
-          <div className="space-y-4">
-            {/* Scanner ou recherche rapide */}
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold">
-                Scanner ou rechercher
-              </Label>
-              <SearchWithScanner
-                placeholder="Scanner ou chercher un article..."
-                value={searchQuery}
-                onChange={(value) => {
-                  setSearchQuery(value);
-                  // Si c'est un ID d'article, l'utiliser directement
-                  const foundArticle = articles.find(a => a.id === value);
-                  if (foundArticle) {
-                    setFormData({ ...formData, articleId: value });
-                    setErrors({ ...errors, articleId: "" });
-                  } else {
-                    // Sinon, rechercher par référence ou désignation
-                    const searchResult = articles.find(
-                      a => a.reference?.toLowerCase().includes(value.toLowerCase()) ||
-                           a.designation?.toLowerCase().includes(value.toLowerCase())
-                    );
-                    if (searchResult) {
-                      setFormData({ ...formData, articleId: searchResult.id });
-                      setErrors({ ...errors, articleId: "" });
-                    }
-                  }
-                }}
-                onArticleNotFound={() => {}}
-                returnTo="/sorties"
-              />
+      <div className="flex flex-col gap-6">
+        <PageHeader title="Sorties de stock" />
+
+        <Tabs defaultValue="all" className="w-full">
+          <TabsList>
+            <TabsTrigger value="all">Toutes les sorties</TabsTrigger>
+            <TabsTrigger value="quick">Sortie rapide</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="all" className="space-y-6">
+            <ExitStats {...stats} />
+
+            {/* Filtres et recherche */}
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+              <div className="flex gap-2 w-full md:w-auto">
+                <Input
+                  placeholder="Rechercher par N° ou véhicule..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full md:w-64"
+                />
+                <Select value={dateRange} onValueChange={setDateRange}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les dates</SelectItem>
+                    <SelectItem value="today">Aujourd'hui</SelectItem>
+                    <SelectItem value="week">Cette semaine</SelectItem>
+                    <SelectItem value="month">Ce mois</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={exitTypeFilter} onValueChange={setExitTypeFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les types</SelectItem>
+                    <SelectItem value="utilisation_vehicule">Utilisation véhicule</SelectItem>
+                    <SelectItem value="location_accessoire">Location accessoire</SelectItem>
+                    <SelectItem value="consommation">Consommation</SelectItem>
+                    <SelectItem value="perte_casse">Perte/Casse</SelectItem>
+                    <SelectItem value="autre">Autre</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            {/* Article */}
-            <div className="space-y-2">
-              <Label htmlFor="article" className="text-sm font-semibold">
-                Article *
-              </Label>
-              <Select
-                value={formData.articleId}
-                onValueChange={(value) => {
-                  setFormData({ ...formData, articleId: value });
-                  setErrors({ ...errors, articleId: "" });
-                }}
-              >
-                <SelectTrigger 
-                  id="article"
-                  className={`h-11 border-2 ${errors.articleId ? 'border-destructive' : ''}`}
-                >
-                  <SelectValue placeholder="Sélectionner un article" />
-                </SelectTrigger>
-                <SelectContent>
-                  {articles.map((article) => (
-                    <SelectItem key={article.id} value={article.id}>
-                      {article.designation} - Stock: {article.stock}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.articleId && (
-                <p className="text-xs text-destructive flex items-center gap-1">
-                  <span>⚠️</span> {errors.articleId}
+            <ExitList exits={exits} onRefresh={fetchExits} />
+          </TabsContent>
+
+          <TabsContent value="quick" className="space-y-6">
+            <div className="max-w-2xl mx-auto">
+              <div className="bg-card border rounded-lg p-6 space-y-4">
+                <h3 className="text-lg font-semibold">Sortie rapide (Consommation)</h3>
+                <p className="text-sm text-muted-foreground">
+                  Enregistrez rapidement une sortie de stock pour consommation courante
                 </p>
-              )}
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">Article à sortir</label>
+                    <SearchWithScanner
+                      placeholder="Scanner ou chercher un article..."
+                      value={searchValue}
+                      onChange={handleSearchChange}
+                      onScan={handleSearchChange}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Quantité</label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={quantity}
+                      onChange={(e) => setQuantity(e.target.value)}
+                      placeholder="Quantité à sortir"
+                      className="mt-2"
+                    />
+                  </div>
+
+                  <Button onClick={handleQuickExit} className="w-full">
+                    <PackageMinus className="mr-2 h-4 w-4" />
+                    Enregistrer la sortie
+                  </Button>
+                </div>
+              </div>
             </div>
-
-            {/* Quantité */}
-            <div className="space-y-2">
-              <Label htmlFor="quantity" className="text-sm font-semibold">
-                Quantité *
-              </Label>
-              <Input
-                id="quantity"
-                type="number"
-                min="1"
-                placeholder="0"
-                value={formData.quantity}
-                onChange={(e) => {
-                  setFormData({ ...formData, quantity: e.target.value });
-                  setErrors({ ...errors, quantity: "" });
-                }}
-                className={`h-11 border-2 text-base ${errors.quantity ? 'border-destructive' : ''}`}
-              />
-              {errors.quantity && (
-                <p className="text-xs text-destructive flex items-center gap-1">
-                  <span>⚠️</span> {errors.quantity}
-                </p>
-              )}
-            </div>
-
-            {/* Motif */}
-            <div className="space-y-2">
-              <Label htmlFor="motif" className="text-sm font-semibold">
-                Motif *
-              </Label>
-              <Select
-                value={formData.motif}
-                onValueChange={(value) => {
-                  setFormData({ ...formData, motif: value });
-                  setErrors({ ...errors, motif: "" });
-                }}
-              >
-                <SelectTrigger 
-                  id="motif"
-                  className={`h-11 border-2 ${errors.motif ? 'border-destructive' : ''}`}
-                >
-                  <SelectValue placeholder="Sélectionner un motif" />
-                </SelectTrigger>
-                <SelectContent>
-                  {motifs.map((motif) => (
-                    <SelectItem key={motif} value={motif}>
-                      {motif}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.motif && (
-                <p className="text-xs text-destructive flex items-center gap-1">
-                  <span>⚠️</span> {errors.motif}
-                </p>
-              )}
-            </div>
-
-            {/* Véhicule (optionnel) */}
-            <div className="space-y-2">
-              <Label htmlFor="vehicule" className="text-sm font-semibold">
-                Véhicule (optionnel)
-              </Label>
-              <Select
-                value={formData.vehiculeId}
-                onValueChange={(value) => setFormData({ ...formData, vehiculeId: value === 'none' ? '' : value })}
-              >
-                <SelectTrigger id="vehicule" className="h-11 border-2">
-                  <SelectValue placeholder="Aucun véhicule" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Aucun</SelectItem>
-                  {vehicules.map((vehicule) => (
-                    <SelectItem key={vehicule.id} value={vehicule.id}>
-                      {vehicule.immatriculation} - {vehicule.marque} {vehicule.modele}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Notes (optionnel) */}
-            <div className="space-y-2">
-              <Label htmlFor="notes" className="text-sm font-semibold">
-                Notes (optionnel)
-              </Label>
-              <Textarea
-                id="notes"
-                placeholder="Informations complémentaires..."
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className="min-h-[80px] border-2 resize-none"
-              />
-            </div>
-          </div>
-
-          {/* Boutons d'action */}
-          <div className="space-y-3 pt-8">
-            <ActionButton
-              variant="warning"
-              size="xxl"
-              className="w-full"
-              onClick={handleSubmit}
-              disabled={isCreating}
-            >
-              {isCreating ? "Enregistrement..." : "💾 Enregistrer"}
-            </ActionButton>
-
-            <ActionButton
-              variant="secondary"
-              size="xxl"
-              className="w-full"
-              onClick={handleCancel}
-              disabled={isCreating}
-            >
-              ❌ Annuler
-            </ActionButton>
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
-
-      {/* Confirmation Dialog */}
-      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>⚠️ Confirmer sortie importante</AlertDialogTitle>
-            <AlertDialogDescription>
-              Vous allez retirer {formData.quantity} unités{' '}
-              {(() => {
-                const selectedArticle = articles.find(a => a.id === formData.articleId);
-                if (selectedArticle) {
-                  const percentage = ((parseInt(formData.quantity) / selectedArticle.stock) * 100).toFixed(1);
-                  return `(${percentage}% du stock actuel de ${selectedArticle.stock} unités)`;
-                }
-                return '';
-              })()}.
-              <br /><br />
-              Êtes-vous sûr de vouloir continuer?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={executeSubmit}>
-              Confirmer la sortie
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </DashboardLayout>
   );
 }

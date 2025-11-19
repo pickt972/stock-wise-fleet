@@ -983,6 +983,149 @@ export type Database = {
           },
         ]
       }
+      stock_exit_items: {
+        Row: {
+          article_id: string
+          created_at: string | null
+          exit_id: string
+          id: string
+          quantity: number
+          total_price: number | null
+          unit_price: number | null
+        }
+        Insert: {
+          article_id: string
+          created_at?: string | null
+          exit_id: string
+          id?: string
+          quantity: number
+          total_price?: number | null
+          unit_price?: number | null
+        }
+        Update: {
+          article_id?: string
+          created_at?: string | null
+          exit_id?: string
+          id?: string
+          quantity?: number
+          total_price?: number | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_exit_items_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_exit_items_exit_id_fkey"
+            columns: ["exit_id"]
+            isOneToOne: false
+            referencedRelation: "stock_exits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_exits: {
+        Row: {
+          actual_return_date: string | null
+          caution_amount: number | null
+          client_name: string | null
+          client_reference: string | null
+          created_at: string | null
+          created_by: string
+          damage_description: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_reason: string | null
+          department: string | null
+          exit_date: string
+          exit_number: string
+          exit_type: string
+          expected_return_date: string | null
+          id: string
+          intervention_type: string | null
+          kilometrage: number | null
+          notes: string | null
+          reason: string | null
+          reimbursement_amount: number | null
+          responsible_party: string | null
+          return_status: string | null
+          status: string | null
+          total_amount: number | null
+          updated_at: string | null
+          vehicule_id: string | null
+        }
+        Insert: {
+          actual_return_date?: string | null
+          caution_amount?: number | null
+          client_name?: string | null
+          client_reference?: string | null
+          created_at?: string | null
+          created_by: string
+          damage_description?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_reason?: string | null
+          department?: string | null
+          exit_date?: string
+          exit_number: string
+          exit_type: string
+          expected_return_date?: string | null
+          id?: string
+          intervention_type?: string | null
+          kilometrage?: number | null
+          notes?: string | null
+          reason?: string | null
+          reimbursement_amount?: number | null
+          responsible_party?: string | null
+          return_status?: string | null
+          status?: string | null
+          total_amount?: number | null
+          updated_at?: string | null
+          vehicule_id?: string | null
+        }
+        Update: {
+          actual_return_date?: string | null
+          caution_amount?: number | null
+          client_name?: string | null
+          client_reference?: string | null
+          created_at?: string | null
+          created_by?: string
+          damage_description?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_reason?: string | null
+          department?: string | null
+          exit_date?: string
+          exit_number?: string
+          exit_type?: string
+          expected_return_date?: string | null
+          id?: string
+          intervention_type?: string | null
+          kilometrage?: number | null
+          notes?: string | null
+          reason?: string | null
+          reimbursement_amount?: number | null
+          responsible_party?: string | null
+          return_status?: string | null
+          status?: string | null
+          total_amount?: number | null
+          updated_at?: string | null
+          vehicule_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_exits_vehicule_id_fkey"
+            columns: ["vehicule_id"]
+            isOneToOne: false
+            referencedRelation: "vehicules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_movements: {
         Row: {
           article_id: string
@@ -1120,6 +1263,7 @@ export type Database = {
     Functions: {
       close_inventory: { Args: { p_inventaire_id: string }; Returns: undefined }
       generate_entry_number: { Args: never; Returns: string }
+      generate_exit_number: { Args: never; Returns: string }
       get_auth_user_id_by_email: { Args: { _email: string }; Returns: string }
       get_dashboard_aggregates: {
         Args: never
