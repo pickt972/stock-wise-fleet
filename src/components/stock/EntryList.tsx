@@ -41,10 +41,10 @@ interface StockEntry {
   fournisseurs?: {
     nom: string;
   } | null;
-  profiles: {
+  profiles?: {
     first_name: string;
     last_name: string;
-  };
+  } | null;
   stock_entry_items: EntryItem[];
 }
 
@@ -146,7 +146,10 @@ export function EntryList({ entries, onRefresh }: EntryListProps) {
                     }).format(entry.total_amount)}
                   </TableCell>
                   <TableCell>
-                    {entry.profiles.first_name} {entry.profiles.last_name}
+                    {entry.profiles 
+                      ? `${entry.profiles.first_name} ${entry.profiles.last_name}`
+                      : "—"
+                    }
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
