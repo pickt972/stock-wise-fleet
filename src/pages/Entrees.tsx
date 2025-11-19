@@ -38,7 +38,6 @@ export default function Entrees() {
         .select(`
           *,
           fournisseurs(nom),
-          profiles!stock_entries_created_by_fkey(first_name, last_name),
           stock_entry_items(
             *,
             articles(reference, designation)

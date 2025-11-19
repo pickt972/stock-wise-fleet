@@ -876,7 +876,7 @@ export type Database = {
       stock_entries: {
         Row: {
           created_at: string | null
-          created_by: string
+          created_by: string | null
           deleted_at: string | null
           deleted_by: string | null
           deleted_reason: string | null
@@ -894,7 +894,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          created_by: string
+          created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           deleted_reason?: string | null
@@ -912,7 +912,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          created_by?: string
+          created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           deleted_reason?: string | null
@@ -1035,7 +1035,7 @@ export type Database = {
           client_name: string | null
           client_reference: string | null
           created_at: string | null
-          created_by: string
+          created_by: string | null
           damage_description: string | null
           deleted_at: string | null
           deleted_by: string | null
@@ -1064,7 +1064,7 @@ export type Database = {
           client_name?: string | null
           client_reference?: string | null
           created_at?: string | null
-          created_by: string
+          created_by?: string | null
           damage_description?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
@@ -1093,7 +1093,7 @@ export type Database = {
           client_name?: string | null
           client_reference?: string | null
           created_at?: string | null
-          created_by?: string
+          created_by?: string | null
           damage_description?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
