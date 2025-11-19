@@ -873,6 +873,116 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_entries: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_reason: string | null
+          entry_date: string
+          entry_number: string
+          entry_type: string
+          id: string
+          invoice_number: string | null
+          location: string | null
+          notes: string | null
+          status: string | null
+          supplier_id: string | null
+          total_amount: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_reason?: string | null
+          entry_date?: string
+          entry_number: string
+          entry_type: string
+          id?: string
+          invoice_number?: string | null
+          location?: string | null
+          notes?: string | null
+          status?: string | null
+          supplier_id?: string | null
+          total_amount?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_reason?: string | null
+          entry_date?: string
+          entry_number?: string
+          entry_type?: string
+          id?: string
+          invoice_number?: string | null
+          location?: string | null
+          notes?: string | null
+          status?: string | null
+          supplier_id?: string | null
+          total_amount?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_entries_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "fournisseurs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_entry_items: {
+        Row: {
+          article_id: string
+          created_at: string | null
+          entry_id: string
+          id: string
+          quantity: number
+          total_price: number | null
+          unit_price: number
+        }
+        Insert: {
+          article_id: string
+          created_at?: string | null
+          entry_id: string
+          id?: string
+          quantity: number
+          total_price?: number | null
+          unit_price: number
+        }
+        Update: {
+          article_id?: string
+          created_at?: string | null
+          entry_id?: string
+          id?: string
+          quantity?: number
+          total_price?: number | null
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_entry_items_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_entry_items_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "stock_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_movements: {
         Row: {
           article_id: string
@@ -1009,6 +1119,7 @@ export type Database = {
     }
     Functions: {
       close_inventory: { Args: { p_inventaire_id: string }; Returns: undefined }
+      generate_entry_number: { Args: never; Returns: string }
       get_auth_user_id_by_email: { Args: { _email: string }; Returns: string }
       get_dashboard_aggregates: {
         Args: never
