@@ -184,7 +184,7 @@ BEGIN
     'Jean MARTIN',
     (NOW() + INTERVAL '1 day')::date,
     50.00,
-    'pending'
+    'not_returned'
   )
   RETURNING id INTO v_exit_2;
 
@@ -217,7 +217,7 @@ BEGIN
     'Marie DUBOIS',
     NOW()::date,
     50.00,
-    'pending'
+    'not_returned'
   )
   RETURNING id INTO v_exit_3;
 
