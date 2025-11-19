@@ -199,7 +199,7 @@ export type Database = {
           action: string
           created_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           new_values: Json | null
           old_values: Json | null
           record_id: string | null
@@ -211,7 +211,7 @@ export type Database = {
           action: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_values?: Json | null
           old_values?: Json | null
           record_id?: string | null
@@ -223,7 +223,7 @@ export type Database = {
           action?: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_values?: Json | null
           old_values?: Json | null
           record_id?: string | null
@@ -1008,16 +1008,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      close_inventory: {
-        Args: { p_inventaire_id: string }
-        Returns: undefined
-      }
-      get_auth_user_id_by_email: {
-        Args: { _email: string }
-        Returns: string
-      }
+      close_inventory: { Args: { p_inventaire_id: string }; Returns: undefined }
+      get_auth_user_id_by_email: { Args: { _email: string }; Returns: string }
       get_dashboard_aggregates: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           critical_stock_count: number
           low_stock_count: number
@@ -1028,7 +1022,7 @@ export type Database = {
         }[]
       }
       get_stock_distribution_counts: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           bon: number
           excellent: number
@@ -1047,10 +1041,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_admin: {
-        Args: { uid?: string }
-        Returns: boolean
-      }
+      is_admin: { Args: { uid?: string }; Returns: boolean }
       log_audit: {
         Args: {
           p_action: string
