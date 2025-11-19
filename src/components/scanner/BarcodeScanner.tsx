@@ -194,38 +194,109 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
 
   const stopScanning = () => {
     try {
-      scannerControls?.stop();
-    } catch (e) {
-      // ignore
-    }
-    // Stop any remaining video tracks as extra safety
-    const stream = videoRef.current?.srcObject as MediaStream | undefined;
-    if (stream) {
-      stream.getTracks().forEach((t) => t.stop());
-      if (videoRef.current) {
-        (videoRef.current as any).srcObject = null;
+      // BUG FIX #2: Désactiver le torch AVANT d'arrêter le stream
+      if (torchEnabled) {
+        try {
+          const stream = videoRef.current?.srcObject as MediaStream;
+          if (stream) {
+            const track = stream.getVideoTracks()[0];
+            track.applyConstraints({
+              advanced: [{ torch: false } as any]
+            });
+          }
+        } catch (e) {
+          console.error("Erreur désactivation torch:", e);
+        }
+        setTorchEnabled(false);
       }
+
+      // BUG FIX #3: Quitter le fullscreen AVANT d'arrêter le stream
+      if (isFullscreen) {
+        try {
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          }
+        } catch (e) {
+          console.error("Erreur sortie fullscreen:", e);
+        }
+        setIsFullscreen(false);
+      }
+
+      // Arrêter le scanner
+      try {
+        scannerControls?.stop();
+      } catch (e) {
+        console.error("Erreur arrêt scanner controls:", e);
+      }
+
+      // BUG FIX #1: Stop any remaining video tracks as extra safety (arrêt complet du MediaStream)
+      const stream = videoRef.current?.srcObject as MediaStream | undefined;
+      if (stream) {
+        stream.getTracks().forEach((track) => {
+          try {
+            track.stop();
+          } catch (e) {
+            console.error("Erreur arrêt track:", e);
+          }
+        });
+        if (videoRef.current) {
+          videoRef.current.srcObject = null;
+        }
+      }
+
+      setScannerControls(null);
+      setIsScanning(false);
+      setHasTorch(false);
+    } catch (error) {
+      // BUG FIX #5: Catch global pour éviter les erreurs non gérées
+      console.error("Erreur critique lors de l'arrêt du scanner:", error);
     }
-    setScannerControls(null);
-    setIsScanning(false);
   };
 
   const switchCamera = async () => {
     if (!codeReader || devices.length <= 1) return;
 
-    const currentIndex = devices.findIndex((device) => device.deviceId === selectedDeviceId);
-    const nextIndex = (currentIndex + 1) % devices.length;
-    const nextDeviceId = devices[nextIndex].deviceId;
+    try {
+      const currentIndex = devices.findIndex((device) => device.deviceId === selectedDeviceId);
+      const nextIndex = (currentIndex + 1) % devices.length;
+      const nextDeviceId = devices[nextIndex].deviceId;
 
-    stopScanning();
-    setSelectedDeviceId(nextDeviceId);
-    startScanning(codeReader, nextDeviceId);
+      stopScanning();
+      
+      // BUG FIX #4: Attendre un peu pour permettre le cleanup complet avant de redémarrer
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      setSelectedDeviceId(nextDeviceId);
+      await startScanning(codeReader, nextDeviceId);
+    } catch (error) {
+      // BUG FIX #5: Gestion d'erreur pour éviter les plantages
+      console.error("Erreur lors du changement de caméra:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de changer de caméra",
+        variant: "destructive",
+      });
+    }
   };
 
-  const restartScanning = () => {
+  const restartScanning = async () => {
     if (codeReader && selectedDeviceId) {
-      stopScanning();
-      startScanning(codeReader, selectedDeviceId);
+      try {
+        stopScanning();
+        
+        // BUG FIX #4: Attendre un peu pour permettre le cleanup complet avant de redémarrer
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        await startScanning(codeReader, selectedDeviceId);
+      } catch (error) {
+        // BUG FIX #5: Gestion d'erreur pour éviter les plantages
+        console.error("Erreur lors du redémarrage du scanner:", error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de redémarrer le scanner",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -247,6 +318,12 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
       const stream = videoRef.current?.srcObject as MediaStream;
       if (stream) {
         const track = stream.getVideoTracks()[0];
+        
+        // BUG FIX #5: Vérifier que le track est bien actif avant d'appliquer les contraintes
+        if (!track || track.readyState !== 'live') {
+          throw new Error("Track vidéo non actif");
+        }
+        
         await track.applyConstraints({
           advanced: [{ torch: !torchEnabled } as any]
         });
@@ -256,25 +333,35 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
       console.error("Erreur torche:", error);
       toast({
         title: "Torche non disponible",
-        description: "Votre appareil ne supporte pas la torche",
+        description: "Votre appareil ne supporte pas la torche ou la caméra n'est pas active",
         variant: "destructive",
       });
     }
   };
 
-  const toggleFullscreen = () => {
+  const toggleFullscreen = async () => {
     if (!containerRef.current) return;
 
-    if (!isFullscreen) {
-      if (containerRef.current.requestFullscreen) {
-        containerRef.current.requestFullscreen();
-        setIsFullscreen(true);
+    try {
+      if (!isFullscreen) {
+        if (containerRef.current.requestFullscreen) {
+          await containerRef.current.requestFullscreen();
+          setIsFullscreen(true);
+        }
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+          setIsFullscreen(false);
+        }
       }
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-        setIsFullscreen(false);
-      }
+    } catch (error) {
+      // BUG FIX #5: Gestion d'erreur pour le fullscreen
+      console.error("Erreur fullscreen:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de basculer en plein écran",
+        variant: "destructive",
+      });
     }
   };
 
