@@ -43,10 +43,10 @@ interface StockEntry {
   fournisseurs?: {
     nom: string;
   } | null;
-  profiles: {
+  profiles?: {
     first_name: string;
     last_name: string;
-  };
+  } | null;
   stock_entry_items: EntryItem[];
 }
 
@@ -187,7 +187,10 @@ export function EntryDetails({ entry, open, onOpenChange }: EntryDetailsProps) {
             <div>
               <p className="text-muted-foreground">Créé par</p>
               <p>
-                {entry.profiles.first_name} {entry.profiles.last_name}
+                {entry.profiles 
+                  ? `${entry.profiles.first_name} ${entry.profiles.last_name}`
+                  : "—"
+                }
               </p>
             </div>
             <div>
