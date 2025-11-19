@@ -18,19 +18,36 @@ export const isCameraPermissionGranted = (): boolean => {
 export const requestCameraPermission = async (): Promise<boolean> => {
   if (typeof window === "undefined") return false;
 
-  // Déjà accordée via cache → ne pas re-demander
+  // ÉTAPE 1: Vérifier le statut réel de la permission dans le navigateur
+  const browserStatus = await checkCameraPermissionStatus();
+  
+  if (browserStatus === "granted") {
+    // Permission déjà accordée par le navigateur → synchroniser le cache
+    console.log("✅ Permission caméra déjà accordée (navigateur)");
+    localStorage.setItem(CAMERA_PERMISSION_KEY, "true");
+    return true;
+  }
+
+  if (browserStatus === "denied") {
+    // Permission refusée par le navigateur → ne pas redemander
+    console.log("❌ Permission caméra refusée par le navigateur");
+    localStorage.setItem(CAMERA_PERMISSION_KEY, "false");
+    return false;
+  }
+
+  // ÉTAPE 2: Vérifier le cache localStorage (optimisation)
   if (isCameraPermissionGranted()) {
     console.log("✅ Permission caméra déjà accordée (cache)");
     return true;
   }
 
-  // Une requête est déjà en cours → réutiliser la même promise
+  // ÉTAPE 3: Une requête est déjà en cours → réutiliser la même promise
   if (requestPromise) {
     console.log("⏳ Requête de permission déjà en cours, en attente...");
     return requestPromise;
   }
 
-  // Nouvelle demande (une seule fois)
+  // ÉTAPE 4: Nouvelle demande (une seule fois)
   requestPromise = (async () => {
     try {
       console.log("🎥 Demande de permission caméra...");
