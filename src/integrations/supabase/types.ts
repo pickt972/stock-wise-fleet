@@ -1138,7 +1138,7 @@ export type Database = {
           site_id: string | null
           type: string
           updated_at: string
-          user_id: string
+          user_id: string | null
           vehicule_id: string | null
         }
         Insert: {
@@ -1152,7 +1152,7 @@ export type Database = {
           site_id?: string | null
           type: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           vehicule_id?: string | null
         }
         Update: {
@@ -1166,7 +1166,7 @@ export type Database = {
           site_id?: string | null
           type?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           vehicule_id?: string | null
         }
         Relationships: [
