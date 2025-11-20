@@ -127,11 +127,7 @@ export default function Sorties() {
       (e) => new Date(e.exit_date) >= firstDayOfMonth
     ).length;
 
-    const rentalCount = activeExits.filter(
-      (e) => e.exit_type === "location_accessoire" && !e.return_date
-    ).length;
-
-    return { todayCount, monthCount, rentalCount };
+    return { todayCount, monthCount };
   };
 
   const handleQuickExit = async () => {
@@ -232,7 +228,10 @@ export default function Sorties() {
           <TabsContent value="all" className="space-y-6">
             <ActiveRentals onReturnComplete={fetchExits} />
             
-            <ExitStats {...stats} />
+            <ExitStats 
+              todayCount={stats.todayCount} 
+              monthCount={stats.monthCount} 
+            />
 
             {/* Filtres et recherche */}
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
