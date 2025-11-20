@@ -36,18 +36,21 @@ export default function Sorties() {
   const fetchExits = async () => {
     setIsLoading(true);
     try {
+      console.log('🔍 Début du chargement des sorties...');
+      
       let query = supabase
         .from("stock_exits")
         .select(`
           *,
           vehicules(immatriculation, marque, modele),
-          profiles!stock_exits_created_by_fkey(first_name, last_name),
           stock_exit_items(
             *,
             articles(reference, designation)
           )
         `)
         .order("exit_date", { ascending: false });
+      
+      console.log('📊 Requête construite');
 
       // Filtres
       if (exitTypeFilter !== "all") {
@@ -69,10 +72,17 @@ export default function Sorties() {
       }
 
       const { data, error } = await query;
+      
+      console.log('✅ Données reçues:', data);
+      console.log('❌ Erreur:', error);
 
-      if (error) throw error;
+      if (error) {
+        console.error('🚨 ERREUR SUPABASE:', error);
+        throw error;
+      }
 
       let filteredData = data || [];
+      console.log('📦 Nombre de sorties:', filteredData.length);
 
       // Recherche
       if (searchTerm) {
@@ -84,15 +94,20 @@ export default function Sorties() {
       }
 
       setExits(filteredData);
+      console.log('✨ Sorties chargées avec succès');
     } catch (error: any) {
-      console.error("Erreur chargement sorties:", error);
+      console.error("🔥 ERREUR CHARGEMENT SORTIES:", error);
+      console.error("🔥 Message:", error?.message);
+      console.error("🔥 Details:", error?.details);
+      console.error("🔥 Code:", error?.code);
       toast({
         title: "Erreur",
-        description: "Impossible de charger les sorties",
+        description: `Impossible de charger les sorties: ${error?.message || 'Erreur inconnue'}`,
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
+      console.log('🏁 Fin du chargement');
     }
   };
 
