@@ -38,38 +38,33 @@ export function ActiveRentals({ onReturnComplete }: ActiveRentalsProps) {
     try {
       console.log('🔍 START: Chargement locations actives...');
       
+      // Premier test : récupérer TOUTES les locations sans filtre
+      const { data: allRentals, error: allError } = await supabase
+        .from("stock_exits")
+        .select("*")
+        .eq("exit_type", "location_accessoire");
+      
+      console.log('📊 TOUTES les locations:', allRentals?.length, allRentals);
+      
+      // Deuxième test : avec filtre return_date null
       const { data, error } = await supabase
         .from("stock_exits")
         .select(`
-          id,
-          client_name,
-          expected_return_date,
-          caution_amount,
+          *,
           stock_exit_items (
-            quantity,
-            articles (
-              designation,
-              reference
-            )
+            *,
+            articles (*)
           )
         `)
         .eq("exit_type", "location_accessoire")
-        .is("return_date", null)
-        .order("expected_return_date", { ascending: true });
+        .is("return_date", null);
 
-      console.log('📦 DATA:', JSON.stringify(data, null, 2));
+      console.log('📦 AVEC FILTRE return_date null:', data?.length, data);
       console.log('❌ ERROR:', error);
-      console.log('📊 Data length:', data?.length);
-      
-      if (data && data.length > 0) {
-        console.log('🔍 First item:', data[0]);
-        console.log('🔍 Stock items:', data[0]?.stock_exit_items);
-      }
 
       if (error) throw error;
 
       setRentals(data || []);
-      console.log('✅ Rentals set:', data?.length);
     } catch (error: any) {
       console.error("🔥 ERREUR:", error);
       toast({
