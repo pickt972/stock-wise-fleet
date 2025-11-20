@@ -128,7 +128,7 @@ export default function Sorties() {
     ).length;
 
     const rentalCount = activeExits.filter(
-      (e) => e.exit_type === "location_accessoire" && e.return_status === "en_cours"
+      (e) => e.exit_type === "location_accessoire" && !e.return_date
     ).length;
 
     return { todayCount, monthCount, rentalCount };
