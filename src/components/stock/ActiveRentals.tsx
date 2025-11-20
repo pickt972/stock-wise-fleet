@@ -53,7 +53,7 @@ export function ActiveRentals({ onReturnComplete }: ActiveRentalsProps) {
           )
         `)
         .eq("exit_type", "location_accessoire")
-        .eq("return_status", "not_returned")
+        .is("actual_return_date", null)
         .order("expected_return_date", { ascending: true });
 
       console.log('📦 Locations reçues:', data);
