@@ -1,5 +1,6 @@
-import { Bell, User, Menu, Settings, LogOut, Download } from "lucide-react";
+import { Bell, User, Menu, Settings, LogOut, Download, Moon, Sun } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { useTheme } from "next-themes";
 import logo from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +29,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   const { isInstallable, installApp } = usePWA();
   const navigate = useNavigate();
   const { alerts } = useAlerts();
+  const { theme, setTheme } = useTheme();
 
   const getRoleLabel = (role: string) => {
     switch (role) {
@@ -91,6 +93,27 @@ export function Header({ onMenuClick }: HeaderProps) {
         <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
           {/* Statut de synchronisation hors ligne */}
           <OfflineSyncStatus />
+          
+          {/* Toggle mode nuit */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="flex-shrink-0"
+              >
+                {theme === "dark" ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{theme === "dark" ? "Mode clair" : "Mode sombre"}</p>
+            </TooltipContent>
+          </Tooltip>
           
           {/* Bouton d'installation PWA */}
           {isInstallable && (

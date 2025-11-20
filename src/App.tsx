@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { useAutoLogout } from "@/hooks/useAutoLogout";
+import { ThemeProvider } from "next-themes";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
 import Index from "./pages/Index";
@@ -53,11 +54,12 @@ function AppContent() {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <div className="w-full overflow-x-hidden">
-          <Toaster />
-          <Sonner />
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <TooltipProvider>
+        <AuthProvider>
+          <div className="w-full overflow-x-hidden">
+            <Toaster />
+            <Sonner />
           <BrowserRouter>
             <AppContent />
             <GlobalErrorBoundary>
@@ -192,6 +194,7 @@ const App = () => (
         </div>
       </AuthProvider>
     </TooltipProvider>
+  </ThemeProvider>
   </QueryClientProvider>
 );
 
