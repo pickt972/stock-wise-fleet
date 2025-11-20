@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ExitList } from "@/components/stock/ExitList";
 import { ExitStats } from "@/components/stock/ExitStats";
 import { SearchWithScanner } from "@/components/SearchWithScanner";
+import { ActiveRentals } from "@/components/stock/ActiveRentals";
 import DashboardLayout from "./DashboardLayout";
 
 export default function Sorties() {
@@ -229,6 +230,8 @@ export default function Sorties() {
           </TabsList>
 
           <TabsContent value="all" className="space-y-6">
+            <ActiveRentals onReturnComplete={fetchExits} />
+            
             <ExitStats {...stats} />
 
             {/* Filtres et recherche */}
