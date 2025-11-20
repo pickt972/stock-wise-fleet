@@ -41,6 +41,7 @@ export default function Sorties() {
         .select(`
           *,
           vehicules(immatriculation, marque, modele),
+          profiles!stock_exits_created_by_fkey(first_name, last_name),
           stock_exit_items(
             *,
             articles(reference, designation)

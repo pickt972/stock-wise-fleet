@@ -46,10 +46,10 @@ interface StockExit {
     marque: string;
     modele: string;
   } | null;
-  profiles: {
+  profiles?: {
     first_name: string;
     last_name: string;
-  };
+  } | null;
   stock_exit_items: ExitItem[];
 }
 
@@ -166,7 +166,9 @@ export function ExitList({ exits, onRefresh }: ExitListProps) {
                     {getReturnStatusBadge(exit.return_status)}
                   </TableCell>
                   <TableCell>
-                    {exit.profiles.first_name} {exit.profiles.last_name}
+                    {exit.profiles?.first_name && exit.profiles?.last_name
+                      ? `${exit.profiles.first_name} ${exit.profiles.last_name}`
+                      : "-"}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">

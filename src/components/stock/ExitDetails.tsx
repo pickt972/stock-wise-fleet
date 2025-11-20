@@ -59,10 +59,10 @@ interface StockExit {
     marque: string;
     modele: string;
   } | null;
-  profiles: {
+  profiles?: {
     first_name: string;
     last_name: string;
-  };
+  } | null;
   stock_exit_items: ExitItem[];
 }
 
@@ -196,7 +196,9 @@ export function ExitDetails({ exit, open, onOpenChange, onRefresh }: ExitDetails
               <div>
                 <p className="text-muted-foreground">Créé par</p>
                 <p>
-                  {exit.profiles.first_name} {exit.profiles.last_name}
+                  {exit.profiles?.first_name && exit.profiles?.last_name
+                    ? `${exit.profiles.first_name} ${exit.profiles.last_name}`
+                    : "Non renseigné"}
                 </p>
               </div>
               <div>
