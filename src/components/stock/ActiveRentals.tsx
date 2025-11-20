@@ -36,6 +36,8 @@ export function ActiveRentals({ onReturnComplete }: ActiveRentalsProps) {
 
   const fetchActiveRentals = async () => {
     try {
+      console.log('🔍 START: Chargement locations actives...');
+      
       const { data, error } = await supabase
         .from("stock_exits")
         .select(`
@@ -43,9 +45,9 @@ export function ActiveRentals({ onReturnComplete }: ActiveRentalsProps) {
           client_name,
           expected_return_date,
           caution_amount,
-          stock_exit_items!inner (
+          stock_exit_items (
             quantity,
-            articles!inner (
+            articles (
               designation,
               reference
             )
@@ -55,11 +57,21 @@ export function ActiveRentals({ onReturnComplete }: ActiveRentalsProps) {
         .is("actual_return_date", null)
         .order("expected_return_date", { ascending: true });
 
+      console.log('📦 DATA:', JSON.stringify(data, null, 2));
+      console.log('❌ ERROR:', error);
+      console.log('📊 Data length:', data?.length);
+      
+      if (data && data.length > 0) {
+        console.log('🔍 First item:', data[0]);
+        console.log('🔍 Stock items:', data[0]?.stock_exit_items);
+      }
+
       if (error) throw error;
 
       setRentals(data || []);
+      console.log('✅ Rentals set:', data?.length);
     } catch (error: any) {
-      console.error("Erreur chargement locations:", error);
+      console.error("🔥 ERREUR:", error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les accessoires en location",
