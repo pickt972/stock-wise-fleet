@@ -1052,6 +1052,7 @@ export type Database = {
           reason: string | null
           reimbursement_amount: number | null
           responsible_party: string | null
+          return_date: string | null
           return_status: string | null
           status: string | null
           total_amount: number | null
@@ -1081,6 +1082,7 @@ export type Database = {
           reason?: string | null
           reimbursement_amount?: number | null
           responsible_party?: string | null
+          return_date?: string | null
           return_status?: string | null
           status?: string | null
           total_amount?: number | null
@@ -1110,6 +1112,7 @@ export type Database = {
           reason?: string | null
           reimbursement_amount?: number | null
           responsible_party?: string | null
+          return_date?: string | null
           return_status?: string | null
           status?: string | null
           total_amount?: number | null
