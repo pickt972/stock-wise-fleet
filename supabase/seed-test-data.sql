@@ -88,13 +88,13 @@ BEGIN
   RETURNING id INTO v_entry_1;
 
   -- Items de l'entrée 1
-  INSERT INTO public.stock_entry_items (entry_id, article_id, quantity, unit_price, total_price)
+  INSERT INTO public.stock_entry_items (entry_id, article_id, quantity, unit_price)
   VALUES 
-    (v_entry_1, v_article_huile, 12, 32.50, 390.00),
-    (v_entry_1, v_article_pneu, 8, 95.00, 760.00),
-    (v_entry_1, v_article_filtre, 20, 8.00, 160.00),
-    (v_entry_1, v_article_nettoyant, 10, 12.00, 120.00),
-    (v_entry_1, v_article_siege, 4, 45.00, 180.00);
+    (v_entry_1, v_article_huile, 12, 32.50),
+    (v_entry_1, v_article_pneu, 8, 95.00),
+    (v_entry_1, v_article_filtre, 20, 8.00),
+    (v_entry_1, v_article_nettoyant, 10, 12.00),
+    (v_entry_1, v_article_siege, 4, 45.00);
 
   RAISE NOTICE 'Entrée 1 créée avec succès';
 
@@ -113,8 +113,8 @@ BEGIN
   )
   RETURNING id INTO v_entry_2;
 
-  INSERT INTO public.stock_entry_items (entry_id, article_id, quantity, unit_price, total_price)
-  VALUES (v_entry_2, v_article_gps, 5, 150.00, 750.00);
+  INSERT INTO public.stock_entry_items (entry_id, article_id, quantity, unit_price)
+  VALUES (v_entry_2, v_article_gps, 5, 150.00);
 
   RAISE NOTICE 'Entrée 2 créée avec succès';
 
@@ -133,8 +133,8 @@ BEGIN
   )
   RETURNING id INTO v_entry_3;
 
-  INSERT INTO public.stock_entry_items (entry_id, article_id, quantity, unit_price, total_price)
-  VALUES (v_entry_3, v_article_nettoyant, 5, 12.00, 60.00);
+  INSERT INTO public.stock_entry_items (entry_id, article_id, quantity, unit_price)
+  VALUES (v_entry_3, v_article_nettoyant, 5, 12.00);
 
   RAISE NOTICE 'Entrée 3 créée avec succès';
 
@@ -153,10 +153,10 @@ BEGIN
   )
   RETURNING id INTO v_exit_1;
 
-  INSERT INTO public.stock_exit_items (exit_id, article_id, quantity, unit_price, total_price)
+  INSERT INTO public.stock_exit_items (exit_id, article_id, quantity, unit_price)
   VALUES 
-    (v_exit_1, v_article_huile, 1, 32.50, 32.50),
-    (v_exit_1, v_article_filtre, 1, 8.00, 8.00);
+    (v_exit_1, v_article_huile, 1, 32.50),
+    (v_exit_1, v_article_filtre, 1, 8.00);
 
   RAISE NOTICE 'Sortie 1 créée avec succès';
 
@@ -188,8 +188,8 @@ BEGIN
   )
   RETURNING id INTO v_exit_2;
 
-  INSERT INTO public.stock_exit_items (exit_id, article_id, quantity, unit_price, total_price)
-  VALUES (v_exit_2, v_article_gps, 1, 150.00, 150.00);
+  INSERT INTO public.stock_exit_items (exit_id, article_id, quantity, unit_price)
+  VALUES (v_exit_2, v_article_gps, 1, 150.00);
 
   RAISE NOTICE 'Sortie 2 créée avec succès';
 
@@ -221,8 +221,8 @@ BEGIN
   )
   RETURNING id INTO v_exit_3;
 
-  INSERT INTO public.stock_exit_items (exit_id, article_id, quantity, unit_price, total_price)
-  VALUES (v_exit_3, v_article_gps, 1, 150.00, 150.00);
+  INSERT INTO public.stock_exit_items (exit_id, article_id, quantity, unit_price)
+  VALUES (v_exit_3, v_article_gps, 1, 150.00);
 
   RAISE NOTICE 'Sortie 3 créée avec succès';
 
@@ -241,8 +241,8 @@ BEGIN
   )
   RETURNING id INTO v_exit_4;
 
-  INSERT INTO public.stock_exit_items (exit_id, article_id, quantity, unit_price, total_price)
-  VALUES (v_exit_4, v_article_nettoyant, 3, 12.00, 36.00);
+  INSERT INTO public.stock_exit_items (exit_id, article_id, quantity, unit_price)
+  VALUES (v_exit_4, v_article_nettoyant, 3, 12.00);
 
   RAISE NOTICE 'Sortie 4 créée avec succès';
 
@@ -261,8 +261,8 @@ BEGIN
   )
   RETURNING id INTO v_exit_5;
 
-  INSERT INTO public.stock_exit_items (exit_id, article_id, quantity, unit_price, total_price)
-  VALUES (v_exit_5, v_article_pneu, 4, 95.00, 380.00);
+  INSERT INTO public.stock_exit_items (exit_id, article_id, quantity, unit_price)
+  VALUES (v_exit_5, v_article_pneu, 4, 95.00);
 
   RAISE NOTICE 'Sortie 5 créée avec succès';
 
