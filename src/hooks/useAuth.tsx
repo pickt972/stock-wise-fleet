@@ -20,6 +20,7 @@ interface AuthContextType {
   profile: Profile | null;
   userRole: UserRole['role'] | null;
   isLoading: boolean;
+  signIn: (email: string, password: string) => Promise<{ success: boolean; isAdmin: boolean }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -104,6 +105,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  const signIn = async (email: string, password: string) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        return { success: false, isAdmin: false };
+      }
+
+      // Fetch user role to determine if admin
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', data.user.id)
+        .maybeSingle();
+
+      const isAdmin = roleData?.role === 'admin';
+      return { success: true, isAdmin };
+    } catch (error) {
+      console.error('Sign in error:', error);
+      return { success: false, isAdmin: false };
+    }
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -120,6 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         profile,
         userRole,
         isLoading,
+        signIn,
         signOut,
         refreshProfile,
       }}
