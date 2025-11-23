@@ -1,198 +1,226 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, User, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
+import logo from "@/assets/logo.png";
+
+type UserRole = 'admin' | 'chef_agence' | 'magasinier';
+
+interface AvailableUser {
+  username: string;
+  role: string;
+  roleDisplay: string;
+}
 
 export default function Auth() {
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  
-  const { signIn } = useAuth();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [availableUsers, setAvailableUsers] = useState<AvailableUser[]>([]);
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const getRoleDisplay = (role: UserRole): string => {
+    switch (role) {
+      case 'admin': return 'Administrateur';
+      case 'chef_agence': return "Chef d'agence";
+      case 'magasinier': return 'Magasinier';
+      default: return 'Utilisateur';
+    }
+  };
+
+  const fetchAvailableUsers = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('list-available-users');
+      if (error) throw error;
+
+      const users = (data?.users || []) as Array<{ username: string; role: string; roleDisplay: string }>; 
+      setAvailableUsers(users);
+    } catch (error) {
+      console.error('Erreur lors du chargement des utilisateurs (edge):', error);
+      setAvailableUsers([]);
+    }
+  };
+
+  const handleUserSelect = (selectedUsername: string) => {
+    setUsername(selectedUsername);
+  };
 
   useEffect(() => {
-    // Check if user is already logged in
+    fetchAvailableUsers();
+    
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate("/dashboard", { replace: true });
+        navigate("/dashboard");
       }
     };
     checkUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session && event === 'SIGNED_IN') {
+        navigate("/dashboard");
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (!identifier || !password) {
-      setError('Veuillez remplir tous les champs');
+  const signIn = async () => {
+    if (!username || !password) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez remplir tous les champs.",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsLoading(true);
-
     try {
-      // L'identifiant peut être un email ou un nom d'utilisateur
-      // Si pas d'@, on construit l'email avec le domaine par défaut
-      const email = identifier.includes('@') 
-        ? identifier 
-        : `${identifier.trim().toLowerCase()}@stock-wise.local`;
+      // Construire directement l'email à partir du nom d'utilisateur (en minuscules)
+      const email = `${username.trim().toLowerCase()}@stock-wise.local`;
+      console.log("Connexion avec email dérivé:", email);
 
-      const result = await signIn(email, password);
-      
-      if (result.success) {
-        navigate(result.isAdmin ? '/dashboard' : '/dashboard', { replace: true });
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        toast({
+          title: "Erreur de connexion",
+          description: "Nom d'utilisateur ou mot de passe incorrect.",
+          variant: "destructive",
+        });
       } else {
-        setError('Identifiant ou mot de passe incorrect');
+        toast({
+          title: "Connexion réussie",
+          description: "Bienvenue dans StockAuto !",
+        });
+        // Redirection explicite vers dashboard après connexion réussie
+        navigate("/dashboard", { replace: true });
       }
-    } catch (error: any) {
-      console.error('Login error:', error);
-      setError('Identifiant ou mot de passe incorrect');
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Une erreur inattendue s'est produite.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 p-4">
-      <Card className="w-full max-w-md shadow-2xl">
-        <CardHeader className="space-y-1 text-center">
-          {/* Logo */}
-          <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex items-center justify-center shadow-lg">
-              <span className="text-3xl font-bold text-white">AL</span>
+    <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
+      <div className="w-full max-w-md space-y-4 md:space-y-6">
+        {/* Logo et titre */}
+        <div className="text-center space-y-2">
+          <div className="flex justify-center">
+            <div className="bg-white p-3 rounded-xl shadow-elegant">
+              <img src={logo} alt="StockAuto Logo" className="h-16 w-16 md:h-20 md:w-20" />
             </div>
           </div>
-          
-          <CardTitle className="text-3xl font-bold text-gray-800">
-            ALOELOCATION
-          </CardTitle>
-          <CardDescription className="text-base text-gray-600">
-            Suivi des ventes d'assurances
-          </CardDescription>
-        </CardHeader>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">StockAuto</h1>
+          <p className="text-sm md:text-base text-muted-foreground px-2">Gestion de stock pour location automobile</p>
+        </div>
 
-        <CardContent className="pt-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Identifiant */}
-            <div className="space-y-2">
-              <Label htmlFor="identifier" className="text-sm font-medium">
-                Identifiant
-              </Label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+        <Card className="shadow-elegant border-border/50">
+          <CardHeader className="text-center">
+            <CardTitle>Connexion</CardTitle>
+            <CardDescription>
+              Connectez-vous avec votre nom d'utilisateur
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="user-select">Sélectionner un utilisateur</Label>
+                <Select onValueChange={handleUserSelect} value={username}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choisir un utilisateur" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableUsers.length === 0 ? (
+                      <SelectItem value="none" disabled>
+                        Aucun utilisateur disponible
+                      </SelectItem>
+                    ) : (
+                      availableUsers.map((user) => (
+                        <SelectItem
+                          key={user.username}
+                          value={user.username}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-medium">{user.username}</span>
+                            <span className="text-xs text-muted-foreground">({user.roleDisplay})</span>
+                          </div>
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="username-manual">Ou saisir manuellement</Label>
                 <Input
-                  id="identifier"
-                  type="text"
-                  placeholder="Votre identifiant"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  className="pl-10 h-11 text-base"
-                  required
+                  id="username-manual"
+                  placeholder="Nom d'utilisateur"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   disabled={isLoading}
-                  autoComplete="username"
-                  autoFocus
                 />
               </div>
-              <p className="text-xs text-gray-500">
-                Votre email ou nom d'utilisateur
-              </p>
-            </div>
-
-            {/* Mot de passe */}
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">
-                Mot de passe
-              </Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                <Input
+              <div className="space-y-2">
+                <Label htmlFor="password">Mot de passe</Label>
+                <PasswordInput
                   id="password"
-                  type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-12 h-11 text-base"
-                  required
                   disabled={isLoading}
-                  autoComplete="current-password"
+                  onKeyDown={(e) => e.key === 'Enter' && signIn()}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 transition-colors"
-                  tabIndex={-1}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5" />
-                  ) : (
-                    <Eye className="h-5 w-5" />
-                  )}
-                </button>
               </div>
+              <Button 
+                onClick={signIn} 
+                className="w-full bg-gradient-primary hover:opacity-90"
+                disabled={isLoading}
+              >
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Se connecter
+              </Button>
             </div>
 
-            {/* Message d'erreur */}
-            {error && (
-              <Alert variant="destructive" className="animate-in fade-in-50">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+          </CardContent>
+        </Card>
 
-            {/* Bouton connexion */}
-            <Button
-              type="submit"
-              className="w-full h-11 text-base font-semibold"
-              disabled={isLoading}
-            >
-              {isLoading ? (
+        <div className="text-center text-xs md:text-sm text-muted-foreground bg-muted/50 p-3 md:p-4 rounded-lg">
+          <div className="space-y-2">
+            <p className="font-semibold">Connexion</p>
+            <div className="space-y-1 text-xs">
+              {availableUsers.length > 0 ? (
                 <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Connexion en cours...
+                  <p>Sélectionnez un utilisateur dans la liste ci-dessus</p>
+                  <p className="text-muted-foreground">
+                    {availableUsers.length} utilisateur{availableUsers.length > 1 ? 's' : ''} disponible{availableUsers.length > 1 ? 's' : ''}
+                  </p>
                 </>
               ) : (
-                'Se connecter'
+                <p>Aucun utilisateur disponible. Contactez un administrateur.</p>
               )}
-            </Button>
-          </form>
-
-          {/* Aide */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-500">
-              Problème de connexion ?{' '}
-              <a
-                href="mailto:admin@aloelocation.com"
-                className="text-blue-600 hover:underline font-medium"
-              >
-                Contactez l'administrateur
-              </a>
-            </p>
-          </div>
-        </CardContent>
-
-        {/* Footer */}
-        <div className="px-6 pb-6">
-          <div className="border-t pt-4">
-            <p className="text-center text-xs text-gray-500">
-              © 2025 ALOELOCATION - Martinique
-            </p>
-            <p className="text-center text-xs text-gray-400 mt-1">
-              Tous droits réservés
-            </p>
+            </div>
           </div>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
