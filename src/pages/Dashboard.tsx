@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Package, FileText, BarChart3, Settings, AlertTriangle, RotateCcw, ScanLine, Search, PlusCircle, PackageX } from "lucide-react";
+import { Package, BarChart3, Settings, AlertTriangle, RotateCcw, ScanLine, Search, PlusCircle, PackageX, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { KPICard } from "@/components/ui/kpi-card";
 import { useRealTimeStats } from "@/hooks/useRealTimeStats";
 import { useNavigate } from "react-router-dom";
@@ -217,22 +217,18 @@ export default function Dashboard() {
         </div>
 
         {/* Quick nav */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <Button variant="outline" className="h-14 flex-col gap-1" onClick={() => navigate("/articles")}>
-            <FileText className="h-5 w-5" />
-            <span className="text-xs">Stocks</span>
-          </Button>
-          <Button variant="outline" className="h-14 flex-col gap-1" onClick={() => navigate("/historique")}>
-            <BarChart3 className="h-5 w-5" />
-            <span className="text-xs">Historique</span>
+            <Package className="h-5 w-5" />
+            <span className="text-xs">Articles</span>
           </Button>
           <Button variant="outline" className="h-14 flex-col gap-1" onClick={() => navigate("/entrees")}>
-            <Package className="h-5 w-5" />
+            <ArrowDownToLine className="h-5 w-5" />
             <span className="text-xs">Entrées</span>
           </Button>
-          <Button variant="outline" className="h-14 flex-col gap-1" onClick={() => navigate("/parametres")}>
-            <Settings className="h-5 w-5" />
-            <span className="text-xs">Paramètres</span>
+          <Button variant="outline" className="h-14 flex-col gap-1" onClick={() => navigate("/sorties")}>
+            <ArrowUpFromLine className="h-5 w-5" />
+            <span className="text-xs">Sorties</span>
           </Button>
         </div>
       </div>
