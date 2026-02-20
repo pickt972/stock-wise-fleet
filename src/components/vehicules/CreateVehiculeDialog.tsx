@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { LicensePlateScanner } from "./LicensePlateScanner";
 
 interface CreateVehiculeDialogProps {
   open: boolean;
@@ -134,21 +135,29 @@ export function CreateVehiculeDialog({ open, onOpenChange, onVehiculeCreated, on
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="immatriculation">Immatriculation *</Label>
-            <Input
-              id="immatriculation"
-              value={formData.immatriculation}
-              onChange={(e) => {
-                const formatted = formatImmatriculation(e.target.value);
-                setFormData(prev => ({ ...prev, immatriculation: formatted }));
-              }}
-              placeholder="AB-123-CD"
-              maxLength={9}
-              required
-              className={formData.immatriculation && !validateImmatriculation(formData.immatriculation) 
-                ? "border-destructive focus:border-destructive" 
-                : ""
-              }
-            />
+            <div className="flex gap-2">
+              <Input
+                id="immatriculation"
+                value={formData.immatriculation}
+                onChange={(e) => {
+                  const formatted = formatImmatriculation(e.target.value);
+                  setFormData(prev => ({ ...prev, immatriculation: formatted }));
+                }}
+                placeholder="AB-123-CD"
+                maxLength={9}
+                required
+                className={`flex-1 ${formData.immatriculation && !validateImmatriculation(formData.immatriculation) 
+                  ? "border-destructive focus:border-destructive" 
+                  : ""
+                }`}
+              />
+              <LicensePlateScanner
+                onPlateDetected={(plate) => {
+                  const formatted = formatImmatriculation(plate);
+                  setFormData(prev => ({ ...prev, immatriculation: formatted }));
+                }}
+              />
+            </div>
             <p className="text-xs text-muted-foreground">
               Format: AA-000-AA (2 lettres, 3 chiffres, 2 lettres)
             </p>

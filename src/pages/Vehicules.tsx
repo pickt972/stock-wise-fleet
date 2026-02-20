@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "./DashboardLayout";
 import type { Tables } from "@/integrations/supabase/types";
+import { LicensePlateScanner } from "@/components/vehicules/LicensePlateScanner";
 
 type Vehicule = Tables<"vehicules">;
 type Article = Tables<"articles">;
@@ -276,21 +277,29 @@ export default function Vehicules() {
 
                 <div>
                   <Label htmlFor="immatriculation">Immatriculation *</Label>
-                  <Input
-                    id="immatriculation"
-                    value={formData.immatriculation}
-                    onChange={(e) => {
-                      const formatted = formatImmatriculation(e.target.value);
-                      setFormData(prev => ({ ...prev, immatriculation: formatted }));
-                    }}
-                    placeholder="AB-123-CD"
-                    maxLength={9}
-                    required
-                    className={formData.immatriculation && !validateImmatriculation(formData.immatriculation) 
-                      ? "border-destructive focus:border-destructive" 
-                      : ""
-                    }
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="immatriculation"
+                      value={formData.immatriculation}
+                      onChange={(e) => {
+                        const formatted = formatImmatriculation(e.target.value);
+                        setFormData(prev => ({ ...prev, immatriculation: formatted }));
+                      }}
+                      placeholder="AB-123-CD"
+                      maxLength={9}
+                      required
+                      className={`flex-1 ${formData.immatriculation && !validateImmatriculation(formData.immatriculation) 
+                        ? "border-destructive focus:border-destructive" 
+                        : ""
+                      }`}
+                    />
+                    <LicensePlateScanner
+                      onPlateDetected={(plate) => {
+                        const formatted = formatImmatriculation(plate);
+                        setFormData(prev => ({ ...prev, immatriculation: formatted }));
+                      }}
+                    />
+                  </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     Format: AA-000-AA (2 lettres, 3 chiffres, 2 lettres)
                   </p>
