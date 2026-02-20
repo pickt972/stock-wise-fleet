@@ -39,6 +39,7 @@ interface Categorie {
 
 export function CategoriesManagement() {
   const [categories, setCategories] = useState<Categorie[]>([]);
+  const [articleCounts, setArticleCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
@@ -57,6 +58,18 @@ export function CategoriesManagement() {
         .order('nom');
       if (error) throw error;
       setCategories(data || []);
+
+      // Fetch article counts per category
+      const { data: articles } = await supabase
+        .from('articles')
+        .select('categorie');
+      if (articles) {
+        const counts: Record<string, number> = {};
+        articles.forEach(a => {
+          counts[a.categorie] = (counts[a.categorie] || 0) + 1;
+        });
+        setArticleCounts(counts);
+      }
     } catch {
       toast({ title: "Erreur", description: "Impossible de charger les catégories", variant: "destructive" });
     } finally {
@@ -175,6 +188,10 @@ export function CategoriesManagement() {
             <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
               {categorie.description || "Aucune description"}
             </p>
+
+            <div className="text-xs text-muted-foreground">
+              {(articleCounts[categorie.nom] || 0)} article{(articleCounts[categorie.nom] || 0) !== 1 ? "s" : ""}
+            </div>
 
             <div className="flex justify-end gap-1 mt-auto">
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => openEditForm(categorie)}>
