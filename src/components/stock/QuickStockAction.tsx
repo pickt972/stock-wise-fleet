@@ -53,19 +53,27 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
       const delta = mode === "add" ? quantity : -quantity;
       const movementType = mode === "add" ? "entree" : "sortie";
 
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Non authentifié");
+
+      // Insert movement with proper user tracking
       const { error: mvtError } = await supabase.from("stock_movements").insert({
         article_id: article.id,
         type: movementType,
         quantity: quantity,
         motif: motif || (mode === "add" ? "Ajout rapide via scan" : "Sortie rapide via scan"),
+        user_id: user.id,
+        created_by: user.id,
       });
 
       if (mvtError) throw mvtError;
 
-      const { error: stockError } = await supabase
-        .from("articles")
-        .update({ stock: article.stock + delta })
-        .eq("id", article.id);
+      // Use RPC for safe stock update with negative check
+      const { error: stockError } = await supabase.rpc("update_article_stock", {
+        article_id: article.id,
+        quantity_change: delta,
+      });
 
       if (stockError) throw stockError;
 
