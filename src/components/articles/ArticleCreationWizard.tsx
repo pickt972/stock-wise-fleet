@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Check, Plus, Package, Tag, Layers, Hash } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import {
+  ArrowLeft, ArrowRight, Check, Plus, Package, Tag, Layers, Hash,
+  MapPin, Truck, Battery, Wrench, Droplets, Disc, Zap, Cog, Car, CircleDot, Boxes, HelpCircle
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,11 +19,29 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { CreateCategorieDialog } from "@/components/categories/CreateCategorieDialog";
+import { CreateFournisseurDialog } from "@/components/fournisseurs/CreateFournisseurDialog";
 
 interface ArticleCreationWizardProps {
   defaultCodeBarre?: string;
   defaultReference?: string;
   returnTo?: string;
+}
+
+// Map category names to icons
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  "Batteries": <Battery className="h-6 w-6" />,
+  "Freinage": <Disc className="h-6 w-6" />,
+  "Filtration": <Droplets className="h-6 w-6" />,
+  "Électrique": <Zap className="h-6 w-6" />,
+  "Moteur": <Cog className="h-6 w-6" />,
+  "Transmission": <CircleDot className="h-6 w-6" />,
+  "Pneumatiques": <Car className="h-6 w-6" />,
+  "Carrosserie": <Wrench className="h-6 w-6" />,
+  "Consommables": <Boxes className="h-6 w-6" />,
+};
+
+function getCategoryIcon(name: string) {
+  return CATEGORY_ICONS[name] || <Tag className="h-6 w-6" />;
 }
 
 export function ArticleCreationWizard({
@@ -35,14 +56,19 @@ export function ArticleCreationWizard({
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
+  const [fournisseurs, setFournisseurs] = useState<any[]>([]);
+  const [emplacements, setEmplacements] = useState<any[]>([]);
   const [showCategorieDialog, setShowCategorieDialog] = useState(false);
+  const [showFournisseurDialog, setShowFournisseurDialog] = useState(false);
 
   // Form data
   const [categorie, setCategorie] = useState("");
   const [designation, setDesignation] = useState("");
   const [reference, setReference] = useState(defaultReference || defaultCodeBarre || "");
-  const [codeBarre, setCodeBarre] = useState(defaultCodeBarre || "");
+  const [codeBarre] = useState(defaultCodeBarre || "");
   const [marque, setMarque] = useState("");
+  const [fournisseurId, setFournisseurId] = useState("");
+  const [emplacementId, setEmplacementId] = useState("");
   const [quantite, setQuantite] = useState(1);
 
   // Admin-only fields
@@ -50,10 +76,13 @@ export function ArticleCreationWizard({
   const [stockMax, setStockMax] = useState(100);
   const [prixAchat, setPrixAchat] = useState(0);
 
+  // Steps: 1=Category, 2=Ref+Brand+Supplier+Location, 3=Quantity, 4=Admin advanced
   const totalSteps = isAdmin() ? 4 : 3;
 
   useEffect(() => {
     fetchCategories();
+    fetchFournisseurs();
+    fetchEmplacements();
   }, []);
 
   const fetchCategories = async () => {
@@ -67,6 +96,34 @@ export function ArticleCreationWizard({
       setCategories(data?.map((c) => c.nom) || []);
     } catch {
       setCategories(["Consommables", "Freinage", "Filtration", "Électrique", "Moteur", "Autre"]);
+    }
+  };
+
+  const fetchFournisseurs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("fournisseurs")
+        .select("id, nom")
+        .eq("actif", true)
+        .order("nom");
+      if (error) throw error;
+      setFournisseurs(data || []);
+    } catch {
+      console.error("Erreur chargement fournisseurs");
+    }
+  };
+
+  const fetchEmplacements = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("emplacements")
+        .select("id, nom")
+        .eq("actif", true)
+        .order("nom");
+      if (error) throw error;
+      setEmplacements(data || []);
+    } catch {
+      console.error("Erreur chargement emplacements");
     }
   };
 
@@ -88,7 +145,6 @@ export function ArticleCreationWizard({
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
-      // Duplicate check
       const { data: allArticles } = await supabase
         .from("articles")
         .select("id, reference, designation, marque");
@@ -122,6 +178,8 @@ export function ArticleCreationWizard({
             stock_min: stockMin,
             stock_max: stockMax,
             prix_achat: prixAchat,
+            emplacement_id: emplacementId || null,
+            fournisseur_id: fournisseurId || null,
             user_id: userData?.user?.id,
           },
         ])
@@ -130,7 +188,6 @@ export function ArticleCreationWizard({
 
       if (error) throw error;
 
-      // Create stock movement if quantity > 0
       if (quantite > 0 && newArticle && userData?.user) {
         await supabase.from("stock_movements").insert({
           article_id: newArticle.id,
@@ -203,78 +260,70 @@ export function ArticleCreationWizard({
         ))}
       </div>
 
-      {/* Step 1: Catégorie + Description */}
+      {/* Step 1: Catégorie (cards) + Description */}
       {step === 1 && (
-        <Card className="animate-in slide-in-from-right-4 duration-200">
-          <CardContent className="pt-6 space-y-5">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Layers className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-lg">Catégorie & Description</h2>
-                <p className="text-sm text-muted-foreground">De quel type d'article s'agit-il ?</p>
-              </div>
+        <div className="space-y-5 animate-in slide-in-from-right-4 duration-200">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <Layers className="h-5 w-5 text-primary" />
             </div>
+            <div>
+              <h2 className="font-semibold text-lg">Catégorie & Description</h2>
+              <p className="text-sm text-muted-foreground">De quel type d'article s'agit-il ?</p>
+            </div>
+          </div>
 
-            <div className="space-y-2">
-              <Label>Catégorie *</Label>
-              <Select
-                value={categorie}
-                onValueChange={(val) => {
-                  if (val === "__new__") {
-                    setShowCategorieDialog(true);
-                  } else {
-                    setCategorie(val);
-                  }
-                }}
+          {/* Category cards grid */}
+          <div>
+            <Label className="mb-2 block">Catégorie *</Label>
+            <div className="grid grid-cols-3 gap-2">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCategorie(cat)}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all duration-150 min-h-[80px] justify-center
+                    ${
+                      categorie === cat
+                        ? "border-primary bg-primary/10 text-primary shadow-sm"
+                        : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-muted/50"
+                    }`}
+                >
+                  {getCategoryIcon(cat)}
+                  <span className="text-xs font-medium text-center leading-tight">{cat}</span>
+                </button>
+              ))}
+              {/* Add new category button */}
+              <button
+                type="button"
+                onClick={() => setShowCategorieDialog(true)}
+                className="flex flex-col items-center gap-2 p-3 rounded-xl border-2 border-dashed border-border text-muted-foreground hover:border-primary/40 hover:bg-muted/30 transition-all duration-150 min-h-[80px] justify-center"
               >
-                <SelectTrigger className="h-12 text-base">
-                  <SelectValue placeholder="Ex: Batteries, Filtration, Freinage..." />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border border-border shadow-medium z-[60] max-h-[250px]">
-                  <div className="p-2 border-b border-border mb-1">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => setShowCategorieDialog(true)}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Nouvelle catégorie
-                    </Button>
-                  </div>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Plus className="h-6 w-6" />
+                <span className="text-xs font-medium">Ajouter</span>
+              </button>
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <Label>Description / Sous-catégorie *</Label>
-              <Input
-                value={designation}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\s+/g, " ");
-                  setDesignation(val.charAt(0).toUpperCase() + val.slice(1));
-                }}
-                placeholder="Ex: 60Amp, 5W30, Plaquettes avant..."
-                className="h-12 text-base"
-                autoFocus
-              />
-              <p className="text-xs text-muted-foreground">
-                Décrivez précisément l'article (capacité, taille, type...)
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+          <div className="space-y-2">
+            <Label>Description / Sous-catégorie *</Label>
+            <Input
+              value={designation}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\s+/g, " ");
+                setDesignation(val.charAt(0).toUpperCase() + val.slice(1));
+              }}
+              placeholder="Ex: 60Amp, 5W30, Plaquettes avant..."
+              className="h-12 text-base"
+            />
+            <p className="text-xs text-muted-foreground">
+              Décrivez précisément l'article (capacité, taille, type...)
+            </p>
+          </div>
+        </div>
       )}
 
-      {/* Step 2: Référence + Marque */}
+      {/* Step 2: Référence + Marque + Fournisseur + Emplacement */}
       {step === 2 && (
         <Card className="animate-in slide-in-from-right-4 duration-200">
           <CardContent className="pt-6 space-y-5">
@@ -283,8 +332,8 @@ export function ArticleCreationWizard({
                 <Hash className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h2 className="font-semibold text-lg">Référence & Marque</h2>
-                <p className="text-sm text-muted-foreground">Identifiez précisément l'article</p>
+                <h2 className="font-semibold text-lg">Identification</h2>
+                <p className="text-sm text-muted-foreground">Référence, marque et localisation</p>
               </div>
             </div>
 
@@ -310,6 +359,66 @@ export function ArticleCreationWizard({
                 placeholder="Ex: Bosch, Varta, Mann..."
                 className="h-12 text-base"
               />
+            </div>
+
+            {/* Fournisseur */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-1.5">
+                  <Truck className="h-4 w-4 text-muted-foreground" />
+                  Fournisseur
+                </Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => setShowFournisseurDialog(true)}
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Nouveau
+                </Button>
+              </div>
+              <Select
+                value={fournisseurId}
+                onValueChange={(val) => setFournisseurId(val === "none" ? "" : val)}
+              >
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Aucun fournisseur" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border border-border shadow-medium z-[60] max-h-[200px]">
+                  <SelectItem value="none">Aucun fournisseur</SelectItem>
+                  {fournisseurs.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>
+                      {f.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Emplacement */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                Emplacement
+              </Label>
+              <Select
+                value={emplacementId}
+                onValueChange={(val) => setEmplacementId(val === "none" ? "" : val)}
+              >
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Aucun emplacement" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border border-border shadow-medium z-[60] max-h-[200px]">
+                  <SelectItem value="none">Aucun emplacement</SelectItem>
+                  {emplacements.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      {e.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {codeBarre && codeBarre !== reference && (
@@ -353,6 +462,22 @@ export function ArticleCreationWizard({
                 {" · "}
                 <span className="font-semibold">{marque}</span>
               </p>
+              {fournisseurs.find((f) => f.id === fournisseurId) && (
+                <p className="text-sm">
+                  <span className="text-muted-foreground">Fournisseur :</span>{" "}
+                  <span className="font-semibold">
+                    {fournisseurs.find((f) => f.id === fournisseurId)?.nom}
+                  </span>
+                </p>
+              )}
+              {emplacements.find((e) => e.id === emplacementId) && (
+                <p className="text-sm">
+                  <span className="text-muted-foreground">Emplacement :</span>{" "}
+                  <span className="font-semibold">
+                    {emplacements.find((e) => e.id === emplacementId)?.nom}
+                  </span>
+                </p>
+              )}
             </div>
 
             {/* Big quantity controls */}
@@ -500,6 +625,15 @@ export function ArticleCreationWizard({
         onCategorieCreated={(nom) => {
           fetchCategories();
           setCategorie(nom);
+        }}
+      />
+
+      <CreateFournisseurDialog
+        open={showFournisseurDialog}
+        onOpenChange={setShowFournisseurDialog}
+        onFournisseurCreated={(id) => {
+          fetchFournisseurs();
+          setFournisseurId(id);
         }}
       />
     </div>
