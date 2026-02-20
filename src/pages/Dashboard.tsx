@@ -10,6 +10,7 @@ import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
 import { QuickStockAction } from "@/components/stock/QuickStockAction";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "./DashboardLayout";
 
 interface Article {
@@ -26,6 +27,7 @@ interface Article {
 
 export default function Dashboard() {
   const { stats, isLoading } = useRealTimeStats();
+  const { profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -110,7 +112,9 @@ export default function Dashboard() {
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
         {/* Header */}
         <div className="text-center space-y-1">
-          <h1 className="text-2xl font-bold text-foreground">Stock-Wise Fleet</h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            {profile?.first_name ? `Bonjour, ${profile.first_name} 👋` : 'Stock-Wise Fleet'}
+          </h1>
           <p className="text-sm text-muted-foreground">Scannez un article pour commencer</p>
         </div>
 
