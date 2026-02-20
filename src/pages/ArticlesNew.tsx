@@ -7,6 +7,7 @@ export default function ArticlesNew() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const reference = searchParams.get('reference') || "";
+  const codeBarre = searchParams.get('code_barre') || "";
   const returnTo = searchParams.get('returnTo') || "/articles";
   const [dialogOpen, setDialogOpen] = useState(true);
 
@@ -35,6 +36,7 @@ export default function ArticlesNew() {
           open={dialogOpen}
           onOpenChange={handleDialogClose}
           defaultReference={reference}
+          defaultCodeBarre={codeBarre}
           onArticleCreated={handleArticleCreated}
         />
       </div>
