@@ -20,10 +20,11 @@ interface SettingsCardProps {
   onClick: () => void;
 }
 
-function SettingsCard({ icon, title, description, onClick }: SettingsCardProps) {
+function SettingsCard({ icon, title, description, onClick, index = 0 }: SettingsCardProps & { index?: number }) {
   return (
     <Card 
-      className="cursor-pointer hover:bg-accent/50 hover:border-primary/20 transition-all duration-200 active:scale-[0.98] group"
+      className="cursor-pointer hover:bg-accent/50 hover:border-primary/20 transition-all duration-200 active:scale-[0.98] group animate-fade-in opacity-0 [animation-fill-mode:forwards]"
+      style={{ animationDelay: `${index * 60}ms` }}
       onClick={onClick}
     >
       <CardHeader className="pb-3 pt-4 px-4">
@@ -79,6 +80,7 @@ export default function Parametres() {
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Mon compte</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <SettingsCard
+              index={0}
               icon={<KeyRound className="h-5 w-5" />}
               title="Mot de passe"
               description="Modifier mon mot de passe"
@@ -93,6 +95,7 @@ export default function Parametres() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {permissions.manageUsers && (
               <SettingsCard
+                index={1}
                 icon={<Users className="h-5 w-5" />}
                 title="Utilisateurs"
                 description="Gérer les comptes et rôles"
@@ -101,6 +104,7 @@ export default function Parametres() {
             )}
             {permissions.manageSuppliers && (
               <SettingsCard
+                index={2}
                 icon={<Building2 className="h-5 w-5" />}
                 title="Fournisseurs"
                 description="Gérer les fournisseurs"
@@ -109,6 +113,7 @@ export default function Parametres() {
             )}
             {permissions.manageCategories && (
               <SettingsCard
+                index={3}
                 icon={<Tags className="h-5 w-5" />}
                 title="Catégories"
                 description="Catégories d'articles"
@@ -117,6 +122,7 @@ export default function Parametres() {
             )}
             {permissions.manageVehicles && (
               <SettingsCard
+                index={4}
                 icon={<Truck className="h-5 w-5" />}
                 title="Véhicules"
                 description="Parc de véhicules"
@@ -124,6 +130,7 @@ export default function Parametres() {
               />
             )}
             <SettingsCard
+              index={5}
               icon={<MapPin className="h-5 w-5" />}
               title="Emplacements"
               description="Zones de stockage"
@@ -137,12 +144,14 @@ export default function Parametres() {
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Configuration</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <SettingsCard
+              index={6}
               icon={<Building className="h-5 w-5" />}
               title="Entreprise"
               description="Infos pour les bons de commande"
               onClick={() => setShowCompanySettings(true)}
             />
             <SettingsCard
+              index={7}
               icon={<Mail className="h-5 w-5" />}
               title="Messagerie"
               description="Configuration email SMTP"
@@ -157,24 +166,28 @@ export default function Parametres() {
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Administration</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <SettingsCard
+                index={8}
                 icon={<Shield className="h-5 w-5" />}
                 title="Rôles & Permissions"
                 description="Matrice des droits"
                 onClick={() => navigate('/roles-permissions')}
               />
               <SettingsCard
+                index={9}
                 icon={<BarChart3 className="h-5 w-5" />}
                 title="Rapports"
                 description="Rapports et statistiques"
                 onClick={() => navigate('/rapports')}
               />
               <SettingsCard
+                index={10}
                 icon={<ClipboardList className="h-5 w-5" />}
                 title="Journal d'audit"
                 description="Traçabilité des actions"
                 onClick={() => navigate('/journal-audit')}
               />
               <SettingsCard
+                index={11}
                 icon={<History className="h-5 w-5" />}
                 title="Historique articles"
                 description="Suivi détaillé par article"
