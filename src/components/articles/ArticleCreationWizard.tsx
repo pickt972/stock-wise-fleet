@@ -104,14 +104,16 @@ export function ArticleCreationWizard({
     }
   };
 
-  const [allDesignations, setAllDesignations] = useState<string[]>([]);
+  const [allArticleDesignations, setAllArticleDesignations] = useState<{ designation: string; categorie: string }[]>([]);
   const fetchDesignations = async () => {
     try {
       const { data } = await supabase
         .from("articles")
-        .select("designation")
+        .select("designation, categorie")
         .order("designation");
-      setAllDesignations([...new Set(data?.map((a) => a.designation) || [])]);
+      const unique = new Map<string, string>();
+      data?.forEach((a) => { if (!unique.has(a.designation)) unique.set(a.designation, a.categorie); });
+      setAllArticleDesignations(Array.from(unique, ([designation, categorie]) => ({ designation, categorie })));
     } catch {}
   };
 
@@ -119,9 +121,12 @@ export function ArticleCreationWizard({
     const formatted = val.replace(/\s+/g, " ");
     setDesignation(formatted.charAt(0).toUpperCase() + formatted.slice(1));
     if (formatted.length >= 2) {
-      const filtered = allDesignations.filter((d) =>
-        d.toLowerCase().includes(formatted.toLowerCase())
-      );
+      const filtered = allArticleDesignations
+        .filter((a) =>
+          a.designation.toLowerCase().includes(formatted.toLowerCase()) &&
+          (!categorie || a.categorie === categorie)
+        )
+        .map((a) => a.designation);
       setSuggestions(filtered.slice(0, 6));
       setShowSuggestions(filtered.length > 0);
     } else {
