@@ -76,11 +76,16 @@ export function ArticleCreationWizard({
   const [stockMax, setStockMax] = useState(100);
   const [prixAchat, setPrixAchat] = useState(0);
 
-  // Steps: 1=Category, 2=Ref+Brand+Supplier+Location, 3=Quantity, 4=Admin advanced
-  const totalSteps = isAdmin() ? 4 : 3;
+  // Autocomplete
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Steps: 1=Category, 2=Description, 3=Ref+Brand+Supplier+Location, 4=Quantity, 5=Admin advanced
+  const totalSteps = isAdmin() ? 5 : 4;
 
   useEffect(() => {
     fetchCategories();
+    fetchDesignations();
     fetchFournisseurs();
     fetchEmplacements();
   }, []);
@@ -96,6 +101,31 @@ export function ArticleCreationWizard({
       setCategories(data?.map((c) => c.nom) || []);
     } catch {
       setCategories(["Consommables", "Freinage", "Filtration", "Électrique", "Moteur", "Autre"]);
+    }
+  };
+
+  const [allDesignations, setAllDesignations] = useState<string[]>([]);
+  const fetchDesignations = async () => {
+    try {
+      const { data } = await supabase
+        .from("articles")
+        .select("designation")
+        .order("designation");
+      setAllDesignations([...new Set(data?.map((a) => a.designation) || [])]);
+    } catch {}
+  };
+
+  const handleDesignationChange = (val: string) => {
+    const formatted = val.replace(/\s+/g, " ");
+    setDesignation(formatted.charAt(0).toUpperCase() + formatted.slice(1));
+    if (formatted.length >= 2) {
+      const filtered = allDesignations.filter((d) =>
+        d.toLowerCase().includes(formatted.toLowerCase())
+      );
+      setSuggestions(filtered.slice(0, 6));
+      setShowSuggestions(filtered.length > 0);
+    } else {
+      setShowSuggestions(false);
     }
   };
 
@@ -130,12 +160,14 @@ export function ArticleCreationWizard({
   const canProceed = useCallback(() => {
     switch (step) {
       case 1:
-        return categorie.trim() !== "" && designation.trim() !== "";
+        return categorie.trim() !== "";
       case 2:
-        return reference.trim() !== "" && marque.trim() !== "";
+        return designation.trim() !== "";
       case 3:
-        return quantite >= 0;
+        return reference.trim() !== "" && marque.trim() !== "";
       case 4:
+        return quantite >= 0;
+      case 5:
         return true;
       default:
         return false;
@@ -304,18 +336,57 @@ export function ArticleCreationWizard({
               </button>
             </div>
           </div>
+        </div>
+      )}
 
-          <div className="space-y-2">
+      {/* Step 2: Description with autocomplete */}
+      {step === 2 && (
+        <div className="space-y-5 animate-in slide-in-from-right-4 duration-200">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <Package className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-lg">Description</h2>
+              <p className="text-sm text-muted-foreground">Décrivez précisément l'article</p>
+            </div>
+          </div>
+
+          <div className="bg-muted/50 rounded-lg p-3">
+            <p className="text-sm">
+              <span className="text-muted-foreground">Catégorie :</span>{" "}
+              <span className="font-semibold">{categorie}</span>
+            </p>
+          </div>
+
+          <div className="space-y-2 relative">
             <Label>Description / Sous-catégorie *</Label>
             <Input
               value={designation}
-              onChange={(e) => {
-                const val = e.target.value.replace(/\s+/g, " ");
-                setDesignation(val.charAt(0).toUpperCase() + val.slice(1));
-              }}
+              onChange={(e) => handleDesignationChange(e.target.value)}
+              onFocus={() => designation.length >= 2 && suggestions.length > 0 && setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               placeholder="Ex: 60Amp, 5W30, Plaquettes avant..."
               className="h-12 text-base"
+              autoFocus
             />
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg overflow-hidden">
+                {suggestions.map((s, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className="w-full text-left px-4 py-2.5 text-sm hover:bg-muted/50 transition-colors border-b border-border/50 last:border-0"
+                    onMouseDown={() => {
+                      setDesignation(s);
+                      setShowSuggestions(false);
+                    }}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
             <p className="text-xs text-muted-foreground">
               Décrivez précisément l'article (capacité, taille, type...)
             </p>
@@ -323,8 +394,8 @@ export function ArticleCreationWizard({
         </div>
       )}
 
-      {/* Step 2: Référence + Marque + Fournisseur + Emplacement */}
-      {step === 2 && (
+      {/* Step 3: Référence + Marque + Fournisseur + Emplacement */}
+      {step === 3 && (
         <Card className="animate-in slide-in-from-right-4 duration-200">
           <CardContent className="pt-6 space-y-5">
             <div className="flex items-center gap-3 mb-2">
@@ -432,8 +503,8 @@ export function ArticleCreationWizard({
         </Card>
       )}
 
-      {/* Step 3: Quantité */}
-      {step === 3 && (
+      {/* Step 4: Quantité */}
+      {step === 4 && (
         <Card className="animate-in slide-in-from-right-4 duration-200">
           <CardContent className="pt-6 space-y-5">
             <div className="flex items-center gap-3 mb-2">
@@ -528,8 +599,8 @@ export function ArticleCreationWizard({
         </Card>
       )}
 
-      {/* Step 4: Admin only - Advanced settings */}
-      {step === 4 && isAdmin() && (
+      {/* Step 5: Admin only - Advanced settings */}
+      {step === 5 && isAdmin() && (
         <Card className="animate-in slide-in-from-right-4 duration-200">
           <CardContent className="pt-6 space-y-5">
             <div className="flex items-center gap-3 mb-2">
