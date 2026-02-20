@@ -131,6 +131,10 @@ export function NewEntryForm({ open, onOpenChange, onSuccess }: NewEntryFormProp
       toast({ title: "Erreur", description: "Veuillez sélectionner un type d'entrée", variant: "destructive" });
       return false;
     }
+    if (formData.entryType === "achat" && !formData.supplierId) {
+      toast({ title: "Erreur", description: "Le fournisseur est obligatoire pour un achat", variant: "destructive" });
+      return false;
+    }
     return true;
   };
 
@@ -328,7 +332,7 @@ export function NewEntryForm({ open, onOpenChange, onSuccess }: NewEntryFormProp
                 </Select>
               </div>
               <div>
-                <Label htmlFor="supplier">Fournisseur</Label>
+                <Label htmlFor="supplier">Fournisseur {formData.entryType === "achat" ? "*" : ""}</Label>
                 <Select
                   value={formData.supplierId}
                   onValueChange={(value) => setFormData({ ...formData, supplierId: value })}
