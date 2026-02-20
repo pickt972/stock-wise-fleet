@@ -1,10 +1,11 @@
 import { useState, useCallback } from "react";
-import { Package, FileText, BarChart3, Settings, AlertTriangle, RotateCcw, ScanLine, Search } from "lucide-react";
+import { Package, FileText, BarChart3, Settings, AlertTriangle, RotateCcw, ScanLine, Search, PlusCircle, PackageX } from "lucide-react";
 import { KPICard } from "@/components/ui/kpi-card";
 import { useRealTimeStats } from "@/hooks/useRealTimeStats";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
 import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
 import { QuickStockAction } from "@/components/stock/QuickStockAction";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +33,7 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [foundArticle, setFoundArticle] = useState<Article | null>(null);
+  const [notFoundCode, setNotFoundCode] = useState<string | null>(null);
 
   const searchArticle = useCallback(async (query: string) => {
     if (!query.trim()) return;
@@ -40,6 +42,7 @@ export default function Dashboard() {
     const q = numeric.length >= 8 ? numeric : raw;
 
     setIsSearching(true);
+    setNotFoundCode(null);
     try {
       // Exact match
       const { data } = await supabase
@@ -64,7 +67,7 @@ export default function Dashboard() {
       if (partials && partials.length > 0) {
         setFoundArticle(partials[0]);
       } else {
-        toast({ title: "Article non trouvé", description: `Code : ${q}`, variant: "destructive" });
+        setNotFoundCode(q);
       }
     } catch {
       toast({ title: "Erreur de recherche", variant: "destructive" });
@@ -81,6 +84,7 @@ export default function Dashboard() {
 
   const handleReset = useCallback(() => {
     setFoundArticle(null);
+    setNotFoundCode(null);
     setSearchQuery("");
   }, []);
 
@@ -142,6 +146,37 @@ export default function Dashboard() {
 
         {isSearching && (
           <p className="text-center text-sm text-muted-foreground animate-pulse">Recherche en cours...</p>
+        )}
+
+        {/* Not found → propose creation */}
+        {notFoundCode && !isSearching && (
+          <Card className="border-l-4 border-l-warning animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <CardContent className="pt-5 pb-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <PackageX className="h-8 w-8 text-warning flex-shrink-0" />
+                <div>
+                  <p className="font-semibold text-foreground">Article introuvable</p>
+                  <p className="text-sm text-muted-foreground">Code : <span className="font-mono">{notFoundCode}</span></p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  className="h-12 bg-success hover:bg-success/90 text-success-foreground"
+                  onClick={() => navigate(`/articles/new?code_barre=${encodeURIComponent(notFoundCode)}&returnTo=/dashboard`)}
+                >
+                  <PlusCircle className="h-5 w-5 mr-2" />
+                  Créer l'article
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-12"
+                  onClick={() => setNotFoundCode(null)}
+                >
+                  Annuler
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* KPIs */}
