@@ -195,6 +195,7 @@ export default function Dashboard() {
               icon={<Package className="h-5 w-5" />}
               value={isLoading ? "..." : stats.totalArticles}
               label="Articles"
+              index={0}
               className="hover:bg-muted/60 transition-colors"
             />
           </div>
@@ -203,6 +204,7 @@ export default function Dashboard() {
               icon={<AlertTriangle className="h-5 w-5" />}
               value={isLoading ? "..." : stats.activeAlerts}
               label="Alertes"
+              index={1}
               className="hover:bg-destructive/10 transition-colors"
             />
           </div>
@@ -211,6 +213,7 @@ export default function Dashboard() {
               icon={<RotateCcw className="h-5 w-5" />}
               value={lastUpdate}
               label="Mise à jour"
+              index={2}
               className="hover:bg-muted/60 transition-colors"
             />
           </div>

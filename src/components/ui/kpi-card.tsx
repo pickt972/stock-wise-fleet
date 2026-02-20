@@ -6,14 +6,18 @@ interface KPICardProps {
   value: string | number;
   label: string;
   className?: string;
+  index?: number;
 }
 
-export function KPICard({ icon, value, label, className }: KPICardProps) {
+export function KPICard({ icon, value, label, className, index = 0 }: KPICardProps) {
   return (
-    <Card className={cn(
-      "p-4 border border-border bg-muted/30 hover:bg-muted/50 transition-colors",
-      className
-    )}>
+    <Card
+      className={cn(
+        "p-4 border border-border bg-muted/30 hover:bg-muted/50 transition-colors animate-fade-in opacity-0 [animation-fill-mode:forwards]",
+        className
+      )}
+      style={{ animationDelay: `${index * 80}ms` }}
+    >
       <div className="flex flex-col items-center justify-center gap-2 text-center">
         <div className="text-muted-foreground">
           {icon}
