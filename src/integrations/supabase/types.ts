@@ -240,6 +240,8 @@ export type Database = {
           description: string | null
           id: string
           nom: string
+          parent_id: string | null
+          sort_order: number
           updated_at: string
           user_id: string | null
         }
@@ -249,6 +251,8 @@ export type Database = {
           description?: string | null
           id?: string
           nom: string
+          parent_id?: string | null
+          sort_order?: number
           updated_at?: string
           user_id?: string | null
         }
@@ -258,10 +262,20 @@ export type Database = {
           description?: string | null
           id?: string
           nom?: string
+          parent_id?: string | null
+          sort_order?: number
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       color_preferences: {
         Row: {

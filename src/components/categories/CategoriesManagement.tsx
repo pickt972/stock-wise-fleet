@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Tag } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,94 +11,222 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ColorSelector } from "@/components/ui/color-selector";
-import { useColorPreferences } from "@/hooks/useColorPreferences";
+import { CategoryTreeItem, CategoryNode } from "./CategoryTreeItem";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 
-interface Categorie {
+interface RawCategory {
   id: string;
   nom: string;
-  description?: string;
+  description: string | null;
   actif: boolean;
+  parent_id: string | null;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 }
 
 export function CategoriesManagement() {
-  const [categories, setCategories] = useState<Categorie[]>([]);
+  const [categories, setCategories] = useState<RawCategory[]>([]);
   const [articleCounts, setArticleCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
-  const [editingCategorie, setEditingCategorie] = useState<Categorie | null>(null);
-  const [formData, setFormData] = useState({ nom: "", description: "" });
+  const [editingCategorie, setEditingCategorie] = useState<CategoryNode | null>(null);
+  const [formData, setFormData] = useState({ nom: "", description: "", parent_id: "" });
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   const { toast } = useToast();
-  const { getColorForText } = useColorPreferences();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
 
   const fetchCategories = async () => {
     try {
       const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('nom');
+        .from("categories")
+        .select("*")
+        .order("sort_order")
+        .order("nom");
       if (error) throw error;
-      setCategories(data || []);
+      setCategories((data as RawCategory[]) || []);
 
-      // Fetch article counts per category
       const { data: articles } = await supabase
-        .from('articles')
-        .select('categorie');
+        .from("articles")
+        .select("categorie");
       if (articles) {
         const counts: Record<string, number> = {};
-        articles.forEach(a => {
+        articles.forEach((a) => {
           counts[a.categorie] = (counts[a.categorie] || 0) + 1;
         });
         setArticleCounts(counts);
       }
     } catch {
-      toast({ title: "Erreur", description: "Impossible de charger les catégories", variant: "destructive" });
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les catégories",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => { fetchCategories(); }, []);
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
-  const filtered = categories.filter(c =>
-    c.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (c.description || "").toLowerCase().includes(searchQuery.toLowerCase())
+  // Build tree from flat list
+  const buildTree = useCallback(
+    (items: RawCategory[], query: string): CategoryNode[] => {
+      const map = new Map<string, CategoryNode>();
+      const lq = query.toLowerCase();
+
+      items.forEach((c) => {
+        map.set(c.id, {
+          ...c,
+          description: c.description || undefined,
+          children: [],
+          articleCount: articleCounts[c.nom] || 0,
+          totalArticleCount: 0,
+        });
+      });
+
+      const roots: CategoryNode[] = [];
+      items.forEach((c) => {
+        const node = map.get(c.id)!;
+        if (c.parent_id && map.has(c.parent_id)) {
+          map.get(c.parent_id)!.children.push(node);
+        } else {
+          roots.push(node);
+        }
+      });
+
+      // Calculate total article counts (recursive)
+      const calcTotal = (node: CategoryNode): number => {
+        node.totalArticleCount =
+          node.articleCount +
+          node.children.reduce((sum, ch) => sum + calcTotal(ch), 0);
+        return node.totalArticleCount;
+      };
+      roots.forEach(calcTotal);
+
+      // Filter if search query
+      if (!query) return roots;
+
+      const matches = (node: CategoryNode): boolean => {
+        if (
+          node.nom.toLowerCase().includes(lq) ||
+          (node.description || "").toLowerCase().includes(lq)
+        )
+          return true;
+        return node.children.some(matches);
+      };
+
+      const filterTree = (nodes: CategoryNode[]): CategoryNode[] =>
+        nodes
+          .filter(matches)
+          .map((n) => ({ ...n, children: filterTree(n.children) }));
+
+      return filterTree(roots);
+    },
+    [articleCounts]
   );
+
+  const tree = useMemo(
+    () => buildTree(categories, searchQuery),
+    [categories, searchQuery, buildTree]
+  );
+
+  // Flatten tree for sortable IDs
+  const flatIds = useMemo(() => {
+    const ids: string[] = [];
+    const walk = (nodes: CategoryNode[]) => {
+      nodes.forEach((n) => {
+        ids.push(n.id);
+        walk(n.children);
+      });
+    };
+    walk(tree);
+    return ids;
+  }, [tree]);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveId(null);
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    // Make activeId a child of overId
+    try {
+      const { error } = await supabase
+        .from("categories")
+        .update({ parent_id: overId })
+        .eq("id", activeId);
+      if (error) throw error;
+
+      toast({ title: "Succès", description: "Catégorie déplacée" });
+      fetchCategories();
+    } catch {
+      toast({
+        title: "Erreur",
+        description: "Impossible de déplacer la catégorie",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { error } = await supabase.from('categories').insert([{
-        nom: formData.nom,
-        description: formData.description || null,
-        user_id: (await supabase.auth.getUser()).data.user?.id
-      }]);
+      const { error } = await supabase.from("categories").insert([
+        {
+          nom: formData.nom,
+          description: formData.description || null,
+          parent_id: formData.parent_id || null,
+          user_id: (await supabase.auth.getUser()).data.user?.id,
+        },
+      ]);
       if (error) throw error;
       toast({ title: "Succès", description: "Catégorie créée" });
-      setFormData({ nom: "", description: "" });
+      setFormData({ nom: "", description: "", parent_id: "" });
       setOpenCreateDialog(false);
       fetchCategories();
     } catch (error: any) {
-      toast({ title: "Erreur", description: error.message || "Impossible de créer la catégorie", variant: "destructive" });
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de créer la catégorie",
+        variant: "destructive",
+      });
     }
   };
 
@@ -106,36 +234,78 @@ export function CategoriesManagement() {
     e.preventDefault();
     if (!editingCategorie) return;
     try {
-      const { error } = await supabase.from('categories').update({
-        nom: formData.nom,
-        description: formData.description || null,
-      }).eq('id', editingCategorie.id);
+      const { error } = await supabase
+        .from("categories")
+        .update({
+          nom: formData.nom,
+          description: formData.description || null,
+          parent_id: formData.parent_id || null,
+        })
+        .eq("id", editingCategorie.id);
       if (error) throw error;
       toast({ title: "Succès", description: "Catégorie modifiée" });
-      setFormData({ nom: "", description: "" });
+      setFormData({ nom: "", description: "", parent_id: "" });
       setOpenEditDialog(false);
       setEditingCategorie(null);
       fetchCategories();
     } catch (error: any) {
-      toast({ title: "Erreur", description: error.message || "Impossible de modifier", variant: "destructive" });
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de modifier",
+        variant: "destructive",
+      });
     }
   };
 
   const handleDelete = async (categoryId: string) => {
     try {
-      const { error } = await supabase.from('categories').update({ actif: false }).eq('id', categoryId);
+      const { error } = await supabase
+        .from("categories")
+        .update({ actif: false })
+        .eq("id", categoryId);
       if (error) throw error;
       toast({ title: "Succès", description: "Catégorie désactivée" });
       fetchCategories();
     } catch {
-      toast({ title: "Erreur", description: "Impossible de supprimer", variant: "destructive" });
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer",
+        variant: "destructive",
+      });
     }
   };
 
-  const openEditForm = (categorie: Categorie) => {
-    setEditingCategorie(categorie);
-    setFormData({ nom: categorie.nom, description: categorie.description || "" });
+  const openEditForm = (category: CategoryNode) => {
+    setEditingCategorie(category);
+    setFormData({
+      nom: category.nom,
+      description: category.description || "",
+      parent_id: category.parent_id || "",
+    });
     setOpenEditDialog(true);
+  };
+
+  const openAddChild = (parentId: string) => {
+    setFormData({ nom: "", description: "", parent_id: parentId });
+    setOpenCreateDialog(true);
+  };
+
+  // Get flat list of categories for parent selector (excluding self and descendants)
+  const getParentOptions = (excludeId?: string) => {
+    const options: { id: string; nom: string; depth: number }[] = [];
+    const walk = (nodes: CategoryNode[], depth: number) => {
+      nodes.forEach((n) => {
+        if (n.id !== excludeId) {
+          options.push({ id: n.id, nom: n.nom, depth });
+          walk(
+            n.children.filter((c) => c.id !== excludeId),
+            depth + 1
+          );
+        }
+      });
+    };
+    walk(buildTree(categories, ""), 0);
+    return options;
   };
 
   if (isLoading) {
@@ -146,9 +316,10 @@ export function CategoriesManagement() {
     );
   }
 
+  let globalIndex = 0;
+
   return (
     <div className="space-y-4">
-      {/* Header avec recherche et bouton */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <Input
           placeholder="Rechercher une catégorie..."
@@ -156,79 +327,56 @@ export function CategoriesManagement() {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="max-w-xs"
         />
-        <Button onClick={() => { setFormData({ nom: "", description: "" }); setOpenCreateDialog(true); }}>
+        <Button
+          onClick={() => {
+            setFormData({ nom: "", description: "", parent_id: "" });
+            setOpenCreateDialog(true);
+          }}
+        >
           <Plus className="mr-2 h-4 w-4" />
           Nouvelle catégorie
         </Button>
       </div>
 
-      {/* Grille de cartes */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {filtered.map((categorie, index) => (
-          <Card
-            key={categorie.id}
-            className="p-4 flex flex-col gap-3 animate-fade-in opacity-0 [animation-fill-mode:forwards] hover:shadow-md transition-shadow"
-            style={{ animationDelay: `${index * 60}ms` }}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <Tag className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <Badge
-                  variant="outline"
-                  className={`${getColorForText(categorie.nom, 'category')} truncate`}
-                >
-                  {categorie.nom}
-                </Badge>
-              </div>
-              <Badge variant={categorie.actif ? "default" : "secondary"} className="flex-shrink-0 text-xs">
-                {categorie.actif ? "Active" : "Inactive"}
-              </Badge>
-            </div>
-
-            <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
-              {categorie.description || "Aucune description"}
-            </p>
-
-            <div className="text-xs text-muted-foreground">
-              {(articleCounts[categorie.nom] || 0)} article{(articleCounts[categorie.nom] || 0) !== 1 ? "s" : ""}
-            </div>
-
-            <div className="flex justify-end gap-1 mt-auto">
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => openEditForm(categorie)}>
-                <Edit className="h-4 w-4" />
-              </Button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Désactiver la catégorie "{categorie.nom}" ? Elle ne sera plus disponible pour les nouveaux articles.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Annuler</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => handleDelete(categorie.id)}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      Désactiver
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          </Card>
-        ))}
+      <div className="text-xs text-muted-foreground">
+        💡 Glissez une catégorie sur une autre pour l'imbriquer comme sous-catégorie
       </div>
 
-      {filtered.length === 0 && (
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext items={flatIds} strategy={verticalListSortingStrategy}>
+          <div className="space-y-1">
+            {tree.map((category) => (
+              <CategoryTreeItem
+                key={category.id}
+                category={category}
+                depth={0}
+                index={globalIndex++}
+                onEdit={openEditForm}
+                onDelete={handleDelete}
+                onAddChild={openAddChild}
+              />
+            ))}
+          </div>
+        </SortableContext>
+        <DragOverlay>
+          {activeId ? (
+            <div className="bg-card border rounded-lg p-3 shadow-lg opacity-80 text-sm font-medium">
+              {categories.find((c) => c.id === activeId)?.nom || "Catégorie"}
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+
+      {tree.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
-          {searchQuery ? "Aucune catégorie trouvée" : "Aucune catégorie créée"}
+          {searchQuery
+            ? "Aucune catégorie trouvée"
+            : "Aucune catégorie créée"}
         </div>
       )}
 
@@ -241,15 +389,62 @@ export function CategoriesManagement() {
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="nom">Nom *</Label>
-              <Input id="nom" value={formData.nom} onChange={(e) => setFormData({ ...formData, nom: e.target.value })} required />
+              <Input
+                id="nom"
+                value={formData.nom}
+                onChange={(e) =>
+                  setFormData({ ...formData, nom: e.target.value })
+                }
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
-              <Textarea id="description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={3} />
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                rows={3}
+              />
             </div>
-            {formData.nom && <ColorSelector type="category" name={formData.nom} label="Couleur d'affichage" />}
+            <div className="space-y-2">
+              <Label>Catégorie parente</Label>
+              <Select
+                value={formData.parent_id}
+                onValueChange={(v) =>
+                  setFormData({ ...formData, parent_id: v === "none" ? "" : v })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Aucune (racine)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Aucune (racine)</SelectItem>
+                  {getParentOptions().map((opt) => (
+                    <SelectItem key={opt.id} value={opt.id}>
+                      {"—".repeat(opt.depth)} {opt.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {formData.nom && (
+              <ColorSelector
+                type="category"
+                name={formData.nom}
+                label="Couleur d'affichage"
+              />
+            )}
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setOpenCreateDialog(false)}>Annuler</Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpenCreateDialog(false)}
+              >
+                Annuler
+              </Button>
               <Button type="submit">Créer</Button>
             </div>
           </form>
@@ -265,15 +460,62 @@ export function CategoriesManagement() {
           <form onSubmit={handleEdit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="edit-nom">Nom *</Label>
-              <Input id="edit-nom" value={formData.nom} onChange={(e) => setFormData({ ...formData, nom: e.target.value })} required />
+              <Input
+                id="edit-nom"
+                value={formData.nom}
+                onChange={(e) =>
+                  setFormData({ ...formData, nom: e.target.value })
+                }
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-description">Description</Label>
-              <Textarea id="edit-description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={3} />
+              <Textarea
+                id="edit-description"
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                rows={3}
+              />
             </div>
-            {editingCategorie && <ColorSelector type="category" name={editingCategorie.nom} label="Couleur d'affichage" />}
+            <div className="space-y-2">
+              <Label>Catégorie parente</Label>
+              <Select
+                value={formData.parent_id}
+                onValueChange={(v) =>
+                  setFormData({ ...formData, parent_id: v === "none" ? "" : v })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Aucune (racine)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Aucune (racine)</SelectItem>
+                  {getParentOptions(editingCategorie?.id).map((opt) => (
+                    <SelectItem key={opt.id} value={opt.id}>
+                      {"—".repeat(opt.depth)} {opt.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {editingCategorie && (
+              <ColorSelector
+                type="category"
+                name={editingCategorie.nom}
+                label="Couleur d'affichage"
+              />
+            )}
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setOpenEditDialog(false)}>Annuler</Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpenEditDialog(false)}
+              >
+                Annuler
+              </Button>
               <Button type="submit">Modifier</Button>
             </div>
           </form>
