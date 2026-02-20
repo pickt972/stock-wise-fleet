@@ -119,13 +119,18 @@ export default function Dashboard() {
         </div>
 
         {/* BIG SCAN BUTTON */}
-        <Button
-          onClick={() => setShowScanner(true)}
-          className="w-full h-32 flex-col gap-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl shadow-lg hover:shadow-xl transition-all active:scale-[0.98]"
-        >
-          <ScanLine className="h-12 w-12" />
-          <span className="text-xl font-bold">Scanner un article</span>
-        </Button>
+        <div className="flex flex-col items-center gap-3">
+          <button
+            onClick={() => setShowScanner(true)}
+            className="relative w-36 h-36 rounded-full bg-primary text-primary-foreground shadow-[0_8px_30px_-4px_hsl(var(--primary)/0.5)] hover:shadow-[0_12px_40px_-4px_hsl(var(--primary)/0.6)] active:scale-95 transition-all duration-200 flex items-center justify-center group"
+          >
+            {/* Pulse ring */}
+            <span className="absolute inset-0 rounded-full border-2 border-primary/30 animate-ping opacity-40 pointer-events-none" />
+            <span className="absolute inset-[-6px] rounded-full border border-primary/20 pointer-events-none" />
+            <ScanLine className="h-14 w-14 group-hover:scale-110 transition-transform duration-200" />
+          </button>
+          <span className="text-sm font-medium text-muted-foreground">Scanner un article</span>
+        </div>
 
         {/* Manual search */}
         <div className="flex gap-2">
