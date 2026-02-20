@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Mail, Lock } from "lucide-react";
+import { Loader2, Mail, Lock, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 import logo from "@/assets/logo.png";
 
 export default function Auth() {
@@ -18,6 +19,7 @@ export default function Auth() {
   const [resetSent, setResetSent] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     const checkUser = async () => {
@@ -84,7 +86,18 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
+      {/* Theme toggle */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute top-4 right-4"
+        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      >
+        <Sun className="h-5 w-5 rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0" />
+        <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100" />
+        <span className="sr-only">Changer le thème</span>
+      </Button>
       <div className="w-full max-w-sm space-y-6">
         {/* Logo */}
         <div className="text-center space-y-3">
