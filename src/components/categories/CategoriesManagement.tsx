@@ -1,9 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2 } from "lucide-react";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { CompactSortControls } from "@/components/ui/compact-sort-controls";
-import { DragHandle } from "@/components/ui/drag-handle";
+import { Plus, Edit, Trash2, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +9,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -26,15 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -56,22 +43,11 @@ export function CategoriesManagement() {
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [editingCategorie, setEditingCategorie] = useState<Categorie | null>(null);
-  const [formData, setFormData] = useState({
-    nom: "",
-    description: "",
-  });
-  const [currentSort, setCurrentSort] = useState('nom');
-  const [currentDirection, setCurrentDirection] = useState<'asc' | 'desc'>('asc');
+  const [formData, setFormData] = useState({ nom: "", description: "" });
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { toast } = useToast();
   const { getColorForText } = useColorPreferences();
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
 
   const fetchCategories = async () => {
     try {
@@ -79,421 +55,213 @@ export function CategoriesManagement() {
         .from('categories')
         .select('*')
         .order('nom');
-
       if (error) throw error;
       setCategories(data || []);
-    } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les catégories",
-        variant: "destructive",
-      });
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de charger les catégories", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const sortOptions = [
-    { value: 'nom', label: 'Nom' },
-    { value: 'created_at', label: 'Date de création' },
-    { value: 'updated_at', label: 'Date de modification' },
-    { value: 'actif', label: 'Statut' }
-  ];
+  useEffect(() => { fetchCategories(); }, []);
 
-  const applySorting = (data: Categorie[]) => {
-    return [...data].sort((a, b) => {
-      let aValue = a[currentSort as keyof Categorie];
-      let bValue = b[currentSort as keyof Categorie];
-
-      if (currentSort === 'actif') {
-        aValue = a.actif ? '1' : '0';
-        bValue = b.actif ? '1' : '0';
-      }
-
-      if (aValue === bValue) return 0;
-      const result = aValue < bValue ? -1 : 1;
-      return currentDirection === 'asc' ? result : -result;
-    });
-  };
-
-  const handleDragEnd = (event: any) => {
-    const { active, over } = event;
-
-    if (active.id !== over.id) {
-      setCategories((items) => {
-        const oldIndex = items.findIndex(item => item.id === active.id);
-        const newIndex = items.findIndex(item => item.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-  };
-
-  const handleSortChange = (field: string, direction: 'asc' | 'desc') => {
-    setCurrentSort(field);
-    setCurrentDirection(direction);
-  };
-
-  const displayedCategories = currentSort === 'manual' ? categories : applySorting(categories);
-
-  useEffect(() => {
-    fetchCategories();
-  }, []);
+  const filtered = categories.filter(c =>
+    c.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (c.description || "").toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     try {
-      const { error } = await supabase
-        .from('categories')
-        .insert([{
-          nom: formData.nom,
-          description: formData.description || null,
-          user_id: (await supabase.auth.getUser()).data.user?.id
-        }]);
-
+      const { error } = await supabase.from('categories').insert([{
+        nom: formData.nom,
+        description: formData.description || null,
+        user_id: (await supabase.auth.getUser()).data.user?.id
+      }]);
       if (error) throw error;
-
-      toast({
-        title: "Succès",
-        description: "Catégorie créée avec succès",
-      });
-
+      toast({ title: "Succès", description: "Catégorie créée" });
       setFormData({ nom: "", description: "" });
       setOpenCreateDialog(false);
       fetchCategories();
     } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error.message || "Impossible de créer la catégorie",
-        variant: "destructive",
-      });
+      toast({ title: "Erreur", description: error.message || "Impossible de créer la catégorie", variant: "destructive" });
     }
   };
 
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingCategorie) return;
-
     try {
-      const { error } = await supabase
-        .from('categories')
-        .update({
-          nom: formData.nom,
-          description: formData.description || null,
-        })
-        .eq('id', editingCategorie.id);
-
+      const { error } = await supabase.from('categories').update({
+        nom: formData.nom,
+        description: formData.description || null,
+      }).eq('id', editingCategorie.id);
       if (error) throw error;
-
-      toast({
-        title: "Succès",
-        description: "Catégorie modifiée avec succès",
-      });
-
+      toast({ title: "Succès", description: "Catégorie modifiée" });
       setFormData({ nom: "", description: "" });
       setOpenEditDialog(false);
       setEditingCategorie(null);
       fetchCategories();
     } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error.message || "Impossible de modifier la catégorie",
-        variant: "destructive",
-      });
+      toast({ title: "Erreur", description: error.message || "Impossible de modifier", variant: "destructive" });
     }
   };
 
   const handleDelete = async (categoryId: string) => {
     try {
-      const { error } = await supabase
-        .from('categories')
-        .update({ actif: false })
-        .eq('id', categoryId);
-
+      const { error } = await supabase.from('categories').update({ actif: false }).eq('id', categoryId);
       if (error) throw error;
-
-      toast({
-        title: "Succès",
-        description: "Catégorie supprimée avec succès",
-      });
-
+      toast({ title: "Succès", description: "Catégorie désactivée" });
       fetchCategories();
-    } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de supprimer la catégorie",
-        variant: "destructive",
-      });
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de supprimer", variant: "destructive" });
     }
   };
 
   const openEditForm = (categorie: Categorie) => {
     setEditingCategorie(categorie);
-    setFormData({
-      nom: categorie.nom,
-      description: categorie.description || "",
-    });
+    setFormData({ nom: categorie.nom, description: categorie.description || "" });
     setOpenEditDialog(true);
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg text-muted-foreground">Chargement des catégories...</div>
+        <div className="text-muted-foreground">Chargement...</div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <CompactSortControls
-          sortOptions={[{ value: 'manual', label: 'Manuel' }, ...sortOptions]}
-          currentSort={currentSort}
-          currentDirection={currentDirection}
-          onSortChange={handleSortChange}
-          showDragHandle={currentSort === 'manual'}
+      {/* Header avec recherche et bouton */}
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+        <Input
+          placeholder="Rechercher une catégorie..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="max-w-xs"
         />
+        <Button onClick={() => { setFormData({ nom: "", description: "" }); setOpenCreateDialog(true); }}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nouvelle catégorie
+        </Button>
       </div>
-      
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Gestion des catégories</CardTitle>
-            <Dialog open={openCreateDialog} onOpenChange={setOpenCreateDialog}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nouvelle catégorie
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Créer une nouvelle catégorie</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleCreate} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="nom">Nom de la catégorie *</Label>
-                    <Input
-                      id="nom"
-                      value={formData.nom}
-                      onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      rows={3}
-                    />
-                  </div>
-                  
-                  {formData.nom && (
-                    <ColorSelector 
-                      type="category" 
-                      name={formData.nom}
-                      label="Couleur d'affichage"
-                    />
-                  )}
-                  
-                  <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={() => setOpenCreateDialog(false)}>
-                      Annuler
-                    </Button>
-                    <Button type="submit">Créer</Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {currentSort === 'manual' && <TableHead className="w-12"></TableHead>}
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <SortableContext items={displayedCategories.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                <TableBody>
-                  {displayedCategories.map((categorie) => (
-                    <TableRow key={categorie.id}>
-                      {currentSort === 'manual' ? (
-                        <DragHandle id={categorie.id}>
-                          <>
-                            <TableCell></TableCell>
-                            <TableCell>
-                              <Badge 
-                                variant="outline"
-                                className={`${getColorForText(categorie.nom, 'category')}`}
-                              >
-                                {categorie.nom}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{categorie.description || "-"}</TableCell>
-                            <TableCell>
-                              <Badge variant={categorie.actif ? "default" : "secondary"}>
-                                {categorie.actif ? "Active" : "Inactive"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0"
-                                  onClick={() => openEditForm(categorie)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Êtes-vous sûr de vouloir supprimer la catégorie "{categorie.nom}" ?
-                                        Cette action ne supprimera pas définitivement la catégorie mais la désactivera.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() => handleDelete(categorie.id)}
-                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                      >
-                                        Supprimer
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              </div>
-                            </TableCell>
-                          </>
-                        </DragHandle>
-                      ) : (
-                        <>
-                          <TableCell>
-                            <Badge 
-                              variant="outline"
-                              className={`${getColorForText(categorie.nom, 'category')}`}
-                            >
-                              {categorie.nom}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{categorie.description || "-"}</TableCell>
-                          <TableCell>
-                            <Badge variant={categorie.actif ? "default" : "secondary"}>
-                              {categorie.actif ? "Active" : "Inactive"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                                onClick={() => openEditForm(categorie)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Êtes-vous sûr de vouloir supprimer la catégorie "{categorie.nom}" ?
-                                      Cette action ne supprimera pas définitivement la catégorie mais la désactivera.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDelete(categorie.id)}
-                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    >
-                                      Supprimer
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </TableCell>
-                        </>
-                      )}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </SortableContext>
-            </Table>
-          </DndContext>
 
-          {/* Dialog d'édition */}
-          <Dialog open={openEditDialog} onOpenChange={setOpenEditDialog}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Modifier la catégorie</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleEdit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-nom">Nom de la catégorie *</Label>
-                  <Input
-                    id="edit-nom"
-                    value={formData.nom}
-                    onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-description">Description</Label>
-                  <Textarea
-                    id="edit-description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={3}
-                    />
-                  </div>
-                  
-                  {editingCategorie && (
-                    <ColorSelector 
-                      type="category" 
-                      name={editingCategorie.nom}
-                      label="Couleur d'affichage"
-                    />
-                  )}
-                  
-                  <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setOpenEditDialog(false)}>
-                    Annuler
+      {/* Grille de cartes */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {filtered.map((categorie, index) => (
+          <Card
+            key={categorie.id}
+            className="p-4 flex flex-col gap-3 animate-fade-in opacity-0 [animation-fill-mode:forwards] hover:shadow-md transition-shadow"
+            style={{ animationDelay: `${index * 60}ms` }}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <Tag className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <Badge
+                  variant="outline"
+                  className={`${getColorForText(categorie.nom, 'category')} truncate`}
+                >
+                  {categorie.nom}
+                </Badge>
+              </div>
+              <Badge variant={categorie.actif ? "default" : "secondary"} className="flex-shrink-0 text-xs">
+                {categorie.actif ? "Active" : "Inactive"}
+              </Badge>
+            </div>
+
+            <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
+              {categorie.description || "Aucune description"}
+            </p>
+
+            <div className="flex justify-end gap-1 mt-auto">
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => openEditForm(categorie)}>
+                <Edit className="h-4 w-4" />
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive">
+                    <Trash2 className="h-4 w-4" />
                   </Button>
-                  <Button type="submit">Modifier</Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </CardContent>
-      </Card>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Désactiver la catégorie "{categorie.nom}" ? Elle ne sera plus disponible pour les nouveaux articles.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => handleDelete(categorie.id)}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Désactiver
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {filtered.length === 0 && (
+        <div className="text-center py-12 text-muted-foreground">
+          {searchQuery ? "Aucune catégorie trouvée" : "Aucune catégorie créée"}
+        </div>
+      )}
+
+      {/* Dialog création */}
+      <Dialog open={openCreateDialog} onOpenChange={setOpenCreateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nouvelle catégorie</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreate} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="nom">Nom *</Label>
+              <Input id="nom" value={formData.nom} onChange={(e) => setFormData({ ...formData, nom: e.target.value })} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea id="description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={3} />
+            </div>
+            {formData.nom && <ColorSelector type="category" name={formData.nom} label="Couleur d'affichage" />}
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setOpenCreateDialog(false)}>Annuler</Button>
+              <Button type="submit">Créer</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog édition */}
+      <Dialog open={openEditDialog} onOpenChange={setOpenEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier la catégorie</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEdit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-nom">Nom *</Label>
+              <Input id="edit-nom" value={formData.nom} onChange={(e) => setFormData({ ...formData, nom: e.target.value })} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea id="edit-description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={3} />
+            </div>
+            {editingCategorie && <ColorSelector type="category" name={editingCategorie.nom} label="Couleur d'affichage" />}
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setOpenEditDialog(false)}>Annuler</Button>
+              <Button type="submit">Modifier</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
