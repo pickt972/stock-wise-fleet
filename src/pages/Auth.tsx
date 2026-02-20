@@ -5,221 +5,188 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail, Lock } from "lucide-react";
 import logo from "@/assets/logo.png";
-
-type UserRole = 'admin' | 'chef_agence' | 'magasinier';
-
-interface AvailableUser {
-  username: string;
-  role: string;
-  roleDisplay: string;
-}
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
-  const [username, setUsername] = useState("");
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [availableUsers, setAvailableUsers] = useState<AvailableUser[]>([]);
+  const [resetSent, setResetSent] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const getRoleDisplay = (role: UserRole): string => {
-    switch (role) {
-      case 'admin': return 'Administrateur';
-      case 'chef_agence': return "Chef d'agence";
-      case 'magasinier': return 'Magasinier';
-      default: return 'Utilisateur';
-    }
-  };
-
-  const fetchAvailableUsers = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('list-available-users');
-      if (error) throw error;
-
-      const users = (data?.users || []) as Array<{ username: string; role: string; roleDisplay: string }>; 
-      setAvailableUsers(users);
-    } catch (error) {
-      console.error('Erreur lors du chargement des utilisateurs (edge):', error);
-      setAvailableUsers([]);
-    }
-  };
-
-  const handleUserSelect = (selectedUsername: string) => {
-    setUsername(selectedUsername);
-  };
-
   useEffect(() => {
-    fetchAvailableUsers();
-    
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/dashboard");
-      }
+      if (session) navigate("/dashboard");
     };
     checkUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session && event === 'SIGNED_IN') {
-        navigate("/dashboard");
-      }
+      if (session && event === "SIGNED_IN") navigate("/dashboard");
     });
-
     return () => subscription.unsubscribe();
   }, [navigate]);
 
   const signIn = async () => {
-    if (!username || !password) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez remplir tous les champs.",
-        variant: "destructive",
-      });
+    if (!email.trim() || !password) {
+      toast({ title: "Champs requis", description: "Veuillez remplir l'email et le mot de passe.", variant: "destructive" });
       return;
     }
 
     setIsLoading(true);
     try {
-      // Construire directement l'email à partir du nom d'utilisateur (en minuscules)
-      const email = `${username.trim().toLowerCase()}@stock-wise.local`;
-      console.log("Connexion avec email dérivé:", email);
+      // Si pas de @, ajouter le domaine par défaut
+      const finalEmail = email.includes("@") ? email.trim().toLowerCase() : `${email.trim().toLowerCase()}@stock-wise.local`;
 
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { error } = await supabase.auth.signInWithPassword({ email: finalEmail, password });
 
       if (error) {
-        toast({
-          title: "Erreur de connexion",
-          description: "Nom d'utilisateur ou mot de passe incorrect.",
-          variant: "destructive",
-        });
+        toast({ title: "Échec de connexion", description: "Identifiant ou mot de passe incorrect.", variant: "destructive" });
       } else {
-        toast({
-          title: "Connexion réussie",
-          description: "Bienvenue dans StockAuto !",
-        });
-        // Redirection explicite vers dashboard après connexion réussie
+        toast({ title: "Bienvenue !", description: "Connexion réussie." });
         navigate("/dashboard", { replace: true });
       }
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Une erreur inattendue s'est produite.",
-        variant: "destructive",
+    } catch {
+      toast({ title: "Erreur", description: "Une erreur inattendue s'est produite.", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      toast({ title: "Email requis", description: "Saisissez votre adresse email pour recevoir le lien.", variant: "destructive" });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const finalEmail = email.includes("@") ? email.trim().toLowerCase() : `${email.trim().toLowerCase()}@stock-wise.local`;
+
+      const { error } = await supabase.auth.resetPasswordForEmail(finalEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
       });
+
+      if (error) throw error;
+
+      setResetSent(true);
+      toast({ title: "Email envoyé", description: "Vérifiez votre boîte mail pour réinitialiser votre mot de passe." });
+    } catch {
+      toast({ title: "Erreur", description: "Impossible d'envoyer l'email de réinitialisation.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-4 md:space-y-6">
-        {/* Logo et titre */}
-        <div className="text-center space-y-2">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-sm space-y-6">
+        {/* Logo */}
+        <div className="text-center space-y-3">
           <div className="flex justify-center">
-            <div className="bg-white p-3 rounded-xl shadow-elegant">
-              <img src={logo} alt="StockAuto Logo" className="h-16 w-16 md:h-20 md:w-20" />
+            <div className="bg-card p-4 rounded-2xl shadow-elegant border border-border/50">
+              <img src={logo} alt="StockAuto" className="h-16 w-16" />
             </div>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">StockAuto</h1>
-          <p className="text-sm md:text-base text-muted-foreground px-2">Gestion de stock pour location automobile</p>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">StockAuto</h1>
+            <p className="text-sm text-muted-foreground">Gestion de stock automobile</p>
+          </div>
         </div>
 
-        <Card className="shadow-elegant border-border/50">
-          <CardHeader className="text-center">
-            <CardTitle>Connexion</CardTitle>
+        <Card className="shadow-medium border-border/50">
+          <CardHeader className="text-center pb-4">
+            <CardTitle className="text-lg">
+              {isForgotPassword ? "Mot de passe oublié" : "Connexion"}
+            </CardTitle>
             <CardDescription>
-              Connectez-vous avec votre nom d'utilisateur
+              {isForgotPassword
+                ? "Saisissez votre email pour recevoir un lien de réinitialisation"
+                : "Identifiez-vous pour accéder à l'application"}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="user-select">Sélectionner un utilisateur</Label>
-                <Select onValueChange={handleUserSelect} value={username}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choisir un utilisateur" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableUsers.length === 0 ? (
-                      <SelectItem value="none" disabled>
-                        Aucun utilisateur disponible
-                      </SelectItem>
-                    ) : (
-                      availableUsers.map((user) => (
-                        <SelectItem
-                          key={user.username}
-                          value={user.username}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-medium">{user.username}</span>
-                            <span className="text-xs text-muted-foreground">({user.roleDisplay})</span>
-                          </div>
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+            {resetSent ? (
+              <div className="text-center space-y-4">
+                <div className="bg-success-light text-success rounded-lg p-4">
+                  <Mail className="h-8 w-8 mx-auto mb-2" />
+                  <p className="font-medium">Email envoyé !</p>
+                  <p className="text-sm mt-1">Consultez votre boîte mail et suivez le lien.</p>
+                </div>
+                <Button variant="outline" className="w-full" onClick={() => { setResetSent(false); setIsForgotPassword(false); }}>
+                  Retour à la connexion
+                </Button>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="username-manual">Ou saisir manuellement</Label>
-                <Input
-                  id="username-manual"
-                  placeholder="Nom d'utilisateur"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Mot de passe</Label>
-                <PasswordInput
-                  id="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
-                  onKeyDown={(e) => e.key === 'Enter' && signIn()}
-                />
-              </div>
-              <Button 
-                onClick={signIn} 
-                className="w-full bg-gradient-primary hover:opacity-90"
-                disabled={isLoading}
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  isForgotPassword ? handleForgotPassword() : signIn();
+                }}
+                className="space-y-4"
               >
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Se connecter
-              </Button>
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email ou identifiant</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      type="text"
+                      placeholder="exemple@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={isLoading}
+                      className="pl-10 h-12"
+                      autoComplete="email"
+                    />
+                  </div>
+                </div>
 
+                {!isForgotPassword && (
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Mot de passe</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+                      <PasswordInput
+                        id="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        disabled={isLoading}
+                        className="pl-10 h-12"
+                        autoComplete="current-password"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  className="w-full h-12 text-base font-semibold"
+                  disabled={isLoading}
+                >
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isForgotPassword ? "Envoyer le lien" : "Se connecter"}
+                </Button>
+
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={() => { setIsForgotPassword(!isForgotPassword); setResetSent(false); }}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    {isForgotPassword ? "Retour à la connexion" : "Mot de passe oublié ?"}
+                  </button>
+                </div>
+              </form>
+            )}
           </CardContent>
         </Card>
-
-        <div className="text-center text-xs md:text-sm text-muted-foreground bg-muted/50 p-3 md:p-4 rounded-lg">
-          <div className="space-y-2">
-            <p className="font-semibold">Connexion</p>
-            <div className="space-y-1 text-xs">
-              {availableUsers.length > 0 ? (
-                <>
-                  <p>Sélectionnez un utilisateur dans la liste ci-dessus</p>
-                  <p className="text-muted-foreground">
-                    {availableUsers.length} utilisateur{availableUsers.length > 1 ? 's' : ''} disponible{availableUsers.length > 1 ? 's' : ''}
-                  </p>
-                </>
-              ) : (
-                <p>Aucun utilisateur disponible. Contactez un administrateur.</p>
-              )}
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
