@@ -323,16 +323,22 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
 
             <div className="space-y-2">
               <Label className="text-xs sm:text-sm">Catégorie *</Label>
-              <Select value={formData.categorie} onValueChange={(val) => setFormData({ ...formData, categorie: val })}>
-                <SelectTrigger className="h-11 text-base">
-                  <SelectValue placeholder="Sélectionner une catégorie" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border shadow-lg z-[60]">
-                  {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-col gap-2">
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, categorie: cat })}
+                    className={`w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                      formData.categorie === cat
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Subcategory / Designation */}
