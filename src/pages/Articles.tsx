@@ -332,10 +332,6 @@ export default function Articles() {
                                 >
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
-                                      <span className={`h-2 w-2 rounded-full flex-shrink-0 ${
-                                        status.filter === 'rupture' ? 'bg-destructive' : 
-                                        status.filter === 'stock-bas' ? 'bg-warning' : 'bg-success'
-                                      }`} />
                                       <span className="font-medium text-sm text-foreground truncate">
                                         {article.designation}
                                       </span>
