@@ -27,7 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import ArticleVehicleCompatibility from "./ArticleVehicleCompatibility";
 import { ArticleEmplacementsList } from "./ArticleEmplacementsList";
-import { CreateFournisseurDialog } from "@/components/fournisseurs/CreateFournisseurDialog";
+
 
 interface Article {
   id: string;
@@ -73,7 +73,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
 
   // Total steps: 1=Cat+Designation, 2=Ref+Marque, 3=Fournisseur, 4=Emplacement, 5=Stock+Prix, 6=Compatibilité, 7=Récapitulatif
   const totalSteps = 7;
-  const [showFournisseurDialog, setShowFournisseurDialog] = useState(false);
+  
 
   // Data lists
   const [fournisseurs, setFournisseurs] = useState<any[]>([]);
@@ -822,15 +822,6 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
         </div>
       </DialogContent>
     </Dialog>
-
-      <CreateFournisseurDialog
-        open={showFournisseurDialog}
-        onOpenChange={setShowFournisseurDialog}
-        onFournisseurCreated={(id) => {
-          fetchFournisseurs();
-          setFormData(prev => ({ ...prev, fournisseur_id: id }));
-        }}
-      />
     </>
   );
 }
