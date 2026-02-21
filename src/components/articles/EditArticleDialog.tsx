@@ -328,7 +328,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
                   <button
                     key={cat}
                     type="button"
-                    onClick={() => setFormData({ ...formData, categorie: cat })}
+                    onClick={() => { setFormData({ ...formData, categorie: cat }); setStep(2); }}
                     className={`w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
                       formData.categorie === cat
                         ? "border-primary bg-primary/10 text-primary"
