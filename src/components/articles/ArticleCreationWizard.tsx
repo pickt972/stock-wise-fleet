@@ -388,26 +388,31 @@ export function ArticleCreationWizard({
           {/* Category cards grid */}
           <div className="space-y-2">
             <Label>Catégorie *</Label>
-            <Select value={categorie} onValueChange={(val) => setCategorie(val)}>
-              <SelectTrigger className="h-12 text-base">
-                <SelectValue placeholder="Sélectionner une catégorie" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border shadow-lg z-[60]">
-                {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="mt-1"
-              onClick={() => setShowCategorieDialog(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvelle catégorie
-            </Button>
+            <div className="flex flex-col gap-2">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCategorie(cat)}
+                  className={`w-full text-left px-4 py-3.5 rounded-lg border-2 text-base font-medium transition-all ${
+                    categorie === cat
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-12 text-base"
+                onClick={() => setShowCategorieDialog(true)}
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Nouvelle catégorie
+              </Button>
+            </div>
           </div>
         </div>
       )}
