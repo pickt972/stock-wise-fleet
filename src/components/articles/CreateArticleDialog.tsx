@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, QrCode } from "lucide-react";
+import { Plus, QrCode, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -57,6 +57,12 @@ export function CreateArticleDialog({
   const [showFournisseurDialog, setShowFournisseurDialog] = useState(false);
   const [showCategorieDialog, setShowCategorieDialog] = useState(false);
   const [showVehiculeDialog, setShowVehiculeDialog] = useState(false);
+  const [allCategoriesData, setAllCategoriesData] = useState<{ id: string; nom: string; parent_id: string | null }[]>([]);
+  const [subcategories, setSubcategories] = useState<{ id: string; nom: string }[]>([]);
+  const [showSubcategorieDialog, setShowSubcategorieDialog] = useState(false);
+  const [newSubcategorieName, setNewSubcategorieName] = useState("");
+  const [editingSubcategorie, setEditingSubcategorie] = useState<{ id: string; nom: string } | null>(null);
+  const [editSubcategorieName, setEditSubcategorieName] = useState("");
   const [priceType, setPriceType] = useState<"HT" | "TTC">("HT");
   const [tvaTaux, setTvaTaux] = useState(0);
   const [formData, setFormData] = useState({
@@ -161,26 +167,79 @@ const articleSchema = z.object({
     try {
       const { data, error } = await supabase
         .from('categories')
-        .select('*')
+        .select('id, nom, parent_id')
         .eq('actif', true)
         .order('nom');
-
       if (error) throw error;
-      setCategories(data?.map(cat => cat.nom) || []);
-    } catch (error) {
-      console.error('Erreur lors du chargement des catégories:', error);
-      // Fallback vers les catégories par défaut
-      setCategories([
-        "Consommables",
-        "Freinage", 
-        "Filtration",
-        "Électrique",
-        "Moteur",
-        "Transmission",
-        "Pneumatiques",
-        "Carrosserie",
-        "Autre"
-      ]);
+      setAllCategoriesData(data || []);
+      const parents = (data || []).filter(c => !c.parent_id).map(c => c.nom);
+      setCategories(parents.length > 0 ? parents : data?.map(c => c.nom) || []);
+    } catch {
+      setCategories(["Consommables", "Freinage", "Filtration", "Électrique", "Moteur", "Autre"]);
+    }
+  };
+
+  // Update subcategories when category changes
+  useEffect(() => {
+    if (formData.categorie && allCategoriesData.length > 0) {
+      const parent = allCategoriesData.find(c => c.nom === formData.categorie && !c.parent_id);
+      if (parent) {
+        const subs = allCategoriesData.filter(c => c.parent_id === parent.id).map(c => ({ id: c.id, nom: c.nom }));
+        setSubcategories(subs);
+      } else {
+        setSubcategories([]);
+      }
+    } else {
+      setSubcategories([]);
+    }
+  }, [formData.categorie, allCategoriesData]);
+
+  const handleCreateSubcategorie = async () => {
+    if (!newSubcategorieName.trim()) return;
+    try {
+      const parent = allCategoriesData.find(c => c.nom === formData.categorie && !c.parent_id);
+      if (!parent) return;
+      const { data: userData } = await supabase.auth.getUser();
+      const { data, error } = await supabase
+        .from("categories")
+        .insert([{ nom: newSubcategorieName.trim(), parent_id: parent.id, actif: true, user_id: userData?.user?.id }])
+        .select("id, nom, parent_id")
+        .single();
+      if (error) throw error;
+      toast({ title: "Sous-catégorie créée ✓" });
+      setAllCategoriesData(prev => [...prev, data]);
+      setFormData(prev => ({ ...prev, designation: data.nom }));
+      setNewSubcategorieName("");
+      setShowSubcategorieDialog(false);
+    } catch (error: any) {
+      toast({ title: "Erreur", description: error?.message || "Impossible de créer", variant: "destructive" });
+    }
+  };
+
+  const handleEditSubcategorie = async () => {
+    if (!editingSubcategorie || !editSubcategorieName.trim()) return;
+    try {
+      const { error } = await supabase.from("categories").update({ nom: editSubcategorieName.trim() }).eq("id", editingSubcategorie.id);
+      if (error) throw error;
+      toast({ title: "Sous-catégorie modifiée ✓" });
+      setAllCategoriesData(prev => prev.map(c => c.id === editingSubcategorie.id ? { ...c, nom: editSubcategorieName.trim() } : c));
+      if (formData.designation === editingSubcategorie.nom) setFormData(prev => ({ ...prev, designation: editSubcategorieName.trim() }));
+      setEditingSubcategorie(null);
+      setEditSubcategorieName("");
+    } catch (error: any) {
+      toast({ title: "Erreur", description: error?.message || "Impossible de modifier", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteSubcategorie = async (subId: string, subNom: string) => {
+    try {
+      const { error } = await supabase.from("categories").update({ actif: false }).eq("id", subId);
+      if (error) throw error;
+      toast({ title: "Sous-catégorie supprimée ✓" });
+      setAllCategoriesData(prev => prev.filter(c => c.id !== subId));
+      if (formData.designation === subNom) setFormData(prev => ({ ...prev, designation: "" }));
+    } catch (error: any) {
+      toast({ title: "Erreur", description: error?.message || "Impossible de supprimer", variant: "destructive" });
     }
   };
 
@@ -396,7 +455,55 @@ const articleSchema = z.object({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="designation">Désignation *</Label>
+            <div className="flex items-center justify-between">
+              <Label>Sous-catégorie / Désignation *</Label>
+              <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowSubcategorieDialog(true)}>
+                <Plus className="h-3 w-3 mr-1" /> Nouvelle
+              </Button>
+            </div>
+            {subcategories.length > 0 && (
+              <div className="space-y-1 mb-2">
+                {subcategories.map((sub) => (
+                  <div
+                    key={sub.id}
+                    className={`flex items-center justify-between px-3 py-1.5 rounded-lg border cursor-pointer transition-colors text-sm ${
+                      formData.designation === sub.nom ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted/50"
+                    }`}
+                    onClick={() => setFormData(prev => ({ ...prev, designation: sub.nom }))}
+                  >
+                    <span>{sub.nom}</span>
+                    <div className="flex gap-1">
+                      <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setEditingSubcategorie(sub); setEditSubcategorieName(sub.nom); }}>
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                      <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteSubcategorie(sub.id, sub.nom); }}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {editingSubcategorie && (
+              <div className="border border-border rounded-lg p-3 space-y-2 bg-card mb-2">
+                <Label className="text-xs">Modifier la sous-catégorie</Label>
+                <Input value={editSubcategorieName} onChange={(e) => setEditSubcategorieName(e.target.value)} className="h-9" autoFocus onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleEditSubcategorie(); } }} />
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" size="sm" onClick={() => { setEditingSubcategorie(null); setEditSubcategorieName(""); }}>Annuler</Button>
+                  <Button size="sm" onClick={handleEditSubcategorie} disabled={!editSubcategorieName.trim()}>Modifier</Button>
+                </div>
+              </div>
+            )}
+            {showSubcategorieDialog && (
+              <div className="border border-border rounded-lg p-3 space-y-2 bg-card mb-2">
+                <Label className="text-xs">Nouvelle sous-catégorie</Label>
+                <Input value={newSubcategorieName} onChange={(e) => setNewSubcategorieName(e.target.value)} placeholder="Ex: Plaquettes, Disques..." className="h-9" autoFocus onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCreateSubcategorie(); } }} />
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" size="sm" onClick={() => { setShowSubcategorieDialog(false); setNewSubcategorieName(""); }}>Annuler</Button>
+                  <Button size="sm" onClick={handleCreateSubcategorie} disabled={!newSubcategorieName.trim()}>Créer</Button>
+                </div>
+              </div>
+            )}
             <Input
               id="designation"
               value={formData.designation}
