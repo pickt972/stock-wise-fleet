@@ -403,15 +403,6 @@ export function ArticleCreationWizard({
                   {cat}
                 </button>
               ))}
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full h-12 text-base"
-                onClick={() => setShowCategorieDialog(true)}
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Nouvelle catégorie
-              </Button>
             </div>
           </div>
         </div>
@@ -439,19 +430,7 @@ export function ArticleCreationWizard({
 
           {/* Subcategory dropdown */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Sous-catégorie</Label>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => setShowSubcategorieDialog(true)}
-              >
-                <Plus className="h-3 w-3 mr-1" />
-                Nouvelle
-              </Button>
-            </div>
+            <Label>Sous-catégorie</Label>
             {subcategories.length > 0 ? (
               <div className="flex flex-col gap-2">
                 {allCategoriesData
@@ -629,22 +608,10 @@ export function ArticleCreationWizard({
 
             {/* Fournisseur */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="flex items-center gap-1.5">
-                  <Truck className="h-4 w-4 text-muted-foreground" />
-                  Fournisseur
-                </Label>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={() => setShowFournisseurDialog(true)}
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Nouveau
-                </Button>
-              </div>
+              <Label className="flex items-center gap-1.5">
+                <Truck className="h-4 w-4 text-muted-foreground" />
+                Fournisseur
+              </Label>
               <Select
                 value={fournisseurId}
                 onValueChange={(val) => setFournisseurId(val === "none" ? "" : val)}
