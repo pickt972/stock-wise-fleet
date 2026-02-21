@@ -303,18 +303,9 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
           </DialogDescription>
         </DialogHeader>
 
-        {/* Progress bar */}
-        <div className="flex items-center justify-center gap-2 pb-2">
-          {Array.from({ length: totalSteps }, (_, i) => i + 1).map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setStep(s)}
-              className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                s === step ? "w-10 bg-primary" : s < step ? "w-6 bg-primary/40" : "w-6 bg-muted"
-              }`}
-            />
-          ))}
+        {/* Progress */}
+        <div className="text-center text-sm text-muted-foreground">
+          Étape {step} sur {totalSteps}
         </div>
 
         {/* Step 1: Catégorie + Sous-catégorie/Désignation */}

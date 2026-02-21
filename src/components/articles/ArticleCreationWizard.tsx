@@ -368,19 +368,8 @@ export function ArticleCreationWizard({
       </div>
 
       {/* Progress */}
-      <div className="flex items-center justify-center gap-2">
-        {Array.from({ length: totalSteps }, (_, i) => i + 1).map((s) => (
-          <div
-            key={s}
-            className={`h-2 rounded-full transition-all duration-300 ${
-              s === step
-                ? "w-10 bg-primary"
-                : s < step
-                ? "w-6 bg-primary/40"
-                : "w-6 bg-muted"
-            }`}
-          />
-        ))}
+      <div className="text-center text-sm text-muted-foreground">
+        Étape {step} sur {totalSteps}
       </div>
 
       {/* Step 1: Catégorie (cards) + Description */}
