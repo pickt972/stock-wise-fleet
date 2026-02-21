@@ -71,8 +71,8 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
 
-  // Total steps: 1=Cat+Designation, 2=Ref+Marque+Fournisseur+Emplacement, 3=Stock+Prix, 4=Compatibilité, 5=Récapitulatif
-  const totalSteps = 5;
+  // Total steps: 1=Cat+Designation, 2=Ref+Marque, 3=Fournisseur, 4=Emplacement, 5=Stock+Prix, 6=Compatibilité, 7=Récapitulatif
+  const totalSteps = 7;
   const [showFournisseurDialog, setShowFournisseurDialog] = useState(false);
 
   // Data lists
@@ -227,9 +227,11 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
     switch (step) {
       case 1: return formData.categorie.trim() !== "" && formData.designation.trim() !== "";
       case 2: return formData.reference.trim() !== "" && formData.marque.trim() !== "";
-      case 3: return true;
-      case 4: return true;
+      case 3: return true; // fournisseur optional
+      case 4: return true; // emplacement optional
       case 5: return true;
+      case 6: return true;
+      case 7: return true;
       default: return false;
     }
   }, [step, formData]);
@@ -290,7 +292,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
     }
   };
 
-  const stepLabels = ["Catégorie", "Identification", "Stock & Prix", "Compatibilité", "Récapitulatif"];
+  const stepLabels = ["Catégorie", "Identification", "Fournisseur", "Emplacement", "Stock & Prix", "Compatibilité", "Récapitulatif"];
 
   return (
     <>
@@ -398,7 +400,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
           </div>
         )}
 
-        {/* Step 2: Référence + Marque + Fournisseur + Emplacement */}
+        {/* Step 2: Référence + Marque */}
         {step === 2 && (
           <div className="space-y-4 animate-in slide-in-from-right-4 duration-200">
             <div className="flex items-center gap-3">
@@ -407,11 +409,10 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
               </div>
               <div>
                 <h2 className="font-semibold text-lg">Identification</h2>
-                <p className="text-sm text-muted-foreground">Référence, marque et localisation</p>
+                <p className="text-sm text-muted-foreground">Référence et marque</p>
               </div>
             </div>
 
-            {/* Recap */}
             <div className="bg-muted/50 rounded-lg p-3 space-y-1">
               <p className="text-sm">
                 <span className="text-muted-foreground">Catégorie :</span>{" "}
@@ -442,79 +443,97 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
                 className="h-11 text-base"
               />
             </div>
+          </div>
+        )}
 
-            <div className="space-y-1.5">
-              <Label className="text-xs sm:text-sm flex items-center gap-1.5">
-                <Truck className="h-4 w-4 text-muted-foreground" />
-                Fournisseur
-              </Label>
-              <div className="flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, fournisseur_id: "" })}
-                  className={`w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                    !formData.fournisseur_id || formData.fournisseur_id === "none"
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
-                  }`}
-                >
-                  Aucun fournisseur
-                </button>
-                {fournisseurs.map((f) => (
-                  <button
-                    key={f.id}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, fournisseur_id: f.id })}
-                    className={`w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                      formData.fournisseur_id === f.id
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
-                    }`}
-                  >
-                    {f.nom}
-                  </button>
-                ))}
+        {/* Step 3: Fournisseur (auto-advance) */}
+        {step === 3 && (
+          <div className="space-y-5 animate-in slide-in-from-right-4 duration-200">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Truck className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-lg">Fournisseur</h2>
+                <p className="text-sm text-muted-foreground">Sélectionnez un fournisseur</p>
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs sm:text-sm flex items-center gap-1.5">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                Emplacement
-              </Label>
-              <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => { setFormData({ ...formData, fournisseur_id: "" }); setStep(4); }}
+                className={`w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                  !formData.fournisseur_id || formData.fournisseur_id === "none"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
+                }`}
+              >
+                Aucun fournisseur
+              </button>
+              {fournisseurs.map((f) => (
                 <button
+                  key={f.id}
                   type="button"
-                  onClick={() => setFormData({ ...formData, emplacement: "none" })}
+                  onClick={() => { setFormData({ ...formData, fournisseur_id: f.id }); setStep(4); }}
                   className={`w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                    !formData.emplacement || formData.emplacement === "none"
+                    formData.fournisseur_id === f.id
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
                   }`}
                 >
-                  Aucun emplacement
+                  {f.nom}
                 </button>
-                {emplacements.map((e) => (
-                  <button
-                    key={e.id}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, emplacement: e.nom })}
-                    className={`w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                      formData.emplacement === e.nom
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
-                    }`}
-                  >
-                    {e.nom}
-                  </button>
-                ))}
-              </div>
+              ))}
             </div>
           </div>
         )}
 
-        {/* Step 3: Stock & Prix */}
-        {step === 3 && (
+        {/* Step 4: Emplacement (auto-advance) */}
+        {step === 4 && (
+          <div className="space-y-5 animate-in slide-in-from-right-4 duration-200">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <MapPin className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-lg">Emplacement</h2>
+                <p className="text-sm text-muted-foreground">Où stocker cet article ?</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => { setFormData({ ...formData, emplacement: "none" }); setStep(5); }}
+                className={`w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                  !formData.emplacement || formData.emplacement === "none"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
+                }`}
+              >
+                Aucun emplacement
+              </button>
+              {emplacements.map((e) => (
+                <button
+                  key={e.id}
+                  type="button"
+                  onClick={() => { setFormData({ ...formData, emplacement: e.nom }); setStep(5); }}
+                  className={`w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                    formData.emplacement === e.nom
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
+                  }`}
+                >
+                  {e.nom}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Step 5: Stock & Prix */}
+        {step === 5 && (
           <div className="space-y-4 animate-in slide-in-from-right-4 duration-200">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -628,8 +647,8 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
           </div>
         )}
 
-        {/* Step 4: Compatibilité véhicules & Emplacements */}
-        {step === 4 && (
+        {/* Step 6: Compatibilité véhicules & Emplacements */}
+        {step === 6 && (
           <div className="space-y-4 animate-in slide-in-from-right-4 duration-200">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -669,8 +688,8 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
           </div>
         )}
 
-        {/* Step 5: Récapitulatif */}
-        {step === 5 && (
+        {/* Step 7: Récapitulatif */}
+        {step === 7 && (
           <div className="space-y-4 animate-in slide-in-from-right-4 duration-200">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">

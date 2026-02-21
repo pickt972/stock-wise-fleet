@@ -87,8 +87,8 @@ export function ArticleCreationWizard({
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  // Steps: 1=Category, 2=Description, 3=Ref+Brand+Supplier+Location, 4=Quantity, 5=Admin advanced
-  const totalSteps = isAdmin() ? 5 : 4;
+  // Steps: 1=Category, 2=Description, 3=Ref+Brand, 4=Fournisseur, 5=Emplacement, 6=Quantity, 7=Admin advanced
+  const totalSteps = isAdmin() ? 7 : 6;
 
   useEffect(() => {
     fetchCategories();
@@ -257,8 +257,12 @@ export function ArticleCreationWizard({
       case 3:
         return reference.trim() !== "" && marque.trim() !== "";
       case 4:
-        return quantite >= 0;
+        return true; // fournisseur is optional
       case 5:
+        return true; // emplacement is optional
+      case 6:
+        return quantite >= 0;
+      case 7:
         return true;
       default:
         return false;
@@ -568,7 +572,7 @@ export function ArticleCreationWizard({
         </div>
       )}
 
-      {/* Step 3: Référence + Marque + Fournisseur + Emplacement */}
+      {/* Step 3: Référence + Marque */}
       {step === 3 && (
         <Card className="animate-in slide-in-from-right-4 duration-200">
           <CardContent className="pt-6 space-y-5">
@@ -578,7 +582,7 @@ export function ArticleCreationWizard({
               </div>
               <div>
                 <h2 className="font-semibold text-lg">Identification</h2>
-                <p className="text-sm text-muted-foreground">Référence, marque et localisation</p>
+                <p className="text-sm text-muted-foreground">Référence et marque</p>
               </div>
             </div>
 
@@ -606,76 +610,6 @@ export function ArticleCreationWizard({
               />
             </div>
 
-            {/* Fournisseur */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1.5">
-                <Truck className="h-4 w-4 text-muted-foreground" />
-                Fournisseur
-              </Label>
-              <div className="flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={() => setFournisseurId("")}
-                  className={`w-full text-left px-4 py-3.5 rounded-lg border-2 text-base font-medium transition-all ${
-                    fournisseurId === ""
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
-                  }`}
-                >
-                  Aucun fournisseur
-                </button>
-                {fournisseurs.map((f) => (
-                  <button
-                    key={f.id}
-                    type="button"
-                    onClick={() => setFournisseurId(f.id)}
-                    className={`w-full text-left px-4 py-3.5 rounded-lg border-2 text-base font-medium transition-all ${
-                      fournisseurId === f.id
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
-                    }`}
-                  >
-                    {f.nom}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Emplacement */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1.5">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                Emplacement
-              </Label>
-              <div className="flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEmplacementId("")}
-                  className={`w-full text-left px-4 py-3.5 rounded-lg border-2 text-base font-medium transition-all ${
-                    emplacementId === ""
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
-                  }`}
-                >
-                  Aucun emplacement
-                </button>
-                {emplacements.map((e) => (
-                  <button
-                    key={e.id}
-                    type="button"
-                    onClick={() => setEmplacementId(e.id)}
-                    className={`w-full text-left px-4 py-3.5 rounded-lg border-2 text-base font-medium transition-all ${
-                      emplacementId === e.id
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
-                    }`}
-                  >
-                    {e.nom}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {codeBarre && codeBarre !== reference && (
               <div className="bg-muted/50 rounded-lg p-3">
                 <p className="text-xs text-muted-foreground">
@@ -687,8 +621,94 @@ export function ArticleCreationWizard({
         </Card>
       )}
 
-      {/* Step 4: Quantité */}
+      {/* Step 4: Fournisseur (auto-advance) */}
       {step === 4 && (
+        <div className="space-y-5 animate-in slide-in-from-right-4 duration-200">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <Truck className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-lg">Fournisseur</h2>
+              <p className="text-sm text-muted-foreground">Sélectionnez un fournisseur</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => { setFournisseurId(""); setStep(5); }}
+              className={`w-full text-left px-4 py-3.5 rounded-lg border-2 text-base font-medium transition-all ${
+                fournisseurId === ""
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
+              }`}
+            >
+              Aucun fournisseur
+            </button>
+            {fournisseurs.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => { setFournisseurId(f.id); setStep(5); }}
+                className={`w-full text-left px-4 py-3.5 rounded-lg border-2 text-base font-medium transition-all ${
+                  fournisseurId === f.id
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
+                }`}
+              >
+                {f.nom}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Step 5: Emplacement (auto-advance) */}
+      {step === 5 && (
+        <div className="space-y-5 animate-in slide-in-from-right-4 duration-200">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <MapPin className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-lg">Emplacement</h2>
+              <p className="text-sm text-muted-foreground">Où stocker cet article ?</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => { setEmplacementId(""); setStep(6); }}
+              className={`w-full text-left px-4 py-3.5 rounded-lg border-2 text-base font-medium transition-all ${
+                emplacementId === ""
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
+              }`}
+            >
+              Aucun emplacement
+            </button>
+            {emplacements.map((e) => (
+              <button
+                key={e.id}
+                type="button"
+                onClick={() => { setEmplacementId(e.id); setStep(6); }}
+                className={`w-full text-left px-4 py-3.5 rounded-lg border-2 text-base font-medium transition-all ${
+                  emplacementId === e.id
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
+                }`}
+              >
+                {e.nom}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Step 6: Quantité */}
+      {step === 6 && (
         <Card className="animate-in slide-in-from-right-4 duration-200">
           <CardContent className="pt-6 space-y-5">
             <div className="flex items-center gap-3 mb-2">
@@ -783,8 +803,8 @@ export function ArticleCreationWizard({
         </Card>
       )}
 
-      {/* Step 5: Admin only - Advanced settings */}
-      {step === 5 && isAdmin() && (
+      {/* Step 7: Admin only - Advanced settings */}
+      {step === 7 && isAdmin() && (
         <Card className="animate-in slide-in-from-right-4 duration-200">
           <CardContent className="pt-6 space-y-5">
             <div className="flex items-center gap-3 mb-2">
