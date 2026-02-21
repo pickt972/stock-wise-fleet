@@ -352,7 +352,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
                       className={`flex items-center justify-between w-full px-4 py-3 rounded-lg border-2 cursor-pointer transition-all text-sm ${
                         formData.designation === sub.nom ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
                       }`}
-                      onClick={() => setFormData({ ...formData, designation: sub.nom })}
+                      onClick={() => { setFormData({ ...formData, designation: sub.nom }); setStep(2); }}
                     >
                       <span className="font-medium">{sub.nom}</span>
                       <div className="flex gap-1">
