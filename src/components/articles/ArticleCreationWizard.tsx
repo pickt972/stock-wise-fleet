@@ -386,35 +386,28 @@ export function ArticleCreationWizard({
           </div>
 
           {/* Category cards grid */}
-          <div>
-            <Label className="mb-2 block">Catégorie *</Label>
-            <div className="grid grid-cols-3 gap-2">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setCategorie(cat)}
-                  className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all duration-150 min-h-[80px] justify-center
-                    ${
-                      categorie === cat
-                        ? "border-primary bg-primary/10 text-primary shadow-sm"
-                        : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-muted/50"
-                    }`}
-                >
-                  {getCategoryIcon(cat)}
-                  <span className="text-xs font-medium text-center leading-tight">{cat}</span>
-                </button>
-              ))}
-              {/* Add new category button */}
-              <button
-                type="button"
-                onClick={() => setShowCategorieDialog(true)}
-                className="flex flex-col items-center gap-2 p-3 rounded-xl border-2 border-dashed border-border text-muted-foreground hover:border-primary/40 hover:bg-muted/30 transition-all duration-150 min-h-[80px] justify-center"
-              >
-                <Plus className="h-6 w-6" />
-                <span className="text-xs font-medium">Ajouter</span>
-              </button>
-            </div>
+          <div className="space-y-2">
+            <Label>Catégorie *</Label>
+            <Select value={categorie} onValueChange={(val) => setCategorie(val)}>
+              <SelectTrigger className="h-12 text-base">
+                <SelectValue placeholder="Sélectionner une catégorie" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border shadow-lg z-[60]">
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-1"
+              onClick={() => setShowCategorieDialog(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nouvelle catégorie
+            </Button>
           </div>
         </div>
       )}
