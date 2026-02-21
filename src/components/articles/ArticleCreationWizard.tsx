@@ -612,22 +612,33 @@ export function ArticleCreationWizard({
                 <Truck className="h-4 w-4 text-muted-foreground" />
                 Fournisseur
               </Label>
-              <Select
-                value={fournisseurId}
-                onValueChange={(val) => setFournisseurId(val === "none" ? "" : val)}
-              >
-                <SelectTrigger className="h-12">
-                  <SelectValue placeholder="Aucun fournisseur" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border border-border shadow-medium z-[60] max-h-[200px]">
-                  <SelectItem value="none">Aucun fournisseur</SelectItem>
-                  {fournisseurs.map((f) => (
-                    <SelectItem key={f.id} value={f.id}>
-                      {f.nom}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFournisseurId("")}
+                  className={`w-full text-left px-4 py-3.5 rounded-lg border-2 text-base font-medium transition-all ${
+                    fournisseurId === ""
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
+                  }`}
+                >
+                  Aucun fournisseur
+                </button>
+                {fournisseurs.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setFournisseurId(f.id)}
+                    className={`w-full text-left px-4 py-3.5 rounded-lg border-2 text-base font-medium transition-all ${
+                      fournisseurId === f.id
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
+                    }`}
+                  >
+                    {f.nom}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Emplacement */}
@@ -636,22 +647,33 @@ export function ArticleCreationWizard({
                 <MapPin className="h-4 w-4 text-muted-foreground" />
                 Emplacement
               </Label>
-              <Select
-                value={emplacementId}
-                onValueChange={(val) => setEmplacementId(val === "none" ? "" : val)}
-              >
-                <SelectTrigger className="h-12">
-                  <SelectValue placeholder="Aucun emplacement" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border border-border shadow-medium z-[60] max-h-[200px]">
-                  <SelectItem value="none">Aucun emplacement</SelectItem>
-                  {emplacements.map((e) => (
-                    <SelectItem key={e.id} value={e.id}>
-                      {e.nom}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEmplacementId("")}
+                  className={`w-full text-left px-4 py-3.5 rounded-lg border-2 text-base font-medium transition-all ${
+                    emplacementId === ""
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
+                  }`}
+                >
+                  Aucun emplacement
+                </button>
+                {emplacements.map((e) => (
+                  <button
+                    key={e.id}
+                    type="button"
+                    onClick={() => setEmplacementId(e.id)}
+                    className={`w-full text-left px-4 py-3.5 rounded-lg border-2 text-base font-medium transition-all ${
+                      emplacementId === e.id
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
+                    }`}
+                  >
+                    {e.nom}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {codeBarre && codeBarre !== reference && (

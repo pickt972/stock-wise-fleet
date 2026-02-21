@@ -448,20 +448,33 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
                 <Truck className="h-4 w-4 text-muted-foreground" />
                 Fournisseur
               </Label>
-              <Select
-                value={formData.fournisseur_id || "none"}
-                onValueChange={(value) => setFormData({ ...formData, fournisseur_id: value === "none" ? "" : value })}
-              >
-                <SelectTrigger className="h-11 text-base">
-                  <SelectValue placeholder="Sélectionner un fournisseur" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border shadow-lg z-[60]">
-                  <SelectItem value="none">Aucun fournisseur</SelectItem>
-                  {fournisseurs.map((f) => (
-                    <SelectItem key={f.id} value={f.id}>{f.nom}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, fournisseur_id: "" })}
+                  className={`w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                    !formData.fournisseur_id || formData.fournisseur_id === "none"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
+                  }`}
+                >
+                  Aucun fournisseur
+                </button>
+                {fournisseurs.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, fournisseur_id: f.id })}
+                    className={`w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                      formData.fournisseur_id === f.id
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
+                    }`}
+                  >
+                    {f.nom}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="space-y-1.5">
@@ -469,20 +482,33 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
                 <MapPin className="h-4 w-4 text-muted-foreground" />
                 Emplacement
               </Label>
-              <Select
-                value={formData.emplacement}
-                onValueChange={(value) => setFormData({ ...formData, emplacement: value })}
-              >
-                <SelectTrigger className="h-11 text-base">
-                  <SelectValue placeholder="Sélectionner un emplacement" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border shadow-lg z-[60]">
-                  <SelectItem value="none">Aucun emplacement</SelectItem>
-                  {emplacements.map((e) => (
-                    <SelectItem key={e.id} value={e.nom}>{e.nom}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, emplacement: "none" })}
+                  className={`w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                    !formData.emplacement || formData.emplacement === "none"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
+                  }`}
+                >
+                  Aucun emplacement
+                </button>
+                {emplacements.map((e) => (
+                  <button
+                    key={e.id}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, emplacement: e.nom })}
+                    className={`w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                      formData.emplacement === e.nom
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
+                    }`}
+                  >
+                    {e.nom}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
