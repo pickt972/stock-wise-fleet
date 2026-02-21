@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -6,7 +6,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +17,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Edit, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowLeft, ArrowRight, Check, Edit, Plus, Trash2,
+  Layers, Package, Hash, Tag, MapPin, Truck,
+  Battery, Disc, Droplets, Zap, Cog, CircleDot, Car, Wrench, Boxes,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
@@ -44,36 +47,50 @@ interface EditArticleDialogProps {
   onArticleUpdated: () => void;
 }
 
-const fetchCategoriesData = async (): Promise<{ id: string; nom: string; parent_id: string | null }[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('categories')
-      .select('id, nom, parent_id')
-      .eq('actif', true)
-      .order('nom');
-    if (error) throw error;
-    return data || [];
-  } catch {
-    return [];
-  }
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  "Batteries": <Battery className="h-6 w-6" />,
+  "Freinage": <Disc className="h-6 w-6" />,
+  "Filtration": <Droplets className="h-6 w-6" />,
+  "Électrique": <Zap className="h-6 w-6" />,
+  "Moteur": <Cog className="h-6 w-6" />,
+  "Transmission": <CircleDot className="h-6 w-6" />,
+  "Pneumatiques": <Car className="h-6 w-6" />,
+  "Carrosserie": <Wrench className="h-6 w-6" />,
+  "Consommables": <Boxes className="h-6 w-6" />,
 };
 
+function getCategoryIcon(name: string) {
+  return CATEGORY_ICONS[name] || <Tag className="h-6 w-6" />;
+}
+
 export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDialogProps) {
-  console.count("[EditArticleDialog] render");
   const { isAdmin } = useRoleAccess();
-  const [open, setOpen] = useState(true); // Start open since it's rendered conditionally
+  const { toast } = useToast();
+  const [open, setOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [step, setStep] = useState(1);
+
+  // Total steps: 1=Cat+Designation, 2=Ref+Marque+Fournisseur+Emplacement, 3=Stock+Prix, 4=Compatibilité
+  const totalSteps = 4;
+
+  // Data lists
   const [fournisseurs, setFournisseurs] = useState<any[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [allCategoriesData, setAllCategoriesData] = useState<{ id: string; nom: string; parent_id: string | null }[]>([]);
   const [subcategories, setSubcategories] = useState<{ id: string; nom: string }[]>([]);
+  const [emplacements, setEmplacements] = useState<any[]>([]);
+
+  // Subcategory CRUD
   const [showSubcategorieDialog, setShowSubcategorieDialog] = useState(false);
   const [newSubcategorieName, setNewSubcategorieName] = useState("");
   const [editingSubcategorie, setEditingSubcategorie] = useState<{ id: string; nom: string } | null>(null);
   const [editSubcategorieName, setEditSubcategorieName] = useState("");
-  const [emplacements, setEmplacements] = useState<any[]>([]);
+
+  // Price
   const [priceType, setPriceType] = useState<"HT" | "TTC">("HT");
   const [tvaTaux, setTvaTaux] = useState(0);
+
+  // Form data
   const [formData, setFormData] = useState({
     reference: article.reference,
     designation: article.designation,
@@ -87,7 +104,6 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
     fournisseur_id: article.fournisseur_id || "none",
   });
 
-  // Mettre à jour le formData quand l'article change
   useEffect(() => {
     setFormData({
       reference: article.reference,
@@ -102,38 +118,6 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
       fournisseur_id: article.fournisseur_id || "none",
     });
   }, [article]);
-  
-  const { toast } = useToast();
-
-  const fetchFournisseurs = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('fournisseurs')
-        .select('id, nom')
-        .eq('actif', true)
-        .order('nom');
-
-      if (error) throw error;
-      setFournisseurs(data || []);
-    } catch (error) {
-      console.error('Erreur lors du chargement des fournisseurs:', error);
-    }
-  };
-
-  const fetchEmplacements = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('emplacements')
-        .select('id, nom')
-        .eq('actif', true)
-        .order('nom');
-
-      if (error) throw error;
-      setEmplacements(data || []);
-    } catch (error) {
-      console.error('Erreur lors du chargement des emplacements:', error);
-    }
-  };
 
   useEffect(() => {
     fetchFournisseurs();
@@ -141,7 +125,6 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
     loadCategories();
   }, []);
 
-  // Update subcategories when category changes
   useEffect(() => {
     if (formData.categorie && allCategoriesData.length > 0) {
       const parent = allCategoriesData.find(c => c.nom === formData.categorie && !c.parent_id);
@@ -156,11 +139,37 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
     }
   }, [formData.categorie, allCategoriesData]);
 
+  const fetchFournisseurs = async () => {
+    try {
+      const { data, error } = await supabase.from('fournisseurs').select('id, nom').eq('actif', true).order('nom');
+      if (error) throw error;
+      setFournisseurs(data || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des fournisseurs:', error);
+    }
+  };
+
+  const fetchEmplacements = async () => {
+    try {
+      const { data, error } = await supabase.from('emplacements').select('id, nom').eq('actif', true).order('nom');
+      if (error) throw error;
+      setEmplacements(data || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des emplacements:', error);
+    }
+  };
+
   const loadCategories = async () => {
-    const data = await fetchCategoriesData();
-    setAllCategoriesData(data);
-    const parents = data.filter(c => !c.parent_id).map(c => c.nom);
-    setCategories(parents.length > 0 ? parents : data.map(c => c.nom));
+    try {
+      const { data, error } = await supabase.from('categories').select('id, nom, parent_id').eq('actif', true).order('nom');
+      if (error) throw error;
+      const allData = data || [];
+      setAllCategoriesData(allData);
+      const parents = allData.filter(c => !c.parent_id).map(c => c.nom);
+      setCategories(parents.length > 0 ? parents : allData.map(c => c.nom));
+    } catch {
+      setCategories([]);
+    }
   };
 
   const handleCreateSubcategorie = async () => {
@@ -212,18 +221,24 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
     }
   };
 
+  const canProceed = useCallback(() => {
+    switch (step) {
+      case 1: return formData.categorie.trim() !== "" && formData.designation.trim() !== "";
+      case 2: return formData.reference.trim() !== "" && formData.marque.trim() !== "";
+      case 3: return true;
+      case 4: return true;
+      default: return false;
+    }
+  }, [step, formData]);
+
   const handleClose = () => {
     setOpen(false);
-    // Call onArticleUpdated to notify parent to remove this dialog
     onArticleUpdated();
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setIsLoading(true);
-
     try {
-      // Préparer les données de mise à jour
       const updateData: any = {
         reference: formData.reference,
         designation: formData.designation,
@@ -235,14 +250,9 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
         emplacement: formData.emplacement,
         fournisseur_id: formData.fournisseur_id === "none" ? null : formData.fournisseur_id,
       };
-      const { error } = await supabase
-        .from('articles')
-        .update(updateData)
-        .eq('id', article.id);
-
+      const { error } = await supabase.from('articles').update(updateData).eq('id', article.id);
       if (error) throw error;
 
-      // Si l'admin a modifié le stock initial, on applique la variation via la fonction sécurisée
       if (isAdmin() && formData.stock !== article.stock) {
         const delta = (formData.stock ?? 0) - (article.stock ?? 0);
         if (delta !== 0) {
@@ -254,141 +264,202 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
         }
       }
 
-      toast({
-        title: "Article modifié",
-        description: "L'article a été modifié avec succès",
-      });
-
+      toast({ title: "Article modifié", description: "L'article a été modifié avec succès" });
       handleClose();
     } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de modifier l'article",
-        variant: "destructive",
-      });
+      toast({ title: "Erreur", description: "Impossible de modifier l'article", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleNext = () => {
+    if (step < totalSteps) {
+      setStep(step + 1);
+    } else {
+      handleSubmit();
+    }
+  };
+
+  const handleBack = () => {
+    if (step > 1) {
+      setStep(step - 1);
+    }
+  };
+
+  const stepLabels = ["Catégorie", "Identification", "Stock & Prix", "Compatibilité"];
+
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
-      if (!isOpen) {
-        handleClose();
-      }
-    }}>
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); }}>
       <DialogContent className="w-[96vw] max-w-[96vw] sm:max-w-[640px] sm:w-full rounded-lg max-h-[95dvh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
-        <DialogHeader className="pb-3">
+        <DialogHeader className="pb-2">
           <DialogTitle className="text-base sm:text-xl">Modifier l'article</DialogTitle>
           <DialogDescription className="text-xs sm:text-sm">
-            Modifiez les informations de l'article.
+            Étape {step}/{totalSteps} — {stepLabels[step - 1]}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="grid grid-cols-1 gap-3">
+
+        {/* Progress bar */}
+        <div className="flex items-center justify-center gap-2 pb-2">
+          {Array.from({ length: totalSteps }, (_, i) => i + 1).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setStep(s)}
+              className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                s === step ? "w-10 bg-primary" : s < step ? "w-6 bg-primary/40" : "w-6 bg-muted"
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* Step 1: Catégorie + Sous-catégorie/Désignation */}
+        {step === 1 && (
+          <div className="space-y-4 animate-in slide-in-from-right-4 duration-200">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Layers className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-lg">Catégorie & Désignation</h2>
+                <p className="text-sm text-muted-foreground">Type et description de l'article</p>
+              </div>
+            </div>
+
+            {/* Category cards */}
+            <div>
+              <Label className="mb-2 block text-xs sm:text-sm">Catégorie *</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, categorie: cat })}
+                    className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all duration-150 min-h-[70px] justify-center ${
+                      formData.categorie === cat
+                        ? "border-primary bg-primary/10 text-primary shadow-sm"
+                        : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-muted/50"
+                    }`}
+                  >
+                    {getCategoryIcon(cat)}
+                    <span className="text-[11px] font-medium text-center leading-tight">{cat}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Subcategory / Designation */}
             <div className="space-y-1.5">
-              <Label htmlFor="reference" className="text-xs sm:text-sm">Référence</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs sm:text-sm">Sous-catégorie / Désignation</Label>
+                <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowSubcategorieDialog(true)}>
+                  <Plus className="h-3 w-3 mr-1" /> Nouvelle
+                </Button>
+              </div>
+              {subcategories.length > 0 && (
+                <div className="space-y-1 mb-2">
+                  {subcategories.map((sub) => (
+                    <div
+                      key={sub.id}
+                      className={`flex items-center justify-between px-3 py-1.5 rounded-lg border cursor-pointer transition-colors text-sm ${
+                        formData.designation === sub.nom ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted/50"
+                      }`}
+                      onClick={() => setFormData({ ...formData, designation: sub.nom })}
+                    >
+                      <span>{sub.nom}</span>
+                      <div className="flex gap-1">
+                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setEditingSubcategorie(sub); setEditSubcategorieName(sub.nom); }}>
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteSubcategorie(sub.id, sub.nom); }}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {editingSubcategorie && (
+                <div className="border border-border rounded-lg p-3 space-y-2 bg-card mb-2">
+                  <Label className="text-xs">Modifier la sous-catégorie</Label>
+                  <Input value={editSubcategorieName} onChange={(e) => setEditSubcategorieName(e.target.value)} className="h-9" autoFocus onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleEditSubcategorie(); } }} />
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" size="sm" onClick={() => { setEditingSubcategorie(null); setEditSubcategorieName(""); }}>Annuler</Button>
+                    <Button size="sm" onClick={handleEditSubcategorie} disabled={!editSubcategorieName.trim()}>Modifier</Button>
+                  </div>
+                </div>
+              )}
+              {showSubcategorieDialog && (
+                <div className="border border-border rounded-lg p-3 space-y-2 bg-card mb-2">
+                  <Label className="text-xs">Nouvelle sous-catégorie</Label>
+                  <Input value={newSubcategorieName} onChange={(e) => setNewSubcategorieName(e.target.value)} placeholder="Ex: Plaquettes, Disques..." className="h-9" autoFocus onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCreateSubcategorie(); } }} />
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" size="sm" onClick={() => { setShowSubcategorieDialog(false); setNewSubcategorieName(""); }}>Annuler</Button>
+                    <Button size="sm" onClick={handleCreateSubcategorie} disabled={!newSubcategorieName.trim()}>Créer</Button>
+                  </div>
+                </div>
+              )}
               <Input
-                id="reference"
-                value={formData.reference}
-                onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
+                value={formData.designation}
+                onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
                 required
+                placeholder="Désignation de l'article"
                 className="h-11 text-base"
               />
             </div>
+          </div>
+        )}
+
+        {/* Step 2: Référence + Marque + Fournisseur + Emplacement */}
+        {step === 2 && (
+          <div className="space-y-4 animate-in slide-in-from-right-4 duration-200">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Hash className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-lg">Identification</h2>
+                <p className="text-sm text-muted-foreground">Référence, marque et localisation</p>
+              </div>
+            </div>
+
+            {/* Recap */}
+            <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+              <p className="text-sm">
+                <span className="text-muted-foreground">Catégorie :</span>{" "}
+                <span className="font-semibold">{formData.categorie}</span>
+              </p>
+              <p className="text-sm">
+                <span className="text-muted-foreground">Désignation :</span>{" "}
+                <span className="font-semibold">{formData.designation}</span>
+              </p>
+            </div>
+
             <div className="space-y-1.5">
-              <Label htmlFor="marque" className="text-xs sm:text-sm">Marque</Label>
+              <Label className="text-xs sm:text-sm">Référence *</Label>
               <Input
-                id="marque"
+                value={formData.reference}
+                onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
+                required
+                className="h-11 text-base font-mono"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs sm:text-sm">Marque *</Label>
+              <Input
                 value={formData.marque}
                 onChange={(e) => setFormData({ ...formData, marque: e.target.value })}
                 required
                 className="h-11 text-base"
               />
             </div>
-          </div>
 
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs sm:text-sm">Sous-catégorie / Désignation</Label>
-              <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowSubcategorieDialog(true)}>
-                <Plus className="h-3 w-3 mr-1" /> Nouvelle
-              </Button>
-            </div>
-            {subcategories.length > 0 && (
-              <div className="space-y-1 mb-2">
-                {subcategories.map((sub) => (
-                  <div
-                    key={sub.id}
-                    className={`flex items-center justify-between px-3 py-1.5 rounded-lg border cursor-pointer transition-colors text-sm ${
-                      formData.designation === sub.nom ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted/50"
-                    }`}
-                    onClick={() => setFormData({ ...formData, designation: sub.nom })}
-                  >
-                    <span>{sub.nom}</span>
-                    <div className="flex gap-1">
-                      <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setEditingSubcategorie(sub); setEditSubcategorieName(sub.nom); }}>
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteSubcategorie(sub.id, sub.nom); }}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            {editingSubcategorie && (
-              <div className="border border-border rounded-lg p-3 space-y-2 bg-card mb-2">
-                <Label className="text-xs">Modifier la sous-catégorie</Label>
-                <Input value={editSubcategorieName} onChange={(e) => setEditSubcategorieName(e.target.value)} className="h-9" autoFocus onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleEditSubcategorie(); } }} />
-                <div className="flex gap-2 justify-end">
-                  <Button variant="outline" size="sm" onClick={() => { setEditingSubcategorie(null); setEditSubcategorieName(""); }}>Annuler</Button>
-                  <Button size="sm" onClick={handleEditSubcategorie} disabled={!editSubcategorieName.trim()}>Modifier</Button>
-                </div>
-              </div>
-            )}
-            {showSubcategorieDialog && (
-              <div className="border border-border rounded-lg p-3 space-y-2 bg-card mb-2">
-                <Label className="text-xs">Nouvelle sous-catégorie</Label>
-                <Input value={newSubcategorieName} onChange={(e) => setNewSubcategorieName(e.target.value)} placeholder="Ex: Plaquettes, Disques..." className="h-9" autoFocus onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCreateSubcategorie(); } }} />
-                <div className="flex gap-2 justify-end">
-                  <Button variant="outline" size="sm" onClick={() => { setShowSubcategorieDialog(false); setNewSubcategorieName(""); }}>Annuler</Button>
-                  <Button size="sm" onClick={handleCreateSubcategorie} disabled={!newSubcategorieName.trim()}>Créer</Button>
-                </div>
-              </div>
-            )}
-            <Input
-              id="designation"
-              value={formData.designation}
-              onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
-              required
-              placeholder="Désignation de l'article"
-              className="h-11 text-base"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="categorie" className="text-xs sm:text-sm">Catégorie</Label>
-              <Select
-                value={formData.categorie}
-                onValueChange={(value) => setFormData({ ...formData, categorie: value })}
-              >
-                <SelectTrigger className="h-11 text-base">
-                  <SelectValue placeholder="Sélectionner une catégorie" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="fournisseur" className="text-xs sm:text-sm">Fournisseur</Label>
+              <Label className="text-xs sm:text-sm flex items-center gap-1.5">
+                <Truck className="h-4 w-4 text-muted-foreground" />
+                Fournisseur
+              </Label>
               <Select
                 value={formData.fournisseur_id || "none"}
                 onValueChange={(value) => setFormData({ ...formData, fournisseur_id: value === "none" ? "" : value })}
@@ -398,162 +469,226 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
                 </SelectTrigger>
                 <SelectContent className="bg-popover border shadow-lg z-[60]">
                   <SelectItem value="none">Aucun fournisseur</SelectItem>
-                  {fournisseurs.map((fournisseur) => (
-                    <SelectItem key={fournisseur.id} value={fournisseur.id}>
-                      {fournisseur.nom}
-                    </SelectItem>
+                  {fournisseurs.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>{f.nom}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs sm:text-sm flex items-center gap-1.5">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                Emplacement
+              </Label>
+              <Select
+                value={formData.emplacement}
+                onValueChange={(value) => setFormData({ ...formData, emplacement: value })}
+              >
+                <SelectTrigger className="h-11 text-base">
+                  <SelectValue placeholder="Sélectionner un emplacement" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border shadow-lg z-[60]">
+                  <SelectItem value="none">Aucun emplacement</SelectItem>
+                  {emplacements.map((e) => (
+                    <SelectItem key={e.id} value={e.nom}>{e.nom}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
+        )}
 
-          <div className="space-y-1.5">
-            <Label htmlFor="emplacement" className="text-xs sm:text-sm">Emplacement</Label>
-            <Select
-              value={formData.emplacement}
-              onValueChange={(value) => setFormData({ ...formData, emplacement: value })}
-            >
-              <SelectTrigger className="h-11 text-base">
-                <SelectValue placeholder="Sélectionner un emplacement" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border shadow-lg z-[60]">
-                <SelectItem value="none">Aucun emplacement</SelectItem>
-                {emplacements.map((emplacement) => (
-                  <SelectItem key={emplacement.id} value={emplacement.nom}>
-                    {emplacement.nom}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="stock" className="text-xs sm:text-sm">Stock actuel</Label>
-            <Input
-              id="stock"
-              type="number"
-              min="0"
-              value={formData.stock}
-              onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
-              onFocus={(e) => e.target.select()}
-              disabled={!isAdmin()}
-              className={`h-11 text-base ${!isAdmin() ? 'bg-muted cursor-not-allowed' : ''}`}
-            />
-            {!isAdmin() && (
-              <p className="text-[10px] sm:text-xs text-muted-foreground">
-                Seuls les administrateurs peuvent modifier le stock initial
-              </p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="stock_min" className="text-xs sm:text-sm">Stock minimum</Label>
-              <Input
-                id="stock_min"
-                type="number"
-                min="0"
-                value={formData.stock_min}
-                onChange={(e) => setFormData({ ...formData, stock_min: parseInt(e.target.value) || 0 })}
-                onFocus={(e) => e.target.select()}
-                required
-                className="h-11 text-base"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="stock_max" className="text-xs sm:text-sm">Stock maximum</Label>
-              <Input
-                id="stock_max"
-                type="number"
-                min="0"
-                value={formData.stock_max}
-                onChange={(e) => setFormData({ ...formData, stock_max: parseInt(e.target.value) || 0 })}
-                onFocus={(e) => e.target.select()}
-                required
-                className="h-11 text-base"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Type de prix</Label>
-              <RadioGroup value={priceType} onValueChange={(val: "HT" | "TTC") => setPriceType(val)} className="flex gap-4">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="HT" id="edit-ht" />
-                  <Label htmlFor="edit-ht" className="font-normal cursor-pointer">Hors taxes (HT)</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="TTC" id="edit-ttc" />
-                  <Label htmlFor="edit-ttc" className="font-normal cursor-pointer">Toutes taxes comprises (TTC)</Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            {priceType === "TTC" && (
-              <div className="space-y-1.5">
-                <Label htmlFor="edit-tva" className="text-xs sm:text-sm">Taux de TVA (%)</Label>
-                <Select value={tvaTaux.toString()} onValueChange={(val) => setTvaTaux(parseFloat(val))}>
-                  <SelectTrigger className="h-11 text-base">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border shadow-lg z-[60]">
-                    <SelectItem value="0">0%</SelectItem>
-                    <SelectItem value="8.5">8,5%</SelectItem>
-                    <SelectItem value="20">20%</SelectItem>
-                  </SelectContent>
-                </Select>
+        {/* Step 3: Stock & Prix */}
+        {step === 3 && (
+          <div className="space-y-4 animate-in slide-in-from-right-4 duration-200">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Package className="h-5 w-5 text-primary" />
               </div>
-            )}
+              <div>
+                <h2 className="font-semibold text-lg">Stock & Prix</h2>
+                <p className="text-sm text-muted-foreground">Quantités et tarification</p>
+              </div>
+            </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="prix_achat" className="text-xs sm:text-sm">Prix d'achat {priceType} (€)</Label>
+              <Label className="text-xs sm:text-sm">Stock actuel</Label>
               <Input
-                id="prix_achat"
                 type="number"
-                step="0.01"
                 min="0"
-                value={formData.prix_achat}
-                onChange={(e) => {
-                  const inputPrice = parseFloat(e.target.value) || 0;
-                  let prixHT = inputPrice;
-                  
-                  if (priceType === "TTC" && tvaTaux > 0) {
-                    prixHT = inputPrice / (1 + tvaTaux / 100);
-                  }
-                  
-                  setFormData({ ...formData, prix_achat: prixHT });
-                }}
+                value={formData.stock}
+                onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
                 onFocus={(e) => e.target.select()}
-                required
-                className="h-11 text-base"
+                disabled={!isAdmin()}
+                className={`h-11 text-base ${!isAdmin() ? 'bg-muted cursor-not-allowed' : ''}`}
               />
-              {priceType === "TTC" && tvaTaux > 0 && formData.prix_achat > 0 && (
+              {!isAdmin() && (
                 <p className="text-[10px] sm:text-xs text-muted-foreground">
-                  Prix HT : {formData.prix_achat.toFixed(2)} €
+                  Seuls les administrateurs peuvent modifier le stock initial
                 </p>
               )}
             </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs sm:text-sm">Stock minimum</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={formData.stock_min}
+                  onChange={(e) => setFormData({ ...formData, stock_min: parseInt(e.target.value) || 0 })}
+                  onFocus={(e) => e.target.select()}
+                  className="h-11 text-base"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs sm:text-sm">Stock maximum</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={formData.stock_max}
+                  onChange={(e) => setFormData({ ...formData, stock_max: parseInt(e.target.value) || 0 })}
+                  onFocus={(e) => e.target.select()}
+                  className="h-11 text-base"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label>Type de prix</Label>
+                <RadioGroup value={priceType} onValueChange={(val: "HT" | "TTC") => setPriceType(val)} className="flex gap-4">
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="HT" id="edit-ht" />
+                    <Label htmlFor="edit-ht" className="font-normal cursor-pointer">HT</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="TTC" id="edit-ttc" />
+                    <Label htmlFor="edit-ttc" className="font-normal cursor-pointer">TTC</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {priceType === "TTC" && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs sm:text-sm">Taux de TVA (%)</Label>
+                  <Select value={tvaTaux.toString()} onValueChange={(val) => setTvaTaux(parseFloat(val))}>
+                    <SelectTrigger className="h-11 text-base">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border shadow-lg z-[60]">
+                      <SelectItem value="0">0%</SelectItem>
+                      <SelectItem value="8.5">8,5%</SelectItem>
+                      <SelectItem value="20">20%</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label className="text-xs sm:text-sm">Prix d'achat {priceType} (€)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.prix_achat}
+                  onChange={(e) => {
+                    const inputPrice = parseFloat(e.target.value) || 0;
+                    let prixHT = inputPrice;
+                    if (priceType === "TTC" && tvaTaux > 0) {
+                      prixHT = inputPrice / (1 + tvaTaux / 100);
+                    }
+                    setFormData({ ...formData, prix_achat: prixHT });
+                  }}
+                  onFocus={(e) => e.target.select()}
+                  className="h-11 text-base"
+                />
+                {priceType === "TTC" && tvaTaux > 0 && formData.prix_achat > 0 && (
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">
+                    Prix HT : {formData.prix_achat.toFixed(2)} €
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
+        )}
 
-          <ArticleVehicleCompatibility articleId={article.id} />
+        {/* Step 4: Compatibilité véhicules & Emplacements */}
+        {step === 4 && (
+          <div className="space-y-4 animate-in slide-in-from-right-4 duration-200">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Car className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-lg">Compatibilité</h2>
+                <p className="text-sm text-muted-foreground">Véhicules et emplacements associés</p>
+              </div>
+            </div>
 
-          <ArticleEmplacementsList 
-            articleReference={article.reference}
-            articleDesignation={article.designation}
-            articleId={article.id}
-          />
+            {/* Recap */}
+            <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+              <p className="text-sm">
+                <span className="text-muted-foreground">Article :</span>{" "}
+                <span className="font-semibold">{formData.designation}</span>
+              </p>
+              <p className="text-sm">
+                <span className="text-muted-foreground">Réf :</span>{" "}
+                <span className="font-mono font-semibold">{formData.reference}</span>
+                {" · "}
+                <span className="font-semibold">{formData.marque}</span>
+              </p>
+              <p className="text-sm">
+                <span className="text-muted-foreground">Stock :</span>{" "}
+                <span className="font-semibold">{formData.stock} unités</span>
+              </p>
+            </div>
 
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t">
-            <Button type="button" variant="outline" onClick={handleClose} className="w-full sm:w-auto h-11">
-              Annuler
-            </Button>
-            <Button type="submit" disabled={isLoading} className="w-full sm:w-auto h-11">
-              {isLoading ? "Modification..." : "Modifier l'article"}
-            </Button>
+            <ArticleVehicleCompatibility articleId={article.id} />
+
+            <ArticleEmplacementsList
+              articleReference={article.reference}
+              articleDesignation={article.designation}
+              articleId={article.id}
+            />
           </div>
-        </form>
+        )}
+
+        {/* Navigation */}
+        <div className="flex gap-3 pt-3 border-t">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={step === 1 ? handleClose : handleBack}
+            className="flex-1 h-12 text-base"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            {step === 1 ? "Annuler" : "Retour"}
+          </Button>
+          <Button
+            type="button"
+            onClick={handleNext}
+            disabled={!canProceed() || isLoading}
+            className={`flex-1 h-12 text-base ${
+              step === totalSteps ? "bg-success hover:bg-success/90 text-success-foreground" : ""
+            }`}
+          >
+            {isLoading ? (
+              "Modification..."
+            ) : step === totalSteps ? (
+              <>
+                <Check className="h-4 w-4 mr-2" />
+                Modifier l'article
+              </>
+            ) : (
+              <>
+                Suivant
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </>
+            )}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
