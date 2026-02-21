@@ -19,6 +19,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
+import { CreateFournisseurDialog } from "@/components/fournisseurs/CreateFournisseurDialog";
 
 interface ArticleCreationWizardProps {
   defaultCodeBarre?: string;
@@ -59,7 +60,8 @@ export function ArticleCreationWizard({
   const [subcategories, setSubcategories] = useState<string[]>([]);
   const [fournisseurs, setFournisseurs] = useState<any[]>([]);
   const [emplacements, setEmplacements] = useState<any[]>([]);
-  
+  const [showFournisseurDialog, setShowFournisseurDialog] = useState(false);
+
   const [showSubcategorieDialog, setShowSubcategorieDialog] = useState(false);
   const [newSubcategorieName, setNewSubcategorieName] = useState("");
   const [editingSubcategorie, setEditingSubcategorie] = useState<{ id: string; nom: string } | null>(null);
@@ -651,20 +653,31 @@ export function ArticleCreationWizard({
             >
               Aucun fournisseur
             </button>
-            {fournisseurs.map((f) => (
+            {fournisseurs.length > 0 ? (
+              fournisseurs.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => { setFournisseurId(f.id); setStep(5); }}
+                  className={`w-full text-left px-4 py-3.5 rounded-lg border-2 text-base font-medium transition-all ${
+                    fournisseurId === f.id
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
+                  }`}
+                >
+                  {f.nom}
+                </button>
+              ))
+            ) : (
               <button
-                key={f.id}
                 type="button"
-                onClick={() => { setFournisseurId(f.id); setStep(5); }}
-                className={`w-full text-left px-4 py-3.5 rounded-lg border-2 text-base font-medium transition-all ${
-                  fournisseurId === f.id
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
-                }`}
+                onClick={() => setShowFournisseurDialog(true)}
+                className="w-full px-4 py-3.5 rounded-lg border-2 border-dashed border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-muted/50 transition-all text-left"
               >
-                {f.nom}
+                <span className="text-base font-medium block">Nouveau fournisseur</span>
+                <span className="text-sm">Aucun fournisseur — cliquez ici pour en créer un</span>
               </button>
-            ))}
+            )}
           </div>
         </div>
       )}
@@ -899,6 +912,14 @@ export function ArticleCreationWizard({
         </Button>
       </div>
 
+      <CreateFournisseurDialog
+        open={showFournisseurDialog}
+        onOpenChange={setShowFournisseurDialog}
+        onFournisseurCreated={(id) => {
+          fetchFournisseurs();
+          setFournisseurId(id);
+        }}
+      />
     </div>
   );
 }
