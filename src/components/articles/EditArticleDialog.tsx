@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import ArticleVehicleCompatibility from "./ArticleVehicleCompatibility";
 import { ArticleEmplacementsList } from "./ArticleEmplacementsList";
+import { CreateFournisseurDialog } from "@/components/fournisseurs/CreateFournisseurDialog";
 
 interface Article {
   id: string;
@@ -70,8 +71,9 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
 
-  // Total steps: 1=Cat+Designation, 2=Ref+Marque+Fournisseur+Emplacement, 3=Stock+Prix, 4=Compatibilité
-  const totalSteps = 4;
+  // Total steps: 1=Cat+Designation, 2=Ref+Marque+Fournisseur+Emplacement, 3=Stock+Prix, 4=Compatibilité, 5=Récapitulatif
+  const totalSteps = 5;
+  const [showFournisseurDialog, setShowFournisseurDialog] = useState(false);
 
   // Data lists
   const [fournisseurs, setFournisseurs] = useState<any[]>([]);
@@ -227,6 +229,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
       case 2: return formData.reference.trim() !== "" && formData.marque.trim() !== "";
       case 3: return true;
       case 4: return true;
+      case 5: return true;
       default: return false;
     }
   }, [step, formData]);
@@ -287,9 +290,10 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
     }
   };
 
-  const stepLabels = ["Catégorie", "Identification", "Stock & Prix", "Compatibilité"];
+  const stepLabels = ["Catégorie", "Identification", "Stock & Prix", "Compatibilité", "Récapitulatif"];
 
   return (
+    <>
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); }}>
       <DialogContent className="w-[96vw] max-w-[96vw] sm:max-w-[640px] sm:w-full rounded-lg max-h-[95dvh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
         <DialogHeader className="pb-2">
@@ -456,10 +460,22 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs sm:text-sm flex items-center gap-1.5">
-                <Truck className="h-4 w-4 text-muted-foreground" />
-                Fournisseur
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs sm:text-sm flex items-center gap-1.5">
+                  <Truck className="h-4 w-4 text-muted-foreground" />
+                  Fournisseur
+                </Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => setShowFournisseurDialog(true)}
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Nouveau
+                </Button>
+              </div>
               <Select
                 value={formData.fournisseur_id || "none"}
                 onValueChange={(value) => setFormData({ ...formData, fournisseur_id: value === "none" ? "" : value })}
@@ -655,6 +671,104 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
           </div>
         )}
 
+        {/* Step 5: Récapitulatif */}
+        {step === 5 && (
+          <div className="space-y-4 animate-in slide-in-from-right-4 duration-200">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Check className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-lg">Récapitulatif</h2>
+                <p className="text-sm text-muted-foreground">Vérifiez les modifications avant validation</p>
+              </div>
+            </div>
+
+            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Catégorie</p>
+                  <p className="font-semibold text-sm">{formData.categorie}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Désignation</p>
+                  <p className="font-semibold text-sm">{formData.designation}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Référence</p>
+                  <p className="font-semibold text-sm font-mono">{formData.reference}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Marque</p>
+                  <p className="font-semibold text-sm">{formData.marque}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Fournisseur</p>
+                  <p className="font-semibold text-sm">
+                    {formData.fournisseur_id && formData.fournisseur_id !== "none"
+                      ? fournisseurs.find(f => f.id === formData.fournisseur_id)?.nom || "—"
+                      : "Aucun"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Emplacement</p>
+                  <p className="font-semibold text-sm">{formData.emplacement && formData.emplacement !== "none" ? formData.emplacement : "Aucun"}</p>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-3 grid grid-cols-3 gap-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Stock</p>
+                  <p className="font-semibold text-sm">{formData.stock}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Min</p>
+                  <p className="font-semibold text-sm">{formData.stock_min}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Max</p>
+                  <p className="font-semibold text-sm">{formData.stock_max}</p>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-3">
+                <p className="text-xs text-muted-foreground">Prix d'achat HT</p>
+                <p className="font-semibold text-sm">{formData.prix_achat.toFixed(2)} €</p>
+              </div>
+            </div>
+
+            {/* Change indicators */}
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Modifications détectées</p>
+              {(() => {
+                const changes: { label: string; old: string; new: string }[] = [];
+                if (article.categorie !== formData.categorie) changes.push({ label: "Catégorie", old: article.categorie, new: formData.categorie });
+                if (article.designation !== formData.designation) changes.push({ label: "Désignation", old: article.designation, new: formData.designation });
+                if (article.reference !== formData.reference) changes.push({ label: "Référence", old: article.reference, new: formData.reference });
+                if (article.marque !== formData.marque) changes.push({ label: "Marque", old: article.marque, new: formData.marque });
+                if (article.stock !== formData.stock) changes.push({ label: "Stock", old: String(article.stock), new: String(formData.stock) });
+                if (article.stock_min !== formData.stock_min) changes.push({ label: "Stock min", old: String(article.stock_min), new: String(formData.stock_min) });
+                if (article.stock_max !== formData.stock_max) changes.push({ label: "Stock max", old: String(article.stock_max), new: String(formData.stock_max) });
+                if (article.prix_achat !== formData.prix_achat) changes.push({ label: "Prix", old: article.prix_achat.toFixed(2) + " €", new: formData.prix_achat.toFixed(2) + " €" });
+                if ((article.emplacement || "") !== formData.emplacement) changes.push({ label: "Emplacement", old: article.emplacement || "Aucun", new: formData.emplacement || "Aucun" });
+
+                if (changes.length === 0) {
+                  return <p className="text-sm text-muted-foreground italic">Aucune modification détectée</p>;
+                }
+
+                return changes.map((c, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm bg-card border border-border rounded-lg px-3 py-2">
+                    <span className="font-medium text-foreground">{c.label} :</span>
+                    <span className="text-muted-foreground line-through">{c.old}</span>
+                    <ArrowRight className="h-3 w-3 text-primary" />
+                    <span className="text-primary font-semibold">{c.new}</span>
+                  </div>
+                ));
+              })()}
+            </div>
+          </div>
+        )}
+
         {/* Navigation */}
         <div className="flex gap-3 pt-3 border-t">
           <Button
@@ -691,5 +805,15 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
         </div>
       </DialogContent>
     </Dialog>
+
+      <CreateFournisseurDialog
+        open={showFournisseurDialog}
+        onOpenChange={setShowFournisseurDialog}
+        onFournisseurCreated={(id) => {
+          fetchFournisseurs();
+          setFormData(prev => ({ ...prev, fournisseur_id: id }));
+        }}
+      />
+    </>
   );
 }
