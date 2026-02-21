@@ -61,6 +61,8 @@ export function ArticleCreationWizard({
   const [fournisseurs, setFournisseurs] = useState<any[]>([]);
   const [emplacements, setEmplacements] = useState<any[]>([]);
   const [showCategorieDialog, setShowCategorieDialog] = useState(false);
+  const [showSubcategorieDialog, setShowSubcategorieDialog] = useState(false);
+  const [newSubcategorieName, setNewSubcategorieName] = useState("");
   const [showFournisseurDialog, setShowFournisseurDialog] = useState(false);
 
   // Form data
@@ -166,6 +168,33 @@ export function ArticleCreationWizard({
       setFournisseurs(data || []);
     } catch {
       console.error("Erreur chargement fournisseurs");
+    }
+  };
+
+  const handleCreateSubcategorie = async () => {
+    if (!newSubcategorieName.trim()) return;
+    try {
+      const parent = allCategoriesData.find(c => c.nom === categorie && !c.parent_id);
+      if (!parent) return;
+      const { data: userData } = await supabase.auth.getUser();
+      const { data, error } = await supabase
+        .from("categories")
+        .insert([{
+          nom: newSubcategorieName.trim(),
+          parent_id: parent.id,
+          actif: true,
+          user_id: userData?.user?.id,
+        }])
+        .select("id, nom, parent_id")
+        .single();
+      if (error) throw error;
+      toast({ title: "Sous-catégorie créée ✓", description: newSubcategorieName.trim() });
+      setAllCategoriesData(prev => [...prev, data]);
+      setDesignation(data.nom);
+      setNewSubcategorieName("");
+      setShowSubcategorieDialog(false);
+    } catch (error: any) {
+      toast({ title: "Erreur", description: error?.message || "Impossible de créer la sous-catégorie", variant: "destructive" });
     }
   };
 
@@ -386,9 +415,21 @@ export function ArticleCreationWizard({
           </div>
 
           {/* Subcategory dropdown */}
-          {subcategories.length > 0 && (
-            <div className="space-y-2">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
               <Label>Sous-catégorie</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setShowSubcategorieDialog(true)}
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Nouvelle
+              </Button>
+            </div>
+            {subcategories.length > 0 ? (
               <Select
                 value={designation}
                 onValueChange={(val) => {
@@ -407,8 +448,35 @@ export function ArticleCreationWizard({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-          )}
+            ) : (
+              <p className="text-sm text-muted-foreground italic">Aucune sous-catégorie — cliquez « Nouvelle » pour en créer</p>
+            )}
+
+            {/* Inline create subcategory */}
+            {showSubcategorieDialog && (
+              <div className="border border-border rounded-lg p-3 space-y-3 bg-card">
+                <Label>Nom de la sous-catégorie</Label>
+                <Input
+                  value={newSubcategorieName}
+                  onChange={(e) => setNewSubcategorieName(e.target.value)}
+                  placeholder="Ex: Plaquettes, Disques..."
+                  className="h-10"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") { e.preventDefault(); handleCreateSubcategorie(); }
+                  }}
+                />
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" size="sm" onClick={() => { setShowSubcategorieDialog(false); setNewSubcategorieName(""); }}>
+                    Annuler
+                  </Button>
+                  <Button size="sm" onClick={handleCreateSubcategorie} disabled={!newSubcategorieName.trim()}>
+                    Créer
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="space-y-2 relative">
             <Label>Désignation *</Label>
