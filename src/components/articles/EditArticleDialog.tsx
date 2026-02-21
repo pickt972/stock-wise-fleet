@@ -343,12 +343,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
 
             {/* Subcategory / Designation */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs sm:text-sm">Sous-catégorie / Désignation</Label>
-                <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowSubcategorieDialog(true)}>
-                  <Plus className="h-3 w-3 mr-1" /> Nouvelle
-                </Button>
-              </div>
+              <Label className="text-xs sm:text-sm">Sous-catégorie / Désignation</Label>
               {subcategories.length > 0 && (
                 <div className="flex flex-col gap-2 mb-2">
                   {subcategories.map((sub) => (
@@ -449,22 +444,10 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
             </div>
 
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs sm:text-sm flex items-center gap-1.5">
-                  <Truck className="h-4 w-4 text-muted-foreground" />
-                  Fournisseur
-                </Label>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={() => setShowFournisseurDialog(true)}
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Nouveau
-                </Button>
-              </div>
+              <Label className="text-xs sm:text-sm flex items-center gap-1.5">
+                <Truck className="h-4 w-4 text-muted-foreground" />
+                Fournisseur
+              </Label>
               <Select
                 value={formData.fournisseur_id || "none"}
                 onValueChange={(value) => setFormData({ ...formData, fournisseur_id: value === "none" ? "" : value })}
