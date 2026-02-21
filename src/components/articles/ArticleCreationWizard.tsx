@@ -19,8 +19,6 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
-import { CreateCategorieDialog } from "@/components/categories/CreateCategorieDialog";
-import { CreateFournisseurDialog } from "@/components/fournisseurs/CreateFournisseurDialog";
 
 interface ArticleCreationWizardProps {
   defaultCodeBarre?: string;
@@ -61,12 +59,12 @@ export function ArticleCreationWizard({
   const [subcategories, setSubcategories] = useState<string[]>([]);
   const [fournisseurs, setFournisseurs] = useState<any[]>([]);
   const [emplacements, setEmplacements] = useState<any[]>([]);
-  const [showCategorieDialog, setShowCategorieDialog] = useState(false);
+  
   const [showSubcategorieDialog, setShowSubcategorieDialog] = useState(false);
   const [newSubcategorieName, setNewSubcategorieName] = useState("");
   const [editingSubcategorie, setEditingSubcategorie] = useState<{ id: string; nom: string } | null>(null);
   const [editSubcategorieName, setEditSubcategorieName] = useState("");
-  const [showFournisseurDialog, setShowFournisseurDialog] = useState(false);
+  
 
   // Form data
   const [categorie, setCategorie] = useState("");
@@ -484,7 +482,14 @@ export function ArticleCreationWizard({
                   ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground italic">Aucune sous-catégorie — cliquez « Nouvelle » pour en créer</p>
+              <button
+                type="button"
+                onClick={() => setShowSubcategorieDialog(true)}
+                className="w-full px-4 py-3.5 rounded-lg border-2 border-dashed border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-muted/50 transition-all text-left"
+              >
+                <span className="text-base font-medium block">Sous-catégorie</span>
+                <span className="text-sm">Aucune sous-catégorie — cliquez « Nouvelle » pour en créer</span>
+              </button>
             )}
 
             {/* Inline edit subcategory */}
@@ -894,23 +899,6 @@ export function ArticleCreationWizard({
         </Button>
       </div>
 
-      <CreateCategorieDialog
-        open={showCategorieDialog}
-        onOpenChange={setShowCategorieDialog}
-        onCategorieCreated={(nom) => {
-          fetchCategories();
-          setCategorie(nom);
-        }}
-      />
-
-      <CreateFournisseurDialog
-        open={showFournisseurDialog}
-        onOpenChange={setShowFournisseurDialog}
-        onFournisseurCreated={(id) => {
-          fetchFournisseurs();
-          setFournisseurId(id);
-        }}
-      />
     </div>
   );
 }
