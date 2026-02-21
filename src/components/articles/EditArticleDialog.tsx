@@ -350,22 +350,22 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
                 </Button>
               </div>
               {subcategories.length > 0 && (
-                <div className="space-y-1 mb-2">
+                <div className="flex flex-col gap-2 mb-2">
                   {subcategories.map((sub) => (
                     <div
                       key={sub.id}
-                      className={`flex items-center justify-between px-3 py-1.5 rounded-lg border cursor-pointer transition-colors text-sm ${
-                        formData.designation === sub.nom ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted/50"
+                      className={`flex items-center justify-between w-full px-4 py-3 rounded-lg border-2 cursor-pointer transition-all text-sm ${
+                        formData.designation === sub.nom ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
                       }`}
                       onClick={() => setFormData({ ...formData, designation: sub.nom })}
                     >
-                      <span>{sub.nom}</span>
+                      <span className="font-medium">{sub.nom}</span>
                       <div className="flex gap-1">
-                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setEditingSubcategorie(sub); setEditSubcategorieName(sub.nom); }}>
-                          <Edit className="h-3 w-3" />
+                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setEditingSubcategorie(sub); setEditSubcategorieName(sub.nom); }}>
+                          <Edit className="h-4 w-4" />
                         </Button>
-                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteSubcategorie(sub.id, sub.nom); }}>
-                          <Trash2 className="h-3 w-3" />
+                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteSubcategorie(sub.id, sub.nom); }}>
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
