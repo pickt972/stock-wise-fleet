@@ -56,6 +56,8 @@ export function ArticleCreationWizard({
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
+  const [allCategoriesData, setAllCategoriesData] = useState<{ id: string; nom: string; parent_id: string | null }[]>([]);
+  const [subcategories, setSubcategories] = useState<string[]>([]);
   const [fournisseurs, setFournisseurs] = useState<any[]>([]);
   const [emplacements, setEmplacements] = useState<any[]>([]);
   const [showCategorieDialog, setShowCategorieDialog] = useState(false);
@@ -94,11 +96,15 @@ export function ArticleCreationWizard({
     try {
       const { data, error } = await supabase
         .from("categories")
-        .select("nom")
+        .select("id, nom, parent_id")
         .eq("actif", true)
+        .order("sort_order")
         .order("nom");
       if (error) throw error;
-      setCategories(data?.map((c) => c.nom) || []);
+      setAllCategoriesData(data || []);
+      // Parent categories only for step 1
+      const parents = (data || []).filter(c => !c.parent_id).map(c => c.nom);
+      setCategories(parents.length > 0 ? parents : data?.map((c) => c.nom) || []);
     } catch {
       setCategories(["Consommables", "Freinage", "Filtration", "Électrique", "Moteur", "Autre"]);
     }
@@ -116,6 +122,21 @@ export function ArticleCreationWizard({
       setAllArticleDesignations(Array.from(unique, ([designation, categorie]) => ({ designation, categorie })));
     } catch {}
   };
+
+  // Update subcategories when category changes
+  useEffect(() => {
+    if (categorie) {
+      const parent = allCategoriesData.find(c => c.nom === categorie && !c.parent_id);
+      if (parent) {
+        const subs = allCategoriesData.filter(c => c.parent_id === parent.id).map(c => c.nom);
+        setSubcategories(subs);
+      } else {
+        setSubcategories([]);
+      }
+    } else {
+      setSubcategories([]);
+    }
+  }, [categorie, allCategoriesData]);
 
   const handleDesignationChange = (val: string) => {
     const formatted = val.replace(/\s+/g, " ");
@@ -352,8 +373,8 @@ export function ArticleCreationWizard({
               <Package className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h2 className="font-semibold text-lg">Description</h2>
-              <p className="text-sm text-muted-foreground">Décrivez précisément l'article</p>
+              <h2 className="font-semibold text-lg">Sous catégorie / Désignation</h2>
+              <p className="text-sm text-muted-foreground">Précisez le type et décrivez l'article</p>
             </div>
           </div>
 
@@ -364,8 +385,33 @@ export function ArticleCreationWizard({
             </p>
           </div>
 
+          {/* Subcategory dropdown */}
+          {subcategories.length > 0 && (
+            <div className="space-y-2">
+              <Label>Sous-catégorie</Label>
+              <Select
+                value={designation}
+                onValueChange={(val) => {
+                  setDesignation(val);
+                  setShowSuggestions(false);
+                }}
+              >
+                <SelectTrigger className="h-12 text-base">
+                  <SelectValue placeholder="Sélectionner une sous-catégorie..." />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border border-border shadow-medium z-[60] max-h-[200px]">
+                  {subcategories.map((sub) => (
+                    <SelectItem key={sub} value={sub}>
+                      {sub}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="space-y-2 relative">
-            <Label>Description / Sous-catégorie *</Label>
+            <Label>Désignation *</Label>
             <Input
               value={designation}
               onChange={(e) => handleDesignationChange(e.target.value)}
@@ -393,7 +439,7 @@ export function ArticleCreationWizard({
               </div>
             )}
             <p className="text-xs text-muted-foreground">
-              Décrivez précisément l'article (capacité, taille, type...)
+              Saisissez ou complétez la désignation (capacité, taille, type...)
             </p>
           </div>
         </div>
