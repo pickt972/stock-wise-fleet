@@ -19,7 +19,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
-import { CreateFournisseurDialog } from "@/components/fournisseurs/CreateFournisseurDialog";
+
 
 interface ArticleCreationWizardProps {
   defaultCodeBarre?: string;
@@ -60,7 +60,7 @@ export function ArticleCreationWizard({
   const [subcategories, setSubcategories] = useState<string[]>([]);
   const [fournisseurs, setFournisseurs] = useState<any[]>([]);
   const [emplacements, setEmplacements] = useState<any[]>([]);
-  const [showFournisseurDialog, setShowFournisseurDialog] = useState(false);
+  
 
   const [showSubcategorieDialog, setShowSubcategorieDialog] = useState(false);
   const [newSubcategorieName, setNewSubcategorieName] = useState("");
@@ -667,14 +667,6 @@ export function ArticleCreationWizard({
                 {f.nom}
               </button>
             ))}
-            <button
-              type="button"
-              onClick={() => setShowFournisseurDialog(true)}
-              className="w-full px-4 py-3.5 rounded-lg border-2 border-dashed border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-muted/50 transition-all text-left"
-            >
-              <span className="text-base font-medium block">Nouveau fournisseur</span>
-              <span className="text-sm">Cliquez ici pour en créer un</span>
-            </button>
           </div>
         </div>
       )}
@@ -909,14 +901,6 @@ export function ArticleCreationWizard({
         </Button>
       </div>
 
-      <CreateFournisseurDialog
-        open={showFournisseurDialog}
-        onOpenChange={setShowFournisseurDialog}
-        onFournisseurCreated={(id) => {
-          fetchFournisseurs();
-          setFournisseurId(id);
-        }}
-      />
     </div>
   );
 }
