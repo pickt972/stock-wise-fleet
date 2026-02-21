@@ -453,7 +453,7 @@ export function ArticleCreationWizard({
               </Button>
             </div>
             {subcategories.length > 0 ? (
-              <div className="space-y-1">
+              <div className="flex flex-col gap-2">
                 {allCategoriesData
                   .filter(c => {
                     const parent = allCategoriesData.find(p => p.nom === categorie && !p.parent_id);
@@ -462,39 +462,39 @@ export function ArticleCreationWizard({
                   .map((sub) => (
                     <div
                       key={sub.id}
-                      className={`flex items-center justify-between px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
+                      className={`flex items-center justify-between w-full px-4 py-3.5 rounded-lg border-2 cursor-pointer transition-all ${
                         designation === sub.nom
                           ? "border-primary bg-primary/10 text-primary"
-                          : "border-border hover:bg-muted/50"
+                          : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
                       }`}
                       onClick={() => { setDesignation(sub.nom); setShowSuggestions(false); }}
                     >
-                      <span className="text-sm font-medium">{sub.nom}</span>
+                      <span className="text-base font-medium">{sub.nom}</span>
                       <div className="flex gap-1">
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7"
+                          className="h-8 w-8"
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditingSubcategorie({ id: sub.id, nom: sub.nom });
                             setEditSubcategorieName(sub.nom);
                           }}
                         >
-                          <Edit className="h-3 w-3" />
+                          <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-destructive hover:text-destructive"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDeleteSubcategorie(sub.id, sub.nom);
                           }}
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
