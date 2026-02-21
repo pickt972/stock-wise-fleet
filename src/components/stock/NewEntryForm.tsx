@@ -259,43 +259,9 @@ export function NewEntryForm({ open, onOpenChange, onSuccess }: NewEntryFormProp
           <DialogTitle>📥 Nouvelle entrée de stock</DialogTitle>
         </DialogHeader>
 
-        {/* Stepper */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between gap-2">
-            {STEPS.map((step, idx) => {
-              const Icon = step.icon;
-              const isActive = currentStep === step.id;
-              const isDone = currentStep > step.id;
-              return (
-                <div key={step.id} className="flex items-center gap-2 flex-1">
-                  <div
-                    className={cn(
-                      "flex items-center justify-center w-10 h-10 rounded-full border-2 shrink-0 transition-colors",
-                      isDone && "bg-primary border-primary text-primary-foreground",
-                      isActive && "border-primary text-primary bg-primary/10",
-                      !isActive && !isDone && "border-muted-foreground/30 text-muted-foreground"
-                    )}
-                  >
-                    {isDone ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
-                  </div>
-                  <span
-                    className={cn(
-                      "text-sm font-medium hidden sm:inline",
-                      isActive && "text-primary",
-                      isDone && "text-primary",
-                      !isActive && !isDone && "text-muted-foreground"
-                    )}
-                  >
-                    {step.label}
-                  </span>
-                  {idx < STEPS.length - 1 && (
-                    <div className={cn("flex-1 h-0.5 mx-2", isDone ? "bg-primary" : "bg-muted")} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <Progress value={progressValue} className="h-1.5" />
+        {/* Progress */}
+        <div className="text-center text-sm text-muted-foreground">
+          Étape {currentStep} sur {STEPS.length} — {STEPS[currentStep - 1]?.label}
         </div>
 
         {/* Step 1: Informations générales */}
