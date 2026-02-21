@@ -446,7 +446,7 @@ export function ArticleCreationWizard({
                           ? "border-primary bg-primary/10 text-primary"
                           : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
                       }`}
-                      onClick={() => { setDesignation(sub.nom); setShowSuggestions(false); }}
+                      onClick={() => { setDesignation(sub.nom); setShowSuggestions(false); setStep(3); }}
                     >
                       <span className="text-base font-medium">{sub.nom}</span>
                       <div className="flex gap-1">
