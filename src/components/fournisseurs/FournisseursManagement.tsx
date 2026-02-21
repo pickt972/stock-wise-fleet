@@ -198,10 +198,17 @@ export const FournisseursManagement = () => {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <Input placeholder="Rechercher un fournisseur..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="max-w-xs" />
-        <Button onClick={() => { resetForm(); setOpenCreateDialog(true); }}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nouveau fournisseur
-        </Button>
+        <button
+          type="button"
+          onClick={() => { resetForm(); setOpenCreateDialog(true); }}
+          className="w-full sm:w-auto px-6 py-4 rounded-lg border-2 border-dashed border-border bg-card text-left hover:border-primary/40 hover:bg-muted/50 transition-all"
+        >
+          <span className="text-base font-medium block text-foreground">
+            <Plus className="h-4 w-4 inline mr-2" />
+            Nouveau fournisseur
+          </span>
+          <span className="text-sm text-muted-foreground">Cliquez ici pour ajouter un nouveau fournisseur</span>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
