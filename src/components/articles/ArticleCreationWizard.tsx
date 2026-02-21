@@ -653,31 +653,28 @@ export function ArticleCreationWizard({
             >
               Aucun fournisseur
             </button>
-            {fournisseurs.length > 0 ? (
-              fournisseurs.map((f) => (
-                <button
-                  key={f.id}
-                  type="button"
-                  onClick={() => { setFournisseurId(f.id); setStep(5); }}
-                  className={`w-full text-left px-4 py-3.5 rounded-lg border-2 text-base font-medium transition-all ${
-                    fournisseurId === f.id
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
-                  }`}
-                >
-                  {f.nom}
-                </button>
-              ))
-            ) : (
+            {fournisseurs.map((f) => (
               <button
+                key={f.id}
                 type="button"
-                onClick={() => setShowFournisseurDialog(true)}
-                className="w-full px-4 py-3.5 rounded-lg border-2 border-dashed border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-muted/50 transition-all text-left"
+                onClick={() => { setFournisseurId(f.id); setStep(5); }}
+                className={`w-full text-left px-4 py-3.5 rounded-lg border-2 text-base font-medium transition-all ${
+                  fournisseurId === f.id
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
+                }`}
               >
-                <span className="text-base font-medium block">Nouveau fournisseur</span>
-                <span className="text-sm">Aucun fournisseur — cliquez ici pour en créer un</span>
+                {f.nom}
               </button>
-            )}
+            ))}
+            <button
+              type="button"
+              onClick={() => setShowFournisseurDialog(true)}
+              className="w-full px-4 py-3.5 rounded-lg border-2 border-dashed border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-muted/50 transition-all text-left"
+            >
+              <span className="text-base font-medium block">Nouveau fournisseur</span>
+              <span className="text-sm">Cliquez ici pour en créer un</span>
+            </button>
           </div>
         </div>
       )}
