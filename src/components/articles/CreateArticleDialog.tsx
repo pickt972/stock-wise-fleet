@@ -22,7 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
-import { CreateFournisseurDialog } from "@/components/fournisseurs/CreateFournisseurDialog";
+
 import { CreateCategorieDialog } from "@/components/categories/CreateCategorieDialog";
 import { CreateVehiculeDialog } from "@/components/vehicules/CreateVehiculeDialog";
 import { z } from "zod";
@@ -54,7 +54,7 @@ export function CreateArticleDialog({
   const [fournisseurs, setFournisseurs] = useState<any[]>([]);
   const [emplacements, setEmplacements] = useState<any[]>([]);
   const [vehicules, setVehicules] = useState<any[]>([]);
-  const [showFournisseurDialog, setShowFournisseurDialog] = useState(false);
+  
   const [showCategorieDialog, setShowCategorieDialog] = useState(false);
   const [showVehiculeDialog, setShowVehiculeDialog] = useState(false);
   const [allCategoriesData, setAllCategoriesData] = useState<{ id: string; nom: string; parent_id: string | null }[]>([]);
@@ -562,29 +562,13 @@ const articleSchema = z.object({
               <Select
                 value={formData.fournisseurId}
                 onValueChange={(value) => {
-                  if (value === "__create_new__") {
-                    setShowFournisseurDialog(true);
-                  } else {
-                    setFormData((prev) => ({ ...prev, fournisseurId: value === "none" ? "" : value }));
-                  }
+                  setFormData((prev) => ({ ...prev, fournisseurId: value === "none" ? "" : value }));
                 }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un fournisseur" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border border-border shadow-medium z-[60] max-h-[200px] overflow-y-auto">
-                  <div className="p-2 border-b border-border mb-1">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => setShowFournisseurDialog(true)}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Nouveau fournisseur
-                    </Button>
-                  </div>
                   <SelectItem value="none">Aucun fournisseur</SelectItem>
                   {fournisseurs.map((fournisseur) => (
                     <SelectItem key={fournisseur.id} value={fournisseur.id}>
@@ -812,14 +796,6 @@ const articleSchema = z.object({
       </DialogContent>
 
       {/* Dialogues de création en dehors du dropdown */}
-      <CreateFournisseurDialog
-        open={showFournisseurDialog}
-        onOpenChange={setShowFournisseurDialog}
-        onFournisseurCreated={(id) => {
-          fetchFournisseurs();
-          setFormData(prev => ({ ...prev, fournisseurId: id }));
-        }}
-      />
 
       <CreateCategorieDialog
         open={showCategorieDialog}
