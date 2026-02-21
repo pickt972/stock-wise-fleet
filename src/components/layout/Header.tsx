@@ -28,7 +28,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   const { user, profile, userRole, signOut } = useAuth();
   const { isInstallable, installApp } = usePWA();
   const navigate = useNavigate();
-  const { alerts } = useAlerts();
+  const { subcategoryAlerts, totalAlerts } = useAlerts();
   const { theme, setTheme } = useTheme();
 
   const getRoleLabel = (role: string) => {
@@ -139,12 +139,12 @@ export function Header({ onMenuClick }: HeaderProps) {
             <PopoverTrigger asChild>
               <Button variant="ghost" size="sm" className="relative hidden sm:flex">
                 <Bell className="h-4 w-4" />
-                {alerts.length > 0 && (
+                {totalAlerts > 0 && (
                   <Badge 
                     variant="destructive" 
                     className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
                   >
-                    {alerts.length}
+                    {totalAlerts}
                   </Badge>
                 )}
               </Button>
@@ -152,23 +152,28 @@ export function Header({ onMenuClick }: HeaderProps) {
             <PopoverContent className="w-80" align="end">
               <div className="space-y-2">
                 <h4 className="font-medium">Notifications</h4>
-                {alerts.length > 0 ? (
+                {subcategoryAlerts.length > 0 ? (
                   <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {alerts.map((alert) => (
+                    {subcategoryAlerts.slice(0, 5).map((sub) => (
                       <div 
-                        key={alert.id} 
+                        key={sub.subcategory} 
                         className="p-2 border rounded-lg text-sm cursor-pointer hover:bg-accent"
                         onClick={() => navigate('/alertes')}
                       >
-                        <div className="font-medium">{alert.title}</div>
-                        <div className="text-muted-foreground">{alert.description}</div>
+                        <div className="font-medium">{sub.subcategory}</div>
+                        <div className="text-muted-foreground">
+                          {sub.ruptureCount > 0 ? `${sub.ruptureCount} rupture(s)` : ''} 
+                          {sub.ruptureCount > 0 && sub.faibleCount > 0 ? ', ' : ''}
+                          {sub.faibleCount > 0 ? `${sub.faibleCount} stock(s) faible(s)` : ''}
+                          {' '}sur {sub.totalArticles} articles
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">Aucune notification</p>
                 )}
-                {alerts.length > 0 && (
+                {subcategoryAlerts.length > 0 && (
                   <Button 
                     variant="outline" 
                     size="sm" 
