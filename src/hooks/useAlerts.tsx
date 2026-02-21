@@ -2,80 +2,84 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-export interface Alert {
+export interface ArticleAlert {
   id: string;
+  designation: string;
+  reference: string;
+  stock: number;
+  stock_min: number;
+  categorie: string;
+  marque: string;
+  prix_achat: number;
   type: "rupture" | "faible";
-  title: string;
-  description: string;
-  priority: "high" | "medium";
-  category: string;
-  date: string;
-  article: {
-    id: string;
-    designation: string;
-    reference: string;
-    stock: number;
-    stock_min: number;
-    categorie: string;
-    marque: string;
-    prix_achat: number;
-  };
 }
 
-export interface CategoryAlerts {
-  category: string;
-  alerts: Alert[];
-  totalAlerts: number;
-  highPriorityCount: number;
-  mediumPriorityCount: number;
+export interface SubcategoryAlert {
+  subcategory: string;
+  totalArticles: number;
+  ruptureCount: number;
+  faibleCount: number;
+  alertArticles: ArticleAlert[];
+  priority: "high" | "medium";
 }
 
 export const useAlerts = () => {
-  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [subcategoryAlerts, setSubcategoryAlerts] = useState<SubcategoryAlert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   const fetchAlerts = async () => {
     try {
       setIsLoading(true);
+      // Fetch ALL articles to know total per subcategory
       const { data: articles, error } = await supabase
         .from('articles')
         .select('*')
-        .order('stock', { ascending: true });
+        .order('categorie', { ascending: true });
 
       if (error) throw error;
 
-      const alertsData: Alert[] = [];
-      
+      // Group by subcategory
+      const grouped: Record<string, { total: number; alerts: ArticleAlert[] }> = {};
+
       articles?.forEach((article) => {
+        const cat = article.categorie || "Non classé";
+        if (!grouped[cat]) {
+          grouped[cat] = { total: 0, alerts: [] };
+        }
+        grouped[cat].total++;
+
         if (article.stock === 0) {
-          // Stock épuisé - alerte urgente
-          alertsData.push({
-            id: `rupture-${article.id}`,
+          grouped[cat].alerts.push({
+            ...article,
             type: "rupture",
-            title: article.designation,
-            description: `Stock épuisé - 0 unités (Réf: ${article.reference})`,
-            priority: "high",
-            category: article.categorie,
-            date: new Date().toISOString().split('T')[0],
-            article: article
           });
         } else if (article.stock <= article.stock_min) {
-          // Stock faible - alerte moyenne
-          alertsData.push({
-            id: `faible-${article.id}`,
+          grouped[cat].alerts.push({
+            ...article,
             type: "faible",
-            title: article.designation,
-            description: `Stock faible - ${article.stock} unités restantes (Min: ${article.stock_min})`,
-            priority: "medium",
-            category: article.categorie,
-            date: new Date().toISOString().split('T')[0],
-            article: article
           });
         }
       });
 
-      setAlerts(alertsData);
+      // Build subcategory alerts (only categories with at least one alert)
+      const result: SubcategoryAlert[] = Object.entries(grouped)
+        .filter(([, data]) => data.alerts.length > 0)
+        .map(([subcategory, data]) => {
+          const ruptureCount = data.alerts.filter(a => a.type === "rupture").length;
+          const faibleCount = data.alerts.filter(a => a.type === "faible").length;
+          return {
+            subcategory,
+            totalArticles: data.total,
+            ruptureCount,
+            faibleCount,
+            alertArticles: data.alerts,
+            priority: ruptureCount > 0 ? "high" as const : "medium" as const,
+          };
+        })
+        .sort((a, b) => b.ruptureCount - a.ruptureCount || b.alertArticles.length - a.alertArticles.length);
+
+      setSubcategoryAlerts(result);
     } catch (error: any) {
       console.error('Error fetching alerts:', error);
       toast({
@@ -92,30 +96,15 @@ export const useAlerts = () => {
     fetchAlerts();
   }, []);
 
-  const getHighPriorityAlerts = () => alerts.filter(alert => alert.priority === "high");
-  const getMediumPriorityAlerts = () => alerts.filter(alert => alert.priority === "medium");
-  
-  const getAlertsByCategory = (): CategoryAlerts[] => {
-    const categories = [...new Set(alerts.map(alert => alert.category))];
-    
-    return categories.map(category => {
-      const categoryAlerts = alerts.filter(alert => alert.category === category);
-      return {
-        category,
-        alerts: categoryAlerts,
-        totalAlerts: categoryAlerts.length,
-        highPriorityCount: categoryAlerts.filter(alert => alert.priority === "high").length,
-        mediumPriorityCount: categoryAlerts.filter(alert => alert.priority === "medium").length,
-      };
-    }).sort((a, b) => b.highPriorityCount - a.highPriorityCount || b.totalAlerts - a.totalAlerts);
-  };
+  const totalRupture = subcategoryAlerts.reduce((sum, s) => sum + s.ruptureCount, 0);
+  const totalFaible = subcategoryAlerts.reduce((sum, s) => sum + s.faibleCount, 0);
 
   return {
-    alerts,
-    highPriorityAlerts: getHighPriorityAlerts(),
-    mediumPriorityAlerts: getMediumPriorityAlerts(),
-    alertsByCategory: getAlertsByCategory(),
+    subcategoryAlerts,
+    totalRupture,
+    totalFaible,
+    totalAlerts: totalRupture + totalFaible,
     isLoading,
-    refetch: fetchAlerts
+    refetch: fetchAlerts,
   };
 };
