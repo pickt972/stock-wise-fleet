@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, ArrowRight, Check, Plus, Package, Tag, Layers, Hash,
-  MapPin, Truck, Battery, Wrench, Droplets, Disc, Zap, Cog, Car, CircleDot, Boxes, HelpCircle
+  MapPin, Truck, Battery, Wrench, Droplets, Disc, Zap, Cog, Car, CircleDot, Boxes, HelpCircle,
+  Edit, Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,6 +64,8 @@ export function ArticleCreationWizard({
   const [showCategorieDialog, setShowCategorieDialog] = useState(false);
   const [showSubcategorieDialog, setShowSubcategorieDialog] = useState(false);
   const [newSubcategorieName, setNewSubcategorieName] = useState("");
+  const [editingSubcategorie, setEditingSubcategorie] = useState<{ id: string; nom: string } | null>(null);
+  const [editSubcategorieName, setEditSubcategorieName] = useState("");
   const [showFournisseurDialog, setShowFournisseurDialog] = useState(false);
 
   // Form data
@@ -195,6 +198,39 @@ export function ArticleCreationWizard({
       setShowSubcategorieDialog(false);
     } catch (error: any) {
       toast({ title: "Erreur", description: error?.message || "Impossible de créer la sous-catégorie", variant: "destructive" });
+    }
+  };
+
+  const handleEditSubcategorie = async () => {
+    if (!editingSubcategorie || !editSubcategorieName.trim()) return;
+    try {
+      const { error } = await supabase
+        .from("categories")
+        .update({ nom: editSubcategorieName.trim() })
+        .eq("id", editingSubcategorie.id);
+      if (error) throw error;
+      toast({ title: "Sous-catégorie modifiée ✓" });
+      setAllCategoriesData(prev => prev.map(c => c.id === editingSubcategorie.id ? { ...c, nom: editSubcategorieName.trim() } : c));
+      if (designation === editingSubcategorie.nom) setDesignation(editSubcategorieName.trim());
+      setEditingSubcategorie(null);
+      setEditSubcategorieName("");
+    } catch (error: any) {
+      toast({ title: "Erreur", description: error?.message || "Impossible de modifier", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteSubcategorie = async (subId: string, subNom: string) => {
+    try {
+      const { error } = await supabase
+        .from("categories")
+        .update({ actif: false })
+        .eq("id", subId);
+      if (error) throw error;
+      toast({ title: "Sous-catégorie supprimée ✓" });
+      setAllCategoriesData(prev => prev.filter(c => c.id !== subId));
+      if (designation === subNom) setDesignation("");
+    } catch (error: any) {
+      toast({ title: "Erreur", description: error?.message || "Impossible de supprimer", variant: "destructive" });
     }
   };
 
@@ -430,26 +466,79 @@ export function ArticleCreationWizard({
               </Button>
             </div>
             {subcategories.length > 0 ? (
-              <Select
-                value={designation}
-                onValueChange={(val) => {
-                  setDesignation(val);
-                  setShowSuggestions(false);
-                }}
-              >
-                <SelectTrigger className="h-12 text-base">
-                  <SelectValue placeholder="Sélectionner une sous-catégorie..." />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border border-border shadow-medium z-[60] max-h-[200px]">
-                  {subcategories.map((sub) => (
-                    <SelectItem key={sub} value={sub}>
-                      {sub}
-                    </SelectItem>
+              <div className="space-y-1">
+                {allCategoriesData
+                  .filter(c => {
+                    const parent = allCategoriesData.find(p => p.nom === categorie && !p.parent_id);
+                    return parent && c.parent_id === parent.id;
+                  })
+                  .map((sub) => (
+                    <div
+                      key={sub.id}
+                      className={`flex items-center justify-between px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
+                        designation === sub.nom
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border hover:bg-muted/50"
+                      }`}
+                      onClick={() => { setDesignation(sub.nom); setShowSuggestions(false); }}
+                    >
+                      <span className="text-sm font-medium">{sub.nom}</span>
+                      <div className="flex gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingSubcategorie({ id: sub.id, nom: sub.nom });
+                            setEditSubcategorieName(sub.nom);
+                          }}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteSubcategorie(sub.id, sub.nom);
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
                   ))}
-                </SelectContent>
-              </Select>
+              </div>
             ) : (
               <p className="text-sm text-muted-foreground italic">Aucune sous-catégorie — cliquez « Nouvelle » pour en créer</p>
+            )}
+
+            {/* Inline edit subcategory */}
+            {editingSubcategorie && (
+              <div className="border border-border rounded-lg p-3 space-y-3 bg-card">
+                <Label>Modifier la sous-catégorie</Label>
+                <Input
+                  value={editSubcategorieName}
+                  onChange={(e) => setEditSubcategorieName(e.target.value)}
+                  className="h-10"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") { e.preventDefault(); handleEditSubcategorie(); }
+                  }}
+                />
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" size="sm" onClick={() => { setEditingSubcategorie(null); setEditSubcategorieName(""); }}>
+                    Annuler
+                  </Button>
+                  <Button size="sm" onClick={handleEditSubcategorie} disabled={!editSubcategorieName.trim()}>
+                    Modifier
+                  </Button>
+                </div>
+              </div>
             )}
 
             {/* Inline create subcategory */}
