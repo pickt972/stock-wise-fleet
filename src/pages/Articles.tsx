@@ -321,45 +321,50 @@ export default function Articles() {
                               <Badge variant="outline" className="text-xs">{sub.articles.length}</Badge>
                             </div>
                           )}
-                          <div className="space-y-1">
+                          <div className="divide-y divide-border ml-2 rounded-md border border-border overflow-hidden bg-card">
                             {sub.articles.map((article) => {
                               const status = getStockStatus(article.stock, article.stock_min);
                               return (
-                                <Card
+                                <div
                                   key={article.id}
-                                  className="p-3 hover:bg-accent/50 transition-colors border border-border ml-2"
+                                  className="flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-accent/40 transition-colors cursor-pointer group"
+                                  onClick={() => navigate(`/articles/${article.id}`)}
                                 >
-                                  <div className="flex items-center justify-between gap-4">
-                                    <div 
-                                      className="flex-1 min-w-0 cursor-pointer"
-                                      onClick={() => navigate(`/articles/${article.id}`)}
-                                    >
-                                      <div className="flex items-center gap-2 flex-wrap">
-                                        <h3 className="font-medium text-foreground truncate text-sm">
-                                          {article.designation}
-                                        </h3>
-                                        <Badge variant={status.variant} className="flex-shrink-0 text-xs">
-                                          Qty: {article.stock}
-                                        </Badge>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className={`h-2 w-2 rounded-full flex-shrink-0 ${
+                                        status.filter === 'rupture' ? 'bg-destructive' : 
+                                        status.filter === 'stock-bas' ? 'bg-warning' : 'bg-success'
+                                      }`} />
+                                      <span className="font-medium text-sm text-foreground truncate">
+                                        {article.designation}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground pl-4">
+                                      <span>{article.reference}</span>
+                                      <span>{article.emplacement || '—'}</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-3 flex-shrink-0">
+                                    <div className="text-right">
+                                      <div className={`text-sm font-semibold tabular-nums ${
+                                        status.filter === 'rupture' ? 'text-destructive' : 
+                                        status.filter === 'stock-bas' ? 'text-warning' : 'text-foreground'
+                                      }`}>
+                                        {article.stock}
                                       </div>
-                                      <div className="flex items-center gap-4 mt-0.5 text-xs text-muted-foreground flex-wrap">
-                                        <span>{article.emplacement || 'Sans emplacement'}</span>
-                                        <span>Prix: {article.prix_achat.toFixed(2)}€</span>
-                                        {status.label !== "OK" && (
-                                          <span className="text-destructive">⚠️ {status.label}</span>
-                                        )}
-                                      </div>
+                                      <div className="text-xs text-muted-foreground">{article.prix_achat.toFixed(2)}€</div>
                                     </div>
                                     {isAdmin() && (
-                                      <div className="flex items-center gap-1 flex-shrink-0">
-                                        <Button variant="ghost" size="sm" onClick={() => setEditingArticle(article)}>
-                                          <Edit className="h-4 w-4" />
+                                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setEditingArticle(article)}>
+                                          <Edit className="h-3.5 w-3.5" />
                                         </Button>
                                         <ArticleDeleteDialog article={article} onArticleDeleted={fetchArticles} />
                                       </div>
                                     )}
                                   </div>
-                                </Card>
+                                </div>
                               );
                             })}
                           </div>
