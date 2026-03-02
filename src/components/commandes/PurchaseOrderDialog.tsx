@@ -85,13 +85,23 @@ export const PurchaseOrderDialog = ({ isOpen, onClose, onEmailSent, commande, it
     }
   }, [isOpen]);
 
+  const escapeHtml = (str: string): string => {
+    if (!str) return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  };
+
   const generatePurchaseOrderHTML = () => {
     return `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Bon de Commande ${commande.numero_commande}</title>
+        <title>Bon de Commande ${escapeHtml(commande.numero_commande)}</title>
         <style>
           body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
           .header { border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
@@ -109,14 +119,14 @@ export const PurchaseOrderDialog = ({ isOpen, onClose, onEmailSent, commande, it
         <div class="header">
           <div class="title">BON DE COMMANDE</div>
           <div style="margin-top: 10px;">
-            <span class="info-label">N° :</span> ${commande.numero_commande}
+            <span class="info-label">N° :</span> ${escapeHtml(commande.numero_commande)}
           </div>
         </div>
         
         <div class="info-section">
-          <div><span class="info-label">Fournisseur :</span> ${commande.fournisseur}</div>
+          <div><span class="info-label">Fournisseur :</span> ${escapeHtml(commande.fournisseur)}</div>
           <div><span class="info-label">Date :</span> ${new Date(commande.date_creation).toLocaleDateString('fr-FR')}</div>
-          <div><span class="info-label">Expéditeur :</span> ${senderName} (${senderEmail})</div>
+          <div><span class="info-label">Expéditeur :</span> ${escapeHtml(senderName)} (${escapeHtml(senderEmail)})</div>
         </div>
         
         <table>
@@ -132,26 +142,26 @@ export const PurchaseOrderDialog = ({ isOpen, onClose, onEmailSent, commande, it
           <tbody>
             ${items.map(item => `
               <tr>
-                <td>${item.designation}</td>
-                <td>${item.reference || '-'}</td>
-                <td>${item.quantite_commandee}</td>
-                <td>${item.prix_unitaire.toFixed(2)}</td>
-                <td>${item.total_ligne.toFixed(2)}</td>
+                <td>${escapeHtml(item.designation)}</td>
+                <td>${escapeHtml(item.reference || '-')}</td>
+                <td>${Number(item.quantite_commandee)}</td>
+                <td>${Number(item.prix_unitaire).toFixed(2)}</td>
+                <td>${Number(item.total_ligne).toFixed(2)}</td>
               </tr>
             `).join('')}
           </tbody>
           <tfoot>
             <tr class="total-row">
               <td colspan="4">Total HT</td>
-              <td>${commande.total_ht.toFixed(2)} €</td>
+              <td>${Number(commande.total_ht).toFixed(2)} €</td>
             </tr>
             <tr class="total-row">
-              <td colspan="4">TVA (${commande.tva_taux}%)</td>
-              <td>${(commande.total_ttc - commande.total_ht).toFixed(2)} €</td>
+              <td colspan="4">TVA (${Number(commande.tva_taux)}%)</td>
+              <td>${(Number(commande.total_ttc) - Number(commande.total_ht)).toFixed(2)} €</td>
             </tr>
             <tr class="total-row">
               <td colspan="4">Total TTC</td>
-              <td>${commande.total_ttc.toFixed(2)} €</td>
+              <td>${Number(commande.total_ttc).toFixed(2)} €</td>
             </tr>
           </tfoot>
         </table>
@@ -159,13 +169,13 @@ export const PurchaseOrderDialog = ({ isOpen, onClose, onEmailSent, commande, it
         ${commande.notes ? `
           <div class="info-section">
             <div class="info-label">Notes :</div>
-            <div>${commande.notes}</div>
+            <div>${escapeHtml(commande.notes)}</div>
           </div>
         ` : ''}
         
         <div class="footer">
           <p>Merci de bien vouloir confirmer la réception de cette commande.</p>
-          <p>Cordialement,<br>${senderName}</p>
+          <p>Cordialement,<br>${escapeHtml(senderName)}</p>
         </div>
       </body>
       </html>
