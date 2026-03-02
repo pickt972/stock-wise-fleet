@@ -17,3 +17,21 @@ verify_jwt = false
 
 [functions.get-google-client-id]
 verify_jwt = false
+
+[functions.send-purchase-order]
+verify_jwt = false
+
+[functions.send-notification-email]
+verify_jwt = false
+
+[functions.admin-create-user]
+verify_jwt = false
+
+[functions.admin-delete-user]
+verify_jwt = false
+
+[functions.admin-reset-password]
+verify_jwt = false
+
+[functions.list-available-users]
+verify_jwt = false

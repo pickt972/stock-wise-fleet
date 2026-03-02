@@ -74,6 +74,16 @@ export const PurchaseOrderPreview = ({
     }
   }, [user, isOpen]);
 
+  const escapeHtml = (str: string): string => {
+    if (!str) return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  };
+
   const generatePurchaseOrderHTML = () => {
     const companyInfo = companySettings || {
       company_name: "Votre Entreprise",
@@ -88,7 +98,7 @@ export const PurchaseOrderPreview = ({
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Bon de Commande ${commande.numero_commande}</title>
+        <title>Bon de Commande ${escapeHtml(commande.numero_commande)}</title>
         <style>
           body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #333; }
           .header { display: flex; justify-content: space-between; align-items: start; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
@@ -112,27 +122,27 @@ export const PurchaseOrderPreview = ({
       <body>
         <div class="header">
           <div class="company-info">
-            ${companyInfo.company_logo_url ? `<img src="${companyInfo.company_logo_url}" alt="Logo" style="max-height: 60px; margin-bottom: 10px;">` : ''}
-            <div class="company-name">${companyInfo.company_name}</div>
+            ${companyInfo.company_logo_url ? `<img src="${escapeHtml(companyInfo.company_logo_url)}" alt="Logo" style="max-height: 60px; margin-bottom: 10px;">` : ''}
+            <div class="company-name">${escapeHtml(companyInfo.company_name)}</div>
             <div class="company-details">
-              ${companyInfo.company_address.replace(/\n/g, '<br>')}<br>
-              SIRET: ${companyInfo.company_siret}<br>
-              Tél: ${companyInfo.company_phone}<br>
-              Email: ${companyInfo.company_email}
+              ${escapeHtml(companyInfo.company_address).replace(/\n/g, '<br>')}<br>
+              SIRET: ${escapeHtml(companyInfo.company_siret)}<br>
+              Tél: ${escapeHtml(companyInfo.company_phone)}<br>
+              Email: ${escapeHtml(companyInfo.company_email)}
             </div>
           </div>
           <div>
             <div class="title">BON DE COMMANDE</div>
             <div style="margin-top: 10px; text-align: right;">
-              <span class="info-label">N° :</span> ${commande.numero_commande}
+              <span class="info-label">N° :</span> ${escapeHtml(commande.numero_commande)}
             </div>
           </div>
         </div>
         
         <div class="supplier-info">
           <div class="info-label">Fournisseur :</div>
-          <div style="margin-top: 5px;">${commande.fournisseur}</div>
-          ${commande.email_fournisseur ? `<div>Email: ${commande.email_fournisseur}</div>` : ''}
+          <div style="margin-top: 5px;">${escapeHtml(commande.fournisseur)}</div>
+          ${commande.email_fournisseur ? `<div>Email: ${escapeHtml(commande.email_fournisseur)}</div>` : ''}
         </div>
         
         <div class="order-info">
@@ -152,26 +162,26 @@ export const PurchaseOrderPreview = ({
           <tbody>
             ${items.map(item => `
               <tr>
-                <td>${item.designation}</td>
-                <td>${item.reference || '-'}</td>
-                <td class="text-center">${item.quantite_commandee}</td>
-                <td class="text-right">${item.prix_unitaire.toFixed(2)}</td>
-                <td class="text-right">${item.total_ligne.toFixed(2)}</td>
+                <td>${escapeHtml(item.designation)}</td>
+                <td>${escapeHtml(item.reference || '-')}</td>
+                <td class="text-center">${Number(item.quantite_commandee)}</td>
+                <td class="text-right">${Number(item.prix_unitaire).toFixed(2)}</td>
+                <td class="text-right">${Number(item.total_ligne).toFixed(2)}</td>
               </tr>
             `).join('')}
           </tbody>
           <tfoot>
             <tr class="total-row">
               <td colspan="4" class="text-right">Total HT</td>
-              <td class="text-right">${commande.total_ht.toFixed(2)} €</td>
+              <td class="text-right">${Number(commande.total_ht).toFixed(2)} €</td>
             </tr>
             <tr class="total-row">
-              <td colspan="4" class="text-right">TVA (${commande.tva_taux}%)</td>
-              <td class="text-right">${(commande.total_ttc - commande.total_ht).toFixed(2)} €</td>
+              <td colspan="4" class="text-right">TVA (${Number(commande.tva_taux)}%)</td>
+              <td class="text-right">${(Number(commande.total_ttc) - Number(commande.total_ht)).toFixed(2)} €</td>
             </tr>
             <tr class="total-row">
               <td colspan="4" class="text-right">Total TTC</td>
-              <td class="text-right">${commande.total_ttc.toFixed(2)} €</td>
+              <td class="text-right">${Number(commande.total_ttc).toFixed(2)} €</td>
             </tr>
           </tfoot>
         </table>
@@ -179,13 +189,13 @@ export const PurchaseOrderPreview = ({
         ${commande.notes ? `
           <div class="info-section">
             <div class="info-label">Notes :</div>
-            <div style="margin-top: 5px;">${commande.notes}</div>
+            <div style="margin-top: 5px;">${escapeHtml(commande.notes)}</div>
           </div>
         ` : ''}
         
         <div class="footer">
           <p>Merci de bien vouloir confirmer la réception de cette commande et nous indiquer le délai de livraison.</p>
-          <p>Cordialement,<br>${companyInfo.company_name}</p>
+          <p>Cordialement,<br>${escapeHtml(companyInfo.company_name)}</p>
         </div>
       </body>
       </html>
