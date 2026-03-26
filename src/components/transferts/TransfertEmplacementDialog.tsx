@@ -38,7 +38,7 @@ interface TransfertEmplacementDialogProps {
 
 export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedArticleId, open, onOpenChange }: TransfertEmplacementDialogProps) {
   const [internalOpen, setInternalOpen] = useState(!!preselectedArticleId);
-  const isDialogOpen = open !== undefined ? open : internalOpen;
+  const [articlePopoverOpen, setArticlePopoverOpen] = useState(false);
   const handleOpenChange = (value: boolean) => {
     if (onOpenChange) onOpenChange(value);
     else setInternalOpen(value);
