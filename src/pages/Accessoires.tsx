@@ -400,12 +400,37 @@ export default function Accessoires() {
             </div>
             <div className="space-y-2">
               <Label>Type *</Label>
-              <Select value={formType} onValueChange={setFormType}>
-                <SelectTrigger><SelectValue placeholder="Choisir un type" /></SelectTrigger>
-                <SelectContent>
-                  {ACCESSOIRE_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              {showNewType ? (
+                <div className="flex gap-2">
+                  <Input
+                    value={newTypeLabel}
+                    onChange={(e) => setNewTypeLabel(e.target.value)}
+                    placeholder="Nom du nouveau type"
+                    autoFocus
+                  />
+                  <Button size="sm" onClick={() => {
+                    if (!newTypeLabel.trim()) return;
+                    const value = newTypeLabel.trim().toLowerCase().replace(/\s+/g, "_");
+                    setCustomTypes((prev) => [...prev, { value, label: newTypeLabel.trim() }]);
+                    setFormType(value);
+                    setNewTypeLabel("");
+                    setShowNewType(false);
+                  }}>OK</Button>
+                  <Button size="sm" variant="outline" onClick={() => { setShowNewType(false); setNewTypeLabel(""); }}>✕</Button>
+                </div>
+              ) : (
+                <Select value={formType} onValueChange={(v) => { if (v === "__new__") { setShowNewType(true); } else { setFormType(v); } }}>
+                  <SelectTrigger><SelectValue placeholder="Choisir un type" /></SelectTrigger>
+                  <SelectContent>
+                    {ACCESSOIRE_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                    {isAdmin() && (
+                      <SelectItem value="__new__">
+                        <span className="flex items-center gap-1 text-primary"><PlusCircle className="h-3 w-3" /> Créer un nouveau type</span>
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="space-y-2">
               <Label>État</Label>
