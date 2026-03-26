@@ -230,7 +230,7 @@ export default function Accessoires() {
     <DashboardLayout>
       <main className="p-4 md:p-6 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <PageHeader title="Accessoires" description="Gestion des sièges bébé, rehausseurs et accessoires" />
+          <PageHeader title="Accessoires" />
           <Button onClick={() => { resetForm(); setShowCreate(true); }}>
             <Plus className="h-4 w-4 mr-2" /> Nouvel accessoire
           </Button>
