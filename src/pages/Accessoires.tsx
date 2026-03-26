@@ -108,7 +108,16 @@ export default function Accessoires() {
       .select("*")
       .eq("actif", true)
       .order("nom");
-    if (!error) setAccessoires(data || []);
+    if (!error) {
+      setAccessoires(data || []);
+      // Discover custom types from existing data
+      const existingTypes = new Set((data || []).map((a) => a.type));
+      const defaultValues = new Set(DEFAULT_TYPES.map((t) => t.value));
+      const newCustom = Array.from(existingTypes)
+        .filter((t) => !defaultValues.has(t))
+        .map((t) => ({ value: t, label: t.charAt(0).toUpperCase() + t.slice(1).replace(/_/g, " ") }));
+      setCustomTypes(newCustom);
+    }
     setLoading(false);
   };
 
