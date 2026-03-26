@@ -1,10 +1,13 @@
-import { useState, useEffect } from "react";
-import { ArrowLeftRight, Plus } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { ArrowLeftRight, Plus, Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,6 +38,7 @@ interface TransfertEmplacementDialogProps {
 
 export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedArticleId, open, onOpenChange }: TransfertEmplacementDialogProps) {
   const [internalOpen, setInternalOpen] = useState(!!preselectedArticleId);
+  const [articlePopoverOpen, setArticlePopoverOpen] = useState(false);
   const isDialogOpen = open !== undefined ? open : internalOpen;
   const handleOpenChange = (value: boolean) => {
     if (onOpenChange) onOpenChange(value);
@@ -287,23 +291,51 @@ export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedAr
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="article">Article à transférer *</Label>
-            <Select
-              value={formData.articleId}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, articleId: value }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un article" />
-              </SelectTrigger>
-              <SelectContent>
-                {articles
-                  .filter(article => article.stock > 0) // Ne montrer que les articles avec du stock
-                  .map((article) => (
-                  <SelectItem key={article.id} value={article.id}>
-                    {article.reference} - {article.designation} (Stock: {article.stock})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={articlePopoverOpen} onOpenChange={setArticlePopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={articlePopoverOpen}
+                  className="w-full justify-between font-normal"
+                >
+                  {selectedArticle
+                    ? `${selectedArticle.reference} - ${selectedArticle.designation}`
+                    : "Rechercher un article..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Tapez pour rechercher..." />
+                  <CommandList>
+                    <CommandEmpty>Aucun article trouvé.</CommandEmpty>
+                    <CommandGroup>
+                      {articles
+                        .filter(article => article.stock > 0)
+                        .map((article) => (
+                          <CommandItem
+                            key={article.id}
+                            value={`${article.reference} ${article.designation} ${article.marque}`}
+                            onSelect={() => {
+                              setFormData(prev => ({ ...prev, articleId: article.id }));
+                              setArticlePopoverOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                formData.articleId === article.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {article.reference} - {article.designation} (Stock: {article.stock})
+                          </CommandItem>
+                        ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
             {selectedArticle && (
               <div className="text-sm text-muted-foreground">
                 <p>Emplacement actuel: {getEmplacementNom(selectedArticle.emplacement_id)}</p>
