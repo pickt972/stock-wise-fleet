@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import DashboardLayout from "./DashboardLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,14 +10,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, ArrowRightLeft, History, Search, Baby, Filter, Trash2, Edit } from "lucide-react";
+import { Plus, ArrowRightLeft, History, Search, Baby, Filter, Trash2, Edit, PlusCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
-const ACCESSOIRE_TYPES = [
+const DEFAULT_TYPES = [
   { value: "siege_bebe", label: "Siège bébé" },
   { value: "rehausseur", label: "Rehausseur" },
   { value: "rehausseur_bas", label: "Rehausseur bas" },
