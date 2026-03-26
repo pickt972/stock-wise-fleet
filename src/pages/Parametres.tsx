@@ -1,17 +1,25 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "./DashboardLayout";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 import { 
   Users, Truck, MapPin, Building2, Tags, Mail, Building, 
-  Shield, BarChart3, History, KeyRound, ClipboardList
+  Shield, BarChart3, History, KeyRound, ClipboardList, Bell, Palette, Baby
 } from "lucide-react";
 import { MailSettingsForm } from "@/components/mail/MailSettingsForm";
 import { CompanySettingsForm } from "@/components/company/CompanySettingsForm";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
+import { ColorPreferencesSettings } from "@/components/settings/ColorPreferencesSettings";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 interface SettingsCardProps {
   icon: React.ReactNode;
@@ -42,12 +50,152 @@ function SettingsCard({ icon, title, description, onClick, index = 0 }: Settings
   );
 }
 
+function NotificationSettingsForm() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [settings, setSettings] = useState({
+    email_enabled: true,
+    notify_on_low_stock: true,
+    notify_on_critical_stock: true,
+    notify_on_order_sent: false,
+    notify_on_order_received: true,
+    notify_on_inventory_completed: false,
+    low_stock_threshold: 5,
+    critical_stock_threshold: 2,
+    notification_email: "",
+  });
+
+  useEffect(() => {
+    if (!user) return;
+    const fetch = async () => {
+      const { data } = await supabase
+        .from("notification_settings")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (data) {
+        setSettings({
+          email_enabled: data.email_enabled ?? true,
+          notify_on_low_stock: data.notify_on_low_stock ?? true,
+          notify_on_critical_stock: data.notify_on_critical_stock ?? true,
+          notify_on_order_sent: data.notify_on_order_sent ?? false,
+          notify_on_order_received: data.notify_on_order_received ?? true,
+          notify_on_inventory_completed: data.notify_on_inventory_completed ?? false,
+          low_stock_threshold: data.low_stock_threshold ?? 5,
+          critical_stock_threshold: data.critical_stock_threshold ?? 2,
+          notification_email: data.notification_email ?? "",
+        });
+      }
+      setLoading(false);
+    };
+    fetch();
+  }, [user]);
+
+  const handleSave = async () => {
+    if (!user) return;
+    setSaving(true);
+    const { data: existing } = await supabase
+      .from("notification_settings")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const payload = { ...settings, user_id: user.id, updated_at: new Date().toISOString() };
+    let error;
+    if (existing) {
+      ({ error } = await supabase.from("notification_settings").update(payload).eq("id", existing.id));
+    } else {
+      ({ error } = await supabase.from("notification_settings").insert(payload));
+    }
+    setSaving(false);
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Paramètres sauvegardés ✓" });
+    }
+  };
+
+  if (loading) return <div className="text-center py-4 text-muted-foreground">Chargement...</div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label className="text-sm font-medium">Notifications par email</Label>
+            <p className="text-xs text-muted-foreground">Recevoir les alertes par email</p>
+          </div>
+          <Switch checked={settings.email_enabled} onCheckedChange={v => setSettings(s => ({ ...s, email_enabled: v }))} />
+        </div>
+        {settings.email_enabled && (
+          <div className="space-y-2">
+            <Label>Email de notification</Label>
+            <Input value={settings.notification_email} onChange={e => setSettings(s => ({ ...s, notification_email: e.target.value }))} placeholder="email@example.com" />
+          </div>
+        )}
+      </div>
+
+      <Separator />
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold">Types de notification</h3>
+        {[
+          { key: "notify_on_low_stock", label: "Stock faible", desc: "Quand un article passe sous le seuil minimum" },
+          { key: "notify_on_critical_stock", label: "Stock critique", desc: "Quand un article est presque en rupture" },
+          { key: "notify_on_order_sent", label: "Commande envoyée", desc: "Confirmation d'envoi de bon de commande" },
+          { key: "notify_on_order_received", label: "Commande reçue", desc: "Quand une commande est réceptionnée" },
+          { key: "notify_on_inventory_completed", label: "Inventaire terminé", desc: "Quand un inventaire est clôturé" },
+        ].map(item => (
+          <div key={item.key} className="flex items-center justify-between py-1">
+            <div>
+              <Label className="text-sm">{item.label}</Label>
+              <p className="text-xs text-muted-foreground">{item.desc}</p>
+            </div>
+            <Switch
+              checked={(settings as any)[item.key]}
+              onCheckedChange={v => setSettings(s => ({ ...s, [item.key]: v }))}
+            />
+          </div>
+        ))}
+      </div>
+
+      <Separator />
+
+      <div className="space-y-4">
+        <h3 className="text-sm font-semibold">Seuils d'alerte</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Seuil stock faible</Label>
+            <Input type="number" min={1} value={settings.low_stock_threshold}
+              onChange={e => setSettings(s => ({ ...s, low_stock_threshold: parseInt(e.target.value) || 5 }))} />
+            <p className="text-xs text-muted-foreground">Alerte quand stock ≤ cette valeur</p>
+          </div>
+          <div className="space-y-2">
+            <Label>Seuil stock critique</Label>
+            <Input type="number" min={0} value={settings.critical_stock_threshold}
+              onChange={e => setSettings(s => ({ ...s, critical_stock_threshold: parseInt(e.target.value) || 2 }))} />
+            <p className="text-xs text-muted-foreground">Alerte critique quand stock ≤ cette valeur</p>
+          </div>
+        </div>
+      </div>
+
+      <Button onClick={handleSave} disabled={saving} className="w-full">
+        {saving ? "Enregistrement..." : "Enregistrer les paramètres"}
+      </Button>
+    </div>
+  );
+}
+
 export default function Parametres() {
   const { permissions, isMagasinier } = useRoleAccess();
   const navigate = useNavigate();
   const [showCompanySettings, setShowCompanySettings] = useState(false);
   const [showMailSettings, setShowMailSettings] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showColors, setShowColors] = useState(false);
 
   useEffect(() => {
     document.title = "Paramètres | StockAuto";
@@ -86,6 +234,13 @@ export default function Parametres() {
               description="Modifier mon mot de passe"
               onClick={() => setShowPassword(true)}
             />
+            <SettingsCard
+              index={1}
+              icon={<Palette className="h-5 w-5" />}
+              title="Couleurs"
+              description="Personnaliser les couleurs"
+              onClick={() => setShowColors(true)}
+            />
           </div>
         </section>
 
@@ -95,7 +250,7 @@ export default function Parametres() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {permissions.manageUsers && (
               <SettingsCard
-                index={1}
+                index={2}
                 icon={<Users className="h-5 w-5" />}
                 title="Utilisateurs"
                 description="Gérer les comptes et rôles"
@@ -104,7 +259,7 @@ export default function Parametres() {
             )}
             {permissions.manageSuppliers && (
               <SettingsCard
-                index={2}
+                index={3}
                 icon={<Building2 className="h-5 w-5" />}
                 title="Fournisseurs"
                 description="Gérer les fournisseurs"
@@ -113,7 +268,7 @@ export default function Parametres() {
             )}
             {permissions.manageCategories && (
               <SettingsCard
-                index={3}
+                index={4}
                 icon={<Tags className="h-5 w-5" />}
                 title="Catégories"
                 description="Catégories d'articles"
@@ -122,7 +277,7 @@ export default function Parametres() {
             )}
             {permissions.manageVehicles && (
               <SettingsCard
-                index={4}
+                index={5}
                 icon={<Truck className="h-5 w-5" />}
                 title="Véhicules"
                 description="Parc de véhicules"
@@ -130,11 +285,18 @@ export default function Parametres() {
               />
             )}
             <SettingsCard
-              index={5}
+              index={6}
               icon={<MapPin className="h-5 w-5" />}
               title="Emplacements"
               description="Zones de stockage"
               onClick={() => navigate('/emplacements')}
+            />
+            <SettingsCard
+              index={7}
+              icon={<Baby className="h-5 w-5" />}
+              title="Accessoires"
+              description="Sièges bébé, rehausseurs..."
+              onClick={() => navigate('/accessoires')}
             />
           </div>
         </section>
@@ -144,18 +306,25 @@ export default function Parametres() {
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Configuration</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <SettingsCard
-              index={6}
+              index={8}
               icon={<Building className="h-5 w-5" />}
               title="Entreprise"
               description="Infos pour les bons de commande"
               onClick={() => setShowCompanySettings(true)}
             />
             <SettingsCard
-              index={7}
+              index={9}
               icon={<Mail className="h-5 w-5" />}
               title="Messagerie"
               description="Configuration email SMTP"
               onClick={() => setShowMailSettings(true)}
+            />
+            <SettingsCard
+              index={10}
+              icon={<Bell className="h-5 w-5" />}
+              title="Notifications"
+              description="Alertes et seuils de stock"
+              onClick={() => setShowNotifications(true)}
             />
           </div>
         </section>
@@ -166,28 +335,28 @@ export default function Parametres() {
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Administration</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <SettingsCard
-                index={8}
+                index={11}
                 icon={<Shield className="h-5 w-5" />}
                 title="Rôles & Permissions"
                 description="Matrice des droits"
                 onClick={() => navigate('/roles-permissions')}
               />
               <SettingsCard
-                index={9}
+                index={12}
                 icon={<BarChart3 className="h-5 w-5" />}
                 title="Rapports"
                 description="Rapports et statistiques"
                 onClick={() => navigate('/rapports')}
               />
               <SettingsCard
-                index={10}
+                index={13}
                 icon={<ClipboardList className="h-5 w-5" />}
                 title="Journal d'audit"
                 description="Traçabilité des actions"
                 onClick={() => navigate('/journal-audit')}
               />
               <SettingsCard
-                index={11}
+                index={14}
                 icon={<History className="h-5 w-5" />}
                 title="Historique articles"
                 description="Suivi détaillé par article"
@@ -222,6 +391,24 @@ export default function Parametres() {
             <DialogTitle>Modifier le mot de passe</DialogTitle>
           </DialogHeader>
           <ChangePasswordForm />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showNotifications} onOpenChange={setShowNotifications}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Paramètres de notification</DialogTitle>
+          </DialogHeader>
+          <NotificationSettingsForm />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showColors} onOpenChange={setShowColors}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Personnalisation des couleurs</DialogTitle>
+          </DialogHeader>
+          <ColorPreferencesSettings />
         </DialogContent>
       </Dialog>
     </DashboardLayout>
