@@ -65,6 +65,19 @@ export default function Accessoires() {
   const [filterSite, setFilterSite] = useState<string>("all");
   const [filterType, setFilterType] = useState<string>("all");
 
+  // Dynamic types: default + custom from DB
+  const [customTypes, setCustomTypes] = useState<{ value: string; label: string }[]>([]);
+  const [showNewType, setShowNewType] = useState(false);
+  const [newTypeLabel, setNewTypeLabel] = useState("");
+
+  const ACCESSOIRE_TYPES = useMemo(() => {
+    const all = [...DEFAULT_TYPES];
+    customTypes.forEach((ct) => {
+      if (!all.find((t) => t.value === ct.value)) all.push(ct);
+    });
+    return all;
+  }, [customTypes]);
+
   // Dialogs
   const [showCreate, setShowCreate] = useState(false);
   const [showTransfer, setShowTransfer] = useState(false);
