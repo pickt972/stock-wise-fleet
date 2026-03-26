@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
   Accordion,
   AccordionContent,
@@ -268,17 +269,17 @@ export default function Articles() {
             </div>
 
             {/* Filtre catégorie */}
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full sm:w-[200px]">
-                <SelectValue placeholder="Catégorie" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes catégories</SelectItem>
-                {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              options={[
+                { value: "all", label: "Toutes catégories" },
+                ...categories.map((cat) => ({ value: cat, label: cat })),
+              ]}
+              value={categoryFilter}
+              onValueChange={setCategoryFilter}
+              placeholder="Catégorie"
+              searchPlaceholder="Rechercher une catégorie..."
+              triggerClassName="w-full sm:w-[200px]"
+            />
 
             {/* Tri */}
             <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>

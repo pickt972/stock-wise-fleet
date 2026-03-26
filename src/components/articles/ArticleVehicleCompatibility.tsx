@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Car, Plus, X } from "lucide-react";
@@ -143,20 +143,18 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
         <div className="space-y-3">
           <div>
             <Label htmlFor="vehicule-select">Ajouter un véhicule compatible</Label>
-            <Select value={selectedVehiculeId} onValueChange={setSelectedVehiculeId}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Sélectionner un véhicule" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableVehicules.map((vehicule) => (
-                  <SelectItem key={vehicule.id} value={vehicule.id}>
-                    {vehicule.marque} {vehicule.modele} 
-                    {vehicule.motorisation && ` (${vehicule.motorisation})`} 
-                    - {vehicule.immatriculation}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              id="vehicule-select"
+              options={availableVehicules.map((v) => ({
+                value: v.id,
+                label: `${v.marque} ${v.modele}${v.motorisation ? ` (${v.motorisation})` : ""} - ${v.immatriculation}`,
+              }))}
+              value={selectedVehiculeId}
+              onValueChange={setSelectedVehiculeId}
+              placeholder="Sélectionner un véhicule"
+              searchPlaceholder="Rechercher un véhicule..."
+              emptyMessage="Aucun véhicule disponible."
+            />
           </div>
 
           <div>
