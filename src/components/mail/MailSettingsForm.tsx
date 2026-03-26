@@ -79,7 +79,7 @@ export function MailSettingsForm() {
     try {
       const { data, error } = await supabase
         .from("mail_settings")
-        .select("*")
+        .select("id, name, smtp_host, smtp_port, smtp_username, use_tls, is_active, auth_type, imap_host, imap_port, imap_username, created_at, updated_at, user_id")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
