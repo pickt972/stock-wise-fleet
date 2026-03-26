@@ -35,6 +35,11 @@ interface Fournisseur {
   nom: string;
 }
 
+interface Emplacement {
+  id: string;
+  nom: string;
+}
+
 interface EntryItem {
   articleId: string;
   quantity: string;
@@ -58,6 +63,7 @@ export function NewEntryForm({ open, onOpenChange, onSuccess }: NewEntryFormProp
   const { user } = useAuth();
   const [articles, setArticles] = useState<Article[]>([]);
   const [fournisseurs, setFournisseurs] = useState<Fournisseur[]>([]);
+  const [emplacements, setEmplacements] = useState<Emplacement[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -83,16 +89,19 @@ export function NewEntryForm({ open, onOpenChange, onSuccess }: NewEntryFormProp
 
   const fetchData = async () => {
     try {
-      const [articlesRes, fournisseursRes] = await Promise.all([
+      const [articlesRes, fournisseursRes, emplacementsRes] = await Promise.all([
         supabase.from("articles").select("id, reference, designation").order("designation"),
         supabase.from("fournisseurs").select("id, nom").eq("actif", true).order("nom"),
+        supabase.from("emplacements").select("id, nom").eq("actif", true).order("nom"),
       ]);
 
       if (articlesRes.error) throw articlesRes.error;
       if (fournisseursRes.error) throw fournisseursRes.error;
+      if (emplacementsRes.error) throw emplacementsRes.error;
 
       setArticles(articlesRes.data || []);
       setFournisseurs(fournisseursRes.data || []);
+      setEmplacements(emplacementsRes.data || []);
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -324,12 +333,19 @@ export function NewEntryForm({ open, onOpenChange, onSuccess }: NewEntryFormProp
               </div>
               <div className="sm:col-span-2">
                 <Label htmlFor="location">Emplacement de stockage</Label>
-                <Input
-                  id="location"
+                <Select
                   value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  placeholder="Entrepôt A - Allée 3"
-                />
+                  onValueChange={(value) => setFormData({ ...formData, location: value })}
+                >
+                  <SelectTrigger id="location">
+                    <SelectValue placeholder="Sélectionner un emplacement..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {emplacements.map((e) => (
+                      <SelectItem key={e.id} value={e.nom}>{e.nom}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
