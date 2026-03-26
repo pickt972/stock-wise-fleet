@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import DashboardLayout from "./DashboardLayout";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,14 +10,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, ArrowRightLeft, History, Search, Baby, Filter, Trash2, Edit } from "lucide-react";
+import { Plus, ArrowRightLeft, History, Search, Baby, Filter, Trash2, Edit, PlusCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
-const ACCESSOIRE_TYPES = [
+const DEFAULT_TYPES = [
   { value: "siege_bebe", label: "Siège bébé" },
   { value: "rehausseur", label: "Rehausseur" },
   { value: "rehausseur_bas", label: "Rehausseur bas" },
@@ -65,6 +65,19 @@ export default function Accessoires() {
   const [filterSite, setFilterSite] = useState<string>("all");
   const [filterType, setFilterType] = useState<string>("all");
 
+  // Dynamic types: default + custom from DB
+  const [customTypes, setCustomTypes] = useState<{ value: string; label: string }[]>([]);
+  const [showNewType, setShowNewType] = useState(false);
+  const [newTypeLabel, setNewTypeLabel] = useState("");
+
+  const ACCESSOIRE_TYPES = useMemo(() => {
+    const all = [...DEFAULT_TYPES];
+    customTypes.forEach((ct) => {
+      if (!all.find((t) => t.value === ct.value)) all.push(ct);
+    });
+    return all;
+  }, [customTypes]);
+
   // Dialogs
   const [showCreate, setShowCreate] = useState(false);
   const [showTransfer, setShowTransfer] = useState(false);
@@ -95,7 +108,16 @@ export default function Accessoires() {
       .select("*")
       .eq("actif", true)
       .order("nom");
-    if (!error) setAccessoires(data || []);
+    if (!error) {
+      setAccessoires(data || []);
+      // Discover custom types from existing data
+      const existingTypes = new Set((data || []).map((a) => a.type));
+      const defaultValues = new Set(DEFAULT_TYPES.map((t) => t.value));
+      const newCustom = Array.from(existingTypes)
+        .filter((t) => !defaultValues.has(t))
+        .map((t) => ({ value: t, label: t.charAt(0).toUpperCase() + t.slice(1).replace(/_/g, " ") }));
+      setCustomTypes(newCustom);
+    }
     setLoading(false);
   };
 
@@ -378,12 +400,37 @@ export default function Accessoires() {
             </div>
             <div className="space-y-2">
               <Label>Type *</Label>
-              <Select value={formType} onValueChange={setFormType}>
-                <SelectTrigger><SelectValue placeholder="Choisir un type" /></SelectTrigger>
-                <SelectContent>
-                  {ACCESSOIRE_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              {showNewType ? (
+                <div className="flex gap-2">
+                  <Input
+                    value={newTypeLabel}
+                    onChange={(e) => setNewTypeLabel(e.target.value)}
+                    placeholder="Nom du nouveau type"
+                    autoFocus
+                  />
+                  <Button size="sm" onClick={() => {
+                    if (!newTypeLabel.trim()) return;
+                    const value = newTypeLabel.trim().toLowerCase().replace(/\s+/g, "_");
+                    setCustomTypes((prev) => [...prev, { value, label: newTypeLabel.trim() }]);
+                    setFormType(value);
+                    setNewTypeLabel("");
+                    setShowNewType(false);
+                  }}>OK</Button>
+                  <Button size="sm" variant="outline" onClick={() => { setShowNewType(false); setNewTypeLabel(""); }}>✕</Button>
+                </div>
+              ) : (
+                <Select value={formType} onValueChange={(v) => { if (v === "__new__") { setShowNewType(true); } else { setFormType(v); } }}>
+                  <SelectTrigger><SelectValue placeholder="Choisir un type" /></SelectTrigger>
+                  <SelectContent>
+                    {ACCESSOIRE_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                    {isAdmin() && (
+                      <SelectItem value="__new__">
+                        <span className="flex items-center gap-1 text-primary"><PlusCircle className="h-3 w-3" /> Créer un nouveau type</span>
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="space-y-2">
               <Label>État</Label>
@@ -428,12 +475,37 @@ export default function Accessoires() {
             </div>
             <div className="space-y-2">
               <Label>Type *</Label>
-              <Select value={formType} onValueChange={setFormType}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {ACCESSOIRE_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              {showNewType ? (
+                <div className="flex gap-2">
+                  <Input
+                    value={newTypeLabel}
+                    onChange={(e) => setNewTypeLabel(e.target.value)}
+                    placeholder="Nom du nouveau type"
+                    autoFocus
+                  />
+                  <Button size="sm" onClick={() => {
+                    if (!newTypeLabel.trim()) return;
+                    const value = newTypeLabel.trim().toLowerCase().replace(/\s+/g, "_");
+                    setCustomTypes((prev) => [...prev, { value, label: newTypeLabel.trim() }]);
+                    setFormType(value);
+                    setNewTypeLabel("");
+                    setShowNewType(false);
+                  }}>OK</Button>
+                  <Button size="sm" variant="outline" onClick={() => { setShowNewType(false); setNewTypeLabel(""); }}>✕</Button>
+                </div>
+              ) : (
+                <Select value={formType} onValueChange={(v) => { if (v === "__new__") { setShowNewType(true); } else { setFormType(v); } }}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {ACCESSOIRE_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                    {isAdmin() && (
+                      <SelectItem value="__new__">
+                        <span className="flex items-center gap-1 text-primary"><PlusCircle className="h-3 w-3" /> Créer un nouveau type</span>
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="space-y-2">
               <Label>État</Label>
