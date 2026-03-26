@@ -411,24 +411,21 @@ export function CategoriesManagement() {
             </div>
             <div className="space-y-2">
               <Label>Catégorie parente</Label>
-              <Select
-                value={formData.parent_id}
+              <SearchableSelect
+                options={[
+                  { value: "none", label: "Aucune (racine)" },
+                  ...getParentOptions().map((opt) => ({
+                    value: opt.id,
+                    label: `${"—".repeat(opt.depth)} ${opt.nom}`,
+                  })),
+                ]}
+                value={formData.parent_id || "none"}
                 onValueChange={(v) =>
                   setFormData({ ...formData, parent_id: v === "none" ? "" : v })
                 }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Aucune (racine)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Aucune (racine)</SelectItem>
-                  {getParentOptions().map((opt) => (
-                    <SelectItem key={opt.id} value={opt.id}>
-                      {"—".repeat(opt.depth)} {opt.nom}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Aucune (racine)"
+                searchPlaceholder="Rechercher une catégorie..."
+              />
             </div>
             {formData.nom && (
               <ColorSelector
@@ -482,24 +479,21 @@ export function CategoriesManagement() {
             </div>
             <div className="space-y-2">
               <Label>Catégorie parente</Label>
-              <Select
-                value={formData.parent_id}
+              <SearchableSelect
+                options={[
+                  { value: "none", label: "Aucune (racine)" },
+                  ...getParentOptions(editingCategorie?.id).map((opt) => ({
+                    value: opt.id,
+                    label: `${"—".repeat(opt.depth)} ${opt.nom}`,
+                  })),
+                ]}
+                value={formData.parent_id || "none"}
                 onValueChange={(v) =>
                   setFormData({ ...formData, parent_id: v === "none" ? "" : v })
                 }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Aucune (racine)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Aucune (racine)</SelectItem>
-                  {getParentOptions(editingCategorie?.id).map((opt) => (
-                    <SelectItem key={opt.id} value={opt.id}>
-                      {"—".repeat(opt.depth)} {opt.nom}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Aucune (racine)"
+                searchPlaceholder="Rechercher une catégorie..."
+              />
             </div>
             {editingCategorie && (
               <ColorSelector

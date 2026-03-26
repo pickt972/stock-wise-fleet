@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -308,19 +309,15 @@ export function NewEntryForm({ open, onOpenChange, onSuccess }: NewEntryFormProp
               </div>
               <div>
                 <Label htmlFor="supplier">Fournisseur {formData.entryType === "achat" ? "*" : ""}</Label>
-                <Select
+                <SearchableSelect
+                  id="supplier"
+                  options={fournisseurs.map((f) => ({ value: f.id, label: f.nom }))}
                   value={formData.supplierId}
                   onValueChange={(value) => setFormData({ ...formData, supplierId: value })}
-                >
-                  <SelectTrigger id="supplier">
-                    <SelectValue placeholder="Sélectionner..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {fournisseurs.map((f) => (
-                      <SelectItem key={f.id} value={f.id}>{f.nom}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Sélectionner un fournisseur..."
+                  searchPlaceholder="Rechercher un fournisseur..."
+                  emptyMessage="Aucun fournisseur trouvé."
+                />
               </div>
               <div>
                 <Label htmlFor="invoice">N° Facture/BL</Label>
@@ -333,19 +330,15 @@ export function NewEntryForm({ open, onOpenChange, onSuccess }: NewEntryFormProp
               </div>
               <div className="sm:col-span-2">
                 <Label htmlFor="location">Emplacement de stockage</Label>
-                <Select
+                <SearchableSelect
+                  id="location"
+                  options={emplacements.map((e) => ({ value: e.nom, label: e.nom }))}
                   value={formData.location}
                   onValueChange={(value) => setFormData({ ...formData, location: value })}
-                >
-                  <SelectTrigger id="location">
-                    <SelectValue placeholder="Sélectionner un emplacement..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {emplacements.map((e) => (
-                      <SelectItem key={e.id} value={e.nom}>{e.nom}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Sélectionner un emplacement..."
+                  searchPlaceholder="Rechercher un emplacement..."
+                  emptyMessage="Aucun emplacement trouvé."
+                />
               </div>
             </div>
           </div>
@@ -380,21 +373,14 @@ export function NewEntryForm({ open, onOpenChange, onSuccess }: NewEntryFormProp
                   </div>
                   <div>
                     <Label>Article *</Label>
-                    <Select
+                    <SearchableSelect
+                      options={articles.map((a) => ({ value: a.id, label: `${a.reference} - ${a.designation}` }))}
                       value={item.articleId}
                       onValueChange={(value) => updateItem(index, "articleId", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner un article..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {articles.map((a) => (
-                          <SelectItem key={a.id} value={a.id}>
-                            {a.reference} - {a.designation}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder="Sélectionner un article..."
+                      searchPlaceholder="Rechercher un article..."
+                      emptyMessage="Aucun article trouvé."
+                    />
                   </div>
                   <div className="grid grid-cols-3 gap-3">
                     <div>

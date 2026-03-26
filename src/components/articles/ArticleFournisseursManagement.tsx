@@ -12,13 +12,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -299,22 +304,15 @@ export function ArticleFournisseursManagement({ articleId, articleNom }: Article
               <form onSubmit={handleCreate} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="fournisseur">Fournisseur *</Label>
-                  <Select
+                  <SearchableSelect
+                    id="fournisseur"
+                    options={getAvailableFournisseurs().map((f) => ({ value: f.id, label: f.nom }))}
                     value={formData.fournisseur_id}
                     onValueChange={(value) => setFormData({ ...formData, fournisseur_id: value })}
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner un fournisseur" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getAvailableFournisseurs().map((fournisseur) => (
-                        <SelectItem key={fournisseur.id} value={fournisseur.id}>
-                          {fournisseur.nom}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="Sélectionner un fournisseur"
+                    searchPlaceholder="Rechercher un fournisseur..."
+                    emptyMessage="Aucun fournisseur disponible."
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
