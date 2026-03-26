@@ -11,7 +11,8 @@ import {
   ShoppingCart,
   History,
   ScanLine,
-  Baby
+  Baby,
+  Wrench
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,7 @@ const getNavigation = (permissions: any) => [
   { name: "Entrées", href: "/entrees", icon: ArrowDownToLine, show: permissions.manageStock },
   { name: "Sorties", href: "/sorties", icon: ArrowUpFromLine, show: permissions.manageStock },
   { name: "Transferts", href: "/transferts", icon: ArrowLeftRight, show: permissions.manageStock },
+  { name: "Révisions", href: "/revisions", icon: Wrench, show: permissions.manageStock },
   { name: "Commandes", href: "/commandes", icon: ShoppingCart, show: permissions.createOrders },
   { name: "Inventaire", href: "/inventaire", icon: ClipboardList, show: permissions.manageStock },
   { name: "Historique", href: "/historique", icon: History, show: permissions.viewReports },
