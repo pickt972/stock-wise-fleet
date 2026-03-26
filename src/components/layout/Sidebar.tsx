@@ -9,7 +9,8 @@ import {
   ChevronLeft,
   ShoppingCart,
   History,
-  ScanLine
+  ScanLine,
+  Baby
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,7 @@ import { useState } from "react";
 const getNavigation = (permissions: any) => [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, show: true },
   { name: "Scanner", href: "/scanner", icon: ScanLine, show: true },
+  { name: "Accessoires", href: "/accessoires", icon: Baby, show: true },
   { name: "Articles", href: "/articles", icon: Package, show: permissions.manageStock },
   { name: "Entrées", href: "/entrees", icon: ArrowDownToLine, show: permissions.manageStock },
   { name: "Sorties", href: "/sorties", icon: ArrowUpFromLine, show: permissions.manageStock },
