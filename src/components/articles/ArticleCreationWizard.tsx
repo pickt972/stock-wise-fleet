@@ -205,6 +205,33 @@ export function ArticleCreationWizard({
     }
   };
 
+  const handleCreateCategorie = async () => {
+    if (!newCategorieName.trim()) return;
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const { data, error } = await supabase
+        .from("categories")
+        .insert([{
+          nom: newCategorieName.trim(),
+          parent_id: null,
+          actif: true,
+          user_id: userData?.user?.id,
+        }])
+        .select("id, nom, parent_id")
+        .single();
+      if (error) throw error;
+      toast({ title: "Catégorie créée ✓", description: newCategorieName.trim() });
+      setAllCategoriesData(prev => [...prev, data]);
+      setCategories(prev => [...prev, data.nom]);
+      setCategorie(data.nom);
+      setNewCategorieName("");
+      setShowNewCategorieInput(false);
+      setStep(2);
+    } catch (error: any) {
+      toast({ title: "Erreur", description: error?.message || "Impossible de créer la catégorie", variant: "destructive" });
+    }
+  };
+
   const handleEditSubcategorie = async () => {
     if (!editingSubcategorie || !editSubcategorieName.trim()) return;
     try {
