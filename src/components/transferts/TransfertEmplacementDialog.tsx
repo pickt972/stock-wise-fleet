@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { ArrowLeftRight, Plus, Check, ChevronsUpDown } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowLeftRight, Check, ChevronsUpDown, Package, Baby } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -22,12 +23,24 @@ interface Article {
   categorie?: string;
 }
 
+interface Accessoire {
+  id: string;
+  nom: string;
+  type: string;
+  emplacement_actuel: string;
+  etat: string;
+}
+
 interface Emplacement {
   id: string;
   nom: string;
   description?: string;
   actif: boolean;
 }
+
+type SelectedItem = 
+  | { kind: "article"; data: Article }
+  | { kind: "accessoire"; data: Accessoire };
 
 interface TransfertEmplacementDialogProps {
   onTransfertCompleted?: () => void;
@@ -46,9 +59,10 @@ export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedAr
   };
   const [isCreating, setIsCreating] = useState(false);
   const [articles, setArticles] = useState<Article[]>([]);
+  const [accessoires, setAccessoires] = useState<Accessoire[]>([]);
   const [emplacements, setEmplacements] = useState<Emplacement[]>([]);
+  const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
   const [formData, setFormData] = useState({
-    articleId: "",
     quantity: 1,
     emplacementDestinationId: "",
   });
@@ -65,12 +79,20 @@ export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedAr
   useEffect(() => {
     if (isDialogOpen) {
       fetchArticles();
+      fetchAccessoires();
       fetchEmplacements();
       if (preselectedArticleId) {
-        setFormData(prev => ({ ...prev, articleId: preselectedArticleId }));
+        // Will be resolved after articles load
       }
     }
-  }, [isDialogOpen, preselectedArticleId]);
+  }, [isDialogOpen]);
+
+  useEffect(() => {
+    if (preselectedArticleId && articles.length > 0 && !selectedItem) {
+      const found = articles.find(a => a.id === preselectedArticleId);
+      if (found) setSelectedItem({ kind: "article", data: found });
+    }
+  }, [preselectedArticleId, articles]);
 
   const fetchArticles = async () => {
     try {
@@ -79,11 +101,24 @@ export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedAr
         .select('id, reference, designation, marque, stock, emplacement_id, categorie')
         .gt('stock', 0)
         .order('designation');
-
       if (error) throw error;
       setArticles(data || []);
     } catch (error: any) {
-      console.error('Erreur lors du chargement des articles:', error);
+      console.error('Erreur chargement articles:', error);
+    }
+  };
+
+  const fetchAccessoires = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('accessoires')
+        .select('id, nom, type, emplacement_actuel, etat')
+        .eq('actif', true)
+        .order('nom');
+      if (error) throw error;
+      setAccessoires(data || []);
+    } catch (error: any) {
+      console.error('Erreur chargement accessoires:', error);
     }
   };
 
@@ -94,11 +129,10 @@ export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedAr
         .select('id, nom, description, actif')
         .eq('actif', true)
         .order('nom');
-
       if (error) throw error;
       setEmplacements(data || []);
     } catch (error: any) {
-      console.error('Erreur lors du chargement des emplacements:', error);
+      console.error('Erreur chargement emplacements:', error);
     }
   };
 
@@ -108,169 +142,149 @@ export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedAr
     return emplacement?.nom || "Emplacement inconnu";
   };
 
+  const getSelectedLabel = () => {
+    if (!selectedItem) return "Rechercher un article ou accessoire...";
+    if (selectedItem.kind === "article") {
+      return `${selectedItem.data.reference} - ${selectedItem.data.designation}`;
+    }
+    return `${selectedItem.data.nom} (${selectedItem.data.type})`;
+  };
+
+  const getSourceInfo = () => {
+    if (!selectedItem) return null;
+    if (selectedItem.kind === "article") {
+      return {
+        emplacement: getEmplacementNom(selectedItem.data.emplacement_id),
+        stock: selectedItem.data.stock,
+      };
+    }
+    return {
+      emplacement: selectedItem.data.emplacement_actuel,
+      stock: 1,
+    };
+  };
+
   const createTransfert = async () => {
-    if (!formData.articleId || !formData.quantity || !formData.emplacementDestinationId) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez remplir tous les champs",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const selectedArticle = articles.find(a => a.id === formData.articleId);
-    if (!selectedArticle) {
-      toast({
-        title: "Erreur",
-        description: "Article non trouvé",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (selectedArticle.stock < formData.quantity) {
-      toast({
-        title: "Erreur",
-        description: `Stock insuffisant. Stock disponible: ${selectedArticle.stock}`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (selectedArticle.emplacement_id === formData.emplacementDestinationId) {
-      toast({
-        title: "Erreur",
-        description: "L'article est déjà dans cet emplacement",
-        variant: "destructive",
-      });
+    if (!selectedItem || !formData.emplacementDestinationId) {
+      toast({ title: "Erreur", description: "Veuillez remplir tous les champs", variant: "destructive" });
       return;
     }
 
     setIsCreating(true);
     try {
-      const emplacementSource = getEmplacementNom(selectedArticle.emplacement_id);
-      const emplacementDestination = getEmplacementNom(formData.emplacementDestinationId);
-
-      // Créer un mouvement de sortie de l'emplacement source
-      const { error: sortieError } = await supabase
-        .from('stock_movements')
-        .insert([{
-          article_id: formData.articleId,
-          type: 'sortie',
-          quantity: formData.quantity,
-          motif: `Transfert vers ${emplacementDestination}`,
-          user_id: user?.id,
-        }]);
-
-      if (sortieError) throw sortieError;
-
-      // Créer un mouvement d'entrée vers l'emplacement de destination
-      const { error: entreeError } = await supabase
-        .from('stock_movements')
-        .insert([{
-          article_id: formData.articleId,
-          type: 'entree',
-          quantity: formData.quantity,
-          motif: `Transfert depuis ${emplacementSource}`,
-          user_id: user?.id,
-        }]);
-
-      if (entreeError) throw entreeError;
-
-      // Calculer le nouveau stock
-      const newStock = selectedArticle.stock - formData.quantity;
-
-      if (newStock === 0) {
-        // Supprimer l'article source si le stock atteint zéro
-        const { error: deleteSourceError } = await supabase
-          .from('articles')
-          .delete()
-          .eq('id', formData.articleId);
-
-        if (deleteSourceError) throw deleteSourceError;
+      if (selectedItem.kind === "accessoire") {
+        await transferAccessoire();
       } else {
-        // Diminuer le stock de l'article source
-        const { error: updateSourceError } = await supabase
-          .from('articles')
-          .update({ 
-            stock: newStock,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', formData.articleId);
-
-        if (updateSourceError) throw updateSourceError;
+        await transferArticle();
       }
 
-      // Vérifier s'il existe déjà un article avec la même référence dans l'emplacement de destination
-      const emplacementDestinationData = emplacements.find(e => e.id === formData.emplacementDestinationId);
-      const { data: existingArticle, error: searchError } = await supabase
-        .from('articles')
-        .select('id, stock')
-        .eq('reference', selectedArticle.reference)
-        .eq('emplacement_id', formData.emplacementDestinationId)
-        .single();
-
-      if (searchError && searchError.code !== 'PGRST116') {
-        throw searchError;
-      }
-
-      if (existingArticle) {
-        // Mettre à jour l'article existant dans l'emplacement de destination
-        const { error: updateDestError } = await supabase
-          .from('articles')
-          .update({ 
-            stock: existingArticle.stock + formData.quantity,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingArticle.id);
-
-        if (updateDestError) throw updateDestError;
-      } else {
-        // Créer un nouvel article dans l'emplacement de destination
-        const { error: createError } = await supabase
-          .from('articles')
-          .insert([{
-            reference: selectedArticle.reference,
-            designation: selectedArticle.designation,
-            marque: selectedArticle.marque,
-            categorie: selectedArticle.categorie || '',
-            stock: formData.quantity,
-            stock_min: 0,
-            stock_max: 100,
-            prix_achat: 0,
-            emplacement_id: formData.emplacementDestinationId,
-            emplacement: emplacementDestinationData?.nom || '',
-            user_id: user?.id
-          }]);
-
-        if (createError) throw createError;
-      }
-
-      toast({
-        title: "Succès",
-        description: `Transfert effectué: ${formData.quantity} ${selectedArticle.designation} vers ${emplacementDestination}`,
-      });
-
-      setFormData({
-        articleId: "",
-        quantity: 1,
-        emplacementDestinationId: "",
-      });
-
+      setSelectedItem(null);
+      setFormData({ quantity: 1, emplacementDestinationId: "" });
       handleOpenChange(false);
       onTransfertCompleted?.();
     } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error.message || "Impossible d'effectuer le transfert",
-        variant: "destructive",
-      });
+      toast({ title: "Erreur", description: error.message || "Impossible d'effectuer le transfert", variant: "destructive" });
     } finally {
       setIsCreating(false);
     }
   };
 
-  const selectedArticle = articles.find(a => a.id === formData.articleId);
+  const transferAccessoire = async () => {
+    if (selectedItem?.kind !== "accessoire") return;
+    const acc = selectedItem.data;
+    const destEmplacement = emplacements.find(e => e.id === formData.emplacementDestinationId);
+    const destName = destEmplacement?.nom || formData.emplacementDestinationId;
+
+    if (acc.emplacement_actuel === destName) {
+      throw new Error("L'accessoire est déjà dans cet emplacement");
+    }
+
+    // Log transfer
+    const { error: transferError } = await supabase
+      .from('accessoire_transferts')
+      .insert([{
+        accessoire_id: acc.id,
+        site_depart: acc.emplacement_actuel,
+        site_arrivee: destName,
+        motif: `Transfert vers ${destName}`,
+        transferred_by: user?.id,
+      }]);
+    if (transferError) throw transferError;
+
+    // Update location
+    const { error: updateError } = await supabase
+      .from('accessoires')
+      .update({ emplacement_actuel: destName, updated_at: new Date().toISOString() })
+      .eq('id', acc.id);
+    if (updateError) throw updateError;
+
+    toast({ title: "Succès", description: `Accessoire "${acc.nom}" transféré vers ${destName}` });
+  };
+
+  const transferArticle = async () => {
+    if (selectedItem?.kind !== "article") return;
+    const article = selectedItem.data;
+
+    if (article.stock < formData.quantity) {
+      throw new Error(`Stock insuffisant. Disponible: ${article.stock}`);
+    }
+    if (article.emplacement_id === formData.emplacementDestinationId) {
+      throw new Error("L'article est déjà dans cet emplacement");
+    }
+
+    const emplacementSource = getEmplacementNom(article.emplacement_id);
+    const emplacementDestination = getEmplacementNom(formData.emplacementDestinationId);
+
+    // Sortie movement
+    const { error: sortieError } = await supabase
+      .from('stock_movements')
+      .insert([{ article_id: article.id, type: 'sortie', quantity: formData.quantity, motif: `Transfert vers ${emplacementDestination}`, user_id: user?.id }]);
+    if (sortieError) throw sortieError;
+
+    // Entrée movement
+    const { error: entreeError } = await supabase
+      .from('stock_movements')
+      .insert([{ article_id: article.id, type: 'entree', quantity: formData.quantity, motif: `Transfert depuis ${emplacementSource}`, user_id: user?.id }]);
+    if (entreeError) throw entreeError;
+
+    const newStock = article.stock - formData.quantity;
+    if (newStock === 0) {
+      const { error } = await supabase.from('articles').delete().eq('id', article.id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase.from('articles').update({ stock: newStock, updated_at: new Date().toISOString() }).eq('id', article.id);
+      if (error) throw error;
+    }
+
+    // Check existing article at destination
+    const emplacementDestData = emplacements.find(e => e.id === formData.emplacementDestinationId);
+    const { data: existingArticle, error: searchError } = await supabase
+      .from('articles')
+      .select('id, stock')
+      .eq('reference', article.reference)
+      .eq('emplacement_id', formData.emplacementDestinationId)
+      .single();
+
+    if (searchError && searchError.code !== 'PGRST116') throw searchError;
+
+    if (existingArticle) {
+      const { error } = await supabase.from('articles').update({ stock: existingArticle.stock + formData.quantity, updated_at: new Date().toISOString() }).eq('id', existingArticle.id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase.from('articles').insert([{
+        reference: article.reference, designation: article.designation, marque: article.marque,
+        categorie: article.categorie || '', stock: formData.quantity, stock_min: 0, stock_max: 100,
+        prix_achat: 0, emplacement_id: formData.emplacementDestinationId,
+        emplacement: emplacementDestData?.nom || '', user_id: user?.id
+      }]);
+      if (error) throw error;
+    }
+
+    toast({ title: "Succès", description: `Transfert effectué: ${formData.quantity} ${article.designation} vers ${emplacementDestination}` });
+  };
+
+  const sourceInfo = getSourceInfo();
+  const isAccessoire = selectedItem?.kind === "accessoire";
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
@@ -290,7 +304,7 @@ export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedAr
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="article">Article à transférer *</Label>
+            <Label>Article ou accessoire à transférer *</Label>
             <Popover open={articlePopoverOpen} onOpenChange={setArticlePopoverOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -299,9 +313,7 @@ export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedAr
                   aria-expanded={articlePopoverOpen}
                   className="w-full justify-between font-normal"
                 >
-                  {selectedArticle
-                    ? `${selectedArticle.reference} - ${selectedArticle.designation}`
-                    : "Rechercher un article..."}
+                  <span className="truncate">{getSelectedLabel()}</span>
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
@@ -309,57 +321,80 @@ export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedAr
                 <Command>
                   <CommandInput placeholder="Tapez pour rechercher..." />
                   <CommandList>
-                    <CommandEmpty>Aucun article trouvé.</CommandEmpty>
-                    <CommandGroup>
-                      {articles
-                        .filter(article => article.stock > 0)
-                        .map((article) => (
+                    <CommandEmpty>Aucun résultat trouvé.</CommandEmpty>
+                    {articles.filter(a => a.stock > 0).length > 0 && (
+                      <CommandGroup heading="Articles">
+                        {articles
+                          .filter(a => a.stock > 0)
+                          .map((article) => (
+                            <CommandItem
+                              key={`art-${article.id}`}
+                              value={`article ${article.reference} ${article.designation} ${article.marque}`}
+                              onSelect={() => {
+                                setSelectedItem({ kind: "article", data: article });
+                                setFormData(prev => ({ ...prev, quantity: 1 }));
+                                setArticlePopoverOpen(false);
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", selectedItem?.kind === "article" && selectedItem.data.id === article.id ? "opacity-100" : "opacity-0")} />
+                              <Package className="mr-1.5 h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                              <span className="truncate">{article.reference} - {article.designation} (Stock: {article.stock})</span>
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    )}
+                    {accessoires.length > 0 && (
+                      <CommandGroup heading="Accessoires">
+                        {accessoires.map((acc) => (
                           <CommandItem
-                            key={article.id}
-                            value={`${article.reference} ${article.designation} ${article.marque}`}
+                            key={`acc-${acc.id}`}
+                            value={`accessoire ${acc.nom} ${acc.type} ${acc.emplacement_actuel}`}
                             onSelect={() => {
-                              setFormData(prev => ({ ...prev, articleId: article.id }));
+                              setSelectedItem({ kind: "accessoire", data: acc });
+                              setFormData(prev => ({ ...prev, quantity: 1 }));
                               setArticlePopoverOpen(false);
                             }}
                           >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                formData.articleId === article.id ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {article.reference} - {article.designation} (Stock: {article.stock})
+                            <Check className={cn("mr-2 h-4 w-4", selectedItem?.kind === "accessoire" && selectedItem.data.id === acc.id ? "opacity-100" : "opacity-0")} />
+                            <Baby className="mr-1.5 h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                            <span className="truncate">{acc.nom} ({acc.type}) — {acc.emplacement_actuel}</span>
                           </CommandItem>
                         ))}
-                    </CommandGroup>
+                      </CommandGroup>
+                    )}
                   </CommandList>
                 </Command>
               </PopoverContent>
             </Popover>
-            {selectedArticle && (
-              <div className="text-sm text-muted-foreground">
-                <p>Emplacement actuel: {getEmplacementNom(selectedArticle.emplacement_id)}</p>
-                <p>Stock disponible: {selectedArticle.stock}</p>
+            {sourceInfo && (
+              <div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
+                <Badge variant="outline" className="text-xs">
+                  {isAccessoire ? "Accessoire" : "Article"}
+                </Badge>
+                <span>Emplacement: {sourceInfo.emplacement}</span>
+                {!isAccessoire && <span>• Stock: {sourceInfo.stock}</span>}
               </div>
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="quantity">Quantité à transférer *</Label>
-            <Input
-              id="quantity"
-              type="number"
-              min="1"
-              max={selectedArticle?.stock || 1}
-              value={formData.quantity}
-              onChange={(e) => setFormData(prev => ({ ...prev, quantity: parseInt(e.target.value) || 1 }))}
-              onFocus={(e) => e.target.select()}
-              required
-            />
-          </div>
+          {!isAccessoire && (
+            <div className="space-y-2">
+              <Label htmlFor="quantity">Quantité à transférer *</Label>
+              <Input
+                id="quantity"
+                type="number"
+                min="1"
+                max={sourceInfo?.stock || 1}
+                value={formData.quantity}
+                onChange={(e) => setFormData(prev => ({ ...prev, quantity: parseInt(e.target.value) || 1 }))}
+                onFocus={(e) => e.target.select()}
+                required
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
-            <Label htmlFor="emplacementDestination">Emplacement de destination *</Label>
+            <Label>Emplacement de destination *</Label>
             <Select
               value={formData.emplacementDestinationId}
               onValueChange={(value) => setFormData(prev => ({ ...prev, emplacementDestinationId: value }))}
@@ -369,31 +404,26 @@ export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedAr
               </SelectTrigger>
               <SelectContent>
                 {emplacements
-                  .filter(emplacement => selectedArticle?.emplacement_id !== emplacement.id)
+                  .filter(emp => {
+                    if (selectedItem?.kind === "article") return selectedItem.data.emplacement_id !== emp.id;
+                    if (selectedItem?.kind === "accessoire") return selectedItem.data.emplacement_actuel !== emp.nom;
+                    return true;
+                  })
                   .map((emplacement) => (
-                  <SelectItem key={emplacement.id} value={emplacement.id}>
-                    {emplacement.nom}
-                    {emplacement.description && ` - ${emplacement.description}`}
-                  </SelectItem>
-                ))}
+                    <SelectItem key={emplacement.id} value={emplacement.id}>
+                      {emplacement.nom}
+                      {emplacement.description && ` - ${emplacement.description}`}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => handleOpenChange(false)}
-              className="w-full sm:w-auto"
-            >
+            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} className="w-full sm:w-auto">
               Annuler
             </Button>
-            <Button
-              onClick={createTransfert}
-              disabled={isCreating}
-              className="w-full sm:w-auto"
-            >
+            <Button onClick={createTransfert} disabled={isCreating} className="w-full sm:w-auto">
               {isCreating ? "Transfert en cours..." : "Effectuer le transfert"}
             </Button>
           </div>
