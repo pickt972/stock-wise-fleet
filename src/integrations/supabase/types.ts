@@ -14,6 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
+      accessoire_transferts: {
+        Row: {
+          accessoire_id: string
+          created_at: string
+          id: string
+          motif: string | null
+          site_arrivee: string
+          site_depart: string
+          transferred_by: string | null
+        }
+        Insert: {
+          accessoire_id: string
+          created_at?: string
+          id?: string
+          motif?: string | null
+          site_arrivee: string
+          site_depart: string
+          transferred_by?: string | null
+        }
+        Update: {
+          accessoire_id?: string
+          created_at?: string
+          id?: string
+          motif?: string | null
+          site_arrivee?: string
+          site_depart?: string
+          transferred_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accessoire_transferts_accessoire_id_fkey"
+            columns: ["accessoire_id"]
+            isOneToOne: false
+            referencedRelation: "accessoires"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accessoires: {
+        Row: {
+          actif: boolean
+          created_at: string
+          created_by: string | null
+          emplacement_actuel: string
+          etat: Database["public"]["Enums"]["accessoire_etat"]
+          id: string
+          nom: string
+          notes: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          created_at?: string
+          created_by?: string | null
+          emplacement_actuel?: string
+          etat?: Database["public"]["Enums"]["accessoire_etat"]
+          id?: string
+          nom: string
+          notes?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          created_at?: string
+          created_by?: string | null
+          emplacement_actuel?: string
+          etat?: Database["public"]["Enums"]["accessoire_etat"]
+          id?: string
+          nom?: string
+          notes?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       article_fournisseurs: {
         Row: {
           actif: boolean | null
@@ -1345,6 +1422,7 @@ export type Database = {
       }
     }
     Enums: {
+      accessoire_etat: "bon" | "use" | "a_remplacer" | "en_reparation"
       app_role: "admin" | "magasinier" | "chef_agence"
       commande_status:
         | "brouillon"
@@ -1482,6 +1560,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      accessoire_etat: ["bon", "use", "a_remplacer", "en_reparation"],
       app_role: ["admin", "magasinier", "chef_agence"],
       commande_status: [
         "brouillon",
