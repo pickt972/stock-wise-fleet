@@ -66,6 +66,10 @@ export function ArticleCreationWizard({
   const [newSubcategorieName, setNewSubcategorieName] = useState("");
   const [editingSubcategorie, setEditingSubcategorie] = useState<{ id: string; nom: string } | null>(null);
   const [editSubcategorieName, setEditSubcategorieName] = useState("");
+
+  // Admin: new category inline
+  const [showNewCategorieInput, setShowNewCategorieInput] = useState(false);
+  const [newCategorieName, setNewCategorieName] = useState("");
   
 
   // Form data
@@ -407,6 +411,42 @@ export function ArticleCreationWizard({
                   {cat}
                 </button>
               ))}
+
+              {/* Admin: inline create category */}
+              {isAdmin() && (
+                showNewCategorieInput ? (
+                  <div className="border-2 border-dashed border-primary/30 rounded-lg p-3 space-y-3 bg-primary/5">
+                    <Label>Nouvelle catégorie</Label>
+                    <Input
+                      value={newCategorieName}
+                      onChange={(e) => setNewCategorieName(e.target.value)}
+                      placeholder="Ex: Accessoires, Climatisation..."
+                      className="h-10"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") { e.preventDefault(); handleCreateCategorie(); }
+                      }}
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="outline" size="sm" onClick={() => { setShowNewCategorieInput(false); setNewCategorieName(""); }}>
+                        Annuler
+                      </Button>
+                      <Button size="sm" onClick={handleCreateCategorie} disabled={!newCategorieName.trim()}>
+                        <Plus className="h-4 w-4 mr-1" /> Créer
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowNewCategorieInput(true)}
+                    className="w-full px-4 py-3.5 rounded-lg border-2 border-dashed border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-muted/50 transition-all text-left flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span className="text-base font-medium">Nouvelle catégorie</span>
+                  </button>
+                )
+              )}
             </div>
           </div>
         </div>
