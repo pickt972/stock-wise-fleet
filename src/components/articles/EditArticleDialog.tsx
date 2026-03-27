@@ -81,6 +81,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
   const [categories, setCategories] = useState<string[]>([]);
   const [allCategoriesData, setAllCategoriesData] = useState<{ id: string; nom: string; parent_id: string | null }[]>([]);
   const [subcategories, setSubcategories] = useState<{ id: string; nom: string }[]>([]);
+  const [allArticleDesignations, setAllArticleDesignations] = useState<{ designation: string; categorie: string }[]>([]);
   const [emplacements, setEmplacements] = useState<any[]>([]);
 
   // Subcategory CRUD
@@ -126,6 +127,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
     fetchFournisseurs();
     fetchEmplacements();
     loadCategories();
+    fetchDesignations();
   }, []);
 
   useEffect(() => {
@@ -177,6 +179,31 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
       setCategories(parents.length > 0 ? parents : allData.map(c => c.nom));
     } catch {
       setCategories([]);
+    }
+  };
+
+  const fetchDesignations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('articles')
+        .select('designation, categorie')
+        .order('designation');
+      if (error) throw error;
+
+      const unique = new Map<string, { designation: string; categorie: string }>();
+      data?.forEach((item) => {
+        const key = `${item.categorie}::${item.designation}`.toLowerCase();
+        if (!unique.has(key)) {
+          unique.set(key, {
+            designation: item.designation,
+            categorie: item.categorie,
+          });
+        }
+      });
+
+      setAllArticleDesignations(Array.from(unique.values()));
+    } catch (error) {
+      console.error('Erreur lors du chargement des désignations:', error);
     }
   };
 
@@ -357,23 +384,40 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
                   <Plus className="h-3 w-3 mr-1" /> Nouvelle
                 </Button>
               </div>
-              <SearchableSelect
-                options={[
-                  ...subcategories.map(sub => ({ value: sub.nom, label: sub.nom })),
-                  { value: "__create_new__", label: "＋ Nouvelle sous-catégorie" },
-                ]}
-                value={formData.designation}
-                onValueChange={(val) => {
-                  if (val === "__create_new__") {
-                    setShowSubcategorieDialog(true);
-                  } else {
-                    setFormData({ ...formData, designation: val });
-                  }
-                }}
-                placeholder="Sélectionner ou rechercher..."
-                searchPlaceholder="Rechercher une sous-catégorie..."
-                emptyMessage="Aucune sous-catégorie trouvée"
-              />
+              {(() => {
+                const filteredDesignations = allArticleDesignations
+                  .filter((item) => !formData.categorie || item.categorie === formData.categorie)
+                  .map((item) => item.designation);
+
+                const uniqueOptions = Array.from(
+                  new Map(
+                    [
+                      ...subcategories.map((sub) => ({ value: sub.nom, label: sub.nom })),
+                      ...filteredDesignations.map((designation) => ({ value: designation, label: designation })),
+                    ].map((option) => [option.value.toLowerCase(), option])
+                  ).values()
+                );
+
+                return (
+                  <SearchableSelect
+                    options={[
+                      ...uniqueOptions,
+                      { value: "__create_new__", label: "＋ Nouvelle sous-catégorie" },
+                    ]}
+                    value={formData.designation}
+                    onValueChange={(val) => {
+                      if (val === "__create_new__") {
+                        setShowSubcategorieDialog(true);
+                      } else {
+                        setFormData({ ...formData, designation: val });
+                      }
+                    }}
+                    placeholder="Sélectionner ou rechercher..."
+                    searchPlaceholder="Rechercher une sous-catégorie..."
+                    emptyMessage="Aucune sous-catégorie trouvée"
+                  />
+                );
+              })()}
               {showSubcategorieDialog && (
                 <div className="border border-border rounded-lg p-3 space-y-2 bg-card mb-2">
                   <Label className="text-xs">Nouvelle sous-catégorie</Label>
