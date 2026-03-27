@@ -180,15 +180,21 @@ const articleSchema = z.object({
     }
   };
 
-  // Update subcategories when category changes
+  // Update subcategories when category changes - show all if no category selected
   useEffect(() => {
-    if (formData.categorie && allCategoriesData.length > 0) {
-      const parent = allCategoriesData.find(c => c.nom === formData.categorie && !c.parent_id);
-      if (parent) {
-        const subs = allCategoriesData.filter(c => c.parent_id === parent.id).map(c => ({ id: c.id, nom: c.nom }));
-        setSubcategories(subs);
+    if (allCategoriesData.length > 0) {
+      if (formData.categorie) {
+        const parent = allCategoriesData.find(c => c.nom === formData.categorie && !c.parent_id);
+        if (parent) {
+          const subs = allCategoriesData.filter(c => c.parent_id === parent.id).map(c => ({ id: c.id, nom: c.nom }));
+          setSubcategories(subs);
+        } else {
+          setSubcategories([]);
+        }
       } else {
-        setSubcategories([]);
+        // Show all subcategories when no category is selected
+        const allSubs = allCategoriesData.filter(c => c.parent_id !== null).map(c => ({ id: c.id, nom: c.nom }));
+        setSubcategories(allSubs);
       }
     } else {
       setSubcategories([]);
