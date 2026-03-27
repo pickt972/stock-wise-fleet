@@ -25,6 +25,7 @@ import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
 
 import { CreateCategorieDialog } from "@/components/categories/CreateCategorieDialog";
 import { CreateVehiculeDialog } from "@/components/vehicules/CreateVehiculeDialog";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { z } from "zod";
 interface CreateArticleDialogProps {
   onArticleCreated: () => void;
@@ -461,39 +462,23 @@ const articleSchema = z.object({
                 <Plus className="h-3 w-3 mr-1" /> Nouvelle
               </Button>
             </div>
-            {subcategories.length > 0 && (
-              <div className="space-y-1 mb-2">
-                {subcategories.map((sub) => (
-                  <div
-                    key={sub.id}
-                    className={`flex items-center justify-between px-3 py-1.5 rounded-lg border cursor-pointer transition-colors text-sm ${
-                      formData.designation === sub.nom ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-muted/50"
-                    }`}
-                    onClick={() => setFormData(prev => ({ ...prev, designation: sub.nom }))}
-                  >
-                    <span>{sub.nom}</span>
-                    <div className="flex gap-1">
-                      <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setEditingSubcategorie(sub); setEditSubcategorieName(sub.nom); }}>
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteSubcategorie(sub.id, sub.nom); }}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            {editingSubcategorie && (
-              <div className="border border-border rounded-lg p-3 space-y-2 bg-card mb-2">
-                <Label className="text-xs">Modifier la sous-catégorie</Label>
-                <Input value={editSubcategorieName} onChange={(e) => setEditSubcategorieName(e.target.value)} className="h-9" autoFocus onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleEditSubcategorie(); } }} />
-                <div className="flex gap-2 justify-end">
-                  <Button variant="outline" size="sm" onClick={() => { setEditingSubcategorie(null); setEditSubcategorieName(""); }}>Annuler</Button>
-                  <Button size="sm" onClick={handleEditSubcategorie} disabled={!editSubcategorieName.trim()}>Modifier</Button>
-                </div>
-              </div>
-            )}
+            <SearchableSelect
+              options={[
+                ...subcategories.map(sub => ({ value: sub.nom, label: sub.nom })),
+                { value: "__create_new__", label: "＋ Nouvelle sous-catégorie" },
+              ]}
+              value={formData.designation}
+              onValueChange={(val) => {
+                if (val === "__create_new__") {
+                  setShowSubcategorieDialog(true);
+                } else {
+                  setFormData(prev => ({ ...prev, designation: val }));
+                }
+              }}
+              placeholder="Sélectionner ou rechercher..."
+              searchPlaceholder="Rechercher une sous-catégorie..."
+              emptyMessage="Aucune sous-catégorie trouvée"
+            />
             {showSubcategorieDialog && (
               <div className="border border-border rounded-lg p-3 space-y-2 bg-card mb-2">
                 <Label className="text-xs">Nouvelle sous-catégorie</Label>
@@ -504,19 +489,6 @@ const articleSchema = z.object({
                 </div>
               </div>
             )}
-            <Input
-              id="designation"
-              value={formData.designation}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\s+/g, ' ');
-                setFormData(prev => ({ 
-                  ...prev, 
-                  designation: value.charAt(0).toUpperCase() + value.slice(1)
-                }));
-              }}
-              placeholder="Huile moteur 5W30"
-              required
-            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
