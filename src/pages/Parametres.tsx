@@ -267,13 +267,22 @@ export default function Parametres() {
               />
             )}
             {permissions.manageCategories && (
-              <SettingsCard
-                index={4}
-                icon={<Tags className="h-5 w-5" />}
-                title="Catégories"
-                description="Catégories d'articles"
-                onClick={() => navigate('/categories')}
-              />
+              <>
+                <SettingsCard
+                  index={4}
+                  icon={<Tags className="h-5 w-5" />}
+                  title="Catégories"
+                  description="Catégories d'articles"
+                  onClick={() => navigate('/categories')}
+                />
+                <SettingsCard
+                  index={5}
+                  icon={<Tags className="h-5 w-5" />}
+                  title="Sous-catégories"
+                  description="Gérer les sous-catégories"
+                  onClick={() => navigate('/categories?tab=sous-categories')}
+                />
+              </>
             )}
             {permissions.manageVehicles && (
               <SettingsCard
