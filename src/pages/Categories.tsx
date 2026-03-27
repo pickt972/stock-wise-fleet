@@ -20,11 +20,11 @@ export default function Categories() {
             <TabsTrigger value="categories">Catégories</TabsTrigger>
             <TabsTrigger value="sous-categories">Sous-catégories</TabsTrigger>
           </TabsList>
-          <TabsContent value="categories">
-            <CategoriesManagement filterType="parents" />
+          <TabsContent value="categories" className="mt-4">
+            <CategoriesManagement />
           </TabsContent>
-          <TabsContent value="sous-categories">
-            <CategoriesManagement filterType="children" />
+          <TabsContent value="sous-categories" className="mt-4">
+            <CategoriesManagement />
           </TabsContent>
         </Tabs>
       </div>
