@@ -128,13 +128,18 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
   }, []);
 
   useEffect(() => {
-    if (formData.categorie && allCategoriesData.length > 0) {
-      const parent = allCategoriesData.find(c => c.nom === formData.categorie && !c.parent_id);
-      if (parent) {
-        const subs = allCategoriesData.filter(c => c.parent_id === parent.id).map(c => ({ id: c.id, nom: c.nom }));
-        setSubcategories(subs);
+    if (allCategoriesData.length > 0) {
+      if (formData.categorie) {
+        const parent = allCategoriesData.find(c => c.nom === formData.categorie && !c.parent_id);
+        if (parent) {
+          const subs = allCategoriesData.filter(c => c.parent_id === parent.id).map(c => ({ id: c.id, nom: c.nom }));
+          setSubcategories(subs);
+        } else {
+          setSubcategories([]);
+        }
       } else {
-        setSubcategories([]);
+        const allSubs = allCategoriesData.filter(c => c.parent_id !== null).map(c => ({ id: c.id, nom: c.nom }));
+        setSubcategories(allSubs);
       }
     } else {
       setSubcategories([]);
@@ -345,40 +350,29 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
 
             {/* Subcategory / Designation */}
             <div className="space-y-1.5">
-              <Label className="text-xs sm:text-sm">Sous-catégorie / Désignation</Label>
-              {subcategories.length > 0 && (
-                <div className="flex flex-col gap-2 mb-2">
-                  {subcategories.map((sub) => (
-                    <div
-                      key={sub.id}
-                      className={`flex items-center justify-between w-full px-4 py-3 rounded-lg border-2 cursor-pointer transition-all text-sm ${
-                        formData.designation === sub.nom ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
-                      }`}
-                      onClick={() => { setFormData({ ...formData, designation: sub.nom }); setStep(2); }}
-                    >
-                      <span className="font-medium">{sub.nom}</span>
-                      <div className="flex gap-1">
-                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setEditingSubcategorie(sub); setEditSubcategorieName(sub.nom); }}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteSubcategorie(sub.id, sub.nom); }}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {editingSubcategorie && (
-                <div className="border border-border rounded-lg p-3 space-y-2 bg-card mb-2">
-                  <Label className="text-xs">Modifier la sous-catégorie</Label>
-                  <Input value={editSubcategorieName} onChange={(e) => setEditSubcategorieName(e.target.value)} className="h-9" autoFocus onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleEditSubcategorie(); } }} />
-                  <div className="flex gap-2 justify-end">
-                    <Button variant="outline" size="sm" onClick={() => { setEditingSubcategorie(null); setEditSubcategorieName(""); }}>Annuler</Button>
-                    <Button size="sm" onClick={handleEditSubcategorie} disabled={!editSubcategorieName.trim()}>Modifier</Button>
-                  </div>
-                </div>
-              )}
+              <div className="flex items-center justify-between">
+                <Label className="text-xs sm:text-sm">Sous-catégorie / Désignation</Label>
+                <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowSubcategorieDialog(true)}>
+                  <Plus className="h-3 w-3 mr-1" /> Nouvelle
+                </Button>
+              </div>
+              <SearchableSelect
+                options={[
+                  ...subcategories.map(sub => ({ value: sub.nom, label: sub.nom })),
+                  { value: "__create_new__", label: "＋ Nouvelle sous-catégorie" },
+                ]}
+                value={formData.designation}
+                onValueChange={(val) => {
+                  if (val === "__create_new__") {
+                    setShowSubcategorieDialog(true);
+                  } else {
+                    setFormData({ ...formData, designation: val });
+                  }
+                }}
+                placeholder="Sélectionner ou rechercher..."
+                searchPlaceholder="Rechercher une sous-catégorie..."
+                emptyMessage="Aucune sous-catégorie trouvée"
+              />
               {showSubcategorieDialog && (
                 <div className="border border-border rounded-lg p-3 space-y-2 bg-card mb-2">
                   <Label className="text-xs">Nouvelle sous-catégorie</Label>
@@ -389,13 +383,6 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
                   </div>
                 </div>
               )}
-              <Input
-                value={formData.designation}
-                onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
-                required
-                placeholder="Désignation de l'article"
-                className="h-11 text-base"
-              />
             </div>
           </div>
         )}
