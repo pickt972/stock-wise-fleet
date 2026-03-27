@@ -503,110 +503,57 @@ export function ArticleCreationWizard({
           {/* Subcategory dropdown */}
           <div className="space-y-2">
             <Label>Sous-catégorie</Label>
-            <div className="flex flex-col gap-2">
-              {allCategoriesData
-                .filter(c => {
-                  const parent = allCategoriesData.find(p => p.nom === categorie && !p.parent_id);
-                  return parent && c.parent_id === parent.id;
-                })
-                .map((sub) => (
-                  <div
-                    key={sub.id}
-                    className={`flex items-center justify-between w-full px-4 py-3.5 rounded-lg border-2 cursor-pointer transition-all ${
-                      designation === sub.nom
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
-                    }`}
-                    onClick={() => { setDesignation(sub.nom); setShowSuggestions(false); setStep(3); }}
-                  >
-                    <span className="text-base font-medium">{sub.nom}</span>
-                    <div className="flex gap-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingSubcategorie({ id: sub.id, nom: sub.nom });
-                          setEditSubcategorieName(sub.nom);
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteSubcategorie(sub.id, sub.nom);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+            {(() => {
+              const parent = allCategoriesData.find(p => p.nom === categorie && !p.parent_id);
+              const subs = parent ? allCategoriesData.filter(c => c.parent_id === parent.id) : [];
+              const subcatOptions = [
+                ...subs.map(s => ({ value: s.id, label: s.nom })),
+                { value: "__new__", label: "＋ Nouvelle sous-catégorie" },
+              ];
+              const selectedSubId = subs.find(s => s.nom === designation)?.id || "";
+              return (
+                <SearchableSelect
+                  options={subcatOptions}
+                  value={selectedSubId}
+                  onValueChange={(val) => {
+                    if (val === "__new__") {
+                      setShowSubcategorieDialog(true);
+                    } else {
+                      const sub = subs.find(s => s.id === val);
+                      if (sub) {
+                        setDesignation(sub.nom);
+                        setShowSuggestions(false);
+                        setStep(3);
+                      }
+                    }
+                  }}
+                  placeholder="Sélectionner une sous-catégorie..."
+                  searchPlaceholder="Rechercher une sous-catégorie..."
+                  emptyMessage="Aucune sous-catégorie trouvée"
+                />
+              );
+            })()}
 
-              {/* Bouton créer nouvelle sous-catégorie (toujours visible) */}
-              {!showSubcategorieDialog && (
-                <button
-                  type="button"
-                  onClick={() => setShowSubcategorieDialog(true)}
-                  className="w-full px-4 py-3.5 rounded-lg border-2 border-dashed border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-muted/50 transition-all text-left flex items-center gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span className="text-base font-medium">Nouvelle sous-catégorie</span>
-                </button>
-              )}
-
-              {/* Inline create subcategory */}
-              {showSubcategorieDialog && (
-                <div className="border-2 border-dashed border-primary/30 rounded-lg p-3 space-y-3 bg-primary/5">
-                  <Label>Nouvelle sous-catégorie</Label>
-                  <Input
-                    value={newSubcategorieName}
-                    onChange={(e) => setNewSubcategorieName(e.target.value)}
-                    placeholder="Ex: Plaquettes, Disques..."
-                    className="h-10"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") { e.preventDefault(); handleCreateSubcategorie(); }
-                    }}
-                  />
-                  <div className="flex gap-2 justify-end">
-                    <Button variant="outline" size="sm" onClick={() => { setShowSubcategorieDialog(false); setNewSubcategorieName(""); }}>
-                      Annuler
-                    </Button>
-                    <Button size="sm" onClick={handleCreateSubcategorie} disabled={!newSubcategorieName.trim()}>
-                      <Plus className="h-4 w-4 mr-1" /> Créer
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Inline edit subcategory */}
-            {editingSubcategorie && (
-              <div className="border border-border rounded-lg p-3 space-y-3 bg-card">
-                <Label>Modifier la sous-catégorie</Label>
+            {/* Inline create subcategory */}
+            {showSubcategorieDialog && (
+              <div className="border-2 border-dashed border-primary/30 rounded-lg p-3 space-y-3 bg-primary/5">
+                <Label>Nouvelle sous-catégorie</Label>
                 <Input
-                  value={editSubcategorieName}
-                  onChange={(e) => setEditSubcategorieName(e.target.value)}
+                  value={newSubcategorieName}
+                  onChange={(e) => setNewSubcategorieName(e.target.value)}
+                  placeholder="Ex: Plaquettes, Disques..."
                   className="h-10"
                   autoFocus
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") { e.preventDefault(); handleEditSubcategorie(); }
+                    if (e.key === "Enter") { e.preventDefault(); handleCreateSubcategorie(); }
                   }}
                 />
                 <div className="flex gap-2 justify-end">
-                  <Button variant="outline" size="sm" onClick={() => { setEditingSubcategorie(null); setEditSubcategorieName(""); }}>
+                  <Button variant="outline" size="sm" onClick={() => { setShowSubcategorieDialog(false); setNewSubcategorieName(""); }}>
                     Annuler
                   </Button>
-                  <Button size="sm" onClick={handleEditSubcategorie} disabled={!editSubcategorieName.trim()}>
-                    Modifier
+                  <Button size="sm" onClick={handleCreateSubcategorie} disabled={!newSubcategorieName.trim()}>
+                    <Plus className="h-4 w-4 mr-1" /> Créer
                   </Button>
                 </div>
               </div>
