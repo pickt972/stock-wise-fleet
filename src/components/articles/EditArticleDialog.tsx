@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import ArticleVehicleCompatibility from "./ArticleVehicleCompatibility";
 import { ArticleEmplacementsList } from "./ArticleEmplacementsList";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 
 
 interface Article {
