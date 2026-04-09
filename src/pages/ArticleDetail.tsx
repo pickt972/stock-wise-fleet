@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Edit, PlusCircle, FileText, MoreVertical, Trash2, Package, AlertTriangle } from "lucide-react";
+import ArticleVehicleCompatibility from "@/components/articles/ArticleVehicleCompatibility";
 import { PageHeader } from "@/components/ui/page-header";
 import { ActionButton } from "@/components/ui/action-button";
 import { Card } from "@/components/ui/card";
@@ -215,6 +216,9 @@ export default function ArticleDetail() {
               </div>
             </div>
           </Card>
+
+          {/* Compatibilité véhicules */}
+          <ArticleVehicleCompatibility articleId={article.id} />
 
           {/* Boutons d'action */}
           <div className="space-y-3">
