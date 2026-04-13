@@ -447,6 +447,15 @@ export default function Parametres() {
           <AdminResetPasswordForm />
         </DialogContent>
       </Dialog>
+
+      <Dialog open={showAdminMail} onOpenChange={setShowAdminMail}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Gestion des boîtes mail</DialogTitle>
+          </DialogHeader>
+          <AdminMailSettingsForm />
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
