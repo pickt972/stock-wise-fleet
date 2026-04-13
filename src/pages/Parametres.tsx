@@ -363,6 +363,13 @@ export default function Parametres() {
               />
               <SettingsCard
                 index={13}
+                icon={<Mail className="h-5 w-5" />}
+                title="Boîtes mail utilisateurs"
+                description="Gérer les comptes mail de tous"
+                onClick={() => setShowAdminMail(true)}
+              />
+              <SettingsCard
+                index={13}
                 icon={<BarChart3 className="h-5 w-5" />}
                 title="Rapports"
                 description="Rapports et statistiques"
