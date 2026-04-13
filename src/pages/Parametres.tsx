@@ -354,20 +354,27 @@ export default function Parametres() {
               />
               <SettingsCard
                 index={12}
+                icon={<UserCog className="h-5 w-5" />}
+                title="Réinitialiser un mot de passe"
+                description="Changer le MDP d'un utilisateur"
+                onClick={() => setShowAdminReset(true)}
+              />
+              <SettingsCard
+                index={13}
                 icon={<BarChart3 className="h-5 w-5" />}
                 title="Rapports"
                 description="Rapports et statistiques"
                 onClick={() => navigate('/rapports')}
               />
               <SettingsCard
-                index={13}
+                index={14}
                 icon={<ClipboardList className="h-5 w-5" />}
                 title="Journal d'audit"
                 description="Traçabilité des actions"
                 onClick={() => navigate('/journal-audit')}
               />
               <SettingsCard
-                index={14}
+                index={15}
                 icon={<History className="h-5 w-5" />}
                 title="Historique articles"
                 description="Suivi détaillé par article"
@@ -420,6 +427,15 @@ export default function Parametres() {
             <DialogTitle>Personnalisation des couleurs</DialogTitle>
           </DialogHeader>
           <ColorPreferencesSettings />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showAdminReset} onOpenChange={setShowAdminReset}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Réinitialiser un mot de passe</DialogTitle>
+          </DialogHeader>
+          <AdminResetPasswordForm />
         </DialogContent>
       </Dialog>
     </DashboardLayout>
