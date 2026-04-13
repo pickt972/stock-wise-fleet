@@ -16,6 +16,7 @@ import { MailSettingsForm } from "@/components/mail/MailSettingsForm";
 import { CompanySettingsForm } from "@/components/company/CompanySettingsForm";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { ColorPreferencesSettings } from "@/components/settings/ColorPreferencesSettings";
+import { AdminResetPasswordForm } from "@/components/settings/AdminResetPasswordForm";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
