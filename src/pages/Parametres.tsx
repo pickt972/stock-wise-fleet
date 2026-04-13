@@ -199,6 +199,7 @@ export default function Parametres() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showColors, setShowColors] = useState(false);
   const [showAdminReset, setShowAdminReset] = useState(false);
+  const [showAdminMail, setShowAdminMail] = useState(false);
 
   useEffect(() => {
     document.title = "Paramètres | StockAuto";
