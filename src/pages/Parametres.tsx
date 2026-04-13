@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { 
   Users, Truck, MapPin, Building2, Tags, Mail, Building, 
-  Shield, BarChart3, History, KeyRound, ClipboardList, Bell, Palette, Baby
+  Shield, BarChart3, History, KeyRound, ClipboardList, Bell, Palette, Baby, UserCog
 } from "lucide-react";
 import { MailSettingsForm } from "@/components/mail/MailSettingsForm";
 import { CompanySettingsForm } from "@/components/company/CompanySettingsForm";
@@ -197,6 +197,7 @@ export default function Parametres() {
   const [showPassword, setShowPassword] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showColors, setShowColors] = useState(false);
+  const [showAdminReset, setShowAdminReset] = useState(false);
 
   useEffect(() => {
     document.title = "Paramètres | StockAuto";
