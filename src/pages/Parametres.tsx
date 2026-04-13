@@ -17,6 +17,7 @@ import { CompanySettingsForm } from "@/components/company/CompanySettingsForm";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { ColorPreferencesSettings } from "@/components/settings/ColorPreferencesSettings";
 import { AdminResetPasswordForm } from "@/components/settings/AdminResetPasswordForm";
+import { AdminMailSettingsForm } from "@/components/settings/AdminMailSettingsForm";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -198,6 +199,7 @@ export default function Parametres() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showColors, setShowColors] = useState(false);
   const [showAdminReset, setShowAdminReset] = useState(false);
+  const [showAdminMail, setShowAdminMail] = useState(false);
 
   useEffect(() => {
     document.title = "Paramètres | StockAuto";
@@ -361,6 +363,13 @@ export default function Parametres() {
               />
               <SettingsCard
                 index={13}
+                icon={<Mail className="h-5 w-5" />}
+                title="Boîtes mail utilisateurs"
+                description="Gérer les comptes mail de tous"
+                onClick={() => setShowAdminMail(true)}
+              />
+              <SettingsCard
+                index={13}
                 icon={<BarChart3 className="h-5 w-5" />}
                 title="Rapports"
                 description="Rapports et statistiques"
@@ -436,6 +445,15 @@ export default function Parametres() {
             <DialogTitle>Réinitialiser un mot de passe</DialogTitle>
           </DialogHeader>
           <AdminResetPasswordForm />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showAdminMail} onOpenChange={setShowAdminMail}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Gestion des boîtes mail</DialogTitle>
+          </DialogHeader>
+          <AdminMailSettingsForm />
         </DialogContent>
       </Dialog>
     </DashboardLayout>
