@@ -10,12 +10,13 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { 
   Users, Truck, MapPin, Building2, Tags, Mail, Building, 
-  Shield, BarChart3, History, KeyRound, ClipboardList, Bell, Palette, Baby
+  Shield, BarChart3, History, KeyRound, ClipboardList, Bell, Palette, Baby, UserCog
 } from "lucide-react";
 import { MailSettingsForm } from "@/components/mail/MailSettingsForm";
 import { CompanySettingsForm } from "@/components/company/CompanySettingsForm";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { ColorPreferencesSettings } from "@/components/settings/ColorPreferencesSettings";
+import { AdminResetPasswordForm } from "@/components/settings/AdminResetPasswordForm";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -196,6 +197,7 @@ export default function Parametres() {
   const [showPassword, setShowPassword] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showColors, setShowColors] = useState(false);
+  const [showAdminReset, setShowAdminReset] = useState(false);
 
   useEffect(() => {
     document.title = "Paramètres | StockAuto";
@@ -352,20 +354,27 @@ export default function Parametres() {
               />
               <SettingsCard
                 index={12}
+                icon={<UserCog className="h-5 w-5" />}
+                title="Réinitialiser un mot de passe"
+                description="Changer le MDP d'un utilisateur"
+                onClick={() => setShowAdminReset(true)}
+              />
+              <SettingsCard
+                index={13}
                 icon={<BarChart3 className="h-5 w-5" />}
                 title="Rapports"
                 description="Rapports et statistiques"
                 onClick={() => navigate('/rapports')}
               />
               <SettingsCard
-                index={13}
+                index={14}
                 icon={<ClipboardList className="h-5 w-5" />}
                 title="Journal d'audit"
                 description="Traçabilité des actions"
                 onClick={() => navigate('/journal-audit')}
               />
               <SettingsCard
-                index={14}
+                index={15}
                 icon={<History className="h-5 w-5" />}
                 title="Historique articles"
                 description="Suivi détaillé par article"
@@ -418,6 +427,15 @@ export default function Parametres() {
             <DialogTitle>Personnalisation des couleurs</DialogTitle>
           </DialogHeader>
           <ColorPreferencesSettings />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showAdminReset} onOpenChange={setShowAdminReset}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Réinitialiser un mot de passe</DialogTitle>
+          </DialogHeader>
+          <AdminResetPasswordForm />
         </DialogContent>
       </Dialog>
     </DashboardLayout>
