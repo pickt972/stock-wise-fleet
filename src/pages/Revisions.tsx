@@ -403,7 +403,7 @@ export default function Revisions() {
         article_id: articleId,
         type: 'sortie',
         motif: 'révision',
-        quantity: -quantity, // Négatif pour une sortie
+        quantity: quantity,
         user_id: user.id,
         vehicule_id: selectedGroup?.vehicules[0]?.id || null
       }));
