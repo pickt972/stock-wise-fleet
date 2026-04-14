@@ -341,12 +341,13 @@ export default function Revisions() {
 
   const handleArticleSelection = (articleId: string, checked: boolean) => {
     const newSelected = new Set(selectedArticles);
+    const qtyRevision = typeof quantiteRevision === "number" ? quantiteRevision : 1;
     if (checked) {
       newSelected.add(articleId);
-      // Initialiser la quantité à 1 par défaut
+      // Initialiser la quantité selon le nombre de véhicules à réviser
       setArticleQuantities(prev => ({
         ...prev,
-        [articleId]: prev[articleId] || 1
+        [articleId]: prev[articleId] || qtyRevision
       }));
     } else {
       newSelected.delete(articleId);
@@ -575,10 +576,18 @@ export default function Revisions() {
                         if (value === "") {
                           setQuantiteRevision("");
                         } else {
-                          const num = parseInt(value);
-                          if (!isNaN(num) && num >= 1) {
-                            setQuantiteRevision(num);
-                          }
+                        const num = parseInt(value);
+                        if (!isNaN(num) && num >= 1) {
+                          setQuantiteRevision(num);
+                          // Mettre à jour les quantités des articles sélectionnés
+                          setArticleQuantities(prev => {
+                            const updated = { ...prev };
+                            selectedArticles.forEach(id => {
+                              updated[id] = num;
+                            });
+                            return updated;
+                          });
+                        }
                         }
                       }}
                       onBlur={(e) => {
