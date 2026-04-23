@@ -14,6 +14,28 @@ interface BarcodeScannerProps {
   isOpen: boolean;
 }
 
+const QR_LIKE_FORMATS = new Set<BarcodeFormat>([
+  BarcodeFormat.QR_CODE,
+  BarcodeFormat.AZTEC,
+  BarcodeFormat.DATA_MATRIX,
+  BarcodeFormat.MAXICODE,
+  BarcodeFormat.PDF_417,
+]);
+
+function isQRLikeFormat(format: BarcodeFormat): boolean {
+  return QR_LIKE_FORMATS.has(format);
+}
+
+function formatBarcodeFormat(format: BarcodeFormat): string {
+  const label = BarcodeFormat[format];
+  if (!label) return "Inconnu";
+  // "QR_CODE" -> "QR Code", "EAN_13" -> "EAN 13"
+  return label
+    .split("_")
+    .map((part) => (part.length <= 3 ? part : part.charAt(0) + part.slice(1).toLowerCase()))
+    .join(" ");
+}
+
 export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [codeReader, setCodeReader] = useState<BrowserMultiFormatReader | null>(null);
