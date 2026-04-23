@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { BrowserMultiFormatReader, IScannerControls } from "@zxing/browser";
-import { Result } from "@zxing/library";
+import { Result, BarcodeFormat } from "@zxing/library";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,7 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
   const [lastScanResult, setLastScanResult] = useState<string>("");
+  const [lastScanFormat, setLastScanFormat] = useState<string>("");
   const isProcessingRef = useRef(false);
   const lastScanResultRef = useRef<string>("");
   const [torchEnabled, setTorchEnabled] = useState(false);
