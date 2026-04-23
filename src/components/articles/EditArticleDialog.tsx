@@ -20,7 +20,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   ArrowLeft, ArrowRight, Check, Edit, Plus, Trash2,
   Layers, Package, Hash, Tag, MapPin, Truck,
-  Battery, Disc, Droplets, Zap, Cog, CircleDot, Car, Wrench, Boxes,
+  Battery, Disc, Droplets, Zap, Cog, CircleDot, Car, Wrench, Boxes, Camera,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -28,6 +28,7 @@ import { useRoleAccess } from "@/hooks/useRoleAccess";
 import ArticleVehicleCompatibility from "./ArticleVehicleCompatibility";
 import { ArticleEmplacementsList } from "./ArticleEmplacementsList";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
 
 
 interface Article {
@@ -71,6 +72,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
   const [open, setOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [showScanner, setShowScanner] = useState(false);
 
   // Total steps: 1=Cat+Designation, 2=Ref+Marque, 3=Fournisseur, 4=Emplacement, 5=Stock+Prix, 6=Compatibilité, 7=Récapitulatif
   const totalSteps = 7;
@@ -458,12 +460,24 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
 
             <div className="space-y-1.5">
               <Label className="text-xs sm:text-sm">Référence *</Label>
-              <Input
-                value={formData.reference}
-                onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
-                required
-                className="h-11 text-base font-mono"
-              />
+              <div className="flex gap-2">
+                <Input
+                  value={formData.reference}
+                  onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
+                  required
+                  className="h-11 text-base font-mono flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setShowScanner(true)}
+                  className="h-11 w-11 shrink-0 border-2"
+                  title="Scanner le code-barres"
+                >
+                  <Camera className="h-5 w-5" />
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-1.5">
@@ -855,6 +869,15 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
         </div>
       </DialogContent>
     </Dialog>
+    <BarcodeScanner
+      isOpen={showScanner}
+      onScanResult={(code) => {
+        setFormData((prev) => ({ ...prev, reference: code }));
+        setShowScanner(false);
+        toast({ title: "✅ Code scanné", description: code });
+      }}
+      onClose={() => setShowScanner(false)}
+    />
     </>
   );
 }
