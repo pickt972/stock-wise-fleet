@@ -12,6 +12,9 @@ import {
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { useAlerts } from "@/hooks/useAlerts";
 import { Badge } from "@/components/ui/badge";
+import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
@@ -40,7 +43,9 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
   const location = useLocation();
   const { permissions, userRole } = useRoleAccess();
   const { totalAlerts } = useAlerts();
+  const { toast } = useToast();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
 
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + "/");
@@ -68,6 +73,48 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
   const handleMoreClick = (href: string) => {
     setMoreOpen(false);
     navigate(href);
+  };
+
+  const handleScanResult = async (code: string) => {
+    setShowScanner(false);
+    const raw = code.trim();
+    const numeric = raw.replace(/\D/g, "");
+    const q = numeric.length >= 8 ? numeric : raw;
+
+    try {
+      const { data } = await supabase
+        .from("articles")
+        .select("id, designation, reference")
+        .or(`reference.eq.${q},code_barre.eq.${q}`)
+        .maybeSingle();
+
+      if (data) {
+        toast({ title: "✅ Article trouvé", description: data.designation });
+        navigate(`/articles/${data.id}`);
+        return;
+      }
+
+      const { data: partials } = await supabase
+        .from("articles")
+        .select("id, designation")
+        .or(`reference.ilike.%${q}%,code_barre.ilike.%${q}%,designation.ilike.%${q}%`)
+        .limit(1);
+
+      if (partials && partials.length > 0) {
+        toast({ title: "✅ Article trouvé", description: partials[0].designation });
+        navigate(`/articles/${partials[0].id}`);
+      } else {
+        toast({
+          title: "📦 Article introuvable",
+          description: `Code : ${q}. Création proposée.`,
+        });
+        navigate(
+          `/articles/new?code_barre=${encodeURIComponent(q)}&returnTo=${encodeURIComponent(location.pathname)}`
+        );
+      }
+    } catch {
+      toast({ title: "Erreur de recherche", variant: "destructive" });
+    }
   };
 
   return (
@@ -110,11 +157,11 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
           <span>Articles</span>
         </NavLink>
 
-        {/* Bouton scan central proéminent */}
+        {/* Bouton scan central proéminent — ouvre directement la caméra */}
         <div className="flex items-center justify-center h-full">
           <button
             type="button"
-            onClick={() => navigate("/scanner")}
+            onClick={() => setShowScanner(true)}
             aria-label="Scanner un code-barres"
             className={cn(
               "relative -mt-6 h-16 w-16 rounded-full bg-primary text-primary-foreground",
@@ -190,6 +237,12 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
           </SheetContent>
         </Sheet>
       </div>
+
+      <BarcodeScanner
+        isOpen={showScanner}
+        onScanResult={handleScanResult}
+        onClose={() => setShowScanner(false)}
+      />
     </nav>
   );
 }
