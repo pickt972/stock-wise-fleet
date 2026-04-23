@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { BrowserMultiFormatReader, IScannerControls } from "@zxing/browser";
-import { Result } from "@zxing/library";
+import { Result, BarcodeFormat } from "@zxing/library";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,28 @@ interface BarcodeScannerProps {
   isOpen: boolean;
 }
 
+const QR_LIKE_FORMATS = new Set<BarcodeFormat>([
+  BarcodeFormat.QR_CODE,
+  BarcodeFormat.AZTEC,
+  BarcodeFormat.DATA_MATRIX,
+  BarcodeFormat.MAXICODE,
+  BarcodeFormat.PDF_417,
+]);
+
+function isQRLikeFormat(format: BarcodeFormat): boolean {
+  return QR_LIKE_FORMATS.has(format);
+}
+
+function formatBarcodeFormat(format: BarcodeFormat): string {
+  const label = BarcodeFormat[format];
+  if (!label) return "Inconnu";
+  // "QR_CODE" -> "QR Code", "EAN_13" -> "EAN 13"
+  return label
+    .split("_")
+    .map((part) => (part.length <= 3 ? part : part.charAt(0) + part.slice(1).toLowerCase()))
+    .join(" ");
+}
+
 export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [codeReader, setCodeReader] = useState<BrowserMultiFormatReader | null>(null);
@@ -23,6 +45,7 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
   const [lastScanResult, setLastScanResult] = useState<string>("");
+  const [lastScanFormat, setLastScanFormat] = useState<string>("");
   const isProcessingRef = useRef(false);
   const lastScanResultRef = useRef<string>("");
   const [torchEnabled, setTorchEnabled] = useState(false);
@@ -108,6 +131,10 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
     const handleResult = (result: Result | null, error?: Error) => {
       if (result) {
         const scannedText = result.getText();
+        const formatEnum = result.getBarcodeFormat();
+        const formatLabel = formatBarcodeFormat(formatEnum);
+        const formatKind = isQRLikeFormat(formatEnum) ? "QR Code" : "Code-barres";
+
         // Ignore duplicate consecutive results
         if (scannedText === lastScanResultRef.current) {
           return;
@@ -118,11 +145,16 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
         isProcessingRef.current = true;
         lastScanResultRef.current = scannedText;
         setLastScanResult(scannedText);
+        setLastScanFormat(formatLabel);
 
         if ('vibrate' in navigator) {
           navigator.vibrate([100, 50, 100]);
         }
         playBeep();
+        toast({
+          title: `✅ ${formatKind} détecté`,
+          description: `${formatLabel} — ${scannedText}`,
+        });
         stopScanning();
         setTimeout(() => {
           try {
@@ -447,8 +479,15 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
               </div>
 
               {lastScanResult && (
-                <div className="p-3 bg-muted rounded-lg">
-                  <p className="text-sm font-medium">Dernier code scanné:</p>
+                <div className="p-3 bg-muted rounded-lg space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium">Dernier code scanné</p>
+                    {lastScanFormat && (
+                      <Badge variant="secondary" className="text-[10px]">
+                        {lastScanFormat}
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground font-mono break-all">{lastScanResult}</p>
                 </div>
               )}
