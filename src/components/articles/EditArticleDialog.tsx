@@ -20,7 +20,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   ArrowLeft, ArrowRight, Check, Edit, Plus, Trash2,
   Layers, Package, Hash, Tag, MapPin, Truck,
-  Battery, Disc, Droplets, Zap, Cog, CircleDot, Car, Wrench, Boxes,
+  Battery, Disc, Droplets, Zap, Cog, CircleDot, Car, Wrench, Boxes, Camera,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -28,6 +28,7 @@ import { useRoleAccess } from "@/hooks/useRoleAccess";
 import ArticleVehicleCompatibility from "./ArticleVehicleCompatibility";
 import { ArticleEmplacementsList } from "./ArticleEmplacementsList";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
 
 
 interface Article {
