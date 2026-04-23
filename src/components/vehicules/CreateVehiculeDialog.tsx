@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { LicensePlateScanner } from "./LicensePlateScanner";
+import { AutocompleteInput } from "@/components/ui/autocomplete-input";
+import { useVehiculeSuggestions } from "@/hooks/useVehiculeSuggestions";
 
 interface CreateVehiculeDialogProps {
   open: boolean;
@@ -29,6 +31,7 @@ export function CreateVehiculeDialog({ open, onOpenChange, onVehiculeCreated, on
 
   const { toast } = useToast();
   const { user } = useAuth();
+  const { data: suggestions } = useVehiculeSuggestions();
 
   const formatImmatriculation = (value: string) => {
     // Supprimer tous les caractères non alphanumériques et convertir en majuscules
@@ -171,20 +174,22 @@ export function CreateVehiculeDialog({ open, onOpenChange, onVehiculeCreated, on
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="marque">Marque *</Label>
-              <Input
+              <AutocompleteInput
                 id="marque"
                 value={formData.marque}
-                onChange={(e) => setFormData(prev => ({ ...prev, marque: e.target.value }))}
+                onValueChange={(v) => setFormData(prev => ({ ...prev, marque: v }))}
+                suggestions={suggestions?.marques ?? []}
                 placeholder="Renault"
                 required
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="modele">Modèle *</Label>
-              <Input
+              <AutocompleteInput
                 id="modele"
                 value={formData.modele}
-                onChange={(e) => setFormData(prev => ({ ...prev, modele: e.target.value }))}
+                onValueChange={(v) => setFormData(prev => ({ ...prev, modele: v }))}
+                suggestions={suggestions?.modeles ?? []}
                 placeholder="Clio"
                 required
               />
@@ -194,10 +199,11 @@ export function CreateVehiculeDialog({ open, onOpenChange, onVehiculeCreated, on
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="motorisation">Motorisation</Label>
-              <Input
+              <AutocompleteInput
                 id="motorisation"
                 value={formData.motorisation}
-                onChange={(e) => setFormData(prev => ({ ...prev, motorisation: e.target.value }))}
+                onValueChange={(v) => setFormData(prev => ({ ...prev, motorisation: v }))}
+                suggestions={suggestions?.motorisations ?? []}
                 placeholder="1.5 dCi"
               />
             </div>
