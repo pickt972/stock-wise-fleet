@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,20 +10,22 @@ import { Label } from "@/components/ui/label";
 import { Car, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
-import type { Tables } from "@/integrations/supabase/types";
-
-type Vehicule = Tables<"vehicules">;
-type ArticleVehicule = Tables<"article_vehicules">;
 
 interface ArticleVehicleCompatibilityProps {
   articleId: string;
 }
 
+// Clé de regroupement: marque + modèle + motorisation (insensible à la casse)
+const groupKey = (v: { marque: string; modele: string; motorisation?: string | null }) =>
+  `${v.marque.trim().toLowerCase()}|${v.modele.trim().toLowerCase()}|${(v.motorisation ?? "").trim().toLowerCase()}`;
+
+const groupLabel = (v: { marque: string; modele: string; motorisation?: string | null }) =>
+  `${v.marque} ${v.modele}${v.motorisation ? ` (${v.motorisation})` : ""}`;
+
 export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicleCompatibilityProps) {
-  console.count("[ArticleVehicleCompatibility] render");
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [selectedVehiculeId, setSelectedVehiculeId] = useState<string>("");
+  const [selectedGroupKey, setSelectedGroupKey] = useState<string>("");
   const [notes, setNotes] = useState("");
 
   const { data: vehicules = [] } = useQuery({
@@ -34,7 +36,6 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
         .select("*")
         .eq("actif", true)
         .order("marque", { ascending: true });
-      
       if (error) throw error;
       return data;
     },
@@ -58,30 +59,72 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
           )
         `)
         .eq("article_id", articleId);
-      
       if (error) throw error;
       return data;
     },
-    enabled: !!articleId, // Only run when articleId is available
+    enabled: !!articleId,
   });
 
+  // Regrouper les véhicules disponibles par marque/modèle/motorisation
+  const vehiculeGroups = useMemo(() => {
+    const map = new Map<string, { key: string; label: string; vehiculeIds: string[] }>();
+    vehicules.forEach((v) => {
+      const k = groupKey(v);
+      const existing = map.get(k);
+      if (existing) {
+        existing.vehiculeIds.push(v.id);
+      } else {
+        map.set(k, { key: k, label: groupLabel(v), vehiculeIds: [v.id] });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label));
+  }, [vehicules]);
+
+  // Regrouper les compatibilités existantes par marque/modèle/motorisation
+  const compatibilityGroups = useMemo(() => {
+    const map = new Map<string, {
+      key: string;
+      label: string;
+      items: Array<{ id: string; notes: string | null; immatriculation: string }>;
+    }>();
+    compatibilities.forEach((c) => {
+      if (!c.vehicules) return;
+      const k = groupKey(c.vehicules);
+      const label = groupLabel(c.vehicules);
+      const item = { id: c.id, notes: c.notes, immatriculation: c.vehicules.immatriculation };
+      const existing = map.get(k);
+      if (existing) {
+        existing.items.push(item);
+      } else {
+        map.set(k, { key: k, label, items: [item] });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label));
+  }, [compatibilities]);
+
+  // Groupes déjà associés (pour les filtrer du sélecteur)
+  const associatedGroupKeys = useMemo(
+    () => new Set(compatibilityGroups.map((g) => g.key)),
+    [compatibilityGroups]
+  );
+
+  const availableGroups = vehiculeGroups.filter((g) => !associatedGroupKeys.has(g.key));
+
   const addCompatibilityMutation = useMutation({
-    mutationFn: async ({ vehiculeId, notes }: { vehiculeId: string; notes: string }) => {
-      const { error } = await supabase
-        .from("article_vehicules")
-        .insert({
-          article_id: articleId,
-          vehicule_id: vehiculeId,
-          notes: notes || null,
-          user_id: user?.id,
-        });
-      
+    mutationFn: async ({ vehiculeIds, notes }: { vehiculeIds: string[]; notes: string }) => {
+      const rows = vehiculeIds.map((vid) => ({
+        article_id: articleId,
+        vehicule_id: vid,
+        notes: notes || null,
+        user_id: user?.id,
+      }));
+      const { error } = await supabase.from("article_vehicules").insert(rows);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["article-vehicules", articleId] });
       toast.success("Compatibilité ajoutée avec succès");
-      setSelectedVehiculeId("");
+      setSelectedGroupKey("");
       setNotes("");
     },
     onError: (error) => {
@@ -89,13 +132,9 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
     },
   });
 
-  const removeCompatibilityMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("article_vehicules")
-        .delete()
-        .eq("id", id);
-      
+  const removeGroupMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase.from("article_vehicules").delete().in("id", ids);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -108,28 +147,14 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
   });
 
   const handleAddCompatibility = () => {
-    if (!selectedVehiculeId) {
+    if (!selectedGroupKey) {
       toast.error("Veuillez sélectionner un véhicule");
       return;
     }
-
-    // Vérifier si la compatibilité existe déjà
-    const exists = compatibilities.some(
-      (comp) => comp.vehicule_id === selectedVehiculeId
-    );
-
-    if (exists) {
-      toast.error("Ce véhicule est déjà associé à cet article");
-      return;
-    }
-
-    addCompatibilityMutation.mutate({ vehiculeId: selectedVehiculeId, notes });
+    const group = vehiculeGroups.find((g) => g.key === selectedGroupKey);
+    if (!group) return;
+    addCompatibilityMutation.mutate({ vehiculeIds: group.vehiculeIds, notes });
   };
-
-  const availableVehicules = vehicules.filter(
-    (vehicule) => !compatibilities.some((comp) => comp.vehicule_id === vehicule.id)
-  );
-  console.log("[ArticleVehicleCompatibility] availableVehicules:", availableVehicules.length);
 
   return (
     <Card>
@@ -142,18 +167,18 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
       <CardContent className="space-y-4 overflow-x-hidden">
         <div className="space-y-3">
           <div>
-            <Label htmlFor="vehicule-select">Ajouter un véhicule compatible</Label>
+            <Label htmlFor="vehicule-select">Ajouter un modèle de véhicule compatible</Label>
             <SearchableSelect
               id="vehicule-select"
-              options={availableVehicules.map((v) => ({
-                value: v.id,
-                label: `${v.marque} ${v.modele}${v.motorisation ? ` (${v.motorisation})` : ""} - ${v.immatriculation}`,
+              options={availableGroups.map((g) => ({
+                value: g.key,
+                label: `${g.label}${g.vehiculeIds.length > 1 ? ` — ${g.vehiculeIds.length} véhicules` : ""}`,
               }))}
-              value={selectedVehiculeId}
-              onValueChange={setSelectedVehiculeId}
-              placeholder="Sélectionner un véhicule"
-              searchPlaceholder="Rechercher un véhicule..."
-              emptyMessage="Aucun véhicule disponible."
+              value={selectedGroupKey}
+              onValueChange={setSelectedGroupKey}
+              placeholder="Sélectionner un modèle"
+              searchPlaceholder="Rechercher un modèle..."
+              emptyMessage="Aucun modèle disponible."
             />
           </div>
 
@@ -168,9 +193,9 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
             />
           </div>
 
-          <Button 
+          <Button
             onClick={handleAddCompatibility}
-            disabled={!selectedVehiculeId || addCompatibilityMutation.isPending}
+            disabled={!selectedGroupKey || addCompatibilityMutation.isPending}
             className="w-full"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -179,41 +204,49 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
         </div>
 
         <div className="space-y-2">
-          <h4 className="font-medium">Véhicules compatibles :</h4>
-          {compatibilities.length === 0 ? (
+          <h4 className="font-medium">Modèles compatibles :</h4>
+          {compatibilityGroups.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Aucune compatibilité définie pour cet article
             </p>
           ) : (
             <div className="space-y-2">
-              {compatibilities.map((compatibility) => (
-                <div key={compatibility.id} className="flex items-center justify-between gap-2 p-3 border rounded-lg overflow-hidden">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-col gap-1 min-w-0">
-                      <Badge variant="outline" className="w-fit max-w-full break-words whitespace-normal text-xs">
-                        {compatibility.vehicules?.marque} {compatibility.vehicules?.modele}
-                        {compatibility.vehicules?.motorisation && ` (${compatibility.vehicules?.motorisation})`}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground break-words whitespace-normal">
-                        {compatibility.vehicules?.immatriculation}
-                      </span>
-                    </div>
-                    {compatibility.notes && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {compatibility.notes}
-                      </p>
-                    )}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeCompatibilityMutation.mutate(compatibility.id)}
-                    disabled={removeCompatibilityMutation.isPending}
+              {compatibilityGroups.map((group) => {
+                const ids = group.items.map((i) => i.id);
+                const allNotes = Array.from(
+                  new Set(group.items.map((i) => i.notes).filter(Boolean) as string[])
+                );
+                return (
+                  <div
+                    key={group.key}
+                    className="flex items-center justify-between gap-2 p-3 border rounded-lg overflow-hidden"
                   >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col gap-1 min-w-0">
+                        <Badge variant="outline" className="w-fit max-w-full break-words whitespace-normal text-xs">
+                          {group.label}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground break-words whitespace-normal">
+                          {group.items.length} véhicule{group.items.length > 1 ? "s" : ""} concerné{group.items.length > 1 ? "s" : ""}
+                        </span>
+                      </div>
+                      {allNotes.length > 0 && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {allNotes.join(" • ")}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeGroupMutation.mutate(ids)}
+                      disabled={removeGroupMutation.isPending}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
