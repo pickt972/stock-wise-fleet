@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Car, Plus, X, ChevronDown, ChevronRight } from "lucide-react";
+import { Car, Plus, X, ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -27,7 +27,41 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
   const queryClient = useQueryClient();
   const [selectedGroupKey, setSelectedGroupKey] = useState<string>("");
   const [notes, setNotes] = useState("");
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const storageKey = useMemo(
+    () => `article-vehicules:expanded:${user?.id ?? "anon"}:${articleId}`,
+    [user?.id, articleId]
+  );
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) return new Set();
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? new Set(arr) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  // Recharger l'état si l'utilisateur ou l'article change
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      const arr = raw ? JSON.parse(raw) : [];
+      setExpandedGroups(new Set(Array.isArray(arr) ? arr : []));
+    } catch {
+      setExpandedGroups(new Set());
+    }
+  }, [storageKey]);
+
+  // Persister à chaque changement
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(Array.from(expandedGroups)));
+    } catch {
+      // ignore quota errors
+    }
+  }, [expandedGroups, storageKey]);
 
   const toggleGroup = (key: string) => {
     setExpandedGroups((prev) => {
