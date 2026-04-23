@@ -43,6 +43,7 @@ interface Article {
   prix_achat: number;
   emplacement: string;
   fournisseur_id?: string;
+  code_barre?: string | null;
 }
 
 interface EditArticleDialogProps {
