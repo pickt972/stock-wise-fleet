@@ -118,8 +118,8 @@ export default function Dashboard() {
           <p className="text-sm text-muted-foreground">Scannez un article pour commencer</p>
         </div>
 
-        {/* BIG SCAN BUTTON */}
-        <div className="flex flex-col items-center gap-3">
+        {/* BIG SCAN BUTTON — masqué sur mobile (déjà présent dans la barre du bas) */}
+        <div className="hidden md:flex flex-col items-center gap-3">
           <button
             onClick={() => setShowScanner(true)}
             className="relative w-36 h-36 rounded-full bg-primary text-primary-foreground shadow-[0_8px_30px_-4px_hsl(var(--primary)/0.5)] hover:shadow-[0_12px_40px_-4px_hsl(var(--primary)/0.6)] active:scale-95 transition-all duration-200 flex items-center justify-center group"
