@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -18,11 +19,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           onClose={() => setSidebarOpen(false)} 
         />
         <main className="flex-1 md:ml-56 transition-all duration-300 w-full min-w-0 overflow-x-hidden">
-          <div className="p-3 sm:p-4 lg:p-6 w-full overflow-x-hidden">
+          {/* pb-24 sur mobile pour ne pas masquer le contenu sous la bottom nav */}
+          <div className="p-3 sm:p-4 lg:p-6 w-full overflow-x-hidden pb-24 md:pb-6">
             {children}
           </div>
         </main>
       </div>
+      <MobileBottomNav />
     </div>
   );
 }
