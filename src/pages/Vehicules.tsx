@@ -16,6 +16,8 @@ import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "./DashboardLayout";
 import type { Tables } from "@/integrations/supabase/types";
 import { LicensePlateScanner } from "@/components/vehicules/LicensePlateScanner";
+import { AutocompleteInput } from "@/components/ui/autocomplete-input";
+import { useVehiculeSuggestions } from "@/hooks/useVehiculeSuggestions";
 
 type Vehicule = Tables<"vehicules">;
 type Article = Tables<"articles">;
@@ -23,6 +25,7 @@ type Article = Tables<"articles">;
 export default function Vehicules() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { data: vSuggestions } = useVehiculeSuggestions();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingVehicule, setEditingVehicule] = useState<Vehicule | null>(null);
   const [viewingVehiculeId, setViewingVehiculeId] = useState<string | null>(null);
@@ -231,10 +234,11 @@ export default function Vehicules() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="marque">Marque *</Label>
-                    <Input
+                    <AutocompleteInput
                       id="marque"
                       value={formData.marque}
-                      onChange={(e) => setFormData(prev => ({ ...prev, marque: e.target.value }))}
+                      onValueChange={(v) => setFormData(prev => ({ ...prev, marque: v }))}
+                      suggestions={vSuggestions?.marques ?? []}
                       placeholder="Peugeot, Renault..."
                       required
                     />
@@ -242,10 +246,11 @@ export default function Vehicules() {
                   
                   <div>
                     <Label htmlFor="modele">Modèle *</Label>
-                    <Input
+                    <AutocompleteInput
                       id="modele"
                       value={formData.modele}
-                      onChange={(e) => setFormData(prev => ({ ...prev, modele: e.target.value }))}
+                      onValueChange={(v) => setFormData(prev => ({ ...prev, modele: v }))}
+                      suggestions={vSuggestions?.modeles ?? []}
                       placeholder="208, Clio..."
                       required
                     />
@@ -255,10 +260,11 @@ export default function Vehicules() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="motorisation">Motorisation</Label>
-                    <Input
+                    <AutocompleteInput
                       id="motorisation"
                       value={formData.motorisation}
-                      onChange={(e) => setFormData(prev => ({ ...prev, motorisation: e.target.value }))}
+                      onValueChange={(v) => setFormData(prev => ({ ...prev, motorisation: v }))}
+                      suggestions={vSuggestions?.motorisations ?? []}
                       placeholder="Essence, Diesel, Électrique..."
                     />
                   </div>
