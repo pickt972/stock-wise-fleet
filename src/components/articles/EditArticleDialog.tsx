@@ -109,6 +109,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
     prix_achat: article.prix_achat,
     emplacement: article.emplacement || "",
     fournisseur_id: article.fournisseur_id || "none",
+    code_barre: article.code_barre || "",
   });
 
   useEffect(() => {
@@ -123,6 +124,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
       prix_achat: article.prix_achat,
       emplacement: article.emplacement || "",
       fournisseur_id: article.fournisseur_id || "none",
+      code_barre: article.code_barre || "",
     });
   }, [article]);
 
