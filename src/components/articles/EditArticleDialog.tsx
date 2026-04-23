@@ -292,6 +292,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
         prix_achat: formData.prix_achat,
         emplacement: formData.emplacement,
         fournisseur_id: formData.fournisseur_id === "none" ? null : formData.fournisseur_id,
+        code_barre: formData.code_barre?.trim() ? formData.code_barre.trim() : null,
       };
       const { error } = await supabase.from('articles').update(updateData).eq('id', article.id);
       if (error) throw error;
