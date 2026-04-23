@@ -27,6 +27,16 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
   const queryClient = useQueryClient();
   const [selectedGroupKey, setSelectedGroupKey] = useState<string>("");
   const [notes, setNotes] = useState("");
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+  const toggleGroup = (key: string) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   const { data: vehicules = [] } = useQuery({
     queryKey: ["vehicules"],
