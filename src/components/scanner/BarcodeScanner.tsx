@@ -392,7 +392,7 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
   return (
     <div 
       ref={containerRef}
-      className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/95 flex items-center justify-center z-[100] p-4"
     >
       <Card className="w-full max-w-md bg-background shadow-2xl">
         <CardHeader className="pb-3">
