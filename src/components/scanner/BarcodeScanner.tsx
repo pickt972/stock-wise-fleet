@@ -109,6 +109,10 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
     const handleResult = (result: Result | null, error?: Error) => {
       if (result) {
         const scannedText = result.getText();
+        const formatEnum = result.getBarcodeFormat();
+        const formatLabel = formatBarcodeFormat(formatEnum);
+        const formatKind = isQRLikeFormat(formatEnum) ? "QR Code" : "Code-barres";
+
         // Ignore duplicate consecutive results
         if (scannedText === lastScanResultRef.current) {
           return;
@@ -119,11 +123,16 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
         isProcessingRef.current = true;
         lastScanResultRef.current = scannedText;
         setLastScanResult(scannedText);
+        setLastScanFormat(formatLabel);
 
         if ('vibrate' in navigator) {
           navigator.vibrate([100, 50, 100]);
         }
         playBeep();
+        toast({
+          title: `✅ ${formatKind} détecté`,
+          description: `${formatLabel} — ${scannedText}`,
+        });
         stopScanning();
         setTimeout(() => {
           try {
@@ -448,8 +457,15 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
               </div>
 
               {lastScanResult && (
-                <div className="p-3 bg-muted rounded-lg">
-                  <p className="text-sm font-medium">Dernier code scanné:</p>
+                <div className="p-3 bg-muted rounded-lg space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium">Dernier code scanné</p>
+                    {lastScanFormat && (
+                      <Badge variant="secondary" className="text-[10px]">
+                        {lastScanFormat}
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground font-mono break-all">{lastScanResult}</p>
                 </div>
               )}
