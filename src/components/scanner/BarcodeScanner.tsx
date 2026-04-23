@@ -45,14 +45,14 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
 
   const initializeScanner = async () => {
     try {
-      // Demander/valider la permission via le permissionManager (dédupliqué)
-      const permissionGranted = await requestCameraPermission();
-
-      if (!permissionGranted) {
+      // Vérifier d'abord le statut navigateur — si "denied", inutile d'aller plus loin
+      const { checkCameraPermissionStatus } = await import("@/lib/permissionManager");
+      const status = await checkCameraPermissionStatus();
+      if (status === "denied") {
         setHasPermission(false);
         toast({
           title: "Permission refusée",
-          description: "Veuillez autoriser l'accès à la caméra dans les paramètres",
+          description: "Veuillez autoriser l'accès à la caméra dans les paramètres du navigateur",
           variant: "destructive",
         });
         return;
@@ -61,6 +61,8 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
       const reader = new BrowserMultiFormatReader();
       setCodeReader(reader);
 
+      // Le prompt navigateur sera déclenché UNE SEULE FOIS par decodeFromVideoDevice/decodeFromConstraints
+      // (évite le double-prompt qu'engendrait un getUserMedia préalable)
       setHasPermission(true);
 
       // Obtenir la liste des caméras disponibles (méthode statique)
@@ -82,12 +84,19 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
         // Fallback strict: utiliser les contraintes pour forcer la caméra arrière
         startScanning(reader);
       }
-    } catch (error) {
+
+      // Mémoriser le succès pour les prochains appels
+      try { localStorage.setItem("camera_permission_granted", "true"); } catch {}
+    } catch (error: any) {
       console.error("Erreur d'initialisation du scanner:", error);
+      const denied = error?.name === "NotAllowedError" || error?.name === "PermissionDeniedError";
       setHasPermission(false);
+      try { localStorage.setItem("camera_permission_granted", denied ? "false" : "true"); } catch {}
       toast({
-        title: "Erreur de caméra",
-        description: "Impossible d'accéder à la caméra arrière. Vérifiez les permissions.",
+        title: denied ? "Permission refusée" : "Erreur de caméra",
+        description: denied
+          ? "Autorisez la caméra dans les réglages de votre navigateur"
+          : "Impossible d'accéder à la caméra arrière.",
         variant: "destructive",
       });
     }
@@ -392,7 +401,7 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
   return (
     <div 
       ref={containerRef}
-      className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/95 flex items-center justify-center z-[100] p-4"
     >
       <Card className="w-full max-w-md bg-background shadow-2xl">
         <CardHeader className="pb-3">
