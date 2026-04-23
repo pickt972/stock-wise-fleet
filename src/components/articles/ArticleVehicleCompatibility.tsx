@@ -161,6 +161,10 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
       toast.error("Veuillez sélectionner un véhicule");
       return;
     }
+    if (associatedGroupKeys.has(selectedGroupKey)) {
+      toast.error("Ce modèle est déjà associé à cet article");
+      return;
+    }
     const group = vehiculeGroups.find((g) => g.key === selectedGroupKey);
     if (!group) return;
     addCompatibilityMutation.mutate({ vehiculeIds: group.vehiculeIds, notes });

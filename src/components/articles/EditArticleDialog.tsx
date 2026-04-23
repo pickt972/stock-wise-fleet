@@ -716,6 +716,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
               articleReference={article.reference}
               articleDesignation={article.designation}
               articleId={article.id}
+              showTransferButton={false}
             />
           </div>
         )}
