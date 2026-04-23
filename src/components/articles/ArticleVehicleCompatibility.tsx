@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Car, Plus, X } from "lucide-react";
+import { Car, Plus, X, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -27,6 +27,16 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
   const queryClient = useQueryClient();
   const [selectedGroupKey, setSelectedGroupKey] = useState<string>("");
   const [notes, setNotes] = useState("");
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+  const toggleGroup = (key: string) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   const { data: vehicules = [] } = useQuery({
     queryKey: ["vehicules"],
@@ -216,34 +226,65 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
                 const allNotes = Array.from(
                   new Set(group.items.map((i) => i.notes).filter(Boolean) as string[])
                 );
+                const isOpen = expandedGroups.has(group.key);
                 return (
                   <div
                     key={group.key}
-                    className="flex items-center justify-between gap-2 p-3 border rounded-lg overflow-hidden"
+                    className="border rounded-lg overflow-hidden"
                   >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-col gap-1 min-w-0">
-                        <Badge variant="outline" className="w-fit max-w-full break-words whitespace-normal text-xs">
-                          {group.label}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground break-words whitespace-normal">
-                          {group.items.length} véhicule{group.items.length > 1 ? "s" : ""} concerné{group.items.length > 1 ? "s" : ""}
-                        </span>
-                      </div>
-                      {allNotes.length > 0 && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {allNotes.join(" • ")}
-                        </p>
-                      )}
+                    <div className="flex items-center justify-between gap-2 p-3">
+                      <button
+                        type="button"
+                        onClick={() => toggleGroup(group.key)}
+                        className="flex-1 min-w-0 flex items-start gap-2 text-left"
+                        aria-expanded={isOpen}
+                      >
+                        {isOpen ? (
+                          <ChevronDown className="h-4 w-4 mt-1 shrink-0 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 mt-1 shrink-0 text-muted-foreground" />
+                        )}
+                        <div className="flex-1 min-w-0 flex flex-col gap-1">
+                          <Badge variant="outline" className="w-fit max-w-full break-words whitespace-normal text-xs">
+                            {group.label}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground break-words whitespace-normal">
+                            {group.items.length} véhicule{group.items.length > 1 ? "s" : ""} concerné{group.items.length > 1 ? "s" : ""}
+                          </span>
+                          {allNotes.length > 0 && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {allNotes.join(" • ")}
+                            </p>
+                          )}
+                        </div>
+                      </button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeGroupMutation.mutate(ids)}
+                        disabled={removeGroupMutation.isPending}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeGroupMutation.mutate(ids)}
-                      disabled={removeGroupMutation.isPending}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                    {isOpen && (
+                      <div className="px-3 pb-3 pt-0 border-t bg-muted/30">
+                        <p className="text-xs font-medium text-muted-foreground mt-2 mb-1">
+                          Immatriculations :
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {group.items.map((item) => (
+                            <Badge
+                              key={item.id}
+                              variant="secondary"
+                              className="font-mono text-xs break-all"
+                            >
+                              {item.immatriculation}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
