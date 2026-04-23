@@ -460,12 +460,24 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
 
             <div className="space-y-1.5">
               <Label className="text-xs sm:text-sm">Référence *</Label>
-              <Input
-                value={formData.reference}
-                onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
-                required
-                className="h-11 text-base font-mono"
-              />
+              <div className="flex gap-2">
+                <Input
+                  value={formData.reference}
+                  onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
+                  required
+                  className="h-11 text-base font-mono flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setShowScanner(true)}
+                  className="h-11 w-11 shrink-0 border-2"
+                  title="Scanner le code-barres"
+                >
+                  <Camera className="h-5 w-5" />
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-1.5">
