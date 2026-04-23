@@ -869,6 +869,15 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
         </div>
       </DialogContent>
     </Dialog>
+    <BarcodeScanner
+      isOpen={showScanner}
+      onScanResult={(code) => {
+        setFormData((prev) => ({ ...prev, reference: code }));
+        setShowScanner(false);
+        toast({ title: "✅ Code scanné", description: code });
+      }}
+      onClose={() => setShowScanner(false)}
+    />
     </>
   );
 }
