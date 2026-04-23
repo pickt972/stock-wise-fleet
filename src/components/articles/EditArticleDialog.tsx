@@ -43,6 +43,7 @@ interface Article {
   prix_achat: number;
   emplacement: string;
   fournisseur_id?: string;
+  code_barre?: string | null;
 }
 
 interface EditArticleDialogProps {
@@ -108,6 +109,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
     prix_achat: article.prix_achat,
     emplacement: article.emplacement || "",
     fournisseur_id: article.fournisseur_id || "none",
+    code_barre: article.code_barre || "",
   });
 
   useEffect(() => {
@@ -122,6 +124,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
       prix_achat: article.prix_achat,
       emplacement: article.emplacement || "",
       fournisseur_id: article.fournisseur_id || "none",
+      code_barre: article.code_barre || "",
     });
   }, [article]);
 
@@ -289,6 +292,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
         prix_achat: formData.prix_achat,
         emplacement: formData.emplacement,
         fournisseur_id: formData.fournisseur_id === "none" ? null : formData.fournisseur_id,
+        code_barre: formData.code_barre?.trim() ? formData.code_barre.trim() : null,
       };
       const { error } = await supabase.from('articles').update(updateData).eq('id', article.id);
       if (error) throw error;
@@ -460,11 +464,31 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
 
             <div className="space-y-1.5">
               <Label className="text-xs sm:text-sm">Référence *</Label>
+              <Input
+                value={formData.reference}
+                onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
+                required
+                className="h-11 text-base font-mono"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs sm:text-sm">Marque *</Label>
+              <Input
+                value={formData.marque}
+                onChange={(e) => setFormData({ ...formData, marque: e.target.value })}
+                required
+                className="h-11 text-base"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs sm:text-sm">Code-barres</Label>
               <div className="flex gap-2">
                 <Input
-                  value={formData.reference}
-                  onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
-                  required
+                  value={formData.code_barre}
+                  onChange={(e) => setFormData({ ...formData, code_barre: e.target.value })}
+                  placeholder="Scanner ou saisir le code-barres"
                   className="h-11 text-base font-mono flex-1"
                 />
                 <Button
@@ -478,16 +502,9 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
                   <Camera className="h-5 w-5" />
                 </Button>
               </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs sm:text-sm">Marque *</Label>
-              <Input
-                value={formData.marque}
-                onChange={(e) => setFormData({ ...formData, marque: e.target.value })}
-                required
-                className="h-11 text-base"
-              />
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
+                Ajoutez un code-barres à un article existant en le scannant
+              </p>
             </div>
           </div>
         )}
@@ -872,9 +889,9 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
     <BarcodeScanner
       isOpen={showScanner}
       onScanResult={(code) => {
-        setFormData((prev) => ({ ...prev, reference: code }));
+        setFormData((prev) => ({ ...prev, code_barre: code }));
         setShowScanner(false);
-        toast({ title: "✅ Code scanné", description: code });
+        toast({ title: "✅ Code-barres scanné", description: code });
       }}
       onClose={() => setShowScanner(false)}
     />
