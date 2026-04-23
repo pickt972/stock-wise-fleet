@@ -72,6 +72,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
   const [open, setOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [showScanner, setShowScanner] = useState(false);
 
   // Total steps: 1=Cat+Designation, 2=Ref+Marque, 3=Fournisseur, 4=Emplacement, 5=Stock+Prix, 6=Compatibilité, 7=Récapitulatif
   const totalSteps = 7;
