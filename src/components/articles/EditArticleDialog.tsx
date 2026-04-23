@@ -464,11 +464,31 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
 
             <div className="space-y-1.5">
               <Label className="text-xs sm:text-sm">Référence *</Label>
+              <Input
+                value={formData.reference}
+                onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
+                required
+                className="h-11 text-base font-mono"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs sm:text-sm">Marque *</Label>
+              <Input
+                value={formData.marque}
+                onChange={(e) => setFormData({ ...formData, marque: e.target.value })}
+                required
+                className="h-11 text-base"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs sm:text-sm">Code-barres</Label>
               <div className="flex gap-2">
                 <Input
-                  value={formData.reference}
-                  onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
-                  required
+                  value={formData.code_barre}
+                  onChange={(e) => setFormData({ ...formData, code_barre: e.target.value })}
+                  placeholder="Scanner ou saisir le code-barres"
                   className="h-11 text-base font-mono flex-1"
                 />
                 <Button
@@ -482,16 +502,9 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
                   <Camera className="h-5 w-5" />
                 </Button>
               </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs sm:text-sm">Marque *</Label>
-              <Input
-                value={formData.marque}
-                onChange={(e) => setFormData({ ...formData, marque: e.target.value })}
-                required
-                className="h-11 text-base"
-              />
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
+                Ajoutez un code-barres à un article existant en le scannant
+              </p>
             </div>
           </div>
         )}
