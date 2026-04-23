@@ -252,7 +252,36 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
         </div>
 
         <div className="space-y-2">
-          <h4 className="font-medium">Modèles compatibles :</h4>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <h4 className="font-medium">Modèles compatibles :</h4>
+            {compatibilityGroups.length > 0 && (() => {
+              const allKeys = compatibilityGroups.map((g) => g.key);
+              const allOpen = allKeys.every((k) => expandedGroups.has(k));
+              return (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setExpandedGroups(allOpen ? new Set() : new Set(allKeys))
+                  }
+                  className="h-8"
+                >
+                  {allOpen ? (
+                    <>
+                      <ChevronsDownUp className="h-4 w-4 mr-1.5" />
+                      Tout plier
+                    </>
+                  ) : (
+                    <>
+                      <ChevronsUpDown className="h-4 w-4 mr-1.5" />
+                      Tout déplier
+                    </>
+                  )}
+                </Button>
+              );
+            })()}
+          </div>
           {compatibilityGroups.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Aucune compatibilité définie pour cet article
@@ -296,14 +325,37 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
                           )}
                         </div>
                       </button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeGroupMutation.mutate(ids)}
-                        disabled={removeGroupMutation.isPending}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleGroup(group.key)}
+                          aria-expanded={isOpen}
+                          className="h-8"
+                        >
+                          {isOpen ? (
+                            <>
+                              <ChevronDown className="h-4 w-4 sm:mr-1.5" />
+                              <span className="hidden sm:inline">Plier</span>
+                            </>
+                          ) : (
+                            <>
+                              <ChevronRight className="h-4 w-4 sm:mr-1.5" />
+                              <span className="hidden sm:inline">Déplier</span>
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeGroupMutation.mutate(ids)}
+                          disabled={removeGroupMutation.isPending}
+                          aria-label="Supprimer la compatibilité"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                     {isOpen && (
                       <div className="px-3 pb-3 pt-0 border-t bg-muted/30">
