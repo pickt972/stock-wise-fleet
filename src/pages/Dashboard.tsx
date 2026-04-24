@@ -37,7 +37,7 @@ export default function Dashboard() {
   const [foundArticle, setFoundArticle] = useState<Article | null>(null);
   const [notFoundCode, setNotFoundCode] = useState<string | null>(null);
 
-  const searchArticle = useCallback(async (query: string) => {
+  const searchArticle = useCallback(async (query: string, fromScan = false) => {
     if (!query.trim()) return;
     const raw = query.trim();
     const numeric = raw.replace(/\D/g, "");
@@ -46,7 +46,20 @@ export default function Dashboard() {
     setIsSearching(true);
     setNotFoundCode(null);
     try {
-      // Exact match
+      // Scan → priorité au code-barre exact
+      if (fromScan) {
+        const { data: byBarcode } = await supabase
+          .from("articles")
+          .select("*")
+          .eq("code_barre", q)
+          .maybeSingle();
+        if (byBarcode) {
+          setFoundArticle(byBarcode);
+          return;
+        }
+      }
+
+      // Recherche exacte (référence ou code-barre)
       const { data } = await supabase
         .from("articles")
         .select("*")
@@ -58,19 +71,22 @@ export default function Dashboard() {
         return;
       }
 
-      // Partial match
-      const likeKey = q.length > 8 ? q.slice(0, -1) : q;
-      const { data: partials } = await supabase
-        .from("articles")
-        .select("*")
-        .or(`reference.ilike.%${likeKey}%,code_barre.ilike.%${likeKey}%,designation.ilike.%${likeKey}%`)
-        .limit(1);
+      // Saisie manuelle uniquement → recherche partielle (désignation incluse)
+      if (!fromScan) {
+        const likeKey = q.length > 8 ? q.slice(0, -1) : q;
+        const { data: partials } = await supabase
+          .from("articles")
+          .select("*")
+          .or(`reference.ilike.%${likeKey}%,code_barre.ilike.%${likeKey}%,designation.ilike.%${likeKey}%`)
+          .limit(1);
 
-      if (partials && partials.length > 0) {
-        setFoundArticle(partials[0]);
-      } else {
-        setNotFoundCode(q);
+        if (partials && partials.length > 0) {
+          setFoundArticle(partials[0]);
+          return;
+        }
       }
+
+      setNotFoundCode(q);
     } catch {
       toast({ title: "Erreur de recherche", variant: "destructive" });
     } finally {
@@ -81,7 +97,7 @@ export default function Dashboard() {
   const handleScanResult = useCallback((code: string) => {
     setShowScanner(false);
     setSearchQuery(code);
-    searchArticle(code);
+    searchArticle(code, true);
   }, [searchArticle]);
 
   const handleReset = useCallback(() => {
