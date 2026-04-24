@@ -208,11 +208,11 @@ export default function Parametres() {
   if (isMagasinier()) {
     return (
       <DashboardLayout>
-        <main className="p-4 md:p-6 space-y-4">
-          <header>
-            <h1 className="text-2xl font-bold">Paramètres</h1>
-            <p className="text-sm text-muted-foreground">Mon profil</p>
-          </header>
+        <main className="space-y-4 max-w-3xl mx-auto">
+          <div>
+            <h1 className="text-[28px] sm:text-[34px] font-bold tracking-tight leading-tight">Paramètres</h1>
+            <p className="text-[14px] text-muted-foreground mt-1">Mon profil</p>
+          </div>
           <ChangePasswordForm />
         </main>
       </DashboardLayout>
@@ -221,11 +221,11 @@ export default function Parametres() {
 
   return (
     <DashboardLayout>
-      <main className="p-4 md:p-6 space-y-6 max-w-3xl">
-        <header>
-          <h1 className="text-2xl font-bold">Paramètres</h1>
-          <p className="text-sm text-muted-foreground">Configuration de l'application</p>
-        </header>
+      <main className="space-y-6 max-w-3xl mx-auto">
+        <div>
+          <h1 className="text-[28px] sm:text-[34px] font-bold tracking-tight leading-tight">Paramètres</h1>
+          <p className="text-[14px] text-muted-foreground mt-1">Configuration de l'application</p>
+        </div>
 
         {/* Mon compte */}
         <section className="space-y-2">

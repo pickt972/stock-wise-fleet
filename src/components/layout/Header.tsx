@@ -24,6 +24,10 @@ interface HeaderProps {
   onMenuClick?: () => void;
 }
 
+/**
+ * Header style iOS : barre translucide blurrée, hairline border.
+ * Sticky en haut, gère le safe-area-inset-top automatiquement.
+ */
 export function Header({ onMenuClick }: HeaderProps) {
   const { user, profile, userRole, signOut } = useAuth();
   const { isInstallable, installApp } = usePWA();
@@ -34,7 +38,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   const getRoleLabel = (role: string) => {
     switch (role) {
       case 'admin': return 'Administrateur';
-      case 'chef_agence': return 'Chef d\'agence';
+      case 'chef_agence': return "Chef d'agence";
       case 'magasinier': return 'Magasinier';
       default: return 'Utilisateur';
     }
@@ -58,181 +62,171 @@ export function Header({ onMenuClick }: HeaderProps) {
 
   return (
     <TooltipProvider>
-      <header className="bg-card border-b border-border shadow-soft w-full">
-      <div className="flex items-center justify-between px-2 sm:px-4 h-16 w-full max-w-full overflow-hidden">
-        <div className="flex items-center gap-1 sm:gap-2 lg:gap-4 min-w-0 flex-1 max-w-full overflow-hidden">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onMenuClick}
-                className="md:hidden flex-shrink-0"
-              >
-                <Menu className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Ouvrir le menu</p>
-            </TooltipContent>
-          </Tooltip>
-          <div className="flex items-center gap-1 sm:gap-2 min-w-0 max-w-full overflow-hidden">
-            <img src={logo} alt="StockAuto Logo" className="h-7 w-7 sm:h-8 sm:w-8 lg:h-10 lg:w-10 flex-shrink-0" />
-            <div className="min-w-0 max-w-full overflow-hidden">
-              <h1 className="text-base sm:text-lg lg:text-xl font-bold text-foreground truncate">StockAuto</h1>
-              <p className="text-xs text-muted-foreground hidden sm:block truncate">Gestion des stocks</p>
+      <header
+        className="glass sticky top-0 z-30 w-full"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
+        <div className="flex items-center justify-between px-3 sm:px-4 h-14 w-full max-w-full overflow-hidden">
+          <div className="flex items-center gap-2 lg:gap-4 min-w-0 flex-1 max-w-full overflow-hidden">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={onMenuClick}
+              className="md:hidden flex-shrink-0"
+              aria-label="Ouvrir le menu"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            <div className="flex items-center gap-2 min-w-0 max-w-full overflow-hidden">
+              <img src={logo} alt="StockAuto" className="h-8 w-8 lg:h-9 lg:w-9 flex-shrink-0 rounded-lg" />
+              <div className="min-w-0 max-w-full overflow-hidden hidden sm:block">
+                <h1 className="text-[17px] font-semibold text-foreground truncate leading-tight tracking-tight">StockAuto</h1>
+                <p className="text-[11px] text-muted-foreground truncate leading-tight">Gestion des stocks</p>
+              </div>
+            </div>
+
+            {/* Recherche globale - Desktop */}
+            <div className="hidden lg:block ml-4 max-w-md flex-1">
+              <GlobalSearch />
             </div>
           </div>
-          
-          {/* Recherche globale - Desktop */}
-          <div className="hidden lg:block ml-4 max-w-md flex-1">
-            <GlobalSearch />
-          </div>
-        </div>
 
-        <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
-          {/* Statut de synchronisation hors ligne */}
-          <OfflineSyncStatus />
-          
-          {/* Toggle mode nuit */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="flex-shrink-0"
-              >
-                {theme === "dark" ? (
-                  <Sun className="h-4 w-4" />
-                ) : (
-                  <Moon className="h-4 w-4" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{theme === "dark" ? "Mode clair" : "Mode sombre"}</p>
-            </TooltipContent>
-          </Tooltip>
-          
-          {/* Bouton d'installation PWA */}
-          {isInstallable && (
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            <OfflineSyncStatus />
+
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={installApp}
-                  className="hidden md:flex items-center gap-2"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  className="flex-shrink-0"
+                  aria-label={theme === "dark" ? "Mode clair" : "Mode sombre"}
                 >
-                  <Download className="h-4 w-4" />
-                  <span className="hidden lg:inline">Installer</span>
+                  {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Installer l'application sur votre appareil</p>
+                <p>{theme === "dark" ? "Mode clair" : "Mode sombre"}</p>
               </TooltipContent>
             </Tooltip>
-          )}
-          
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm" className="relative hidden sm:flex">
-                <Bell className="h-4 w-4" />
-                {totalAlerts > 0 && (
-                  <Badge 
-                    variant="destructive" 
-                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+
+            {isInstallable && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="tinted"
+                    size="sm"
+                    onClick={installApp}
+                    className="hidden md:flex items-center gap-2"
                   >
-                    {totalAlerts}
-                  </Badge>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80" align="end">
-              <div className="space-y-2">
-                <h4 className="font-medium">Notifications</h4>
-                {subcategoryAlerts.length > 0 ? (
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {subcategoryAlerts.slice(0, 5).map((sub) => (
-                      <div 
-                        key={sub.subcategory} 
-                        className="p-2 border rounded-lg text-sm cursor-pointer hover:bg-accent"
-                        onClick={() => navigate('/alertes')}
-                      >
-                        <div className="font-medium">{sub.subcategory}</div>
-                        <div className="text-muted-foreground">
-                          {sub.ruptureCount > 0 ? `${sub.ruptureCount} rupture(s)` : ''} 
-                          {sub.ruptureCount > 0 && sub.faibleCount > 0 ? ', ' : ''}
-                          {sub.faibleCount > 0 ? `${sub.faibleCount} stock(s) faible(s)` : ''}
-                          {' '}sur {sub.totalArticles} articles
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Aucune notification</p>
-                )}
-                {subcategoryAlerts.length > 0 && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full"
-                    onClick={() => navigate('/alertes')}
-                  >
-                    Voir toutes les alertes
+                    <Download className="h-4 w-4" />
+                    <span className="hidden lg:inline">Installer</span>
                   </Button>
-                )}
-              </div>
-            </PopoverContent>
-          </Popover>
-          
-          {/* Menu utilisateur */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                    {getInitials()}
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <div className="flex flex-col space-y-1 p-2">
-                <p className="text-sm font-medium leading-none">
-                  {profile ? `${profile.first_name} ${profile.last_name}` : 'Utilisateur'}
-                </p>
-                <p className="text-xs leading-none text-muted-foreground">
-                  {user?.email}
-                </p>
-                {userRole && (
-                  <Badge variant={getRoleVariant(userRole)} className="text-xs w-fit">
-                    {getRoleLabel(userRole)}
-                  </Badge>
-                )}
-              </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                <span>Profil</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/parametres')}>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Paramètres</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                className="text-destructive"
-                onClick={signOut}
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Déconnexion</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Installer l'application</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon-sm" className="relative hidden sm:flex" aria-label="Notifications">
+                  <Bell className="h-4 w-4" />
+                  {totalAlerts > 0 && (
+                    <Badge
+                      variant="destructive"
+                      className="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 flex items-center justify-center p-0 text-[10px]"
+                    >
+                      {totalAlerts > 99 ? "99+" : totalAlerts}
+                    </Badge>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 rounded-2xl p-2" align="end">
+                <div className="space-y-1">
+                  <h4 className="font-semibold text-[15px] px-2 pt-1">Notifications</h4>
+                  {subcategoryAlerts.length > 0 ? (
+                    <div className="space-y-1 max-h-72 overflow-y-auto">
+                      {subcategoryAlerts.slice(0, 5).map((sub) => (
+                        <div
+                          key={sub.subcategory}
+                          className="p-3 rounded-xl text-sm cursor-pointer hover:bg-muted active:bg-muted/80 transition-colors"
+                          onClick={() => navigate('/alertes')}
+                        >
+                          <div className="font-medium text-foreground">{sub.subcategory}</div>
+                          <div className="text-[12px] text-muted-foreground mt-0.5">
+                            {sub.ruptureCount > 0 ? `${sub.ruptureCount} rupture(s)` : ''}
+                            {sub.ruptureCount > 0 && sub.faibleCount > 0 ? ' · ' : ''}
+                            {sub.faibleCount > 0 ? `${sub.faibleCount} stock(s) faible(s)` : ''}
+                            {' '}sur {sub.totalArticles} articles
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground p-3">Aucune notification</p>
+                  )}
+                  {subcategoryAlerts.length > 0 && (
+                    <Button
+                      variant="tinted"
+                      size="sm"
+                      className="w-full mt-1"
+                      onClick={() => navigate('/alertes')}
+                    >
+                      Voir toutes les alertes
+                    </Button>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                      {getInitials()}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-60 rounded-2xl" align="end" forceMount>
+                <div className="flex flex-col space-y-1 p-3">
+                  <p className="text-[15px] font-semibold leading-tight">
+                    {profile ? `${profile.first_name} ${profile.last_name}` : 'Utilisateur'}
+                  </p>
+                  <p className="text-[12px] leading-tight text-muted-foreground truncate">
+                    {user?.email}
+                  </p>
+                  {userRole && (
+                    <Badge variant={getRoleVariant(userRole)} className="text-[10px] w-fit mt-1">
+                      {getRoleLabel(userRole)}
+                    </Badge>
+                  )}
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="rounded-lg mx-1">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profil</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/parametres')} className="rounded-lg mx-1">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Paramètres</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive rounded-lg mx-1 focus:text-destructive"
+                  onClick={signOut}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Déconnexion</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
-      </div>
       </header>
     </TooltipProvider>
   );

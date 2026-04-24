@@ -77,8 +77,23 @@ export default {
       },
       borderRadius: {
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        md: "calc(var(--radius) - 4px)",
+        sm: "calc(var(--radius) - 6px)",
+        xl: "calc(var(--radius) + 4px)",
+        "2xl": "calc(var(--radius) + 8px)",
+        "3xl": "calc(var(--radius) + 14px)",
+      },
+      fontSize: {
+        // iOS-style sizes (close to SF text styles)
+        "ios-caption": ["12px", { lineHeight: "16px", letterSpacing: "0" }],
+        "ios-footnote": ["13px", { lineHeight: "18px", letterSpacing: "-0.005em" }],
+        "ios-subhead": ["15px", { lineHeight: "20px", letterSpacing: "-0.01em" }],
+        "ios-body": ["17px", { lineHeight: "22px", letterSpacing: "-0.014em" }],
+        "ios-headline": ["17px", { lineHeight: "22px", letterSpacing: "-0.014em" }],
+        "ios-title3": ["20px", { lineHeight: "24px", letterSpacing: "-0.018em" }],
+        "ios-title2": ["22px", { lineHeight: "28px", letterSpacing: "-0.022em" }],
+        "ios-title1": ["28px", { lineHeight: "34px", letterSpacing: "-0.025em" }],
+        "ios-large": ["34px", { lineHeight: "40px", letterSpacing: "-0.025em" }],
       },
       backgroundImage: {
         'gradient-primary': 'var(--gradient-primary)',

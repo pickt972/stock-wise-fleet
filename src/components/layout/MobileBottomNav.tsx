@@ -117,118 +117,108 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
     }
   };
 
+  const NavTab = ({
+    to,
+    icon: Icon,
+    label,
+    badge,
+  }: {
+    to: string;
+    icon: typeof LayoutDashboard;
+    label: string;
+    badge?: number;
+  }) => (
+    <NavLink
+      to={to}
+      className={cn(
+        "relative flex flex-col items-center justify-center gap-0.5 h-full text-[10px] font-medium transition-all",
+        "active:scale-95",
+        isActive(to) ? "text-primary" : "text-muted-foreground hover:text-foreground",
+      )}
+    >
+      <Icon className={cn("h-[22px] w-[22px] transition-transform", isActive(to) && "scale-110")} />
+      {badge !== undefined && badge > 0 && (
+        <Badge
+          variant="destructive"
+          className="absolute top-1 right-1/2 translate-x-3 h-4 min-w-4 px-1 flex items-center justify-center p-0 text-[10px]"
+        >
+          {badge > 99 ? "99+" : badge}
+        </Badge>
+      )}
+      <span className="leading-none">{label}</span>
+    </NavLink>
+  );
+
   return (
     <nav
       className={cn(
-        "md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-medium",
+        "md:hidden fixed bottom-0 left-0 right-0 z-40 glass border-t-0",
         "pb-[env(safe-area-inset-bottom)]",
-        className
+        className,
       )}
       aria-label="Navigation principale mobile"
     >
-      <div className="grid grid-cols-5 items-end h-16 relative">
-        {/* Dashboard */}
-        <NavLink
-          to="/dashboard"
-          className={cn(
-            "flex flex-col items-center justify-center gap-0.5 h-full text-xs font-medium transition-colors",
-            "active:scale-95",
-            isActive("/dashboard")
-              ? "text-primary"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <LayoutDashboard className="h-5 w-5" />
-          <span>Accueil</span>
-        </NavLink>
+      <div className="grid grid-cols-5 items-end h-[58px] relative">
+        <NavTab to="/dashboard" icon={LayoutDashboard} label="Accueil" />
+        <NavTab to="/articles" icon={Package} label="Articles" />
 
-        {/* Articles */}
-        <NavLink
-          to="/articles"
-          className={cn(
-            "flex flex-col items-center justify-center gap-0.5 h-full text-xs font-medium transition-colors",
-            "active:scale-95",
-            isActive("/articles")
-              ? "text-primary"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Package className="h-5 w-5" />
-          <span>Articles</span>
-        </NavLink>
-
-        {/* Bouton scan central proéminent — ouvre directement la caméra */}
+        {/* Bouton scan central — FAB iOS */}
         <div className="flex items-center justify-center h-full">
           <button
             type="button"
             onClick={() => setShowScanner(true)}
             aria-label="Scanner un code-barres"
             className={cn(
-              "relative -mt-6 h-16 w-16 rounded-full bg-primary text-primary-foreground",
-              "shadow-lg flex items-center justify-center",
-              "active:scale-95 transition-transform",
-              "ring-4 ring-background"
+              "relative -mt-7 h-[60px] w-[60px] rounded-full bg-primary text-primary-foreground",
+              "shadow-large flex items-center justify-center",
+              "active:scale-90 transition-transform duration-150",
+              "ring-[3px] ring-background",
             )}
           >
             <ScanLine className="h-7 w-7" />
           </button>
         </div>
 
-        {/* Alertes */}
-        <NavLink
-          to="/alertes"
-          className={cn(
-            "relative flex flex-col items-center justify-center gap-0.5 h-full text-xs font-medium transition-colors",
-            "active:scale-95",
-            isActive("/alertes")
-              ? "text-primary"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Bell className="h-5 w-5" />
-          {totalAlerts > 0 && (
-            <Badge
-              variant="destructive"
-              className="absolute top-1 right-3 h-4 min-w-4 px-1 flex items-center justify-center p-0 text-[10px]"
-            >
-              {totalAlerts > 99 ? "99+" : totalAlerts}
-            </Badge>
-          )}
-          <span>Alertes</span>
-        </NavLink>
+        <NavTab to="/alertes" icon={Bell} label="Alertes" badge={totalAlerts} />
 
-        {/* Plus */}
         <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
           <SheetTrigger asChild>
             <button
               type="button"
               className={cn(
-                "flex flex-col items-center justify-center gap-0.5 h-full text-xs font-medium transition-colors",
-                "active:scale-95 text-muted-foreground hover:text-foreground"
+                "flex flex-col items-center justify-center gap-0.5 h-full text-[10px] font-medium transition-all",
+                "active:scale-95 text-muted-foreground hover:text-foreground",
               )}
               aria-label="Plus d'options"
             >
-              <MoreHorizontal className="h-5 w-5" />
-              <span>Plus</span>
+              <MoreHorizontal className="h-[22px] w-[22px]" />
+              <span className="leading-none">Plus</span>
             </button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="h-[80vh] rounded-t-2xl p-0">
-            <SheetHeader className="p-4 border-b">
-              <SheetTitle>Toutes les sections</SheetTitle>
+          <SheetContent side="bottom" className="max-h-[85vh] p-0">
+            <SheetHeader className="px-5 pt-1 pb-3">
+              <SheetTitle className="text-[20px] font-bold tracking-tight">Toutes les sections</SheetTitle>
             </SheetHeader>
-            <div className="overflow-y-auto p-4 grid grid-cols-3 gap-3 pb-8">
+            <div className="overflow-y-auto px-4 pb-6 grid grid-cols-3 sm:grid-cols-4 gap-3">
               {moreItems.map((item) => (
                 <button
                   key={item.href}
                   onClick={() => handleMoreClick(item.href)}
                   className={cn(
-                    "flex flex-col items-center justify-center gap-2 p-3 rounded-xl border border-border",
-                    "bg-card hover:bg-accent active:scale-95 transition-all min-h-[88px]",
-                    isActive(item.href) && "bg-primary/10 border-primary text-primary"
+                    "flex flex-col items-center justify-center gap-2 p-3 rounded-2xl",
+                    "bg-muted/50 hover:bg-muted active:scale-95 transition-all min-h-[88px]",
+                    isActive(item.href) && "bg-primary/10 ring-1 ring-primary/30",
                   )}
                 >
-                  <item.icon className="h-6 w-6" />
-                  <span className="text-xs font-medium text-center leading-tight">
+                  <div
+                    className={cn(
+                      "h-10 w-10 rounded-xl flex items-center justify-center bg-card shadow-soft",
+                      isActive(item.href) ? "text-primary" : "text-foreground/80",
+                    )}
+                  >
+                    <item.icon className="h-5 w-5" />
+                  </div>
+                  <span className="text-[11px] font-medium text-center leading-tight text-foreground">
                     {item.name}
                   </span>
                 </button>
