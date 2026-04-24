@@ -290,6 +290,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
         designation: formData.designation,
         marque: formData.marque,
         categorie: formData.categorie,
+        sous_categorie: formData.sous_categorie?.trim() ? formData.sous_categorie.trim() : null,
         stock_min: formData.stock_min,
         stock_max: formData.stock_max,
         prix_achat: formData.prix_achat,
