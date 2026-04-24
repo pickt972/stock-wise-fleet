@@ -1434,6 +1434,14 @@ export type Database = {
         }
         Returns: string
       }
+      move_category: {
+        Args: { _category_id: string; _new_parent_id: string }
+        Returns: undefined
+      }
+      reorder_categories: {
+        Args: { _ordered_ids: string[]; _parent_id: string }
+        Returns: undefined
+      }
       scan_item: {
         Args: { p_barcode: string; p_delta?: number; p_inventaire_id: string }
         Returns: {
