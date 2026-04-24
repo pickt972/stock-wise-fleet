@@ -251,16 +251,46 @@ export default function Articles() {
             />
             
             {isAdmin() && (
-              <Button
-                size="lg"
-                onClick={() => setShowCreateDialog(true)}
-                className="flex-shrink-0"
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Ajouter
-              </Button>
+              <>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setMergeField("marque")}
+                  className="flex-shrink-0 hidden sm:inline-flex"
+                  title="Fusionner deux marques"
+                >
+                  <Merge className="h-4 w-4 mr-2" />
+                  Fusionner
+                </Button>
+                <Button
+                  size="lg"
+                  onClick={() => setShowCreateDialog(true)}
+                  className="flex-shrink-0"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  Ajouter
+                </Button>
+              </>
             )}
           </div>
+
+          {isAdmin() && (
+            <div className="flex flex-wrap gap-2 sm:hidden">
+              <Button size="sm" variant="outline" onClick={() => setMergeField("marque")}>
+                <Merge className="h-3.5 w-3.5 mr-1.5" /> Fusionner marques
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setMergeField("categorie")}>
+                <Merge className="h-3.5 w-3.5 mr-1.5" /> Fusionner catégories
+              </Button>
+            </div>
+          )}
+          {isAdmin() && (
+            <div className="hidden sm:flex">
+              <Button size="sm" variant="ghost" onClick={() => setMergeField("categorie")}>
+                <Merge className="h-3.5 w-3.5 mr-1.5" /> Fusionner des catégories
+              </Button>
+            </div>
+          )}
 
           {/* Filtres */}
           <div className="flex flex-col sm:flex-row gap-2">
