@@ -28,6 +28,8 @@ import { useRoleAccess } from "@/hooks/useRoleAccess";
 import ArticleVehicleCompatibility from "./ArticleVehicleCompatibility";
 import { ArticleEmplacementsList } from "./ArticleEmplacementsList";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { AutocompleteInput } from "@/components/ui/autocomplete-input";
+import { useArticleSuggestions } from "@/hooks/useArticleSuggestions";
 import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
 
 

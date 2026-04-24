@@ -84,6 +84,7 @@ export function ArticleCreationWizard({
   const [fournisseurId, setFournisseurId] = useState("");
   const [emplacementId, setEmplacementId] = useState("");
   const [quantite, setQuantite] = useState(1);
+  const { data: articleSuggestions } = useArticleSuggestions();
 
   // Admin-only fields
   const [stockMin, setStockMin] = useState(0);
