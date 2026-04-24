@@ -37,6 +37,7 @@ import ArticleHistory from "./pages/ArticleHistory";
 import ResetPassword from "./pages/ResetPassword";
 import Accessoires from "./pages/Accessoires";
 import Transferts from "./pages/Transferts";
+import SeuilsStock from "./pages/SeuilsStock";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -153,6 +154,11 @@ const App = () => (
               <Route path="/alertes" element={
                 <ProtectedRoute>
                   <Alertes />
+                </ProtectedRoute>
+              } />
+              <Route path="/seuils-stock" element={
+                <ProtectedRoute>
+                  <SeuilsStock />
                 </ProtectedRoute>
               } />
               <Route path="/inventaire" element={
