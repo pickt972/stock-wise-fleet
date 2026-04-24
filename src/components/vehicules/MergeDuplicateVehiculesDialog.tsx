@@ -62,11 +62,13 @@ export function MergeDuplicateVehiculesDialog({ open, onOpenChange }: Props) {
   const [busy, setBusy] = useState(false);
   const [vehicules, setVehicules] = useState<Vehicule[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [step, setStep] = useState<"select" | "confirm">("select");
 
   useEffect(() => {
     if (!open) return;
     setLoading(true);
     setSelectedKeys(new Set());
+    setStep("select");
     supabase
       .from("vehicules")
       .select("*")
@@ -200,12 +202,25 @@ export function MergeDuplicateVehiculesDialog({ open, onOpenChange }: Props) {
       <DialogContent className="sm:max-w-[680px] max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Merge className="h-5 w-5" /> Fusionner les doublons (véhicules)
+            <Merge className="h-5 w-5" />
+            {step === "select"
+              ? "Fusionner les doublons (véhicules)"
+              : "Confirmer la fusion"}
           </DialogTitle>
           <DialogDescription>
-            Détection par <strong>marque + modèle + motorisation</strong> (insensible à la casse et aux accents).
-            Cochez les groupes à fusionner. ⚠️ Si plusieurs véhicules physiques distincts partagent
-            marque/modèle, ne cochez pas le groupe.
+            {step === "select" ? (
+              <>
+                Détection par <strong>marque + modèle + motorisation</strong> (insensible à la casse et aux accents).
+                Cochez les groupes à fusionner. ⚠️ Si plusieurs véhicules physiques distincts partagent
+                marque/modèle, ne cochez pas le groupe.
+              </>
+            ) : (
+              <>
+                Vérifiez ci-dessous les <strong>valeurs normalisées</strong> qui seront appliquées au véhicule
+                conservé de chaque groupe. Toutes les références (mouvements, sorties, compatibilités)
+                seront réassignées avant suppression des doublons.
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -216,7 +231,7 @@ export function MergeDuplicateVehiculesDialog({ open, onOpenChange }: Props) {
             <CheckCircle2 className="h-8 w-8 text-success" />
             Aucun doublon détecté.
           </div>
-        ) : (
+        ) : step === "select" ? (
           <>
             <div className="rounded-md border bg-muted/30 p-3 text-sm flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
@@ -279,15 +294,82 @@ export function MergeDuplicateVehiculesDialog({ open, onOpenChange }: Props) {
               </div>
             </ScrollArea>
           </>
+        ) : (
+          <ScrollArea className="flex-1 pr-2">
+            <div className="space-y-3">
+              {selectedGroups.map((g) => {
+                const winner = g.list[0];
+                return (
+                  <div key={g.key} className="rounded-md border p-3 space-y-2">
+                    <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Groupe — {g.list.length - 1} doublon(s) supprimé(s)
+                    </div>
+
+                    <div className="grid grid-cols-[100px_1fr] gap-x-3 gap-y-1 text-sm">
+                      <span className="text-muted-foreground">Marque</span>
+                      <span className="font-mono font-semibold">{g.marque}</span>
+
+                      <span className="text-muted-foreground">Modèle</span>
+                      <span className="font-mono font-semibold">{g.modele}</span>
+
+                      <span className="text-muted-foreground">Motorisation</span>
+                      <span className="font-mono">{g.motorisation || <span className="text-muted-foreground italic">(aucune)</span>}</span>
+
+                      <span className="text-muted-foreground">Immat. conservée</span>
+                      <span className="font-mono">{winner.immatriculation || "—"}</span>
+                    </div>
+
+                    <div className="border-t pt-2">
+                      <div className="text-[11px] text-muted-foreground mb-1">Valeurs originales fusionnées :</div>
+                      <div className="space-y-0.5">
+                        {g.list.map((v, idx) => (
+                          <div key={v.id} className="flex items-center justify-between gap-2 text-xs">
+                            <span className="truncate">
+                              <span className="font-mono">{v.immatriculation || "—"}</span>
+                              <span className="text-muted-foreground">
+                                {" · "}{v.marque} {v.modele}
+                                {v.motorisation ? ` · ${v.motorisation}` : ""}
+                              </span>
+                            </span>
+                            {idx === 0 ? (
+                              <Badge variant="default" className="text-[10px]">Conservé</Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-[10px]">Supprimé</Badge>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
         )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
-            Annuler
-          </Button>
-          <Button onClick={runMerge} disabled={busy || loading || totalToMerge === 0}>
-            {busy ? "Fusion…" : `Fusionner ${totalToMerge} véhicule(s)`}
-          </Button>
+          {step === "select" ? (
+            <>
+              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
+                Annuler
+              </Button>
+              <Button
+                onClick={() => setStep("confirm")}
+                disabled={loading || totalToMerge === 0}
+              >
+                Vérifier la fusion ({totalToMerge})
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" onClick={() => setStep("select")} disabled={busy}>
+                Retour
+              </Button>
+              <Button onClick={runMerge} disabled={busy || totalToMerge === 0}>
+                {busy ? "Fusion…" : `Confirmer et fusionner ${totalToMerge} véhicule(s)`}
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
