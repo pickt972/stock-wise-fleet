@@ -19,7 +19,6 @@ type Article = Tables<"articles">;
 
 
 export default function Vehicules() {
-  const { user } = useAuth();
   const queryClient = useQueryClient();
   const { data: vSuggestions } = useVehiculeSuggestions();
   const [wizardOpen, setWizardOpen] = useState(false);
