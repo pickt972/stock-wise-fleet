@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -23,12 +24,28 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
+/** Normalisation forte : majuscule, sans accent, sans espaces/tirets */
 const norm = (s: string | null | undefined) =>
-  (s ?? "").toString().trim().toUpperCase().replace(/[\s\-_.]/g, "");
+  (s ?? "")
+    .toString()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase()
+    .replace(/[\s\-_.]/g, "");
 
-/** Score un véhicule : plus c'est complet et récent, plus il est conservé. */
+/** Format propre pour l'affichage : Première lettre majuscule par mot */
+const cleanLabel = (s: string | null | undefined) => {
+  const v = (s ?? "").toString().trim();
+  if (!v) return "";
+  // Marques/modèles courts (≤3 lettres) → tout en majuscules (MG, KIA, BMW)
+  if (v.replace(/\s/g, "").length <= 3) return v.toUpperCase();
+  return v.toUpperCase();
+};
+
 function scoreVehicule(v: Vehicule): number {
   let s = 0;
+  if (v.immatriculation && v.immatriculation.trim().length > 3) s += 3;
   if (v.marque) s += 2;
   if (v.modele) s += 2;
   if (v.motorisation) s += 1;
@@ -44,10 +61,12 @@ export function MergeDuplicateVehiculesDialog({ open, onOpenChange }: Props) {
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [vehicules, setVehicules] = useState<Vehicule[]>([]);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!open) return;
     setLoading(true);
+    setSelectedKeys(new Set());
     supabase
       .from("vehicules")
       .select("*")
@@ -58,39 +77,79 @@ export function MergeDuplicateVehiculesDialog({ open, onOpenChange }: Props) {
       });
   }, [open]);
 
-  // Groupes de doublons (par immatriculation normalisée)
+  // Groupes par marque + modèle + motorisation (normalisés)
   const groups = useMemo(() => {
     const map = new Map<string, Vehicule[]>();
     for (const v of vehicules) {
-      const key = norm(v.immatriculation);
-      if (!key) continue;
+      const key = [norm(v.marque), norm(v.modele), norm(v.motorisation)].join("|");
+      if (!norm(v.marque) || !norm(v.modele)) continue;
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(v);
     }
     return [...map.entries()]
       .filter(([, list]) => list.length > 1)
-      .map(([key, list]) => ({
-        key,
-        list: [...list].sort((a, b) => scoreVehicule(b) - scoreVehicule(a)),
-      }));
+      .map(([key, list]) => {
+        const sorted = [...list].sort((a, b) => scoreVehicule(b) - scoreVehicule(a));
+        return {
+          key,
+          marque: cleanLabel(sorted[0].marque),
+          modele: cleanLabel(sorted[0].modele),
+          motorisation: cleanLabel(sorted[0].motorisation),
+          list: sorted,
+        };
+      })
+      .sort((a, b) => b.list.length - a.list.length);
   }, [vehicules]);
 
-  const totalDuplicates = groups.reduce((s, g) => s + (g.list.length - 1), 0);
+  // Pré-sélection : groupes où toutes les immatriculations normalisées sont identiques (vrais doublons)
+  useEffect(() => {
+    const auto = new Set<string>();
+    for (const g of groups) {
+      const immats = new Set(g.list.map((v) => norm(v.immatriculation)));
+      if (immats.size === 1) auto.add(g.key);
+    }
+    setSelectedKeys(auto);
+  }, [groups]);
+
+  const toggle = (key: string) =>
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+
+  const toggleAll = () => {
+    if (selectedKeys.size === groups.length) setSelectedKeys(new Set());
+    else setSelectedKeys(new Set(groups.map((g) => g.key)));
+  };
+
+  const selectedGroups = groups.filter((g) => selectedKeys.has(g.key));
+  const totalToMerge = selectedGroups.reduce((s, g) => s + (g.list.length - 1), 0);
 
   const runMerge = async () => {
-    if (groups.length === 0) return;
+    if (selectedGroups.length === 0) return;
     setBusy(true);
     try {
       let mergedCount = 0;
-      for (const g of groups) {
+      for (const g of selectedGroups) {
         const [winner, ...losers] = g.list;
         const loserIds = losers.map((l) => l.id);
 
-        // 1) Réassigner les références aux véhicules perdants
+        // 0) Uniformiser les libellés du gagnant (casse cohérente)
+        await supabase
+          .from("vehicules")
+          .update({
+            marque: g.marque,
+            modele: g.modele,
+            motorisation: g.motorisation || null,
+          })
+          .eq("id", winner.id);
+
+        // 1) Réassigner les références
         await supabase.from("stock_movements").update({ vehicule_id: winner.id }).in("vehicule_id", loserIds);
         await supabase.from("stock_exits").update({ vehicule_id: winner.id }).in("vehicule_id", loserIds);
 
-        // 2) article_vehicules : éviter les doublons (article_id, vehicule_id)
+        // 2) article_vehicules : éviter doublons (article_id, vehicule_id)
         const { data: avLinks } = await supabase
           .from("article_vehicules")
           .select("id, article_id")
@@ -125,7 +184,7 @@ export function MergeDuplicateVehiculesDialog({ open, onOpenChange }: Props) {
         mergedCount += losers.length;
       }
 
-      toast.success(`Fusion terminée : ${mergedCount} doublon(s) supprimé(s)`);
+      toast.success(`Fusion terminée : ${mergedCount} véhicule(s) fusionné(s)`);
       qc.invalidateQueries({ queryKey: ["vehicules"] });
       qc.invalidateQueries({ queryKey: ["vehicule-suggestions"] });
       onOpenChange(false);
@@ -138,14 +197,15 @@ export function MergeDuplicateVehiculesDialog({ open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[640px]">
+      <DialogContent className="sm:max-w-[680px] max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Merge className="h-5 w-5" /> Fusionner les doublons (véhicules)
           </DialogTitle>
           <DialogDescription>
-            Détection automatique par immatriculation. Le véhicule le plus complet et le plus récent est conservé,
-            les autres sont fusionnés puis supprimés. Les pièces compatibles, sorties et mouvements liés sont reportés.
+            Détection par <strong>marque + modèle + motorisation</strong> (insensible à la casse et aux accents).
+            Cochez les groupes à fusionner. ⚠️ Si plusieurs véhicules physiques distincts partagent
+            marque/modèle, ne cochez pas le groupe.
           </DialogDescription>
         </DialogHeader>
 
@@ -158,36 +218,64 @@ export function MergeDuplicateVehiculesDialog({ open, onOpenChange }: Props) {
           </div>
         ) : (
           <>
-            <div className="rounded-md border bg-muted/30 p-3 text-sm flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-warning" />
-              <span>
-                <strong>{groups.length}</strong> groupe(s) de doublons — <strong>{totalDuplicates}</strong> véhicule(s)
-                seront supprimés.
-              </span>
+            <div className="rounded-md border bg-muted/30 p-3 text-sm flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-warning" />
+                <span>
+                  <strong>{groups.length}</strong> groupe(s) — <strong>{totalToMerge}</strong> à fusionner
+                </span>
+              </div>
+              <Button variant="ghost" size="sm" onClick={toggleAll}>
+                {selectedKeys.size === groups.length ? "Tout décocher" : "Tout cocher"}
+              </Button>
             </div>
-            <ScrollArea className="max-h-[320px] pr-2">
+            <ScrollArea className="flex-1 pr-2">
               <div className="space-y-3">
-                {groups.map((g) => (
-                  <div key={g.key} className="rounded-md border p-3">
-                    <div className="text-xs text-muted-foreground mb-2">Immatriculation : {g.list[0].immatriculation}</div>
-                    <div className="space-y-1.5">
-                      {g.list.map((v, idx) => (
-                        <div key={v.id} className="flex items-center justify-between gap-2 text-sm">
-                          <div className="truncate">
-                            <span className="font-medium">{v.marque}</span> {v.modele}
-                            {v.motorisation && <span className="text-muted-foreground"> · {v.motorisation}</span>}
-                            {v.annee && <span className="text-muted-foreground"> · {v.annee}</span>}
+                {groups.map((g) => {
+                  const checked = selectedKeys.has(g.key);
+                  return (
+                    <div key={g.key} className="rounded-md border p-3">
+                      <div className="flex items-start gap-2 mb-2">
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={() => toggle(g.key)}
+                          className="mt-1"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-sm">
+                            {g.marque} {g.modele}
+                            {g.motorisation && (
+                              <span className="text-muted-foreground font-normal"> · {g.motorisation}</span>
+                            )}
                           </div>
-                          {idx === 0 ? (
-                            <Badge variant="default">Conservé</Badge>
-                          ) : (
-                            <Badge variant="secondary">Fusionné</Badge>
-                          )}
+                          <div className="text-xs text-muted-foreground">
+                            {g.list.length} entrées détectées
+                          </div>
                         </div>
-                      ))}
+                      </div>
+                      <div className="space-y-1 pl-6">
+                        {g.list.map((v, idx) => (
+                          <div key={v.id} className="flex items-center justify-between gap-2 text-xs">
+                            <div className="truncate">
+                              <span className="font-mono">{v.immatriculation || "—"}</span>
+                              <span className="text-muted-foreground">
+                                {" · "}
+                                {v.marque} {v.modele}
+                                {v.motorisation ? ` · ${v.motorisation}` : ""}
+                                {v.annee ? ` · ${v.annee}` : ""}
+                              </span>
+                            </div>
+                            {idx === 0 ? (
+                              <Badge variant="default" className="text-[10px]">Conservé</Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-[10px]">Fusionné</Badge>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </ScrollArea>
           </>
@@ -197,8 +285,8 @@ export function MergeDuplicateVehiculesDialog({ open, onOpenChange }: Props) {
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
             Annuler
           </Button>
-          <Button onClick={runMerge} disabled={busy || loading || groups.length === 0}>
-            {busy ? "Fusion…" : `Fusionner ${totalDuplicates} doublon(s)`}
+          <Button onClick={runMerge} disabled={busy || loading || totalToMerge === 0}>
+            {busy ? "Fusion…" : `Fusionner ${totalToMerge} véhicule(s)`}
           </Button>
         </DialogFooter>
       </DialogContent>
