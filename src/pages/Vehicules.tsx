@@ -2,17 +2,12 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Switch } from "@/components/ui/switch";
 import { Car, Plus, Edit, Trash2, Package, Merge } from "lucide-react";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "./DashboardLayout";
 import type { Tables } from "@/integrations/supabase/types";
 import { useVehiculeSuggestions } from "@/hooks/useVehiculeSuggestions";
@@ -21,6 +16,7 @@ import { MergeVehiculeFieldDialog } from "@/components/vehicules/MergeVehiculeFi
 
 type Vehicule = Tables<"vehicules">;
 type Article = Tables<"articles">;
+
 
 export default function Vehicules() {
   const { user } = useAuth();
