@@ -343,8 +343,7 @@ const handler = async (req: Request): Promise<Response> => {
         to: commande.email_fournisseur,
         subject: `Bon de commande ${commande.numero_commande} - ${commande.fournisseur}`,
         html: cleanedHtml,
-        text: textAlt,
-      });
+śᴄ});
 
       await client.close();
     };
