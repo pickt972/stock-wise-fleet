@@ -140,6 +140,10 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
 
     const handleResult = (result: Result | null, error?: Error) => {
       if (result) {
+        // Ignore tout résultat arrivant après fermeture (callback zombi)
+        if (!mountedRef.current || !isOpen) return;
+        if (isProcessingRef.current) return;
+
         const scannedText = result.getText();
         const formatEnum = result.getBarcodeFormat();
         const formatLabel = formatBarcodeFormat(formatEnum);
@@ -149,13 +153,14 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
         if (scannedText === lastScanResultRef.current) {
           return;
         }
-        if (isProcessingRef.current) {
-          return;
-        }
+        // Verrouillage IMMÉDIAT pour éviter qu'un second callback (iOS multi-frame) ne passe
         isProcessingRef.current = true;
         lastScanResultRef.current = scannedText;
         setLastScanResult(scannedText);
         setLastScanFormat(formatLabel);
+
+        // Stop IMMÉDIAT du scanner avant tout traitement asynchrone
+        stopScanning();
 
         if ('vibrate' in navigator) {
           navigator.vibrate([100, 50, 100]);
@@ -165,12 +170,12 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
           title: `✅ ${formatKind} détecté`,
           description: `${formatLabel} — ${scannedText}`,
         });
-        stopScanning();
         setTimeout(() => {
           try {
             onScanResult(scannedText);
           } finally {
-            isProcessingRef.current = false;
+            // Ne pas relâcher isProcessingRef ici : le composant va se démonter.
+            // Il sera reset à la prochaine ouverture via le useEffect.
           }
         }, 100);
       }
