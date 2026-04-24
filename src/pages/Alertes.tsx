@@ -72,18 +72,17 @@ export default function Alertes() {
   }
 
   const renderSubcategoryCard = (sub: SubcategoryAlert) => {
-    const isExpanded = expandedCategories.has(sub.subcategory);
+    const isExpanded = expandedCategories.has(sub.key);
     const alertCount = sub.ruptureCount + sub.faibleCount;
-    const percentage = Math.round((alertCount / sub.totalArticles) * 100);
 
     return (
       <Card 
-        key={sub.subcategory} 
+        key={sub.key} 
         className={`border ${sub.priority === "high" ? "border-destructive/40" : "border-warning/40"}`}
       >
         <CardHeader 
           className="cursor-pointer pb-3" 
-          onClick={() => toggleCategory(sub.subcategory)}
+          onClick={() => toggleCategory(sub.key)}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -93,9 +92,15 @@ export default function Alertes() {
                 <TrendingDown className="h-5 w-5 text-warning flex-shrink-0" />
               )}
               <div>
-                <CardTitle className="text-base">{sub.subcategory}</CardTitle>
+                <CardTitle className="text-base">
+                  {sub.subcategory}
+                  {sub.vehiculeLabel && (
+                    <span className="text-xs text-muted-foreground font-normal ml-1">· {sub.vehiculeLabel}</span>
+                  )}
+                </CardTitle>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                  {alertCount} / {sub.totalArticles} articles en alerte ({percentage}%)
+                  Stock total : <span className="font-semibold text-foreground">{sub.totalStock}</span> / Min agrégé : {sub.stockMin}
+                  {" "}· {sub.totalArticles} référence{sub.totalArticles > 1 ? "s" : ""}
                 </p>
               </div>
             </div>
