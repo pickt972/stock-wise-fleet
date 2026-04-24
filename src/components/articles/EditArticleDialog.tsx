@@ -874,7 +874,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
             ) : step === totalSteps ? (
               <>
                 <Check className="h-4 w-4 mr-2" />
-                Modifier l'article
+                Valider
               </>
             ) : (
               <>
