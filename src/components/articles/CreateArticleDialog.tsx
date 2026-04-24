@@ -320,7 +320,7 @@ const articleSchema = z.object({
         .from('articles')
         .insert([{
           reference: data.reference.trim(),
-          designation: data.designation.trim(),
+          designation: data.reference.trim(),
           marque: data.marque.trim(),
           categorie: data.categorie.trim(),
           sous_categorie: data.sousCategorie?.trim() || null,
@@ -361,7 +361,6 @@ const articleSchema = z.object({
 
       setFormData({
         reference: "",
-        designation: "",
         marque: "",
         categorie: "",
         sousCategorie: "",
