@@ -232,7 +232,7 @@ const articleSchema = z.object({
       if (error) throw error;
       toast({ title: "Sous-catégorie modifiée ✓" });
       setAllCategoriesData(prev => prev.map(c => c.id === editingSubcategorie.id ? { ...c, nom: editSubcategorieName.trim() } : c));
-      if (formData.designation === editingSubcategorie.nom) setFormData(prev => ({ ...prev, designation: editSubcategorieName.trim() }));
+      if (formData.sousCategorie === editingSubcategorie.nom) setFormData(prev => ({ ...prev, sousCategorie: editSubcategorieName.trim() }));
       setEditingSubcategorie(null);
       setEditSubcategorieName("");
     } catch (error: any) {
