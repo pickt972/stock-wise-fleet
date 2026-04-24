@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "./DashboardLayout";
 import { ArticleDetailSkeleton } from "@/components/ui/skeletons/ArticleDetailSkeleton";
 import { EditArticleDialog } from "@/components/articles/EditArticleDialog";
+import { TransfertEmplacementDialog } from "@/components/transferts/TransfertEmplacementDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,6 +53,7 @@ export default function ArticleDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showTransfertDialog, setShowTransfertDialog] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -257,7 +259,7 @@ export default function ArticleDetail() {
               size="xxl"
               className="w-full"
               icon={<ArrowLeftRight className="h-6 w-6" />}
-              onClick={() => navigate('/transferts', { state: { prefilledArticleId: article.id } })}
+              onClick={() => setShowTransfertDialog(true)}
             >
               Transférer
             </ActionButton>
@@ -296,6 +298,16 @@ export default function ArticleDetail() {
           }}
         />
       )}
+
+      <TransfertEmplacementDialog
+        open={showTransfertDialog}
+        onOpenChange={setShowTransfertDialog}
+        preselectedArticleId={article.id}
+        onTransfertCompleted={() => {
+          setShowTransfertDialog(false);
+          fetchArticle();
+        }}
+      />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
