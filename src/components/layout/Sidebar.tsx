@@ -1,9 +1,9 @@
 import { NavLink } from "react-router-dom";
-import { 
-  LayoutDashboard, 
-  Package, 
-  ArrowDownToLine, 
-  ArrowUpFromLine, 
+import {
+  LayoutDashboard,
+  Package,
+  ArrowDownToLine,
+  ArrowUpFromLine,
   ArrowLeftRight,
   ClipboardList,
   Settings,
@@ -12,7 +12,7 @@ import {
   History,
   ScanLine,
   Baby,
-  Wrench
+  Wrench,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -39,6 +39,10 @@ interface SidebarProps {
   onClose: () => void;
 }
 
+/**
+ * Sidebar style iOS : surface card flottante avec coins arrondis,
+ * actif = pill bleu primary, hover discret.
+ */
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { permissions } = useRoleAccess();
@@ -46,51 +50,54 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   return (
     <>
       {isOpen && (
-        <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={onClose} />
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden animate-fade-in" onClick={onClose} />
       )}
-      
-      <aside className={cn(
-        "fixed top-16 left-0 h-[calc(100vh-4rem)] bg-card border-r border-border shadow-medium z-50 transition-all duration-300 overflow-y-auto",
-        isCollapsed ? "w-16" : "w-56",
-        isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
-        "max-w-[80vw] sm:max-w-[65vw] md:max-w-none"
-      )}>
-        <div className="flex flex-col h-full">
-          <div className="flex items-center justify-end p-3">
+
+      <aside
+        className={cn(
+          "fixed top-14 left-0 h-[calc(100vh-3.5rem)] z-50 transition-all duration-300 overflow-hidden",
+          "p-2",
+          isCollapsed ? "w-[72px]" : "w-60",
+          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+          "max-w-[85vw] sm:max-w-[70vw] md:max-w-none",
+        )}
+      >
+        <div className="h-full bg-card border border-border/60 shadow-soft rounded-2xl flex flex-col overflow-hidden">
+          <div className="flex items-center justify-end p-2">
             <Button
               variant="ghost"
-              size="sm"
+              size="icon-sm"
               onClick={() => setIsCollapsed(!isCollapsed)}
               className="hidden md:flex"
+              aria-label={isCollapsed ? "Déplier" : "Replier"}
             >
-              <ChevronLeft className={cn(
-                "h-4 w-4 transition-transform",
-                isCollapsed && "rotate-180"
-              )} />
+              <ChevronLeft className={cn("h-4 w-4 transition-transform", isCollapsed && "rotate-180")} />
             </Button>
           </div>
 
-          <nav className="flex-1 px-2 space-y-0.5 pb-4">
-            {getNavigation(permissions).filter(item => item.show).map((item) => (
-              <NavLink
-                key={item.name}
-                to={item.href}
-                onClick={() => window.innerWidth < 768 && onClose()}
-                className={({ isActive }) =>
-                  cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px]",
-                    "hover:bg-accent hover:text-accent-foreground active:scale-95",
-                    isActive 
-                      ? "bg-primary text-primary-foreground shadow-soft" 
-                      : "text-muted-foreground",
-                    isCollapsed && "justify-center px-2"
-                  )
-                }
-              >
-                <item.icon className="h-4 w-4 flex-shrink-0" />
-                {!isCollapsed && <span>{item.name}</span>}
-              </NavLink>
-            ))}
+          <nav className="flex-1 px-2 space-y-0.5 pb-4 overflow-y-auto">
+            {getNavigation(permissions)
+              .filter((item) => item.show)
+              .map((item) => (
+                <NavLink
+                  key={item.name}
+                  to={item.href}
+                  onClick={() => window.innerWidth < 768 && onClose()}
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center gap-3 px-3 rounded-xl text-[14px] font-medium transition-all min-h-[40px]",
+                      "active:scale-[0.97]",
+                      isActive
+                        ? "bg-primary text-primary-foreground shadow-soft"
+                        : "text-foreground/80 hover:bg-muted hover:text-foreground",
+                      isCollapsed && "justify-center px-2",
+                    )
+                  }
+                >
+                  <item.icon className="h-[18px] w-[18px] flex-shrink-0" />
+                  {!isCollapsed && <span className="truncate">{item.name}</span>}
+                </NavLink>
+              ))}
           </nav>
         </div>
       </aside>
