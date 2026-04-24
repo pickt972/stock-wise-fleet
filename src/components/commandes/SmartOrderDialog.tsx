@@ -141,11 +141,11 @@ export const SmartOrderDialog = ({ isOpen, onClose, onOrdersCreated }: SmartOrde
         const fournisseur: any = fournisseursMap.get(af.fournisseur_id);
         if (!article || !fournisseur) continue; // sécurité
 
-        // Utiliser la quantité minimum définie dans article_fournisseurs ou calculer une quantité par défaut
+        // Quantité à commander basée sur le manque agrégé du groupe
+        // (sous-catégorie + véhicule), avec respect du minimum fournisseur
         const quantiteMinimum = af.quantite_minimum || 1;
-        const quantiteACommander = article.stock === 0
-          ? Math.max(quantiteMinimum, article.stock_min || 1)
-          : Math.max(quantiteMinimum, (article.stock_min || 1) - article.stock);
+        const aggregatedShortage = (article as any)._aggregated_shortage || 1;
+        const quantiteACommander = Math.max(quantiteMinimum, aggregatedShortage);
 
         const prixUnitaire = af.prix_fournisseur ?? article.prix_achat ?? 0;
 
