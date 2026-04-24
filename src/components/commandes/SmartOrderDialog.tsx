@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAggregatedStockGroups } from "@/hooks/useAggregatedStock";
 import { Brain, ShoppingCart, Package, AlertTriangle, Loader2 } from "lucide-react";
 
 interface SmartOrderItem {
@@ -54,16 +55,38 @@ export const SmartOrderDialog = ({ isOpen, onClose, onOrdersCreated }: SmartOrde
   const calculateSmartOrders = async () => {
     setIsLoading(true);
     try {
-      // 1) Récupérer tous les articles puis filtrer ceux en alerte côté client
-      const { data: articles, error: articlesError } = await supabase
-        .from('articles')
-        .select('id, designation, reference, stock, stock_min, prix_achat');
+      // 1) Récupérer les groupes agrégés en alerte (sous-catégorie + véhicule)
+      const aggGroups = await fetchAggregatedStockGroups({ onlyAlerts: true });
 
-      if (articlesError) throw articlesError;
+      if (aggGroups.length === 0) {
+        setGroupedOrders({});
+        return;
+      }
 
-      const lowStockArticles = (articles || []).filter(
-        (a: any) => a && (a.stock === 0 || a.stock <= a.stock_min)
-      );
+      // Pour chaque article, on retient le manque agrégé maximum auquel il participe
+      // (un article peut appartenir à plusieurs groupes via plusieurs véhicules compatibles)
+      const articleShortageMap = new Map<string, { article: any; shortage: number }>();
+      for (const g of aggGroups) {
+        const groupShortage = Math.max(g.stockMin - g.totalStock, 0);
+        if (groupShortage <= 0) continue;
+        // On répartit le manque proportionnellement au stock_min de chaque article dans le groupe
+        const totalArticleMins = g.articles.reduce((s, a) => s + (a.stock_min || 1), 0) || 1;
+        for (const a of g.articles) {
+          const share = Math.max(
+            1,
+            Math.round((groupShortage * (a.stock_min || 1)) / totalArticleMins)
+          );
+          const prev = articleShortageMap.get(a.id);
+          if (!prev || share > prev.shortage) {
+            articleShortageMap.set(a.id, { article: a, shortage: share });
+          }
+        }
+      }
+
+      const lowStockArticles = Array.from(articleShortageMap.values()).map((v) => ({
+        ...v.article,
+        _aggregated_shortage: v.shortage,
+      }));
 
       if (lowStockArticles.length === 0) {
         setGroupedOrders({});
@@ -118,11 +141,11 @@ export const SmartOrderDialog = ({ isOpen, onClose, onOrdersCreated }: SmartOrde
         const fournisseur: any = fournisseursMap.get(af.fournisseur_id);
         if (!article || !fournisseur) continue; // sécurité
 
-        // Utiliser la quantité minimum définie dans article_fournisseurs ou calculer une quantité par défaut
+        // Quantité à commander basée sur le manque agrégé du groupe
+        // (sous-catégorie + véhicule), avec respect du minimum fournisseur
         const quantiteMinimum = af.quantite_minimum || 1;
-        const quantiteACommander = article.stock === 0
-          ? Math.max(quantiteMinimum, article.stock_min || 1)
-          : Math.max(quantiteMinimum, (article.stock_min || 1) - article.stock);
+        const aggregatedShortage = (article as any)._aggregated_shortage || 1;
+        const quantiteACommander = Math.max(quantiteMinimum, aggregatedShortage);
 
         const prixUnitaire = af.prix_fournisseur ?? article.prix_achat ?? 0;
 
