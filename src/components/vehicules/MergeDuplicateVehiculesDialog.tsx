@@ -62,11 +62,13 @@ export function MergeDuplicateVehiculesDialog({ open, onOpenChange }: Props) {
   const [busy, setBusy] = useState(false);
   const [vehicules, setVehicules] = useState<Vehicule[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [step, setStep] = useState<"select" | "confirm">("select");
 
   useEffect(() => {
     if (!open) return;
     setLoading(true);
     setSelectedKeys(new Set());
+    setStep("select");
     supabase
       .from("vehicules")
       .select("*")
