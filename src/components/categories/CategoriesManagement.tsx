@@ -184,23 +184,53 @@ export function CategoriesManagement() {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const activeId = active.id as string;
-    const overId = over.id as string;
+    const activeIdStr = active.id as string;
+    const overIdStr = over.id as string;
+    const activeCat = categories.find((c) => c.id === activeIdStr);
+    const overCat = categories.find((c) => c.id === overIdStr);
+    if (!activeCat || !overCat) return;
 
-    // Make activeId a child of overId
     try {
-      const { error } = await supabase
-        .from("categories")
-        .update({ parent_id: overId })
-        .eq("id", activeId);
-      if (error) throw error;
+      // Cas 1 : même parent → réordonner (échange des sort_order)
+      if (activeCat.parent_id === overCat.parent_id) {
+        const siblings = categories
+          .filter((c) => c.parent_id === activeCat.parent_id)
+          .sort((a, b) => a.sort_order - b.sort_order);
+        const fromIdx = siblings.findIndex((s) => s.id === activeIdStr);
+        const toIdx = siblings.findIndex((s) => s.id === overIdStr);
+        if (fromIdx === -1 || toIdx === -1) return;
 
-      toast({ title: "Succès", description: "Catégorie déplacée" });
+        // Réordonner localement
+        const reordered = [...siblings];
+        const [moved] = reordered.splice(fromIdx, 1);
+        reordered.splice(toIdx, 0, moved);
+
+        // Persister tous les nouveaux sort_order
+        const updates = reordered.map((s, idx) =>
+          supabase
+            .from("categories")
+            .update({ sort_order: idx })
+            .eq("id", s.id)
+        );
+        const results = await Promise.all(updates);
+        const firstError = results.find((r) => r.error);
+        if (firstError?.error) throw firstError.error;
+
+        toast({ title: "Ordre mis à jour" });
+      } else {
+        // Cas 2 : parents différents → imbriquer comme enfant de la cible
+        const { error } = await supabase
+          .from("categories")
+          .update({ parent_id: overIdStr })
+          .eq("id", activeIdStr);
+        if (error) throw error;
+        toast({ title: "Catégorie déplacée", description: `Imbriquée sous « ${overCat.nom} »` });
+      }
       fetchCategories();
-    } catch {
+    } catch (e: any) {
       toast({
         title: "Erreur",
-        description: "Impossible de déplacer la catégorie",
+        description: e?.message || "Impossible de déplacer la catégorie",
         variant: "destructive",
       });
     }
@@ -340,7 +370,7 @@ export function CategoriesManagement() {
       </div>
 
       <div className="text-xs text-muted-foreground">
-        💡 Glissez une catégorie sur une autre pour l'imbriquer comme sous-catégorie
+        💡 Glissez sur un voisin pour réordonner, ou sur une catégorie d'un autre parent pour l'imbriquer comme sous-catégorie.
       </div>
 
       <DndContext

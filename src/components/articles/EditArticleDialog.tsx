@@ -266,7 +266,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
 
   const canProceed = useCallback(() => {
     switch (step) {
-      case 1: return formData.categorie.trim() !== "" && formData.designation.trim() !== "";
+      case 1: return formData.categorie.trim() !== "";
       case 2: return formData.reference.trim() !== "" && formData.marque.trim() !== "";
       case 3: return true; // fournisseur optional
       case 4: return true; // emplacement optional
@@ -285,9 +285,11 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
+      // La désignation suit la référence (le champ a été supprimé du formulaire)
+      const newDesignation = formData.reference;
       const updateData: any = {
         reference: formData.reference,
-        designation: formData.designation,
+        designation: newDesignation,
         marque: formData.marque,
         categorie: formData.categorie,
         sous_categorie: formData.sous_categorie?.trim() ? formData.sous_categorie.trim() : null,
@@ -298,6 +300,8 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
         fournisseur_id: formData.fournisseur_id === "none" ? null : formData.fournisseur_id,
         code_barre: formData.code_barre?.trim() ? formData.code_barre.trim() : null,
       };
+      // Sync local state for recap rendering after save
+      setFormData(prev => ({ ...prev, designation: newDesignation }));
       const { error } = await supabase.from('articles').update(updateData).eq('id', article.id);
       if (error) throw error;
 
@@ -426,16 +430,6 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
               )}
             </div>
 
-            {/* Désignation libre */}
-            <div className="space-y-1.5">
-              <Label className="text-xs sm:text-sm">Désignation *</Label>
-              <Input
-                value={formData.designation}
-                onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
-                placeholder="Ex: Plaquettes avant Renault Clio"
-                required
-              />
-            </div>
           </div>
         )}
 

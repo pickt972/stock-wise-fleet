@@ -68,7 +68,6 @@ export function CreateArticleDialog({
   const [tvaTaux, setTvaTaux] = useState(0);
   const [formData, setFormData] = useState({
     reference: "",
-    designation: "",
     marque: "",
     categorie: "",
     sousCategorie: "",
@@ -85,7 +84,6 @@ const { toast } = useToast();
 
 const articleSchema = z.object({
   reference: z.string().trim().min(1, { message: "Référence requise" }),
-  designation: z.string().trim().min(1, { message: "Désignation requise" }),
   marque: z.string().trim().min(1, { message: "Marque requise" }),
   categorie: z.string().trim().min(1, { message: "Catégorie requise" }),
   sousCategorie: z.string().trim().optional().or(z.literal("")),
@@ -277,45 +275,33 @@ const articleSchema = z.object({
       
       // Uniformiser les formats (trim, minuscules pour comparaison)
       const normalizedRef = data.reference.trim().toLowerCase().replace(/\s+/g, '');
-      const normalizedDesignation = data.designation.trim().toLowerCase().replace(/\s+/g, ' ');
       const normalizedMarque = data.marque.trim().toLowerCase().replace(/\s+/g, ' ');
-      
+
       // Vérifier les doublons par référence (normalisée)
-      const { data: existingByRef } = await supabase
-        .from('articles')
-        .select('id, reference, designation, marque')
-        .maybeSingle();
-
-      if (existingByRef) {
-        const allArticles = await supabase
-          .from('articles')
-          .select('id, reference, designation, marque');
-        
-        const duplicate = allArticles.data?.find(article => {
-          const articleRef = article.reference.toLowerCase().replace(/\s+/g, '');
-          return articleRef === normalizedRef;
-        });
-
-        if (duplicate) {
-          toast({
-            title: "Doublon détecté",
-            description: `Un article avec la référence "${duplicate.reference}" existe déjà`,
-            variant: "destructive",
-          });
-          setIsLoading(false);
-          return;
-        }
-      }
-      
-      // Vérifier les doublons par désignation + marque similaire
       const { data: allArticles } = await supabase
         .from('articles')
         .select('id, reference, designation, marque');
 
+      const duplicateRef = allArticles?.find(article => {
+        const articleRef = article.reference.toLowerCase().replace(/\s+/g, '');
+        return articleRef === normalizedRef;
+      });
+
+      if (duplicateRef) {
+        toast({
+          title: "Doublon détecté",
+          description: `Un article avec la référence "${duplicateRef.reference}" existe déjà`,
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Vérifier les doublons par référence + marque
       const similarArticle = allArticles?.find(article => {
-        const artDesignation = article.designation.trim().toLowerCase().replace(/\s+/g, ' ');
+        const artRef = article.reference.trim().toLowerCase().replace(/\s+/g, '');
         const artMarque = article.marque.trim().toLowerCase().replace(/\s+/g, ' ');
-        return artDesignation === normalizedDesignation && artMarque === normalizedMarque;
+        return artRef === normalizedRef && artMarque === normalizedMarque;
       });
 
       if (similarArticle) {
@@ -334,7 +320,7 @@ const articleSchema = z.object({
         .from('articles')
         .insert([{
           reference: data.reference.trim(),
-          designation: data.designation.trim(),
+          designation: data.reference.trim(),
           marque: data.marque.trim(),
           categorie: data.categorie.trim(),
           sous_categorie: data.sousCategorie?.trim() || null,
@@ -375,7 +361,6 @@ const articleSchema = z.object({
 
       setFormData({
         reference: "",
-        designation: "",
         marque: "",
         categorie: "",
         sousCategorie: "",
@@ -542,18 +527,6 @@ const articleSchema = z.object({
                 </div>
               </div>
             )}
-          </div>
-
-          {/* 3) Désignation libre */}
-          <div className="space-y-2">
-            <Label htmlFor="designation">Désignation *</Label>
-            <Input
-              id="designation"
-              value={formData.designation}
-              onChange={(e) => setFormData(prev => ({ ...prev, designation: e.target.value }))}
-              placeholder="Ex: Plaquettes avant Renault Clio"
-              required
-            />
           </div>
 
           <div className="space-y-2">
