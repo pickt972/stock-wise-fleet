@@ -163,26 +163,21 @@ export default function Alertes() {
 
   return (
     <DashboardLayout>
-      <main className="p-4 md:p-6 space-y-4 md:space-y-6">
-        <header className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Retour
-          </Button>
-        </header>
-
+      <main className="space-y-4 md:space-y-6 max-w-3xl mx-auto">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-            <AlertTriangle className="h-6 w-6 text-warning" />
-            Alertes de stock
+          <button
+            onClick={() => navigate("/dashboard")}
+            className="flex items-center gap-0.5 -ml-1 text-primary text-[15px] font-medium active:opacity-60 transition-opacity mb-2"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            Retour
+          </button>
+          <h1 className="text-[28px] sm:text-[34px] font-bold tracking-tight leading-tight flex items-center gap-2">
+            <AlertTriangle className="h-7 w-7 text-warning" />
+            Alertes
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Alertes agrégées par sous-catégorie — {totalRupture} ruptures, {totalFaible} stocks faibles
+          <p className="text-[14px] text-muted-foreground mt-1">
+            Agrégées par sous-catégorie · {totalRupture} ruptures, {totalFaible} stocks faibles
           </p>
         </div>
 

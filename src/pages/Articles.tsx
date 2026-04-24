@@ -391,10 +391,9 @@ export default function Articles() {
             )}
           </div>
 
-          {/* Stats */}
-          <div className="text-sm text-muted-foreground text-center">
-            {filteredArticles.length} article(s) affiché(s) sur {articles.length}
-          </div>
+        {/* Stats */}
+        <div className="text-[12px] text-muted-foreground text-center pt-1">
+          {filteredArticles.length} article(s) affiché(s) sur {articles.length}
         </div>
       </div>
 
