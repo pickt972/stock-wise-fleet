@@ -1290,6 +1290,36 @@ export type Database = {
           },
         ]
       }
+      subcategory_stock_thresholds: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          sous_categorie: string
+          stock_min: number
+          updated_at: string
+          vehicule_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          sous_categorie: string
+          stock_min?: number
+          updated_at?: string
+          vehicule_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          sous_categorie?: string
+          stock_min?: number
+          updated_at?: string
+          vehicule_id?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
