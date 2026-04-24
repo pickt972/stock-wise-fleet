@@ -360,7 +360,7 @@ export default function ScannerHub() {
   const handleCreateArticle = () => {
     setShowNotFoundDialog(false);
     const currentPath = window.location.pathname;
-    navigate(`/articles/new?reference=${encodeURIComponent(scannedNotFoundCode)}&returnTo=${encodeURIComponent(currentPath)}`);
+    navigate(`/articles/new?code_barre=${encodeURIComponent(scannedNotFoundCode)}&returnTo=${encodeURIComponent(currentPath)}`);
   };
 
   return (
