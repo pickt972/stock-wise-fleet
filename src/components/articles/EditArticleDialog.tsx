@@ -266,7 +266,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
 
   const canProceed = useCallback(() => {
     switch (step) {
-      case 1: return formData.categorie.trim() !== "" && formData.designation.trim() !== "";
+      case 1: return formData.categorie.trim() !== "";
       case 2: return formData.reference.trim() !== "" && formData.marque.trim() !== "";
       case 3: return true; // fournisseur optional
       case 4: return true; // emplacement optional
@@ -287,7 +287,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
     try {
       const updateData: any = {
         reference: formData.reference,
-        designation: formData.designation,
+        designation: formData.reference,
         marque: formData.marque,
         categorie: formData.categorie,
         sous_categorie: formData.sous_categorie?.trim() ? formData.sous_categorie.trim() : null,
@@ -426,16 +426,6 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
               )}
             </div>
 
-            {/* Désignation libre */}
-            <div className="space-y-1.5">
-              <Label className="text-xs sm:text-sm">Désignation *</Label>
-              <Input
-                value={formData.designation}
-                onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
-                placeholder="Ex: Plaquettes avant Renault Clio"
-                required
-              />
-            </div>
           </div>
         )}
 
