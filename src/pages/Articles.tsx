@@ -443,6 +443,19 @@ export default function Articles() {
           }}
         />
       )}
+
+      {mergeField && (
+        <MergeArticleFieldDialog
+          open={!!mergeField}
+          onOpenChange={(o) => !o && setMergeField(null)}
+          field={mergeField}
+          values={mergeField === "marque" ? distinctMarques : distinctCategories}
+          onDone={() => {
+            fetchArticles();
+            fetchCategories();
+          }}
+        />
+      )}
     </DashboardLayout>
   );
 }
