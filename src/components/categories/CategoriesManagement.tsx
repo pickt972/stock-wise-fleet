@@ -190,49 +190,64 @@ export function CategoriesManagement() {
     const overCat = categories.find((c) => c.id === overIdStr);
     if (!activeCat || !overCat) return;
 
+    // Garde-fou : empêcher de déposer une catégorie sur l'un de ses descendants
+    const isDescendant = (parentId: string, candidateId: string): boolean => {
+      const children = categories.filter((c) => c.parent_id === parentId);
+      for (const ch of children) {
+        if (ch.id === candidateId) return true;
+        if (isDescendant(ch.id, candidateId)) return true;
+      }
+      return false;
+    };
+
     try {
-      // Cas 1 : même parent → réordonner (échange des sort_order)
+      // Cas 1 : même parent → réordonner via RPC atomique
       if (activeCat.parent_id === overCat.parent_id) {
         const siblings = categories
           .filter((c) => c.parent_id === activeCat.parent_id)
-          .sort((a, b) => a.sort_order - b.sort_order);
+          .sort((a, b) => a.sort_order - b.sort_order || a.nom.localeCompare(b.nom));
         const fromIdx = siblings.findIndex((s) => s.id === activeIdStr);
         const toIdx = siblings.findIndex((s) => s.id === overIdStr);
         if (fromIdx === -1 || toIdx === -1) return;
 
-        // Réordonner localement
         const reordered = [...siblings];
         const [moved] = reordered.splice(fromIdx, 1);
         reordered.splice(toIdx, 0, moved);
 
-        // Persister tous les nouveaux sort_order
-        const updates = reordered.map((s, idx) =>
-          supabase
-            .from("categories")
-            .update({ sort_order: idx })
-            .eq("id", s.id)
-        );
-        const results = await Promise.all(updates);
-        const firstError = results.find((r) => r.error);
-        if (firstError?.error) throw firstError.error;
+        const { error } = await supabase.rpc("reorder_categories", {
+          _parent_id: activeCat.parent_id,
+          _ordered_ids: reordered.map((s) => s.id),
+        });
+        if (error) throw error;
 
         toast({ title: "Ordre mis à jour" });
       } else {
-        // Cas 2 : parents différents → imbriquer comme enfant de la cible
-        const { error } = await supabase
-          .from("categories")
-          .update({ parent_id: overIdStr })
-          .eq("id", activeIdStr);
+        // Cas 2 : parents différents → imbriquer (avec garde anti-cycle)
+        if (isDescendant(activeIdStr, overIdStr)) {
+          toast({
+            title: "Action impossible",
+            description: "Impossible d'imbriquer une catégorie sous l'un de ses descendants",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const { error } = await supabase.rpc("move_category", {
+          _category_id: activeIdStr,
+          _new_parent_id: overIdStr,
+        });
         if (error) throw error;
         toast({ title: "Catégorie déplacée", description: `Imbriquée sous « ${overCat.nom} »` });
       }
-      fetchCategories();
+      await fetchCategories();
     } catch (e: any) {
       toast({
         title: "Erreur",
         description: e?.message || "Impossible de déplacer la catégorie",
         variant: "destructive",
       });
+      // Recharger pour resynchroniser l'UI avec la BDD
+      fetchCategories();
     }
   };
 
