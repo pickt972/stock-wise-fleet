@@ -54,14 +54,24 @@ export function BarcodeScanner({ onScanResult, onClose, isOpen }: BarcodeScanner
   const { toast } = useToast();
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const mountedRef = useRef(false);
+
   useEffect(() => {
     if (isOpen) {
+      // Reset des verrous anti-doublon à chaque ouverture
+      mountedRef.current = true;
+      isProcessingRef.current = false;
+      lastScanResultRef.current = "";
+      setLastScanResult("");
+      setLastScanFormat("");
       initializeScanner();
     } else {
+      mountedRef.current = false;
       stopScanning();
     }
 
     return () => {
+      mountedRef.current = false;
       stopScanning();
     };
   }, [isOpen]);
