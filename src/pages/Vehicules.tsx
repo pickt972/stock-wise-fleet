@@ -26,43 +26,10 @@ export default function Vehicules() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { data: vSuggestions } = useVehiculeSuggestions();
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
   const [editingVehicule, setEditingVehicule] = useState<Vehicule | null>(null);
   const [viewingVehiculeId, setViewingVehiculeId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    marque: "",
-    modele: "",
-    motorisation: "",
-    immatriculation: "",
-    annee: "",
-    notes: "",
-    actif: true,
-  });
-
-  // Fonction de formatage de l'immatriculation
-  const formatImmatriculation = (value: string) => {
-    // Supprimer tous les caractères non alphanumériques et convertir en majuscules
-    const cleaned = value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-    
-    // Format français standard: AA-000-AA (2 lettres, 3 chiffres, 2 lettres)
-    let formatted = '';
-    
-    for (let i = 0; i < cleaned.length && i < 7; i++) {
-      // Ajouter les tirets aux bonnes positions
-      if (i === 2 || i === 5) {
-        formatted += '-';
-      }
-      formatted += cleaned[i];
-    }
-    
-    return formatted;
-  };
-
-  const validateImmatriculation = (value: string) => {
-    // Regex pour valider le format français AA-000-AA
-    const regex = /^[A-Z]{2}-[0-9]{3}-[A-Z]{2}$/;
-    return regex.test(value);
-  };
+  const [mergeOpen, setMergeOpen] = useState<null | "marque" | "modele">(null);
 
   const { data: vehicules = [] } = useQuery({
     queryKey: ["vehicules"],
@@ -71,7 +38,6 @@ export default function Vehicules() {
         .from("vehicules")
         .select("*")
         .order("marque", { ascending: true });
-      
       if (error) throw error;
       return data;
     },
@@ -81,282 +47,58 @@ export default function Vehicules() {
     queryKey: ["vehicule-articles", viewingVehiculeId],
     queryFn: async () => {
       if (!viewingVehiculeId) return [];
-      
       const { data, error } = await supabase
         .from("articles")
-        .select(`
-          *,
-          article_vehicules!inner (
-            notes,
-            vehicule_id
-          )
-        `)
+        .select(`*, article_vehicules!inner ( notes, vehicule_id )`)
         .eq("article_vehicules.vehicule_id", viewingVehiculeId);
-      
       if (error) throw error;
       return data as Article[];
     },
     enabled: !!viewingVehiculeId,
   });
 
-  const createMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      const { error } = await supabase
-        .from("vehicules")
-        .insert({
-          ...data,
-          annee: data.annee ? parseInt(data.annee) : null,
-          user_id: user?.id,
-        });
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vehicules"] });
-      toast.success("Véhicule créé avec succès");
-      setIsCreateOpen(false);
-      resetForm();
-    },
-    onError: (error) => {
-      toast.error("Erreur lors de la création : " + error.message);
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
-      const { error } = await supabase
-        .from("vehicules")
-        .update({
-          ...data,
-          annee: data.annee ? parseInt(data.annee) : null,
-        })
-        .eq("id", id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vehicules"] });
-      toast.success("Véhicule modifié avec succès");
-      setEditingVehicule(null);
-      resetForm();
-    },
-    onError: (error) => {
-      toast.error("Erreur lors de la modification : " + error.message);
-    },
-  });
-
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("vehicules")
-        .delete()
-        .eq("id", id);
-      
+      const { error } = await supabase.from("vehicules").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vehicules"] });
       toast.success("Véhicule supprimé avec succès");
     },
-    onError: (error) => {
-      toast.error("Erreur lors de la suppression : " + error.message);
-    },
+    onError: (error: any) => toast.error("Erreur lors de la suppression : " + error.message),
   });
 
-  const resetForm = () => {
-    setFormData({
-      marque: "",
-      modele: "",
-      motorisation: "",
-      immatriculation: "",
-      annee: "",
-      notes: "",
-      actif: true,
-    });
+  const openCreate = () => {
+    setEditingVehicule(null);
+    setWizardOpen(true);
   };
-
-  const handleEdit = (vehicule: Vehicule) => {
-    setEditingVehicule(vehicule);
-    setFormData({
-      marque: vehicule.marque,
-      modele: vehicule.modele,
-      motorisation: vehicule.motorisation || "",
-      immatriculation: formatImmatriculation(vehicule.immatriculation), // Formater lors de l'édition
-      annee: vehicule.annee?.toString() || "",
-      notes: vehicule.notes || "",
-      actif: vehicule.actif,
-    });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Vérifier le format de l'immatriculation
-    if (!validateImmatriculation(formData.immatriculation)) {
-      toast.error("Le format de l'immatriculation doit être AA-000-AA");
-      return;
-    }
-    
-    if (editingVehicule) {
-      updateMutation.mutate({ id: editingVehicule.id, data: formData });
-    } else {
-      createMutation.mutate(formData);
-    }
+  const openEdit = (v: Vehicule) => {
+    setEditingVehicule(v);
+    setWizardOpen(true);
   };
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-wrap justify-between items-center gap-3">
           <div className="flex items-center gap-3">
             <Car className="h-8 w-8 text-primary" />
             <h1 className="text-2xl font-bold">Gestion des Véhicules</h1>
           </div>
-          
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={resetForm}>
-                <Plus className="h-4 w-4 mr-2" />
-                Ajouter un véhicule
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingVehicule ? "Modifier le véhicule" : "Ajouter un nouveau véhicule"}
-                </DialogTitle>
-                <DialogDescription>
-                  {editingVehicule ? "Modifiez les informations du véhicule" : "Ajoutez un nouveau véhicule à votre parc"}
-                </DialogDescription>
-              </DialogHeader>
-              
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="marque">Marque *</Label>
-                    <AutocompleteInput
-                      id="marque"
-                      value={formData.marque}
-                      onValueChange={(v) => setFormData(prev => ({ ...prev, marque: v }))}
-                      suggestions={vSuggestions?.marques ?? []}
-                      placeholder="Peugeot, Renault..."
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="modele">Modèle *</Label>
-                    <AutocompleteInput
-                      id="modele"
-                      value={formData.modele}
-                      onValueChange={(v) => setFormData(prev => ({ ...prev, modele: v }))}
-                      suggestions={vSuggestions?.modeles ?? []}
-                      placeholder="208, Clio..."
-                      required
-                    />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="motorisation">Motorisation</Label>
-                    <AutocompleteInput
-                      id="motorisation"
-                      value={formData.motorisation}
-                      onValueChange={(v) => setFormData(prev => ({ ...prev, motorisation: v }))}
-                      suggestions={vSuggestions?.motorisations ?? []}
-                      placeholder="Essence, Diesel, Électrique..."
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="annee">Année</Label>
-                    <Input
-                      id="annee"
-                      type="number"
-                      value={formData.annee}
-                      onChange={(e) => setFormData(prev => ({ ...prev, annee: e.target.value }))}
-                      placeholder="2020"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="immatriculation">Immatriculation *</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="immatriculation"
-                      value={formData.immatriculation}
-                      onChange={(e) => {
-                        const formatted = formatImmatriculation(e.target.value);
-                        setFormData(prev => ({ ...prev, immatriculation: formatted }));
-                      }}
-                      placeholder="AB-123-CD"
-                      maxLength={9}
-                      required
-                      className={`flex-1 ${formData.immatriculation && !validateImmatriculation(formData.immatriculation) 
-                        ? "border-destructive focus:border-destructive" 
-                        : ""
-                      }`}
-                    />
-                    <LicensePlateScanner
-                      onPlateDetected={(plate) => {
-                        const formatted = formatImmatriculation(plate);
-                        setFormData(prev => ({ ...prev, immatriculation: formatted }));
-                      }}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Format: AA-000-AA (2 lettres, 3 chiffres, 2 lettres)
-                  </p>
-                  {formData.immatriculation && !validateImmatriculation(formData.immatriculation) && (
-                    <p className="text-xs text-destructive mt-1">
-                      Format d'immatriculation invalide
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="notes">Notes</Label>
-                  <Textarea
-                    id="notes"
-                    value={formData.notes}
-                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                    placeholder="Informations complémentaires..."
-                  />
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="actif"
-                    checked={formData.actif}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, actif: checked }))}
-                  />
-                  <Label htmlFor="actif">Véhicule actif</Label>
-                </div>
-
-                <div className="flex justify-end gap-2">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => {
-                      setIsCreateOpen(false);
-                      setEditingVehicule(null);
-                      resetForm();
-                    }}
-                  >
-                    Annuler
-                  </Button>
-                  <Button 
-                    type="submit"
-                    disabled={createMutation.isPending || updateMutation.isPending}
-                  >
-                    {editingVehicule ? "Modifier" : "Créer"}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => setMergeOpen("marque")}>
+              <Merge className="h-4 w-4 mr-2" /> Fusionner marques
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setMergeOpen("modele")}>
+              <Merge className="h-4 w-4 mr-2" /> Fusionner modèles
+            </Button>
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4 mr-2" />
+              Ajouter
+            </Button>
+          </div>
         </div>
 
         <Card>
@@ -391,21 +133,10 @@ export default function Vehicules() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setViewingVehiculeId(vehicule.id)}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => setViewingVehiculeId(vehicule.id)}>
                           <Package className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            handleEdit(vehicule);
-                            setIsCreateOpen(true);
-                          }}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => openEdit(vehicule)}>
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
@@ -422,15 +153,44 @@ export default function Vehicules() {
                 ))}
               </TableBody>
             </Table>
-            
+
             {vehicules.length === 0 && (
-              <div className="text-center py-8 text-muted-foreground">
-                Aucun véhicule enregistré
-              </div>
+              <div className="text-center py-8 text-muted-foreground">Aucun véhicule enregistré</div>
             )}
           </CardContent>
         </Card>
       </div>
+
+      <VehiculeWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        initial={
+          editingVehicule
+            ? {
+                id: editingVehicule.id,
+                marque: editingVehicule.marque,
+                modele: editingVehicule.modele,
+                motorisation: editingVehicule.motorisation || "",
+                immatriculation: editingVehicule.immatriculation,
+                annee: editingVehicule.annee?.toString() || "",
+                notes: editingVehicule.notes || "",
+                actif: editingVehicule.actif,
+              }
+            : undefined
+        }
+        onSaved={() => queryClient.invalidateQueries({ queryKey: ["vehicules"] })}
+      />
+
+      <MergeVehiculeFieldDialog
+        open={mergeOpen !== null}
+        onOpenChange={(o) => !o && setMergeOpen(null)}
+        field={mergeOpen ?? "marque"}
+        values={
+          mergeOpen === "modele"
+            ? vSuggestions?.modeles ?? []
+            : vSuggestions?.marques ?? []
+        }
+      />
 
       {/* Dialog pour voir les pièces compatibles */}
       <Dialog open={!!viewingVehiculeId} onOpenChange={(open) => !open && setViewingVehiculeId(null)}>
@@ -439,12 +199,14 @@ export default function Vehicules() {
             <DialogTitle>Pièces compatibles</DialogTitle>
             <DialogDescription>
               {viewingVehiculeId && (() => {
-                const vehicule = vehicules.find(v => v.id === viewingVehiculeId);
-                return vehicule ? `${vehicule.marque} ${vehicule.modele} ${vehicule.motorisation ? `(${vehicule.motorisation})` : ''} - ${vehicule.immatriculation}` : '';
+                const vehicule = vehicules.find((v) => v.id === viewingVehiculeId);
+                return vehicule
+                  ? `${vehicule.marque} ${vehicule.modele} ${vehicule.motorisation ? `(${vehicule.motorisation})` : ""} - ${vehicule.immatriculation}`
+                  : "";
               })()}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 overflow-y-auto">
             {compatibleArticles.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
