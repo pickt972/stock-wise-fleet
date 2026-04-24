@@ -201,14 +201,6 @@ export default function Articles() {
     { id: "rupture", label: "Rupture" },
   ];
 
-  const distinctMarques = useMemo(
-    () => [...new Set(articles.map((a) => a.marque).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
-    [articles]
-  );
-  const distinctCategories = useMemo(
-    () => [...new Set(articles.map((a) => a.categorie).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
-    [articles]
-  );
 
   if (isLoading) {
     return (
