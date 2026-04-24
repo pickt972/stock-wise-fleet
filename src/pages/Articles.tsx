@@ -214,14 +214,15 @@ export default function Articles() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-background">
-        <PageHeader 
-          title="Gestion des Articles" 
-          showBackButton 
-          onBack={() => navigate('/dashboard')}
+      <div className="max-w-7xl mx-auto space-y-4">
+        <PageHeader
+          variant="large"
+          title="Articles"
+          subtitle={`${articles.length} référence${articles.length > 1 ? "s" : ""} dans le stock`}
+          showBackButton
+          onBack={() => navigate("/dashboard")}
         />
-        
-        <div className="max-w-7xl mx-auto px-4 py-4 space-y-4">
+
           {/* Message informatif pour non-admins */}
           {!isAdmin() && (
             <Alert>
