@@ -246,7 +246,7 @@ const articleSchema = z.object({
       if (error) throw error;
       toast({ title: "Sous-catégorie supprimée ✓" });
       setAllCategoriesData(prev => prev.filter(c => c.id !== subId));
-      if (formData.designation === subNom) setFormData(prev => ({ ...prev, designation: "" }));
+      if (formData.sousCategorie === subNom) setFormData(prev => ({ ...prev, sousCategorie: "" }));
     } catch (error: any) {
       toast({ title: "Erreur", description: error?.message || "Impossible de supprimer", variant: "destructive" });
     }
