@@ -10,9 +10,8 @@ import { Car, Plus, Edit, Trash2, Package, Merge } from "lucide-react";
 import { toast } from "sonner";
 import DashboardLayout from "./DashboardLayout";
 import type { Tables } from "@/integrations/supabase/types";
-import { useVehiculeSuggestions } from "@/hooks/useVehiculeSuggestions";
 import { VehiculeWizard } from "@/components/vehicules/VehiculeWizard";
-import { MergeVehiculeFieldDialog } from "@/components/vehicules/MergeVehiculeFieldDialog";
+import { MergeDuplicateVehiculesDialog } from "@/components/vehicules/MergeDuplicateVehiculesDialog";
 
 type Vehicule = Tables<"vehicules">;
 type Article = Tables<"articles">;
@@ -20,11 +19,10 @@ type Article = Tables<"articles">;
 
 export default function Vehicules() {
   const queryClient = useQueryClient();
-  const { data: vSuggestions } = useVehiculeSuggestions();
   const [wizardOpen, setWizardOpen] = useState(false);
   const [editingVehicule, setEditingVehicule] = useState<Vehicule | null>(null);
   const [viewingVehiculeId, setViewingVehiculeId] = useState<string | null>(null);
-  const [mergeOpen, setMergeOpen] = useState<null | "marque" | "modele">(null);
+  const [mergeDuplicatesOpen, setMergeDuplicatesOpen] = useState(false);
 
   const { data: vehicules = [] } = useQuery({
     queryKey: ["vehicules"],
@@ -83,11 +81,8 @@ export default function Vehicules() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => setMergeOpen("marque")}>
-              <Merge className="h-4 w-4 mr-2" /> Fusionner marques
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setMergeOpen("modele")}>
-              <Merge className="h-4 w-4 mr-2" /> Fusionner modèles
+            <Button variant="outline" size="sm" onClick={() => setMergeDuplicatesOpen(true)}>
+              <Merge className="h-4 w-4 mr-2" /> Fusionner les doublons
             </Button>
             <Button onClick={openCreate}>
               <Plus className="h-4 w-4 mr-2" />
@@ -176,15 +171,9 @@ export default function Vehicules() {
         onSaved={() => queryClient.invalidateQueries({ queryKey: ["vehicules"] })}
       />
 
-      <MergeVehiculeFieldDialog
-        open={mergeOpen !== null}
-        onOpenChange={(o) => !o && setMergeOpen(null)}
-        field={mergeOpen ?? "marque"}
-        values={
-          mergeOpen === "modele"
-            ? vSuggestions?.modeles ?? []
-            : vSuggestions?.marques ?? []
-        }
+      <MergeDuplicateVehiculesDialog
+        open={mergeDuplicatesOpen}
+        onOpenChange={setMergeDuplicatesOpen}
       />
 
       {/* Dialog pour voir les pièces compatibles */}
