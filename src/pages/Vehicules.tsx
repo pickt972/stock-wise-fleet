@@ -10,14 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
-import { Car, Plus, Edit, Trash2, Package } from "lucide-react";
+import { Car, Plus, Edit, Trash2, Package, Merge } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "./DashboardLayout";
 import type { Tables } from "@/integrations/supabase/types";
-import { LicensePlateScanner } from "@/components/vehicules/LicensePlateScanner";
-import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { useVehiculeSuggestions } from "@/hooks/useVehiculeSuggestions";
+import { VehiculeWizard } from "@/components/vehicules/VehiculeWizard";
+import { MergeVehiculeFieldDialog } from "@/components/vehicules/MergeVehiculeFieldDialog";
 
 type Vehicule = Tables<"vehicules">;
 type Article = Tables<"articles">;
