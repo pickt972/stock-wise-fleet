@@ -37,6 +37,7 @@ interface Article {
   designation: string;
   marque: string;
   categorie: string;
+  sous_categorie?: string | null;
   stock: number;
   stock_min: number;
   stock_max: number;
@@ -103,6 +104,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
     designation: article.designation,
     marque: article.marque,
     categorie: article.categorie,
+    sous_categorie: article.sous_categorie || "",
     stock: article.stock,
     stock_min: article.stock_min,
     stock_max: article.stock_max,
@@ -118,6 +120,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
       designation: article.designation,
       marque: article.marque,
       categorie: article.categorie,
+      sous_categorie: article.sous_categorie || "",
       stock: article.stock,
       stock_min: article.stock_min,
       stock_max: article.stock_max,
@@ -226,7 +229,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
       if (error) throw error;
       toast({ title: "Sous-catégorie créée ✓" });
       setAllCategoriesData(prev => [...prev, data]);
-      setFormData(prev => ({ ...prev, designation: data.nom }));
+      setFormData(prev => ({ ...prev, sous_categorie: data.nom }));
       setNewSubcategorieName("");
       setShowSubcategorieDialog(false);
     } catch (error: any) {
@@ -241,7 +244,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
       if (error) throw error;
       toast({ title: "Sous-catégorie modifiée ✓" });
       setAllCategoriesData(prev => prev.map(c => c.id === editingSubcategorie.id ? { ...c, nom: editSubcategorieName.trim() } : c));
-      if (formData.designation === editingSubcategorie.nom) setFormData(prev => ({ ...prev, designation: editSubcategorieName.trim() }));
+      if (formData.sous_categorie === editingSubcategorie.nom) setFormData(prev => ({ ...prev, sous_categorie: editSubcategorieName.trim() }));
       setEditingSubcategorie(null);
       setEditSubcategorieName("");
     } catch (error: any) {
@@ -255,7 +258,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
       if (error) throw error;
       toast({ title: "Sous-catégorie supprimée ✓" });
       setAllCategoriesData(prev => prev.filter(c => c.id !== subId));
-      if (formData.designation === subNom) setFormData(prev => ({ ...prev, designation: "" }));
+      if (formData.sous_categorie === subNom) setFormData(prev => ({ ...prev, sous_categorie: "" }));
     } catch (error: any) {
       toast({ title: "Erreur", description: error?.message || "Impossible de supprimer", variant: "destructive" });
     }
@@ -287,6 +290,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
         designation: formData.designation,
         marque: formData.marque,
         categorie: formData.categorie,
+        sous_categorie: formData.sous_categorie?.trim() ? formData.sous_categorie.trim() : null,
         stock_min: formData.stock_min,
         stock_max: formData.stock_max,
         prix_achat: formData.prix_achat,
@@ -369,7 +373,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
                   <button
                     key={cat}
                     type="button"
-                    onClick={() => { setFormData({ ...formData, categorie: cat }); setStep(2); }}
+                    onClick={() => { setFormData({ ...formData, categorie: cat, sous_categorie: cat !== formData.categorie ? "" : formData.sous_categorie }); }}
                     className={`w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
                       formData.categorie === cat
                         ? "border-primary bg-primary/10 text-primary"
@@ -382,58 +386,55 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
               </div>
             </div>
 
-            {/* Subcategory / Designation */}
+            {/* Sous-catégorie (optionnelle, dépend de la catégorie) */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label className="text-xs sm:text-sm">Sous-catégorie / Désignation</Label>
-                <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowSubcategorieDialog(true)}>
-                  <Plus className="h-3 w-3 mr-1" /> Nouvelle
-                </Button>
+                <Label className="text-xs sm:text-sm">Sous-catégorie</Label>
+                {formData.categorie && (
+                  <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowSubcategorieDialog(true)}>
+                    <Plus className="h-3 w-3 mr-1" /> Nouvelle
+                  </Button>
+                )}
               </div>
-              {(() => {
-                const filteredDesignations = allArticleDesignations
-                  .filter((item) => !formData.categorie || item.categorie === formData.categorie)
-                  .map((item) => item.designation);
-
-                const uniqueOptions = Array.from(
-                  new Map(
-                    [
-                      ...subcategories.map((sub) => ({ value: sub.nom, label: sub.nom })),
-                      ...filteredDesignations.map((designation) => ({ value: designation, label: designation })),
-                    ].map((option) => [option.value.toLowerCase(), option])
-                  ).values()
-                );
-
-                return (
-                  <SearchableSelect
-                    options={[
-                      ...uniqueOptions,
-                      { value: "__create_new__", label: "＋ Nouvelle sous-catégorie" },
-                    ]}
-                    value={formData.designation}
-                    onValueChange={(val) => {
-                      if (val === "__create_new__") {
-                        setShowSubcategorieDialog(true);
-                      } else {
-                        setFormData({ ...formData, designation: val });
-                      }
-                    }}
-                    placeholder="Sélectionner ou rechercher..."
-                    searchPlaceholder="Rechercher une sous-catégorie..."
-                    emptyMessage="Aucune sous-catégorie trouvée"
-                  />
-                );
-              })()}
+              <SearchableSelect
+                options={[
+                  ...subcategories.map((sub) => ({ value: sub.nom, label: sub.nom })),
+                  ...(formData.categorie ? [{ value: "__create_new__", label: "＋ Nouvelle sous-catégorie" }] : []),
+                ]}
+                value={formData.sous_categorie}
+                onValueChange={(val) => {
+                  if (val === "__create_new__") {
+                    setShowSubcategorieDialog(true);
+                  } else {
+                    setFormData({ ...formData, sous_categorie: val });
+                  }
+                }}
+                placeholder={formData.categorie ? "Sélectionner (optionnel)" : "Choisissez d'abord une catégorie"}
+                searchPlaceholder="Rechercher..."
+                emptyMessage="Aucune sous-catégorie"
+                disabled={!formData.categorie}
+              />
               {showSubcategorieDialog && (
                 <div className="border border-border rounded-lg p-3 space-y-2 bg-card mb-2">
-                  <Label className="text-xs">Nouvelle sous-catégorie</Label>
+                  <Label className="text-xs">Nouvelle sous-catégorie pour « {formData.categorie} »</Label>
                   <Input value={newSubcategorieName} onChange={(e) => setNewSubcategorieName(e.target.value)} placeholder="Ex: Plaquettes, Disques..." className="h-9" autoFocus onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCreateSubcategorie(); } }} />
                   <div className="flex gap-2 justify-end">
-                    <Button variant="outline" size="sm" onClick={() => { setShowSubcategorieDialog(false); setNewSubcategorieName(""); }}>Annuler</Button>
-                    <Button size="sm" onClick={handleCreateSubcategorie} disabled={!newSubcategorieName.trim()}>Créer</Button>
+                    <Button variant="outline" size="sm" type="button" onClick={() => { setShowSubcategorieDialog(false); setNewSubcategorieName(""); }}>Annuler</Button>
+                    <Button size="sm" type="button" onClick={handleCreateSubcategorie} disabled={!newSubcategorieName.trim()}>Créer</Button>
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Désignation libre */}
+            <div className="space-y-1.5">
+              <Label className="text-xs sm:text-sm">Désignation *</Label>
+              <Input
+                value={formData.designation}
+                onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                placeholder="Ex: Plaquettes avant Renault Clio"
+                required
+              />
             </div>
           </div>
         )}
@@ -772,6 +773,10 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
                   <p className="font-semibold text-sm">{formData.categorie}</p>
                 </div>
                 <div>
+                  <p className="text-xs text-muted-foreground">Sous-catégorie</p>
+                  <p className="font-semibold text-sm">{formData.sous_categorie || "—"}</p>
+                </div>
+                <div>
                   <p className="text-xs text-muted-foreground">Désignation</p>
                   <p className="font-semibold text-sm">{formData.designation}</p>
                 </div>
@@ -824,6 +829,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
               {(() => {
                 const changes: { label: string; old: string; new: string }[] = [];
                 if (article.categorie !== formData.categorie) changes.push({ label: "Catégorie", old: article.categorie, new: formData.categorie });
+                if ((article.sous_categorie || "") !== formData.sous_categorie) changes.push({ label: "Sous-catégorie", old: article.sous_categorie || "—", new: formData.sous_categorie || "—" });
                 if (article.designation !== formData.designation) changes.push({ label: "Désignation", old: article.designation, new: formData.designation });
                 if (article.reference !== formData.reference) changes.push({ label: "Référence", old: article.reference, new: formData.reference });
                 if (article.marque !== formData.marque) changes.push({ label: "Marque", old: article.marque, new: formData.marque });

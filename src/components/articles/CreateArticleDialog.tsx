@@ -71,6 +71,7 @@ export function CreateArticleDialog({
     designation: "",
     marque: "",
     categorie: "",
+    sousCategorie: "",
     stock: 0,
     stockMin: 0,
     stockMax: 100,
@@ -87,6 +88,7 @@ const articleSchema = z.object({
   designation: z.string().trim().min(1, { message: "Désignation requise" }),
   marque: z.string().trim().min(1, { message: "Marque requise" }),
   categorie: z.string().trim().min(1, { message: "Catégorie requise" }),
+  sousCategorie: z.string().trim().optional().or(z.literal("")),
   stock: z.number().int().min(0),
   stockMin: z.number().int().min(0),
   stockMax: z.number().int().min(1),
@@ -215,7 +217,7 @@ const articleSchema = z.object({
       if (error) throw error;
       toast({ title: "Sous-catégorie créée ✓" });
       setAllCategoriesData(prev => [...prev, data]);
-      setFormData(prev => ({ ...prev, designation: data.nom }));
+      setFormData(prev => ({ ...prev, sousCategorie: data.nom }));
       setNewSubcategorieName("");
       setShowSubcategorieDialog(false);
     } catch (error: any) {
@@ -230,7 +232,7 @@ const articleSchema = z.object({
       if (error) throw error;
       toast({ title: "Sous-catégorie modifiée ✓" });
       setAllCategoriesData(prev => prev.map(c => c.id === editingSubcategorie.id ? { ...c, nom: editSubcategorieName.trim() } : c));
-      if (formData.designation === editingSubcategorie.nom) setFormData(prev => ({ ...prev, designation: editSubcategorieName.trim() }));
+      if (formData.sousCategorie === editingSubcategorie.nom) setFormData(prev => ({ ...prev, sousCategorie: editSubcategorieName.trim() }));
       setEditingSubcategorie(null);
       setEditSubcategorieName("");
     } catch (error: any) {
@@ -244,7 +246,7 @@ const articleSchema = z.object({
       if (error) throw error;
       toast({ title: "Sous-catégorie supprimée ✓" });
       setAllCategoriesData(prev => prev.filter(c => c.id !== subId));
-      if (formData.designation === subNom) setFormData(prev => ({ ...prev, designation: "" }));
+      if (formData.sousCategorie === subNom) setFormData(prev => ({ ...prev, sousCategorie: "" }));
     } catch (error: any) {
       toast({ title: "Erreur", description: error?.message || "Impossible de supprimer", variant: "destructive" });
     }
@@ -335,6 +337,7 @@ const articleSchema = z.object({
           designation: data.designation.trim(),
           marque: data.marque.trim(),
           categorie: data.categorie.trim(),
+          sous_categorie: data.sousCategorie?.trim() || null,
           stock: data.stock,
           stock_min: data.stockMin,
           stock_max: data.stockMax,
@@ -375,6 +378,7 @@ const articleSchema = z.object({
         designation: "",
         marque: "",
         categorie: "",
+        sousCategorie: "",
         stock: 0,
         stockMin: 0,
         stockMax: 100,
@@ -461,101 +465,117 @@ const articleSchema = z.object({
             </div>
           </div>
 
+          {/* 1) Catégorie */}
+          <div className="space-y-2">
+            <Label htmlFor="categorie">Catégorie *</Label>
+            <Select
+              value={formData.categorie}
+              onValueChange={(value) => {
+                if (value === "__create_new__") {
+                  setShowCategorieDialog(true);
+                } else {
+                  setFormData(prev => ({ ...prev, categorie: value, sousCategorie: "" }));
+                }
+              }}
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner une catégorie" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border border-border shadow-medium z-[60] max-h-[200px] overflow-y-auto">
+                <div className="p-2 border-b border-border mb-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setShowCategorieDialog(true)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nouvelle catégorie
+                  </Button>
+                </div>
+                {categories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 2) Sous-catégorie (dépend de la catégorie) */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Sous-catégorie / Désignation *</Label>
-              <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowSubcategorieDialog(true)}>
-                <Plus className="h-3 w-3 mr-1" /> Nouvelle
-              </Button>
+              <Label>Sous-catégorie</Label>
+              {formData.categorie && (
+                <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowSubcategorieDialog(true)}>
+                  <Plus className="h-3 w-3 mr-1" /> Nouvelle
+                </Button>
+              )}
             </div>
             <SearchableSelect
               options={[
                 ...subcategories.map(sub => ({ value: sub.nom, label: sub.nom })),
-                { value: "__create_new__", label: "＋ Nouvelle sous-catégorie" },
+                ...(formData.categorie ? [{ value: "__create_new__", label: "＋ Nouvelle sous-catégorie" }] : []),
               ]}
-              value={formData.designation}
+              value={formData.sousCategorie}
               onValueChange={(val) => {
                 if (val === "__create_new__") {
                   setShowSubcategorieDialog(true);
                 } else {
-                  setFormData(prev => ({ ...prev, designation: val }));
+                  setFormData(prev => ({ ...prev, sousCategorie: val }));
                 }
               }}
-              placeholder="Sélectionner ou rechercher..."
-              searchPlaceholder="Rechercher une sous-catégorie..."
-              emptyMessage="Aucune sous-catégorie trouvée"
+              placeholder={formData.categorie ? "Sélectionner (optionnel)" : "Choisissez d'abord une catégorie"}
+              searchPlaceholder="Rechercher..."
+              emptyMessage="Aucune sous-catégorie"
+              disabled={!formData.categorie}
             />
             {showSubcategorieDialog && (
               <div className="border border-border rounded-lg p-3 space-y-2 bg-card mb-2">
-                <Label className="text-xs">Nouvelle sous-catégorie</Label>
+                <Label className="text-xs">Nouvelle sous-catégorie pour « {formData.categorie} »</Label>
                 <Input value={newSubcategorieName} onChange={(e) => setNewSubcategorieName(e.target.value)} placeholder="Ex: Plaquettes, Disques..." className="h-9" autoFocus onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCreateSubcategorie(); } }} />
                 <div className="flex gap-2 justify-end">
-                  <Button variant="outline" size="sm" onClick={() => { setShowSubcategorieDialog(false); setNewSubcategorieName(""); }}>Annuler</Button>
-                  <Button size="sm" onClick={handleCreateSubcategorie} disabled={!newSubcategorieName.trim()}>Créer</Button>
+                  <Button variant="outline" size="sm" type="button" onClick={() => { setShowSubcategorieDialog(false); setNewSubcategorieName(""); }}>Annuler</Button>
+                  <Button size="sm" type="button" onClick={handleCreateSubcategorie} disabled={!newSubcategorieName.trim()}>Créer</Button>
                 </div>
               </div>
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="categorie">Catégorie *</Label>
-              <Select
-                value={formData.categorie}
-                onValueChange={(value) => {
-                  if (value === "__create_new__") {
-                    setShowCategorieDialog(true);
-                  } else {
-                    setFormData(prev => ({ ...prev, categorie: value }));
-                  }
-                }}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner une catégorie" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border border-border shadow-medium z-[60] max-h-[200px] overflow-y-auto">
-                  <div className="p-2 border-b border-border mb-1">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => setShowCategorieDialog(true)}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Nouvelle catégorie
-                    </Button>
-                  </div>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="fournisseur">Fournisseur</Label>
-              <Select
-                value={formData.fournisseurId}
-                onValueChange={(value) => {
-                  setFormData((prev) => ({ ...prev, fournisseurId: value === "none" ? "" : value }));
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un fournisseur" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border border-border shadow-medium z-[60] max-h-[200px] overflow-y-auto">
-                  <SelectItem value="none">Aucun fournisseur</SelectItem>
-                  {fournisseurs.map((fournisseur) => (
-                    <SelectItem key={fournisseur.id} value={fournisseur.id}>
-                      {fournisseur.nom}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* 3) Désignation libre */}
+          <div className="space-y-2">
+            <Label htmlFor="designation">Désignation *</Label>
+            <Input
+              id="designation"
+              value={formData.designation}
+              onChange={(e) => setFormData(prev => ({ ...prev, designation: e.target.value }))}
+              placeholder="Ex: Plaquettes avant Renault Clio"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="fournisseur">Fournisseur</Label>
+            <Select
+              value={formData.fournisseurId}
+              onValueChange={(value) => {
+                setFormData((prev) => ({ ...prev, fournisseurId: value === "none" ? "" : value }));
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner un fournisseur" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border border-border shadow-medium z-[60] max-h-[200px] overflow-y-auto">
+                <SelectItem value="none">Aucun fournisseur</SelectItem>
+                {fournisseurs.map((fournisseur) => (
+                  <SelectItem key={fournisseur.id} value={fournisseur.id}>
+                    {fournisseur.nom}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
