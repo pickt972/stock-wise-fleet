@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  fetchAggregatedStockGroups,
+  AggregatedGroup,
+} from "@/hooks/useAggregatedStock";
 
 export interface ArticleAlert {
   id: string;
@@ -15,7 +18,13 @@ export interface ArticleAlert {
 }
 
 export interface SubcategoryAlert {
+  /** Clé unique sous-catégorie + véhicule */
+  key: string;
   subcategory: string;
+  vehiculeId: string | null;
+  vehiculeLabel: string | null;
+  totalStock: number;
+  stockMin: number;
   totalArticles: number;
   ruptureCount: number;
   faibleCount: number;
@@ -31,57 +40,43 @@ export const useAlerts = () => {
   const fetchAlerts = async () => {
     try {
       setIsLoading(true);
-      // Fetch ALL articles to know total per subcategory
-      const { data: articles, error } = await supabase
-        .from('articles')
-        .select('*')
-        .order('categorie', { ascending: true });
-
-      if (error) throw error;
-
-      // Group by subcategory
-      const grouped: Record<string, { total: number; alerts: ArticleAlert[] }> = {};
-
-      articles?.forEach((article) => {
-        const cat = article.categorie || "Non classé";
-        if (!grouped[cat]) {
-          grouped[cat] = { total: 0, alerts: [] };
-        }
-        grouped[cat].total++;
-
-        if (article.stock === 0) {
-          grouped[cat].alerts.push({
-            ...article,
-            type: "rupture",
-          });
-        } else if (article.stock <= article.stock_min) {
-          grouped[cat].alerts.push({
-            ...article,
-            type: "faible",
-          });
-        }
+      const groups: AggregatedGroup[] = await fetchAggregatedStockGroups({
+        onlyAlerts: true,
       });
 
-      // Build subcategory alerts (only categories with at least one alert)
-      const result: SubcategoryAlert[] = Object.entries(grouped)
-        .filter(([, data]) => data.alerts.length > 0)
-        .map(([subcategory, data]) => {
-          const ruptureCount = data.alerts.filter(a => a.type === "rupture").length;
-          const faibleCount = data.alerts.filter(a => a.type === "faible").length;
-          return {
-            subcategory,
-            totalArticles: data.total,
-            ruptureCount,
-            faibleCount,
-            alertArticles: data.alerts,
-            priority: ruptureCount > 0 ? "high" as const : "medium" as const,
-          };
-        })
-        .sort((a, b) => b.ruptureCount - a.ruptureCount || b.alertArticles.length - a.alertArticles.length);
+      const result: SubcategoryAlert[] = groups.map((g) => {
+        const alertArticles: ArticleAlert[] = g.articles.map((a) => ({
+          id: a.id,
+          designation: a.designation,
+          reference: a.reference,
+          stock: a.stock,
+          stock_min: a.stock_min,
+          categorie: a.categorie,
+          marque: a.marque,
+          prix_achat: a.prix_achat,
+          type: a.stock === 0 ? "rupture" : "faible",
+        }));
+        const ruptureCount = alertArticles.filter((a) => a.type === "rupture").length;
+        const faibleCount = alertArticles.filter((a) => a.type === "faible").length;
+        const isCritical = g.totalStock === 0;
+        return {
+          key: g.key,
+          subcategory: g.sousCategorie,
+          vehiculeId: g.vehiculeId,
+          vehiculeLabel: g.vehiculeLabel,
+          totalStock: g.totalStock,
+          stockMin: g.stockMin,
+          totalArticles: g.articles.length,
+          ruptureCount,
+          faibleCount,
+          alertArticles,
+          priority: isCritical ? ("high" as const) : ("medium" as const),
+        };
+      });
 
       setSubcategoryAlerts(result);
     } catch (error: any) {
-      console.error('Error fetching alerts:', error);
+      console.error("Error fetching alerts:", error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les alertes",
@@ -96,14 +91,14 @@ export const useAlerts = () => {
     fetchAlerts();
   }, []);
 
-  const totalRupture = subcategoryAlerts.reduce((sum, s) => sum + s.ruptureCount, 0);
-  const totalFaible = subcategoryAlerts.reduce((sum, s) => sum + s.faibleCount, 0);
+  const totalRupture = subcategoryAlerts.filter((s) => s.totalStock === 0).length;
+  const totalFaible = subcategoryAlerts.filter((s) => s.totalStock > 0).length;
 
   return {
     subcategoryAlerts,
     totalRupture,
     totalFaible,
-    totalAlerts: totalRupture + totalFaible,
+    totalAlerts: subcategoryAlerts.length,
     isLoading,
     refetch: fetchAlerts,
   };
