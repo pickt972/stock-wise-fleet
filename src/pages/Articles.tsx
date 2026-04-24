@@ -28,7 +28,7 @@ import { SearchWithScanner } from "@/components/SearchWithScanner";
 import { CreateArticleDialog } from "@/components/articles/CreateArticleDialog";
 import { EditArticleDialog } from "@/components/articles/EditArticleDialog";
 import { ArticleDeleteDialog } from "@/components/articles/ArticleDeleteDialog";
-import { MergeArticleFieldDialog } from "@/components/articles/MergeArticleFieldDialog";
+import { MergeDuplicateArticlesDialog } from "@/components/articles/MergeDuplicateArticlesDialog";
 import DashboardLayout from "./DashboardLayout";
 
 interface Article {
@@ -65,7 +65,7 @@ export default function Articles() {
   const [sortBy, setSortBy] = useState<SortOption>("designation");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
-  const [mergeField, setMergeField] = useState<"marque" | "categorie" | null>(null);
+  const [mergeDuplicatesOpen, setMergeDuplicatesOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { isAdmin } = useRoleAccess();
@@ -201,14 +201,6 @@ export default function Articles() {
     { id: "rupture", label: "Rupture" },
   ];
 
-  const distinctMarques = useMemo(
-    () => [...new Set(articles.map((a) => a.marque).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
-    [articles]
-  );
-  const distinctCategories = useMemo(
-    () => [...new Set(articles.map((a) => a.categorie).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
-    [articles]
-  );
 
   if (isLoading) {
     return (
@@ -255,12 +247,13 @@ export default function Articles() {
                 <Button
                   size="lg"
                   variant="outline"
-                  onClick={() => setMergeField("marque")}
-                  className="flex-shrink-0 hidden sm:inline-flex"
-                  title="Fusionner deux marques"
+                  onClick={() => setMergeDuplicatesOpen(true)}
+                  className="flex-shrink-0"
+                  title="Détecter et fusionner les doublons"
                 >
                   <Merge className="h-4 w-4 mr-2" />
-                  Fusionner
+                  <span className="hidden sm:inline">Fusionner les doublons</span>
+                  <span className="sm:hidden">Doublons</span>
                 </Button>
                 <Button
                   size="lg"
@@ -273,24 +266,6 @@ export default function Articles() {
               </>
             )}
           </div>
-
-          {isAdmin() && (
-            <div className="flex flex-wrap gap-2 sm:hidden">
-              <Button size="sm" variant="outline" onClick={() => setMergeField("marque")}>
-                <Merge className="h-3.5 w-3.5 mr-1.5" /> Fusionner marques
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => setMergeField("categorie")}>
-                <Merge className="h-3.5 w-3.5 mr-1.5" /> Fusionner catégories
-              </Button>
-            </div>
-          )}
-          {isAdmin() && (
-            <div className="hidden sm:flex">
-              <Button size="sm" variant="ghost" onClick={() => setMergeField("categorie")}>
-                <Merge className="h-3.5 w-3.5 mr-1.5" /> Fusionner des catégories
-              </Button>
-            </div>
-          )}
 
           {/* Filtres */}
           <div className="flex flex-col sm:flex-row gap-2">
@@ -444,18 +419,14 @@ export default function Articles() {
         />
       )}
 
-      {mergeField && (
-        <MergeArticleFieldDialog
-          open={!!mergeField}
-          onOpenChange={(o) => !o && setMergeField(null)}
-          field={mergeField}
-          values={mergeField === "marque" ? distinctMarques : distinctCategories}
-          onDone={() => {
-            fetchArticles();
-            fetchCategories();
-          }}
-        />
-      )}
+      <MergeDuplicateArticlesDialog
+        open={mergeDuplicatesOpen}
+        onOpenChange={setMergeDuplicatesOpen}
+        onDone={() => {
+          fetchArticles();
+          fetchCategories();
+        }}
+      />
     </DashboardLayout>
   );
 }
