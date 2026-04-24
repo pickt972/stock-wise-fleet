@@ -20,6 +20,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { AutocompleteInput } from "@/components/ui/autocomplete-input";
+import { useArticleSuggestions } from "@/hooks/useArticleSuggestions";
 
 
 interface ArticleCreationWizardProps {
@@ -82,6 +84,7 @@ export function ArticleCreationWizard({
   const [fournisseurId, setFournisseurId] = useState("");
   const [emplacementId, setEmplacementId] = useState("");
   const [quantite, setQuantite] = useState(1);
+  const { data: articleSuggestions } = useArticleSuggestions();
 
   // Admin-only fields
   const [stockMin, setStockMin] = useState(0);
@@ -622,14 +625,15 @@ export function ArticleCreationWizard({
 
             <div className="space-y-2">
               <Label>Marque *</Label>
-              <Input
+              <AutocompleteInput
                 value={marque}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\s+/g, " ");
-                  setMarque(val.charAt(0).toUpperCase() + val.slice(1).toLowerCase());
+                onValueChange={(val) => {
+                  const v = val.replace(/\s+/g, " ");
+                  setMarque(v.charAt(0).toUpperCase() + v.slice(1).toLowerCase());
                 }}
+                suggestions={articleSuggestions?.marques ?? []}
                 placeholder="Ex: Bosch, Varta, Mann..."
-                className="h-12 text-base"
+                inputClassName="h-12 text-base"
               />
             </div>
 

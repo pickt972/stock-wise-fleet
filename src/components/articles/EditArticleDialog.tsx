@@ -28,6 +28,8 @@ import { useRoleAccess } from "@/hooks/useRoleAccess";
 import ArticleVehicleCompatibility from "./ArticleVehicleCompatibility";
 import { ArticleEmplacementsList } from "./ArticleEmplacementsList";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { AutocompleteInput } from "@/components/ui/autocomplete-input";
+import { useArticleSuggestions } from "@/hooks/useArticleSuggestions";
 import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
 
 
@@ -97,6 +99,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
   // Price
   const [priceType, setPriceType] = useState<"HT" | "TTC">("HT");
   const [tvaTaux, setTvaTaux] = useState(0);
+  const { data: articleSuggestions } = useArticleSuggestions();
 
   // Form data
   const [formData, setFormData] = useState({
@@ -469,11 +472,11 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
 
             <div className="space-y-1.5">
               <Label className="text-xs sm:text-sm">Marque *</Label>
-              <Input
+              <AutocompleteInput
                 value={formData.marque}
-                onChange={(e) => setFormData({ ...formData, marque: e.target.value })}
-                required
-                className="h-11 text-base"
+                onValueChange={(val) => setFormData({ ...formData, marque: val })}
+                suggestions={articleSuggestions?.marques ?? []}
+                inputClassName="h-11 text-base"
               />
             </div>
 
