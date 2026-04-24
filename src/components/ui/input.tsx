@@ -9,10 +9,15 @@ import { cn } from "@/lib/utils";
  * - text-[16px] sur mobile pour éviter le zoom auto Safari
  */
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, ...props }, ref) => {
+  ({ className, type, autoComplete, ...props }, ref) => {
+    // Active l'autocomplétion par défaut sur tous les inputs.
+    // Pour les champs sensibles (mots de passe, OTP...), passer explicitement autoComplete="off" ou "new-password".
+    const resolvedAutoComplete =
+      autoComplete ?? (type === "password" ? "current-password" : "on");
     return (
       <input
         type={type}
+        autoComplete={resolvedAutoComplete}
         className={cn(
           "flex h-11 w-full rounded-xl border border-border bg-card px-3.5 py-2 text-[16px] md:text-[15px] ring-offset-background transition-colors",
           "file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground",
