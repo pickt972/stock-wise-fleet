@@ -386,58 +386,55 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
               </div>
             </div>
 
-            {/* Subcategory / Designation */}
+            {/* Sous-catégorie (optionnelle, dépend de la catégorie) */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label className="text-xs sm:text-sm">Sous-catégorie / Désignation</Label>
-                <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowSubcategorieDialog(true)}>
-                  <Plus className="h-3 w-3 mr-1" /> Nouvelle
-                </Button>
+                <Label className="text-xs sm:text-sm">Sous-catégorie</Label>
+                {formData.categorie && (
+                  <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowSubcategorieDialog(true)}>
+                    <Plus className="h-3 w-3 mr-1" /> Nouvelle
+                  </Button>
+                )}
               </div>
-              {(() => {
-                const filteredDesignations = allArticleDesignations
-                  .filter((item) => !formData.categorie || item.categorie === formData.categorie)
-                  .map((item) => item.designation);
-
-                const uniqueOptions = Array.from(
-                  new Map(
-                    [
-                      ...subcategories.map((sub) => ({ value: sub.nom, label: sub.nom })),
-                      ...filteredDesignations.map((designation) => ({ value: designation, label: designation })),
-                    ].map((option) => [option.value.toLowerCase(), option])
-                  ).values()
-                );
-
-                return (
-                  <SearchableSelect
-                    options={[
-                      ...uniqueOptions,
-                      { value: "__create_new__", label: "＋ Nouvelle sous-catégorie" },
-                    ]}
-                    value={formData.designation}
-                    onValueChange={(val) => {
-                      if (val === "__create_new__") {
-                        setShowSubcategorieDialog(true);
-                      } else {
-                        setFormData({ ...formData, designation: val });
-                      }
-                    }}
-                    placeholder="Sélectionner ou rechercher..."
-                    searchPlaceholder="Rechercher une sous-catégorie..."
-                    emptyMessage="Aucune sous-catégorie trouvée"
-                  />
-                );
-              })()}
+              <SearchableSelect
+                options={[
+                  ...subcategories.map((sub) => ({ value: sub.nom, label: sub.nom })),
+                  ...(formData.categorie ? [{ value: "__create_new__", label: "＋ Nouvelle sous-catégorie" }] : []),
+                ]}
+                value={formData.sous_categorie}
+                onValueChange={(val) => {
+                  if (val === "__create_new__") {
+                    setShowSubcategorieDialog(true);
+                  } else {
+                    setFormData({ ...formData, sous_categorie: val });
+                  }
+                }}
+                placeholder={formData.categorie ? "Sélectionner (optionnel)" : "Choisissez d'abord une catégorie"}
+                searchPlaceholder="Rechercher..."
+                emptyMessage="Aucune sous-catégorie"
+                disabled={!formData.categorie}
+              />
               {showSubcategorieDialog && (
                 <div className="border border-border rounded-lg p-3 space-y-2 bg-card mb-2">
-                  <Label className="text-xs">Nouvelle sous-catégorie</Label>
+                  <Label className="text-xs">Nouvelle sous-catégorie pour « {formData.categorie} »</Label>
                   <Input value={newSubcategorieName} onChange={(e) => setNewSubcategorieName(e.target.value)} placeholder="Ex: Plaquettes, Disques..." className="h-9" autoFocus onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCreateSubcategorie(); } }} />
                   <div className="flex gap-2 justify-end">
-                    <Button variant="outline" size="sm" onClick={() => { setShowSubcategorieDialog(false); setNewSubcategorieName(""); }}>Annuler</Button>
-                    <Button size="sm" onClick={handleCreateSubcategorie} disabled={!newSubcategorieName.trim()}>Créer</Button>
+                    <Button variant="outline" size="sm" type="button" onClick={() => { setShowSubcategorieDialog(false); setNewSubcategorieName(""); }}>Annuler</Button>
+                    <Button size="sm" type="button" onClick={handleCreateSubcategorie} disabled={!newSubcategorieName.trim()}>Créer</Button>
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Désignation libre */}
+            <div className="space-y-1.5">
+              <Label className="text-xs sm:text-sm">Désignation *</Label>
+              <Input
+                value={formData.designation}
+                onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                placeholder="Ex: Plaquettes avant Renault Clio"
+                required
+              />
             </div>
           </div>
         )}
