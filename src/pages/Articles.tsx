@@ -28,6 +28,7 @@ import { SearchWithScanner } from "@/components/SearchWithScanner";
 import { CreateArticleDialog } from "@/components/articles/CreateArticleDialog";
 import { EditArticleDialog } from "@/components/articles/EditArticleDialog";
 import { ArticleDeleteDialog } from "@/components/articles/ArticleDeleteDialog";
+import { MergeArticleFieldDialog } from "@/components/articles/MergeArticleFieldDialog";
 import DashboardLayout from "./DashboardLayout";
 
 interface Article {
