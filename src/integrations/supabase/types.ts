@@ -212,6 +212,7 @@ export type Database = {
           marque: string
           prix_achat: number
           reference: string
+          sous_categorie: string | null
           stock: number
           stock_max: number
           stock_min: number
@@ -230,6 +231,7 @@ export type Database = {
           marque: string
           prix_achat?: number
           reference: string
+          sous_categorie?: string | null
           stock?: number
           stock_max?: number
           stock_min?: number
@@ -248,6 +250,7 @@ export type Database = {
           marque?: string
           prix_achat?: number
           reference?: string
+          sous_categorie?: string | null
           stock?: number
           stock_max?: number
           stock_min?: number
