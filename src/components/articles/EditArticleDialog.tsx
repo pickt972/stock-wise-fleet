@@ -229,7 +229,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
       if (error) throw error;
       toast({ title: "Sous-catégorie créée ✓" });
       setAllCategoriesData(prev => [...prev, data]);
-      setFormData(prev => ({ ...prev, designation: data.nom }));
+      setFormData(prev => ({ ...prev, sous_categorie: data.nom }));
       setNewSubcategorieName("");
       setShowSubcategorieDialog(false);
     } catch (error: any) {
