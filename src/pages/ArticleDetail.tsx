@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Edit, PlusCircle, FileText, MoreVertical, Trash2, Package, AlertTriangle } from "lucide-react";
+import { Edit, PlusCircle, FileText, MoreVertical, Trash2, Package, AlertTriangle, ArrowLeftRight } from "lucide-react";
 import ArticleVehicleCompatibility from "@/components/articles/ArticleVehicleCompatibility";
 import { PageHeader } from "@/components/ui/page-header";
 import { ActionButton } from "@/components/ui/action-button";
@@ -250,6 +250,16 @@ export default function ArticleDetail() {
               onClick={() => navigate('/historique-articles', { state: { articleId: article.id } })}
             >
               Voir l'historique
+            </ActionButton>
+
+            <ActionButton
+              variant="primary"
+              size="xxl"
+              className="w-full"
+              icon={<ArrowLeftRight className="h-6 w-6" />}
+              onClick={() => navigate('/transferts', { state: { prefilledArticleId: article.id } })}
+            >
+              Transférer
             </ActionButton>
           </div>
 
