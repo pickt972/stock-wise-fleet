@@ -68,7 +68,6 @@ export function CreateArticleDialog({
   const [tvaTaux, setTvaTaux] = useState(0);
   const [formData, setFormData] = useState({
     reference: "",
-    designation: "",
     marque: "",
     categorie: "",
     sousCategorie: "",
@@ -85,7 +84,6 @@ const { toast } = useToast();
 
 const articleSchema = z.object({
   reference: z.string().trim().min(1, { message: "Référence requise" }),
-  designation: z.string().trim().min(1, { message: "Désignation requise" }),
   marque: z.string().trim().min(1, { message: "Marque requise" }),
   categorie: z.string().trim().min(1, { message: "Catégorie requise" }),
   sousCategorie: z.string().trim().optional().or(z.literal("")),
