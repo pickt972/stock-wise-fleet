@@ -217,7 +217,7 @@ const articleSchema = z.object({
       if (error) throw error;
       toast({ title: "Sous-catégorie créée ✓" });
       setAllCategoriesData(prev => [...prev, data]);
-      setFormData(prev => ({ ...prev, designation: data.nom }));
+      setFormData(prev => ({ ...prev, sousCategorie: data.nom }));
       setNewSubcategorieName("");
       setShowSubcategorieDialog(false);
     } catch (error: any) {
