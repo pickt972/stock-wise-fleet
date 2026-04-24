@@ -65,6 +65,7 @@ export default function Articles() {
   const [sortBy, setSortBy] = useState<SortOption>("designation");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
+  const [mergeField, setMergeField] = useState<"marque" | "categorie" | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { isAdmin } = useRoleAccess();
