@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Edit, Plus, AlertCircle, ChevronDown } from "lucide-react";
+import { Edit, Plus, AlertCircle, ChevronDown, Merge } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { PageHeader } from "@/components/ui/page-header";
