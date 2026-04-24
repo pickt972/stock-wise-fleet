@@ -339,6 +339,13 @@ export default function Parametres() {
               description="Alertes et seuils de stock"
               onClick={() => setShowNotifications(true)}
             />
+            <SettingsCard
+              index={10}
+              icon={<Bell className="h-5 w-5" />}
+              title="Seuils agrégés"
+              description="Stock min par sous-catégorie/véhicule"
+              onClick={() => navigate('/seuils-stock')}
+            />
           </div>
         </section>
 
