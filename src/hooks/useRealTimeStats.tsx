@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAggregatedStockGroups } from "@/hooks/useAggregatedStock";
 
 export interface RealTimeStats {
   totalArticles: number;
@@ -46,8 +47,11 @@ export function useRealTimeStats() {
 
       const totalArticles = articles?.reduce((sum, a) => sum + a.stock, 0) || 0;
       const totalValue = articles?.reduce((sum, a) => sum + (a.stock * a.prix_achat), 0) || 0;
-      const lowStockCount = articles?.filter(a => a.stock > 0 && a.stock <= a.stock_min).length || 0;
-      const criticalStockCount = articles?.filter(a => a.stock <= 2).length || 0;
+
+      // Alertes agrégées par (sous-catégorie, véhicule)
+      const aggGroups = await fetchAggregatedStockGroups({ onlyAlerts: true });
+      const lowStockCount = aggGroups.filter(g => g.totalStock > 0).length;
+      const criticalStockCount = aggGroups.filter(g => g.totalStock === 0).length;
 
       // Mouvements récents (derniers 7 jours)
       const sevenDaysAgo = new Date();
