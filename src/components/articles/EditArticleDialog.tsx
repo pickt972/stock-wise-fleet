@@ -285,9 +285,11 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
+      // La désignation suit la référence (le champ a été supprimé du formulaire)
+      const newDesignation = formData.reference;
       const updateData: any = {
         reference: formData.reference,
-        designation: formData.reference,
+        designation: newDesignation,
         marque: formData.marque,
         categorie: formData.categorie,
         sous_categorie: formData.sous_categorie?.trim() ? formData.sous_categorie.trim() : null,
@@ -298,6 +300,8 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
         fournisseur_id: formData.fournisseur_id === "none" ? null : formData.fournisseur_id,
         code_barre: formData.code_barre?.trim() ? formData.code_barre.trim() : null,
       };
+      // Sync local state for recap rendering after save
+      setFormData(prev => ({ ...prev, designation: newDesignation }));
       const { error } = await supabase.from('articles').update(updateData).eq('id', article.id);
       if (error) throw error;
 
