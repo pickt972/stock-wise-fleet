@@ -829,6 +829,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
               {(() => {
                 const changes: { label: string; old: string; new: string }[] = [];
                 if (article.categorie !== formData.categorie) changes.push({ label: "Catégorie", old: article.categorie, new: formData.categorie });
+                if ((article.sous_categorie || "") !== formData.sous_categorie) changes.push({ label: "Sous-catégorie", old: article.sous_categorie || "—", new: formData.sous_categorie || "—" });
                 if (article.designation !== formData.designation) changes.push({ label: "Désignation", old: article.designation, new: formData.designation });
                 if (article.reference !== formData.reference) changes.push({ label: "Référence", old: article.reference, new: formData.reference });
                 if (article.marque !== formData.marque) changes.push({ label: "Marque", old: article.marque, new: formData.marque });
