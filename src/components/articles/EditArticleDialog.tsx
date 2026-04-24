@@ -773,6 +773,10 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
                   <p className="font-semibold text-sm">{formData.categorie}</p>
                 </div>
                 <div>
+                  <p className="text-xs text-muted-foreground">Sous-catégorie</p>
+                  <p className="font-semibold text-sm">{formData.sous_categorie || "—"}</p>
+                </div>
+                <div>
                   <p className="text-xs text-muted-foreground">Désignation</p>
                   <p className="font-semibold text-sm">{formData.designation}</p>
                 </div>
