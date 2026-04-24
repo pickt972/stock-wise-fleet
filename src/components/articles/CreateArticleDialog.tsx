@@ -529,18 +529,6 @@ const articleSchema = z.object({
             )}
           </div>
 
-          {/* 3) Désignation libre */}
-          <div className="space-y-2">
-            <Label htmlFor="designation">Désignation *</Label>
-            <Input
-              id="designation"
-              value={formData.designation}
-              onChange={(e) => setFormData(prev => ({ ...prev, designation: e.target.value }))}
-              placeholder="Ex: Plaquettes avant Renault Clio"
-              required
-            />
-          </div>
-
           <div className="space-y-2">
             <Label htmlFor="fournisseur">Fournisseur</Label>
             <Select
