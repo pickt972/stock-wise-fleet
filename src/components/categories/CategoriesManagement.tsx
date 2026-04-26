@@ -480,7 +480,11 @@ export function CategoriesManagement() {
         sensors={sensors}
         collisionDetection={pointerWithin}
         measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
-        autoScroll={{ acceleration: 3, threshold: { x: 0, y: 0.1 }, interval: 10 }}
+        autoScroll={
+          isIOS
+            ? { acceleration: 1.5, threshold: { x: 0, y: 0.18 }, interval: 16 }
+            : { acceleration: 3, threshold: { x: 0, y: 0.1 }, interval: 10 }
+        }
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragCancel={() => setActiveId(null)}
