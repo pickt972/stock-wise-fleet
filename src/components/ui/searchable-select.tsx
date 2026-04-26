@@ -49,6 +49,7 @@ export function SearchableSelect({
 }: SearchableSelectProps) {
   const [open, setOpen] = React.useState(false);
   const listRef = React.useRef<HTMLDivElement>(null);
+  const touchYRef = React.useRef<number | null>(null);
   const [scrollState, setScrollState] = React.useState({ top: 0, height: 100, visible: false });
 
   const updateScrollIndicator = React.useCallback(() => {
@@ -84,6 +85,29 @@ export function SearchableSelect({
 
     return () => resizeObserver.disconnect();
   }, [open, updateScrollIndicator]);
+
+  const handleTouchStart = React.useCallback((event: React.TouchEvent<HTMLDivElement>) => {
+    touchYRef.current = event.touches[0]?.clientY ?? null;
+  }, []);
+
+  const handleTouchMove = React.useCallback((event: React.TouchEvent<HTMLDivElement>) => {
+    const list = listRef.current;
+    const currentY = event.touches[0]?.clientY;
+    if (!list || touchYRef.current === null || currentY === undefined) return;
+
+    const canScroll = list.scrollHeight > list.clientHeight;
+    if (!canScroll) return;
+
+    list.scrollTop += touchYRef.current - currentY;
+    touchYRef.current = currentY;
+    updateScrollIndicator();
+    event.preventDefault();
+    event.stopPropagation();
+  }, [updateScrollIndicator]);
+
+  const handleTouchEnd = React.useCallback(() => {
+    touchYRef.current = null;
+  }, []);
 
   const selectedLabel = React.useMemo(() => {
     const option = options.find((opt) => opt.value === value);
@@ -121,8 +145,12 @@ export function SearchableSelect({
           <div className="relative">
             <CommandList
               ref={listRef}
-              className="searchable-select-scroll max-h-none overflow-y-auto pr-3"
+              className="searchable-select-scroll max-h-none touch-pan-y overflow-y-auto overscroll-contain pr-3"
               onScroll={updateScrollIndicator}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              onTouchCancel={handleTouchEnd}
               style={{
                 maxHeight: "min(52vh, calc(var(--radix-popover-content-available-height) - 48px))",
                 WebkitOverflowScrolling: "touch",
