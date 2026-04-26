@@ -168,7 +168,7 @@ export function CategoryTreeItem({
           <h3
             className={`flex-1 min-w-0 break-words text-left ${
               depth === 0
-                ? "text-xl sm:text-2xl font-extrabold tracking-tight uppercase text-primary leading-tight"
+                ? "text-base sm:text-lg font-extrabold tracking-tight uppercase text-primary leading-tight"
                 : depth === 1
                 ? "text-base sm:text-lg font-bold tracking-tight text-foreground leading-snug"
                 : "text-sm sm:text-base font-semibold italic text-foreground/75 leading-snug"
