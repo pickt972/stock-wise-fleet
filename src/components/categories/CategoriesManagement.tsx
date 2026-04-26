@@ -305,40 +305,25 @@ export function CategoriesManagement() {
 
   const handleDelete = async (categoryId: string) => {
     try {
-      // Récupérer la catégorie + ses descendants pour vérifier l'utilisation
-      const collectIds = (id: string, list: CategoryNode[]): string[] => {
-        const find = (nodes: CategoryNode[]): CategoryNode | null => {
-          for (const n of nodes) {
-            if (n.id === id) return n;
-            const c = find(n.children || []);
-            if (c) return c;
-          }
-          return null;
-        };
-        const node = find(list);
-        if (!node) return [id];
-        const ids: string[] = [node.id];
-        const walk = (n: CategoryNode) => {
-          (n.children || []).forEach((c) => {
-            ids.push(c.id);
-            walk(c);
-          });
-        };
-        walk(node);
+      // Récupérer la catégorie + tous ses descendants depuis la liste plate
+      const collectIds = (rootId: string, list: RawCategory[]): string[] => {
+        const ids = [rootId];
+        const queue = [rootId];
+        while (queue.length) {
+          const current = queue.shift()!;
+          list
+            .filter((c) => c.parent_id === current)
+            .forEach((c) => {
+              ids.push(c.id);
+              queue.push(c.id);
+            });
+        }
         return ids;
       };
       const ids = collectIds(categoryId, categories);
-      const names = (() => {
-        const map = new Map<string, string>();
-        const walk = (nodes: CategoryNode[]) => {
-          nodes.forEach((n) => {
-            map.set(n.id, n.nom);
-            walk(n.children || []);
-          });
-        };
-        walk(categories);
-        return ids.map((i) => map.get(i)).filter(Boolean) as string[];
-      })();
+      const names = categories
+        .filter((c) => ids.includes(c.id))
+        .map((c) => c.nom);
 
       // Vérifier si des articles utilisent ces catégories/sous-catégories
       const { count, error: countError } = await supabase
