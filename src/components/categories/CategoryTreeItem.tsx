@@ -109,8 +109,8 @@ export function CategoryTreeItem({
 
       <Card
         className={`p-2 sm:p-3 animate-fade-in opacity-0 [animation-fill-mode:forwards] hover:shadow-md transition-all relative ${
-          isDragging ? "shadow-lg z-50" : ""
-        }`}
+          depth === 0 ? "border-l-4 border-l-primary bg-card shadow-soft" : "bg-card/60"
+        } ${isDragging ? "shadow-lg z-50" : ""}`}
         style={{
           marginLeft: `${indent}px`,
           animationDelay: `${index * 40}ms`,
