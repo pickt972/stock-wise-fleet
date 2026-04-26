@@ -242,6 +242,35 @@ All colors MUST be HSL.
     user-select: none;
   }
 
+  /* === Drag & Drop iOS/Safari fixes ===
+     - touch-action:none → empêche Safari de gérer le geste (scroll/zoom) à notre place
+     - -webkit-touch-callout:none → désactive le menu contextuel long-press iOS
+     - -webkit-user-select:none → empêche la sélection de texte qui décale le pointeur
+     - -webkit-tap-highlight-color → supprime le flash gris iOS
+  */
+  .dnd-handle {
+    touch-action: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .dnd-overlay {
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    will-change: transform;
+    pointer-events: none;
+    transform: translateZ(0); /* force GPU layer pour suivi précis du doigt */
+  }
+
+  /* Empêche le bounce/overscroll iOS pendant le drag qui fausse les coordonnées */
+  .dnd-container {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: auto;
+  }
+
   .searchable-select-scroll {
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--muted-foreground) / 0.6) hsl(var(--border) / 0.7);
