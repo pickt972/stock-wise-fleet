@@ -474,7 +474,7 @@ export function CategoriesManagement() {
         onDragCancel={() => setActiveId(null)}
       >
         <SortableContext items={flatIds}>
-          <div className="space-y-1">
+          <div className="dnd-container space-y-1">
             {tree.map((category) => (
               <CategoryTreeItem
                 key={category.id}
@@ -489,9 +489,9 @@ export function CategoriesManagement() {
             ))}
           </div>
         </SortableContext>
-        <DragOverlay dropAnimation={null}>
+        <DragOverlay dropAnimation={null} zIndex={9999}>
           {activeId ? (
-            <div className="bg-primary text-primary-foreground border-2 border-primary-foreground/20 rounded-lg px-3 py-2 shadow-2xl text-sm font-semibold flex items-center gap-2 cursor-grabbing">
+            <div className="dnd-overlay bg-primary text-primary-foreground border-2 border-primary-foreground/20 rounded-lg px-3 py-2 shadow-2xl text-sm font-semibold flex items-center gap-2">
               <TagIcon className="h-3.5 w-3.5" />
               {categories.find((c) => c.id === activeId)?.nom || "Catégorie"}
             </div>
