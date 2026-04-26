@@ -176,7 +176,31 @@ export function CategoryTreeItem({
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
-          </AlertDialog>
+            </AlertDialog>
+          </div>
+        </div>
+
+        {/* Ligne 2 : méta-infos (count + status + description) */}
+        <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-1.5 pl-[60px] sm:pl-[68px]">
+          <Badge
+            variant={category.actif ? "default" : "secondary"}
+            className="flex-shrink-0 text-[10px] h-5"
+          >
+            {category.actif ? "Active" : "Inactive"}
+          </Badge>
+          <span className="text-xs text-muted-foreground whitespace-nowrap">
+            {category.totalArticleCount > 0
+              ? `${category.totalArticleCount} article${category.totalArticleCount !== 1 ? "s" : ""}`
+              : "0 article"}
+            {category.articleCount !== category.totalArticleCount && category.articleCount > 0
+              ? ` (${category.articleCount} direct)`
+              : ""}
+          </span>
+          {category.description && (
+            <span className="text-xs text-muted-foreground truncate min-w-0 flex-1">
+              {category.description}
+            </span>
+          )}
         </div>
       </Card>
 
