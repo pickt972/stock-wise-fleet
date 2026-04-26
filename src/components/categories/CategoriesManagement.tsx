@@ -69,7 +69,7 @@ export function CategoriesManagement() {
     // Souris/stylet : démarre vite (8 px) pour fluidité desktop
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     // Tactile : appui long 1200 ms (tolérance 5 px) — laisse le scroll libre
-    useSensor(TouchSensor, { activationConstraint: { delay: 1200, tolerance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -460,7 +460,7 @@ export function CategoriesManagement() {
           <li>Sur la <strong>ligne bleue</strong> au-dessus/en-dessous d'une catégorie pour la <strong>réordonner</strong>.</li>
           <li>Au <strong>centre</strong> d'une catégorie (badge « Imbriquer dans... ») pour en faire une <strong>sous-catégorie</strong>.</li>
         </ul>
-        <span className="block mt-1 text-[11px]">Sur mobile : <strong>maintenez ~1 seconde</strong> sur la cellule avant de glisser (le scroll reste libre).</span>
+        <span className="block mt-1 text-[11px]">Sur mobile : utilisez la <strong>poignée ⋮⋮</strong> à gauche de chaque ligne — le scroll reste libre partout ailleurs.</span>
       </div>
 
       <DndContext

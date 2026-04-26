@@ -108,9 +108,7 @@ export function CategoryTreeItem({
       </div>
 
       <Card
-        {...attributes}
-        {...listeners}
-        className={`p-2 sm:p-3 animate-fade-in opacity-0 [animation-fill-mode:forwards] hover:shadow-md transition-all relative cursor-grab active:cursor-grabbing touch-none select-none ${
+        className={`p-2 sm:p-3 animate-fade-in opacity-0 [animation-fill-mode:forwards] hover:shadow-md transition-all relative select-none ${
           depth === 0 ? "border-l-4 border-l-primary bg-card shadow-soft" : "bg-card/60"
         } ${isDragging ? "shadow-lg z-50" : ""} ${
           isOverNest
@@ -141,13 +139,17 @@ export function CategoryTreeItem({
 
         {/* Ligne 1 : handle + chevron + icône + nom */}
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 relative">
-          {/* Indicateur visuel de drag (toute la cellule est draggable) */}
-          <div
-            className="p-1 -m-1 rounded flex-shrink-0 text-muted-foreground"
-            title="Glissez n'importe où sur la cellule pour réorganiser ou imbriquer"
+          {/* Poignée de drag — SEULE zone qui déclenche le déplacement */}
+          <button
+            type="button"
+            {...attributes}
+            {...listeners}
+            className="flex-shrink-0 flex items-center justify-center h-10 w-9 -my-1 rounded-md bg-muted/60 hover:bg-muted active:bg-muted/80 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing touch-none border border-border/60"
+            title="Glissez ici pour réorganiser ou imbriquer"
+            aria-label="Poignée de déplacement"
           >
-            <GripVertical className="h-4 w-4" />
-          </div>
+            <GripVertical className="h-5 w-5" />
+          </button>
 
           {/* Expand/collapse */}
           <Button
