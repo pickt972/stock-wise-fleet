@@ -24,7 +24,8 @@ import { ColorSelector } from "@/components/ui/color-selector";
 import { CategoryTreeItem, CategoryNode } from "./CategoryTreeItem";
 import {
   DndContext,
-  closestCenter,
+  pointerWithin,
+  rectIntersection,
   PointerSensor,
   useSensor,
   useSensors,
@@ -34,7 +35,6 @@ import {
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 
 interface RawCategory {
