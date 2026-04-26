@@ -242,6 +242,25 @@ All colors MUST be HSL.
     user-select: none;
   }
 
+  .searchable-select-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.6) hsl(var(--border) / 0.7);
+  }
+
+  .searchable-select-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .searchable-select-scroll::-webkit-scrollbar-track {
+    background: hsl(var(--border) / 0.7);
+    border-radius: 999px;
+  }
+
+  .searchable-select-scroll::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.6);
+    border-radius: 999px;
+  }
+
   /* Enhanced animations */
   .animate-float {
     animation: float 6s ease-in-out infinite;
