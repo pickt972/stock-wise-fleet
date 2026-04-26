@@ -466,7 +466,7 @@ export function CategoriesManagement() {
       <DndContext
         sensors={sensors}
         collisionDetection={pointerWithin}
-        autoScroll={{ acceleration: 8, threshold: { x: 0, y: 0.15 } }}
+        autoScroll={{ acceleration: 3, threshold: { x: 0, y: 0.1 }, interval: 10 }}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragCancel={() => setActiveId(null)}
