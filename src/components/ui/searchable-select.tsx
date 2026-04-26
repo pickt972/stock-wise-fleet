@@ -72,6 +72,19 @@ export function SearchableSelect({
     return () => cancelAnimationFrame(frame);
   }, [open, options.length, updateScrollIndicator]);
 
+  React.useEffect(() => {
+    const list = listRef.current;
+    if (!open || !list) return;
+
+    const resizeObserver = new ResizeObserver(updateScrollIndicator);
+    resizeObserver.observe(list);
+    if (list.firstElementChild) {
+      resizeObserver.observe(list.firstElementChild);
+    }
+
+    return () => resizeObserver.disconnect();
+  }, [open, updateScrollIndicator]);
+
   const selectedLabel = React.useMemo(() => {
     const option = options.find((opt) => opt.value === value);
     return option?.label || "";
