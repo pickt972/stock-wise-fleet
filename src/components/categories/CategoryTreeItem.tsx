@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useColorPreferences } from "@/hooks/useColorPreferences";
 import { useSortable } from "@dnd-kit/sortable";
+import { useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 
 export interface CategoryNode {
@@ -78,14 +79,21 @@ export function CategoryTreeItem({
     opacity: isDragging ? 0.4 : 1,
   };
 
+  // Zone droppable dédiée à l'imbrication (déposer ICI = devenir sous-catégorie)
+  const { setNodeRef: setNestRef, isOver: isNestOver } = useDroppable({
+    id: `nest-${category.id}`,
+    data: { type: "nest", parentId: category.id },
+  });
+
   const highlighted = isOver || isSortableOver;
 
   return (
     <div ref={setNodeRef} style={style}>
       <Card
+        ref={setNestRef as any}
         className={`p-2 sm:p-3 animate-fade-in opacity-0 [animation-fill-mode:forwards] hover:shadow-md transition-all ${
           highlighted ? "ring-2 ring-primary bg-primary/5" : ""
-        } ${isDragging ? "shadow-lg z-50" : ""}`}
+        } ${isNestOver && !isDragging ? "ring-2 ring-accent bg-accent/10" : ""} ${isDragging ? "shadow-lg z-50" : ""}`}
         style={{
           marginLeft: `${depth * (typeof window !== "undefined" && window.innerWidth < 640 ? 12 : 24)}px`,
           animationDelay: `${index * 40}ms`,
