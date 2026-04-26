@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronRight, ChevronDown, Edit, Trash2, Tag, GripVertical, Plus } from "lucide-react";
+import { ChevronRight, ChevronDown, Edit, Trash2, Tag, GripVertical, Plus, CornerDownRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -40,7 +40,7 @@ interface CategoryTreeItemProps {
   onEdit: (category: CategoryNode) => void;
   onDelete: (categoryId: string) => void;
   onAddChild: (parentId: string) => void;
-  isOver?: boolean;
+  isDragActive?: boolean;
 }
 
 export function CategoryTreeItem({
@@ -50,7 +50,7 @@ export function CategoryTreeItem({
   onEdit,
   onDelete,
   onAddChild,
-  isOver,
+  isDragActive,
 }: CategoryTreeItemProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const { getColorForText } = useColorPreferences();
@@ -63,7 +63,6 @@ export function CategoryTreeItem({
     transform,
     transition,
     isDragging,
-    isOver: isSortableOver,
   } = useSortable({
     id: category.id,
     data: {
@@ -76,39 +75,78 @@ export function CategoryTreeItem({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.4 : 1,
+    opacity: isDragging ? 0.3 : 1,
   };
 
-  // Zone droppable dédiée à l'imbrication (déposer ICI = devenir sous-catégorie)
-  const { setNodeRef: setNestRef, isOver: isNestOver } = useDroppable({
+  // Trois zones de drop distinctes pour précision maximale
+  const { setNodeRef: setBeforeRef, isOver: isOverBefore } = useDroppable({
+    id: `before-${category.id}`,
+    data: { type: "before", targetId: category.id },
+  });
+  const { setNodeRef: setNestRef, isOver: isOverNest } = useDroppable({
     id: `nest-${category.id}`,
-    data: { type: "nest", parentId: category.id },
+    data: { type: "nest", targetId: category.id },
+  });
+  const { setNodeRef: setAfterRef, isOver: isOverAfter } = useDroppable({
+    id: `after-${category.id}`,
+    data: { type: "after", targetId: category.id },
   });
 
-  const highlighted = isOver || isSortableOver;
+  const indent = depth * (typeof window !== "undefined" && window.innerWidth < 640 ? 12 : 24);
 
   return (
-    <div ref={setNodeRef} style={style}>
+    <div ref={setNodeRef} style={style} className="relative">
+      {/* Zone drop AVANT - fine bande au-dessus, visible seulement en drag */}
+      <div
+        ref={setBeforeRef}
+        className={`relative transition-all ${isDragActive ? "h-3" : "h-0"}`}
+        style={{ marginLeft: `${indent}px` }}
+      >
+        {isOverBefore && (
+          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 bg-primary rounded-full shadow-[0_0_8px_hsl(var(--primary))] animate-pulse" />
+        )}
+      </div>
+
       <Card
-        ref={setNestRef as any}
-        className={`p-2 sm:p-3 animate-fade-in opacity-0 [animation-fill-mode:forwards] hover:shadow-md transition-all ${
-          highlighted ? "ring-2 ring-primary bg-primary/5" : ""
-        } ${isNestOver && !isDragging ? "ring-2 ring-accent bg-accent/10" : ""} ${isDragging ? "shadow-lg z-50" : ""}`}
+        className={`p-2 sm:p-3 animate-fade-in opacity-0 [animation-fill-mode:forwards] hover:shadow-md transition-all relative ${
+          isDragging ? "shadow-lg z-50" : ""
+        }`}
         style={{
-          marginLeft: `${depth * (typeof window !== "undefined" && window.innerWidth < 640 ? 12 : 24)}px`,
+          marginLeft: `${indent}px`,
           animationDelay: `${index * 40}ms`,
         }}
       >
-        {/* Ligne 1 : handle + chevron + icône + nom (prend toute la largeur dispo) */}
-        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-          {/* Drag handle */}
+        {/* Zone d'imbrication - centre de la carte, surimpression visuelle nette */}
+        <div
+          ref={setNestRef}
+          className={`absolute inset-x-0 top-2 bottom-2 left-12 right-2 sm:left-16 rounded-md transition-all pointer-events-none ${
+            isDragActive ? "pointer-events-auto" : ""
+          } ${
+            isOverNest
+              ? "ring-2 ring-accent-foreground bg-accent/40 z-10"
+              : ""
+          }`}
+        >
+          {isOverNest && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="bg-accent-foreground text-accent px-3 py-1 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1.5">
+                <CornerDownRight className="h-3.5 w-3.5" />
+                Imbriquer dans « {category.nom} »
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Ligne 1 : handle + chevron + icône + nom */}
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 relative">
+          {/* Drag handle - SEUL élément déclencheur */}
           <div
             {...attributes}
             {...listeners}
-            className="cursor-grab active:cursor-grabbing opacity-40 hover:opacity-70 transition-opacity flex-shrink-0 touch-none"
+            className="cursor-grab active:cursor-grabbing p-1 -m-1 rounded hover:bg-muted transition-colors flex-shrink-0 touch-none"
             title="Glisser pour réorganiser ou imbriquer"
           >
-            <GripVertical className="h-4 w-4" />
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
           </div>
 
           {/* Expand/collapse */}
@@ -125,10 +163,8 @@ export function CategoryTreeItem({
             )}
           </Button>
 
-          {/* Icon */}
           <Tag className="h-4 w-4 text-muted-foreground flex-shrink-0" />
 
-          {/* Nom - prend toute la place restante, retour à la ligne autorisé */}
           <Badge
             variant="outline"
             className={`${getColorForText(category.nom, "category")} flex-1 min-w-0 justify-start whitespace-normal break-words text-left`}
@@ -136,7 +172,6 @@ export function CategoryTreeItem({
             {category.nom}
           </Badge>
 
-          {/* Actions compactes - toujours visibles */}
           <div className="flex gap-0.5 flex-shrink-0 ml-auto">
             <Button
               variant="ghost"
@@ -188,8 +223,8 @@ export function CategoryTreeItem({
           </div>
         </div>
 
-        {/* Ligne 2 : méta-infos (count + status + description) */}
-        <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-1.5 pl-[60px] sm:pl-[68px]">
+        {/* Ligne 2 : méta-infos */}
+        <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-1.5 pl-[60px] sm:pl-[68px] relative">
           <Badge
             variant={category.actif ? "default" : "secondary"}
             className="flex-shrink-0 text-[10px] h-5"
@@ -212,6 +247,17 @@ export function CategoryTreeItem({
         </div>
       </Card>
 
+      {/* Zone drop APRÈS - fine bande sous la carte, visible en drag */}
+      <div
+        ref={setAfterRef}
+        className={`relative transition-all ${isDragActive ? "h-3" : "h-0"}`}
+        style={{ marginLeft: `${indent}px` }}
+      >
+        {isOverAfter && (
+          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 bg-primary rounded-full shadow-[0_0_8px_hsl(var(--primary))] animate-pulse" />
+        )}
+      </div>
+
       {/* Children */}
       {isExpanded && hasChildren && (
         <div className="mt-1 space-y-1">
@@ -224,6 +270,7 @@ export function CategoryTreeItem({
               onEdit={onEdit}
               onDelete={onDelete}
               onAddChild={onAddChild}
+              isDragActive={isDragActive}
             />
           ))}
         </div>
