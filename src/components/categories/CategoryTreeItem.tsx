@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useColorPreferences } from "@/hooks/useColorPreferences";
 import { useSortable } from "@dnd-kit/sortable";
+import { useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 
 export interface CategoryNode {
