@@ -25,8 +25,9 @@ import { CategoryTreeItem, CategoryNode } from "./CategoryTreeItem";
 import {
   DndContext,
   pointerWithin,
-  rectIntersection,
   PointerSensor,
+  TouchSensor,
+  KeyboardSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -35,7 +36,9 @@ import {
 } from "@dnd-kit/core";
 import {
   SortableContext,
+  sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
+import { Tag as TagIcon } from "lucide-react";
 
 interface RawCategory {
   id: string;
