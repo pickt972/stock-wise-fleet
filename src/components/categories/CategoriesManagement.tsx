@@ -26,7 +26,6 @@ import {
   DndContext,
   pointerWithin,
   PointerSensor,
-  TouchSensor,
   KeyboardSensor,
   useSensor,
   useSensors,
@@ -39,6 +38,7 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
+import { SmartTouchSensor } from "./SmartTouchSensor";
 import { Tag as TagIcon } from "lucide-react";
 
 interface RawCategory {
@@ -68,8 +68,8 @@ export function CategoriesManagement() {
   const sensors = useSensors(
     // Souris/stylet : démarre vite (8 px) pour fluidité desktop
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    // Tactile : long-press 220 ms + tolérance 8 px = pas de déclenchement accidentel pendant le scroll
-    useSensor(TouchSensor, { activationConstraint: { distance: 10 } }),
+    // Tactile intelligent : analyse vitesse + angle pour ignorer les scrolls rapides
+    useSensor(SmartTouchSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
