@@ -460,7 +460,7 @@ export function CategoriesManagement() {
           <li>Sur la <strong>ligne bleue</strong> au-dessus/en-dessous d'une catégorie pour la <strong>réordonner</strong>.</li>
           <li>Au <strong>centre</strong> d'une catégorie (badge « Imbriquer dans... ») pour en faire une <strong>sous-catégorie</strong>.</li>
         </ul>
-        <span className="block mt-1 text-[11px]">Sur mobile : <strong>appui long</strong> sur l'icône avant de glisser.</span>
+        <span className="block mt-1 text-[11px]">Sur mobile : <strong>maintenez ~1 seconde</strong> sur la cellule avant de glisser (le scroll reste libre).</span>
       </div>
 
       <DndContext
