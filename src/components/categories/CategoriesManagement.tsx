@@ -34,7 +34,7 @@ import {
   DragOverlay,
   DragStartEvent,
 } from "@dnd-kit/core";
-import { snapCenterToCursor } from "@dnd-kit/modifiers";
+
 import {
   SortableContext,
   sortableKeyboardCoordinates,
@@ -466,7 +466,6 @@ export function CategoriesManagement() {
       <DndContext
         sensors={sensors}
         collisionDetection={pointerWithin}
-        modifiers={[snapCenterToCursor]}
         autoScroll={{ acceleration: 8, threshold: { x: 0, y: 0.15 } }}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
