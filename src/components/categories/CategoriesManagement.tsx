@@ -390,11 +390,15 @@ export function CategoriesManagement() {
 
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={(args) => {
+          const pw = pointerWithin(args);
+          if (pw.length > 0) return pw;
+          return rectIntersection(args);
+        }}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext items={flatIds} strategy={verticalListSortingStrategy}>
+        <SortableContext items={flatIds}>
           <div className="space-y-1">
             {tree.map((category) => (
               <CategoryTreeItem
