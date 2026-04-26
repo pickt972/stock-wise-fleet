@@ -453,19 +453,21 @@ export function CategoriesManagement() {
         </Button>
       </div>
 
-      <div className="text-xs text-muted-foreground">
-        💡 Glissez sur un voisin pour réordonner, ou sur une catégorie d'un autre parent pour l'imbriquer comme sous-catégorie.
+      <div className="text-xs text-muted-foreground bg-muted/40 border rounded-lg p-2.5 leading-relaxed">
+        💡 <strong>Maintenez l'icône</strong> ⋮⋮ puis glissez :
+        <ul className="mt-1 ml-5 list-disc space-y-0.5">
+          <li>Sur la <strong>ligne bleue</strong> au-dessus/en-dessous d'une catégorie pour la <strong>réordonner</strong>.</li>
+          <li>Au <strong>centre</strong> d'une catégorie (badge « Imbriquer dans... ») pour en faire une <strong>sous-catégorie</strong>.</li>
+        </ul>
+        <span className="block mt-1 text-[11px]">Sur mobile : <strong>appui long</strong> sur l'icône avant de glisser.</span>
       </div>
 
       <DndContext
         sensors={sensors}
-        collisionDetection={(args) => {
-          const pw = pointerWithin(args);
-          if (pw.length > 0) return pw;
-          return rectIntersection(args);
-        }}
+        collisionDetection={pointerWithin}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
+        onDragCancel={() => setActiveId(null)}
       >
         <SortableContext items={flatIds}>
           <div className="space-y-1">
@@ -478,13 +480,15 @@ export function CategoriesManagement() {
                 onEdit={openEditForm}
                 onDelete={handleDelete}
                 onAddChild={openAddChild}
+                isDragActive={!!activeId}
               />
             ))}
           </div>
         </SortableContext>
-        <DragOverlay>
+        <DragOverlay dropAnimation={null}>
           {activeId ? (
-            <div className="bg-card border rounded-lg p-3 shadow-lg opacity-80 text-sm font-medium">
+            <div className="bg-primary text-primary-foreground border-2 border-primary-foreground/20 rounded-lg px-3 py-2 shadow-2xl text-sm font-semibold flex items-center gap-2 cursor-grabbing">
+              <TagIcon className="h-3.5 w-3.5" />
               {categories.find((c) => c.id === activeId)?.nom || "Catégorie"}
             </div>
           ) : null}
