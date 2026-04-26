@@ -305,17 +305,55 @@ export function CategoriesManagement() {
 
   const handleDelete = async (categoryId: string) => {
     try {
+      // Récupérer la catégorie + tous ses descendants depuis la liste plate
+      const collectIds = (rootId: string, list: RawCategory[]): string[] => {
+        const ids = [rootId];
+        const queue = [rootId];
+        while (queue.length) {
+          const current = queue.shift()!;
+          list
+            .filter((c) => c.parent_id === current)
+            .forEach((c) => {
+              ids.push(c.id);
+              queue.push(c.id);
+            });
+        }
+        return ids;
+      };
+      const ids = collectIds(categoryId, categories);
+      const names = categories
+        .filter((c) => ids.includes(c.id))
+        .map((c) => c.nom);
+
+      // Vérifier si des articles utilisent ces catégories/sous-catégories
+      const { count, error: countError } = await supabase
+        .from("articles")
+        .select("id", { count: "exact", head: true })
+        .or(
+          `categorie.in.(${names.map((n) => `"${n}"`).join(",")}),sous_categorie.in.(${names.map((n) => `"${n}"`).join(",")})`
+        );
+      if (countError) throw countError;
+
+      if ((count ?? 0) > 0) {
+        toast({
+          title: "Suppression impossible",
+          description: `${count} article(s) utilisent cette catégorie. Réaffectez-les avant de supprimer.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from("categories")
-        .update({ actif: false })
-        .eq("id", categoryId);
+        .delete()
+        .in("id", ids);
       if (error) throw error;
-      toast({ title: "Succès", description: "Catégorie désactivée" });
+      toast({ title: "Succès", description: "Catégorie supprimée" });
       fetchCategories();
-    } catch {
+    } catch (error: any) {
       toast({
         title: "Erreur",
-        description: "Impossible de supprimer",
+        description: error?.message || "Impossible de supprimer",
         variant: "destructive",
       });
     }

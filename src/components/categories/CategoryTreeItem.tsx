@@ -161,9 +161,9 @@ export function CategoryTreeItem({
               <AlertDialogHeader>
                 <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Désactiver la catégorie "{category.nom}" ?
+                  Supprimer définitivement la catégorie "{category.nom}" ?
                   {hasChildren &&
-                    " Les sous-catégories seront également affectées."}
+                    " Les sous-catégories seront également supprimées."}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -172,7 +172,7 @@ export function CategoryTreeItem({
                   onClick={() => onDelete(category.id)}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
-                  Désactiver
+                  Supprimer
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
