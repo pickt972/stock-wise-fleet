@@ -144,7 +144,7 @@ export function CategoryTreeItem({
             type="button"
             {...attributes}
             {...listeners}
-            className="flex-shrink-0 flex items-center justify-center h-10 w-9 -my-1 rounded-md bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground cursor-grab touch-none border border-border/60 transition-all duration-150 active:bg-primary active:text-primary-foreground active:border-primary active:scale-110 active:shadow-[0_0_0_4px_hsl(var(--primary)/0.25)] active:cursor-grabbing"
+            className="dnd-handle flex-shrink-0 flex items-center justify-center h-10 w-9 -my-1 rounded-md bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground cursor-grab border border-border/60 transition-all duration-150 active:bg-primary active:text-primary-foreground active:border-primary active:scale-110 active:shadow-[0_0_0_4px_hsl(var(--primary)/0.25)] active:cursor-grabbing"
             title="Maintenez puis glissez pour réorganiser ou imbriquer"
             aria-label="Poignée de déplacement"
           >
