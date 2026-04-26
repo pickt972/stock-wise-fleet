@@ -194,17 +194,26 @@ export function CategoriesManagement() {
     const activeIdStr = active.id as string;
     const overIdRaw = over.id as string;
 
-    // Détecter si on a déposé sur une zone d'imbrication (nest-<id>)
-    const isNestDrop = overIdRaw.startsWith("nest-");
-    const overIdStr = isNestDrop ? overIdRaw.slice("nest-".length) : overIdRaw;
-
-    if (activeIdStr === overIdStr) return;
+    // Type de drop : "before-<id>", "after-<id>", "nest-<id>"
+    let dropType: "before" | "after" | "nest" | null = null;
+    let targetId: string | null = null;
+    if (overIdRaw.startsWith("before-")) {
+      dropType = "before";
+      targetId = overIdRaw.slice("before-".length);
+    } else if (overIdRaw.startsWith("after-")) {
+      dropType = "after";
+      targetId = overIdRaw.slice("after-".length);
+    } else if (overIdRaw.startsWith("nest-")) {
+      dropType = "nest";
+      targetId = overIdRaw.slice("nest-".length);
+    }
+    if (!dropType || !targetId || targetId === activeIdStr) return;
 
     const activeCat = categories.find((c) => c.id === activeIdStr);
-    const overCat = categories.find((c) => c.id === overIdStr);
-    if (!activeCat || !overCat) return;
+    const targetCat = categories.find((c) => c.id === targetId);
+    if (!activeCat || !targetCat) return;
 
-    // Garde-fou : empêcher de déposer une catégorie sur l'un de ses descendants
+    // Garde-fou anti-cycle
     const isDescendant = (parentId: string, candidateId: string): boolean => {
       const children = categories.filter((c) => c.parent_id === parentId);
       for (const ch of children) {
@@ -213,53 +222,54 @@ export function CategoriesManagement() {
       }
       return false;
     };
+    if (isDescendant(activeIdStr, targetId)) {
+      toast({
+        title: "Action impossible",
+        description: "Impossible de déplacer une catégorie sous l'un de ses descendants",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
-      // Imbrication forcée (drop sur la zone "nest" d'une catégorie)
-      // OU parents différents (comportement existant)
-      const shouldNest = isNestDrop || activeCat.parent_id !== overCat.parent_id;
-
-      if (!shouldNest) {
-        // Cas 1 : même parent → réordonner via RPC atomique
-        const siblings = categories
-          .filter((c) => c.parent_id === activeCat.parent_id)
-          .sort((a, b) => a.sort_order - b.sort_order || a.nom.localeCompare(b.nom));
-        const fromIdx = siblings.findIndex((s) => s.id === activeIdStr);
-        const toIdx = siblings.findIndex((s) => s.id === overIdStr);
-        if (fromIdx === -1 || toIdx === -1) return;
-
-        const reordered = [...siblings];
-        const [moved] = reordered.splice(fromIdx, 1);
-        reordered.splice(toIdx, 0, moved);
-
-        const { error } = await supabase.rpc("reorder_categories", {
-          _parent_id: activeCat.parent_id,
-          _ordered_ids: reordered.map((s) => s.id),
-        });
-        if (error) throw error;
-
-        toast({ title: "Ordre mis à jour" });
-      } else {
-        // Cas 2 : imbriquer sous overCat (avec garde anti-cycle)
-        if (activeCat.parent_id === overCat.id) {
-          // Déjà sous ce parent → rien à faire
-          return;
-        }
-        if (isDescendant(activeIdStr, overIdStr)) {
-          toast({
-            title: "Action impossible",
-            description: "Impossible d'imbriquer une catégorie sous l'un de ses descendants",
-            variant: "destructive",
-          });
-          return;
-        }
-
+      if (dropType === "nest") {
+        // Imbriquer dans la catégorie cible
+        if (activeCat.parent_id === targetCat.id) return;
         const { error } = await supabase.rpc("move_category", {
           _category_id: activeIdStr,
-          _new_parent_id: overCat.id,
+          _new_parent_id: targetCat.id,
         });
         if (error) throw error;
-        toast({ title: "Catégorie déplacée", description: `Imbriquée sous « ${overCat.nom} »` });
+        toast({ title: "Catégorie imbriquée", description: `Déplacée dans « ${targetCat.nom} »` });
+      } else {
+        // before/after : positionner comme voisin de targetCat (même parent que targetCat)
+        const newParentId = targetCat.parent_id;
+
+        // Construire la liste ordonnée des frères du parent cible (sans l'élément actif s'il est déjà là)
+        const siblings = categories
+          .filter((c) => c.parent_id === newParentId && c.id !== activeIdStr)
+          .sort((a, b) => a.sort_order - b.sort_order || a.nom.localeCompare(b.nom));
+
+        const targetIdx = siblings.findIndex((s) => s.id === targetId);
+        if (targetIdx === -1) return;
+        const insertIdx = dropType === "before" ? targetIdx : targetIdx + 1;
+        siblings.splice(insertIdx, 0, activeCat);
+
+        // Si parent change → d'abord déplacer
+        if (activeCat.parent_id !== newParentId) {
+          const { error: moveErr } = await supabase.rpc("move_category", {
+            _category_id: activeIdStr,
+            _new_parent_id: newParentId,
+          });
+          if (moveErr) throw moveErr;
+        }
+
+        const { error } = await supabase.rpc("reorder_categories", {
+          _parent_id: newParentId,
+          _ordered_ids: siblings.map((s) => s.id),
+        });
+        if (error) throw error;
+        toast({ title: "Ordre mis à jour" });
       }
       await fetchCategories();
     } catch (e: any) {
@@ -268,7 +278,6 @@ export function CategoriesManagement() {
         description: e?.message || "Impossible de déplacer la catégorie",
         variant: "destructive",
       });
-      // Recharger pour resynchroniser l'UI avec la BDD
       fetchCategories();
     }
   };
