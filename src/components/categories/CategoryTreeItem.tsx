@@ -108,7 +108,9 @@ export function CategoryTreeItem({
       </div>
 
       <Card
-        className={`p-2 sm:p-3 animate-fade-in opacity-0 [animation-fill-mode:forwards] hover:shadow-md transition-all relative ${
+        {...attributes}
+        {...listeners}
+        className={`p-2 sm:p-3 animate-fade-in opacity-0 [animation-fill-mode:forwards] hover:shadow-md transition-all relative cursor-grab active:cursor-grabbing touch-none select-none ${
           depth === 0 ? "border-l-4 border-l-primary bg-card shadow-soft" : "bg-card/60"
         } ${isDragging ? "shadow-lg z-50" : ""} ${
           isOverNest
@@ -139,14 +141,12 @@ export function CategoryTreeItem({
 
         {/* Ligne 1 : handle + chevron + icône + nom */}
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 relative">
-          {/* Drag handle - SEUL élément déclencheur */}
+          {/* Indicateur visuel de drag (toute la cellule est draggable) */}
           <div
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing p-1 -m-1 rounded hover:bg-muted transition-colors flex-shrink-0 touch-none"
-            title="Glisser pour réorganiser ou imbriquer"
+            className="p-1 -m-1 rounded flex-shrink-0 text-muted-foreground"
+            title="Glissez n'importe où sur la cellule pour réorganiser ou imbriquer"
           >
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
+            <GripVertical className="h-4 w-4" />
           </div>
 
           {/* Expand/collapse */}
@@ -154,6 +154,7 @@ export function CategoryTreeItem({
             variant="ghost"
             size="sm"
             className={`h-6 w-6 p-0 flex-shrink-0 ${!hasChildren ? "invisible" : ""}`}
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={() => setIsExpanded(!isExpanded)}
           >
             {isExpanded ? (
@@ -182,6 +183,7 @@ export function CategoryTreeItem({
               variant="ghost"
               size="sm"
               className="h-8 w-8 p-0"
+              onPointerDown={(e) => e.stopPropagation()}
               onClick={() => onAddChild(category.id)}
               title="Ajouter une sous-catégorie"
             >
@@ -191,6 +193,7 @@ export function CategoryTreeItem({
               variant="ghost"
               size="sm"
               className="h-8 w-8 p-0"
+              onPointerDown={(e) => e.stopPropagation()}
               onClick={() => onEdit(category)}
             >
               <Edit className="h-3.5 w-3.5" />
@@ -201,6 +204,7 @@ export function CategoryTreeItem({
                   variant="ghost"
                   size="sm"
                   className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                  onPointerDown={(e) => e.stopPropagation()}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
