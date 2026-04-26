@@ -67,11 +67,22 @@ export function CategoriesManagement() {
 
   const { toast } = useToast();
 
+  // Détection iOS/Safari pour activer le mode "drag doux"
+  const isIOS = useMemo(() => {
+    if (typeof navigator === "undefined") return false;
+    const ua = navigator.userAgent;
+    return /iPad|iPhone|iPod/.test(ua) || (ua.includes("Mac") && "ontouchend" in document);
+  }, []);
+
   const sensors = useSensors(
     // Souris : démarre vite (8 px) pour fluidité desktop
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
-    // Tactile : appui maintenu, sans concurrence du PointerSensor sur iOS/Safari
-    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+    // Tactile : iOS = délai plus court + tolérance large pour stabiliser le suivi
+    useSensor(TouchSensor, {
+      activationConstraint: isIOS
+        ? { delay: 180, tolerance: 12 }
+        : { delay: 250, tolerance: 5 },
+    }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
