@@ -467,6 +467,7 @@ export function CategoriesManagement() {
         sensors={sensors}
         collisionDetection={pointerWithin}
         modifiers={[snapCenterToCursor]}
+        autoScroll={{ acceleration: 8, threshold: { x: 0, y: 0.15 } }}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragCancel={() => setActiveId(null)}
