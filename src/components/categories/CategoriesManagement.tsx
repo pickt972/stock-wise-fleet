@@ -24,7 +24,8 @@ import { ColorSelector } from "@/components/ui/color-selector";
 import { CategoryTreeItem, CategoryNode } from "./CategoryTreeItem";
 import {
   DndContext,
-  closestCenter,
+  pointerWithin,
+  rectIntersection,
   PointerSensor,
   useSensor,
   useSensors,
@@ -34,7 +35,6 @@ import {
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 
 interface RawCategory {
@@ -390,11 +390,15 @@ export function CategoriesManagement() {
 
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={(args) => {
+          const pw = pointerWithin(args);
+          if (pw.length > 0) return pw;
+          return rectIntersection(args);
+        }}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext items={flatIds} strategy={verticalListSortingStrategy}>
+        <SortableContext items={flatIds}>
           <div className="space-y-1">
             {tree.map((category) => (
               <CategoryTreeItem
