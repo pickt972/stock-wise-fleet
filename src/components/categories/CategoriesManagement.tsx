@@ -26,6 +26,7 @@ import {
   DndContext,
   pointerWithin,
   PointerSensor,
+  TouchSensor,
   KeyboardSensor,
   useSensor,
   useSensors,
@@ -38,7 +39,6 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
-import { SmartTouchSensor } from "./SmartTouchSensor";
 import { Tag as TagIcon } from "lucide-react";
 
 interface RawCategory {
@@ -68,8 +68,8 @@ export function CategoriesManagement() {
   const sensors = useSensors(
     // Souris/stylet : démarre vite (8 px) pour fluidité desktop
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    // Tactile intelligent : analyse vitesse + angle pour ignorer les scrolls rapides
-    useSensor(SmartTouchSensor),
+    // Tactile : appui long 1200 ms (tolérance 5 px) — laisse le scroll libre
+    useSensor(TouchSensor, { activationConstraint: { delay: 1200, tolerance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -460,13 +460,14 @@ export function CategoriesManagement() {
           <li>Sur la <strong>ligne bleue</strong> au-dessus/en-dessous d'une catégorie pour la <strong>réordonner</strong>.</li>
           <li>Au <strong>centre</strong> d'une catégorie (badge « Imbriquer dans... ») pour en faire une <strong>sous-catégorie</strong>.</li>
         </ul>
-        <span className="block mt-1 text-[11px]">Sur mobile : <strong>appui long</strong> sur l'icône avant de glisser.</span>
+        <span className="block mt-1 text-[11px]">Sur mobile : <strong>maintenez ~1 seconde</strong> sur la cellule avant de glisser (le scroll reste libre).</span>
       </div>
 
       <DndContext
         sensors={sensors}
         collisionDetection={pointerWithin}
         modifiers={[snapCenterToCursor]}
+        autoScroll={{ acceleration: 8, threshold: { x: 0, y: 0.15 } }}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragCancel={() => setActiveId(null)}
