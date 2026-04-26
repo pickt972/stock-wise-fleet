@@ -110,27 +110,27 @@ export function CategoryTreeItem({
       <Card
         className={`p-2 sm:p-3 animate-fade-in opacity-0 [animation-fill-mode:forwards] hover:shadow-md transition-all relative ${
           depth === 0 ? "border-l-4 border-l-primary bg-card shadow-soft" : "bg-card/60"
-        } ${isDragging ? "shadow-lg z-50" : ""}`}
+        } ${isDragging ? "shadow-lg z-50" : ""} ${
+          isOverNest
+            ? "!bg-primary !border-primary ring-4 ring-primary ring-offset-2 ring-offset-background shadow-[0_0_24px_hsl(var(--primary)/0.6)] scale-[1.02] z-20"
+            : ""
+        }`}
         style={{
           marginLeft: `${indent}px`,
           animationDelay: `${index * 40}ms`,
         }}
       >
-        {/* Zone d'imbrication - centre de la carte, surimpression visuelle nette */}
+        {/* Zone d'imbrication - couvre toute la carte */}
         <div
           ref={setNestRef}
-          className={`absolute inset-x-0 top-2 bottom-2 left-12 right-2 sm:left-16 rounded-md transition-all pointer-events-none ${
-            isDragActive ? "pointer-events-auto" : ""
-          } ${
-            isOverNest
-              ? "ring-2 ring-accent-foreground bg-accent/40 z-10"
-              : ""
+          className={`absolute inset-0 rounded-[inherit] transition-all ${
+            isDragActive ? "pointer-events-auto" : "pointer-events-none"
           }`}
         >
           {isOverNest && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="bg-accent-foreground text-accent px-3 py-1 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1.5">
-                <CornerDownRight className="h-3.5 w-3.5" />
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+              <div className="bg-primary-foreground text-primary px-4 py-2 rounded-full text-sm font-bold shadow-2xl flex items-center gap-2 animate-pulse">
+                <CornerDownRight className="h-4 w-4" />
                 Imbriquer dans « {category.nom} »
               </div>
             </div>
