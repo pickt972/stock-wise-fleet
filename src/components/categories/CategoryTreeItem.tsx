@@ -163,15 +163,15 @@ export function CategoryTreeItem({
             )}
           </Button>
 
-          <Tag className={`${depth === 0 ? "h-5 w-5 text-primary" : "h-4 w-4 text-muted-foreground"} flex-shrink-0`} />
+          <Tag className={`${depth === 0 ? "h-6 w-6 text-primary" : depth === 1 ? "h-5 w-5 text-primary/70" : "h-4 w-4 text-muted-foreground"} flex-shrink-0`} />
 
           <h3
-            className={`flex-1 min-w-0 font-semibold tracking-tight break-words text-left leading-snug ${
+            className={`flex-1 min-w-0 break-words text-left ${
               depth === 0
-                ? "text-base sm:text-lg text-foreground"
+                ? "text-xl sm:text-2xl font-extrabold tracking-tight uppercase text-primary leading-tight"
                 : depth === 1
-                ? "text-sm sm:text-base text-foreground/90"
-                : "text-sm text-foreground/80"
+                ? "text-base sm:text-lg font-bold tracking-tight text-foreground leading-snug"
+                : "text-sm sm:text-base font-semibold italic text-foreground/75 leading-snug"
             }`}
           >
             {category.nom}
