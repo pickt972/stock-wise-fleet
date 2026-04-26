@@ -141,14 +141,12 @@ export function CategoryTreeItem({
 
         {/* Ligne 1 : handle + chevron + icône + nom */}
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 relative">
-          {/* Drag handle - SEUL élément déclencheur */}
+          {/* Indicateur visuel de drag (toute la cellule est draggable) */}
           <div
-            {...attributes}
-            {...listeners}
-            className="cursor-grab active:cursor-grabbing p-1 -m-1 rounded hover:bg-muted transition-colors flex-shrink-0 touch-none"
-            title="Glisser pour réorganiser ou imbriquer"
+            className="p-1 -m-1 rounded flex-shrink-0 text-muted-foreground"
+            title="Glissez n'importe où sur la cellule pour réorganiser ou imbriquer"
           >
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
+            <GripVertical className="h-4 w-4" />
           </div>
 
           {/* Expand/collapse */}
