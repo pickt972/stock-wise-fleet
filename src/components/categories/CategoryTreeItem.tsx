@@ -163,14 +163,19 @@ export function CategoryTreeItem({
             )}
           </Button>
 
-          <Tag className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          <Tag className={`${depth === 0 ? "h-5 w-5 text-primary" : "h-4 w-4 text-muted-foreground"} flex-shrink-0`} />
 
-          <Badge
-            variant="outline"
-            className={`${getColorForText(category.nom, "category")} flex-1 min-w-0 justify-start whitespace-normal break-words text-left`}
+          <h3
+            className={`flex-1 min-w-0 font-semibold tracking-tight break-words text-left leading-snug ${
+              depth === 0
+                ? "text-base sm:text-lg text-foreground"
+                : depth === 1
+                ? "text-sm sm:text-base text-foreground/90"
+                : "text-sm text-foreground/80"
+            }`}
           >
             {category.nom}
-          </Badge>
+          </h3>
 
           <div className="flex gap-0.5 flex-shrink-0 ml-auto">
             <Button
