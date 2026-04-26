@@ -466,6 +466,7 @@ export function CategoriesManagement() {
       <DndContext
         sensors={sensors}
         collisionDetection={pointerWithin}
+        modifiers={[snapCenterToCursor]}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragCancel={() => setActiveId(null)}
