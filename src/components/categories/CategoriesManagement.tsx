@@ -34,6 +34,7 @@ import {
   DragOverlay,
   DragStartEvent,
 } from "@dnd-kit/core";
+import { snapCenterToCursor } from "@dnd-kit/modifiers";
 import {
   SortableContext,
   sortableKeyboardCoordinates,
