@@ -48,6 +48,29 @@ export function SearchableSelect({
   id,
 }: SearchableSelectProps) {
   const [open, setOpen] = React.useState(false);
+  const listRef = React.useRef<HTMLDivElement>(null);
+  const [scrollState, setScrollState] = React.useState({ top: 0, height: 100, visible: false });
+
+  const updateScrollIndicator = React.useCallback(() => {
+    const list = listRef.current;
+    if (!list) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = list;
+    const visible = scrollHeight > clientHeight + 1;
+    const height = visible ? Math.max((clientHeight / scrollHeight) * 100, 18) : 100;
+    const maxTop = 100 - height;
+    const top = visible && scrollHeight > clientHeight
+      ? Math.min((scrollTop / (scrollHeight - clientHeight)) * maxTop, maxTop)
+      : 0;
+
+    setScrollState({ top, height, visible });
+  }, []);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const frame = requestAnimationFrame(updateScrollIndicator);
+    return () => cancelAnimationFrame(frame);
+  }, [open, options.length, updateScrollIndicator]);
 
   const selectedLabel = React.useMemo(() => {
     const option = options.find((opt) => opt.value === value);
@@ -82,37 +105,52 @@ export function SearchableSelect({
       >
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
-          <CommandList
-            className="max-h-[min(60vh,var(--radix-popover-content-available-height))] overflow-y-auto"
-            style={{ WebkitOverflowScrolling: "touch" }}
-          >
-            <CommandEmpty>{emptyMessage}</CommandEmpty>
-            <CommandGroup>
-              {options.map((option) => (
-                <CommandItem
-                  key={option.value}
-                  value={option.label}
-                  onSelect={() => {
-                    onValueChange(option.value === value ? "" : option.value);
-                    setOpen(false);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === option.value ? "opacity-100" : "opacity-0"
+          <div className="relative">
+            <CommandList
+              ref={listRef}
+              className="searchable-select-scroll max-h-none overflow-y-auto pr-3"
+              onScroll={updateScrollIndicator}
+              style={{
+                maxHeight: "min(52vh, calc(var(--radix-popover-content-available-height) - 48px))",
+                WebkitOverflowScrolling: "touch",
+              }}
+            >
+              <CommandEmpty>{emptyMessage}</CommandEmpty>
+              <CommandGroup>
+                {options.map((option) => (
+                  <CommandItem
+                    key={option.value}
+                    value={option.label}
+                    onSelect={() => {
+                      onValueChange(option.value === value ? "" : option.value);
+                      setOpen(false);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === option.value ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <span className="truncate">{option.label}</span>
+                    {option.description && (
+                      <span className="ml-2 text-xs text-muted-foreground truncate">
+                        {option.description}
+                      </span>
                     )}
-                  />
-                  <span className="truncate">{option.label}</span>
-                  {option.description && (
-                    <span className="ml-2 text-xs text-muted-foreground truncate">
-                      {option.description}
-                    </span>
-                  )}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+            {scrollState.visible && (
+              <div className="pointer-events-none absolute right-1 top-2 bottom-2 w-1.5 rounded-full bg-border/70">
+                <div
+                  className="absolute left-0 w-full rounded-full bg-muted-foreground/60"
+                  style={{ top: `${scrollState.top}%`, height: `${scrollState.height}%` }}
+                />
+              </div>
+            )}
+          </div>
         </Command>
       </PopoverContent>
     </Popover>
