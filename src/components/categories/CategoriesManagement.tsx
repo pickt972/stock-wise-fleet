@@ -24,8 +24,9 @@ import { ColorSelector } from "@/components/ui/color-selector";
 import { CategoryTreeItem, CategoryNode } from "./CategoryTreeItem";
 import {
   DndContext,
+  MeasuringStrategy,
   pointerWithin,
-  PointerSensor,
+  MouseSensor,
   TouchSensor,
   KeyboardSensor,
   useSensor,
@@ -67,9 +68,9 @@ export function CategoriesManagement() {
   const { toast } = useToast();
 
   const sensors = useSensors(
-    // Souris/stylet : démarre vite (8 px) pour fluidité desktop
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    // Tactile : appui long 1200 ms (tolérance 5 px) — laisse le scroll libre
+    // Souris : démarre vite (8 px) pour fluidité desktop
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    // Tactile : appui maintenu, sans concurrence du PointerSensor sur iOS/Safari
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
@@ -467,7 +468,7 @@ export function CategoriesManagement() {
       <DndContext
         sensors={sensors}
         collisionDetection={pointerWithin}
-        modifiers={[snapCenterToCursor]}
+        measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
         autoScroll={{ acceleration: 3, threshold: { x: 0, y: 0.1 }, interval: 10 }}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
@@ -489,11 +490,13 @@ export function CategoriesManagement() {
             ))}
           </div>
         </SortableContext>
-        <DragOverlay dropAnimation={null} zIndex={9999}>
+        <DragOverlay dropAnimation={null} zIndex={9999} modifiers={[snapCenterToCursor]}>
           {activeId ? (
-            <div className="dnd-overlay bg-primary text-primary-foreground border-2 border-primary-foreground/20 rounded-lg px-3 py-2 shadow-2xl text-sm font-semibold flex items-center gap-2">
-              <TagIcon className="h-3.5 w-3.5" />
-              {categories.find((c) => c.id === activeId)?.nom || "Catégorie"}
+            <div className="dnd-overlay flex h-full w-full items-center justify-center">
+              <div className="bg-primary text-primary-foreground border-2 border-primary-foreground/20 rounded-lg px-3 py-2 shadow-2xl text-sm font-semibold flex items-center gap-2">
+                <TagIcon className="h-3.5 w-3.5" />
+                {categories.find((c) => c.id === activeId)?.nom || "Catégorie"}
+              </div>
             </div>
           ) : null}
         </DragOverlay>
