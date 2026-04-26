@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
-import { useState } from "react";
+import { useSidebarCollapsed } from "@/hooks/useSidebarCollapsed";
 
 const getNavigation = (permissions: any) => [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, show: true },
@@ -44,7 +44,7 @@ interface SidebarProps {
  * actif = pill bleu primary, hover discret.
  */
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useSidebarCollapsed();
   const { permissions } = useRoleAccess();
 
   return (
