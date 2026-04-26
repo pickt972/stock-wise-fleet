@@ -305,17 +305,70 @@ export function CategoriesManagement() {
 
   const handleDelete = async (categoryId: string) => {
     try {
+      // Récupérer la catégorie + ses descendants pour vérifier l'utilisation
+      const collectIds = (id: string, list: CategoryNode[]): string[] => {
+        const find = (nodes: CategoryNode[]): CategoryNode | null => {
+          for (const n of nodes) {
+            if (n.id === id) return n;
+            const c = find(n.children || []);
+            if (c) return c;
+          }
+          return null;
+        };
+        const node = find(list);
+        if (!node) return [id];
+        const ids: string[] = [node.id];
+        const walk = (n: CategoryNode) => {
+          (n.children || []).forEach((c) => {
+            ids.push(c.id);
+            walk(c);
+          });
+        };
+        walk(node);
+        return ids;
+      };
+      const ids = collectIds(categoryId, categories);
+      const names = (() => {
+        const map = new Map<string, string>();
+        const walk = (nodes: CategoryNode[]) => {
+          nodes.forEach((n) => {
+            map.set(n.id, n.nom);
+            walk(n.children || []);
+          });
+        };
+        walk(categories);
+        return ids.map((i) => map.get(i)).filter(Boolean) as string[];
+      })();
+
+      // Vérifier si des articles utilisent ces catégories/sous-catégories
+      const { count, error: countError } = await supabase
+        .from("articles")
+        .select("id", { count: "exact", head: true })
+        .or(
+          `categorie.in.(${names.map((n) => `"${n}"`).join(",")}),sous_categorie.in.(${names.map((n) => `"${n}"`).join(",")})`
+        );
+      if (countError) throw countError;
+
+      if ((count ?? 0) > 0) {
+        toast({
+          title: "Suppression impossible",
+          description: `${count} article(s) utilisent cette catégorie. Réaffectez-les avant de supprimer.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from("categories")
-        .update({ actif: false })
-        .eq("id", categoryId);
+        .delete()
+        .in("id", ids);
       if (error) throw error;
-      toast({ title: "Succès", description: "Catégorie désactivée" });
+      toast({ title: "Succès", description: "Catégorie supprimée" });
       fetchCategories();
-    } catch {
+    } catch (error: any) {
       toast({
         title: "Erreur",
-        description: "Impossible de supprimer",
+        description: error?.message || "Impossible de supprimer",
         variant: "destructive",
       });
     }
