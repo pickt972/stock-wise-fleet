@@ -185,7 +185,14 @@ export function CategoriesManagement() {
     if (!over || active.id === over.id) return;
 
     const activeIdStr = active.id as string;
-    const overIdStr = over.id as string;
+    const overIdRaw = over.id as string;
+
+    // Détecter si on a déposé sur une zone d'imbrication (nest-<id>)
+    const isNestDrop = overIdRaw.startsWith("nest-");
+    const overIdStr = isNestDrop ? overIdRaw.slice("nest-".length) : overIdRaw;
+
+    if (activeIdStr === overIdStr) return;
+
     const activeCat = categories.find((c) => c.id === activeIdStr);
     const overCat = categories.find((c) => c.id === overIdStr);
     if (!activeCat || !overCat) return;
@@ -201,8 +208,12 @@ export function CategoriesManagement() {
     };
 
     try {
-      // Cas 1 : même parent → réordonner via RPC atomique
-      if (activeCat.parent_id === overCat.parent_id) {
+      // Imbrication forcée (drop sur la zone "nest" d'une catégorie)
+      // OU parents différents (comportement existant)
+      const shouldNest = isNestDrop || activeCat.parent_id !== overCat.parent_id;
+
+      if (!shouldNest) {
+        // Cas 1 : même parent → réordonner via RPC atomique
         const siblings = categories
           .filter((c) => c.parent_id === activeCat.parent_id)
           .sort((a, b) => a.sort_order - b.sort_order || a.nom.localeCompare(b.nom));
@@ -222,7 +233,11 @@ export function CategoriesManagement() {
 
         toast({ title: "Ordre mis à jour" });
       } else {
-        // Cas 2 : parents différents → imbriquer (avec garde anti-cycle)
+        // Cas 2 : imbriquer sous overCat (avec garde anti-cycle)
+        if (activeCat.parent_id === overCat.id) {
+          // Déjà sous ce parent → rien à faire
+          return;
+        }
         if (isDescendant(activeIdStr, overIdStr)) {
           toast({
             title: "Action impossible",
@@ -234,7 +249,7 @@ export function CategoriesManagement() {
 
         const { error } = await supabase.rpc("move_category", {
           _category_id: activeIdStr,
-          _new_parent_id: overIdStr,
+          _new_parent_id: overCat.id,
         });
         if (error) throw error;
         toast({ title: "Catégorie déplacée", description: `Imbriquée sous « ${overCat.nom} »` });
