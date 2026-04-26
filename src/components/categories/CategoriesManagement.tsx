@@ -69,7 +69,7 @@ export function CategoriesManagement() {
     // Souris/stylet : démarre vite (8 px) pour fluidité desktop
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     // Tactile : long-press 220 ms + tolérance 8 px = pas de déclenchement accidentel pendant le scroll
-    useSensor(TouchSensor, { activationConstraint: { delay: 400, tolerance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { distance: 10 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
