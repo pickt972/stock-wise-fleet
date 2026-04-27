@@ -73,6 +73,31 @@ export default function Articles() {
   useEffect(() => {
     fetchArticles();
     fetchCategories();
+
+    // Rafraîchir quand l'utilisateur revient sur l'onglet (ex: après modif dans Paramètres)
+    const handleFocus = () => {
+      fetchCategories();
+      fetchArticles();
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') handleFocus();
+    });
+
+    // Realtime : se synchroniser dès qu'une catégorie change
+    const channel = supabase
+      .channel('categories-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'categories' },
+        () => fetchCategories()
+      )
+      .subscribe();
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchArticles = async () => {
