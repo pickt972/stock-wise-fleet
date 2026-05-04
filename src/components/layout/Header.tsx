@@ -63,10 +63,10 @@ export function Header({ onMenuClick }: HeaderProps) {
   return (
     <TooltipProvider>
       <header
-        className="glass sticky top-0 z-30 w-full"
+        className="sticky top-0 z-30 w-full bg-card/85 backdrop-blur-xl backdrop-saturate-150 border-b border-border/60"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
-        <div className="flex items-center justify-between px-3 sm:px-4 h-14 w-full max-w-full overflow-hidden">
+        <div className="flex items-center justify-between px-3 sm:px-5 h-14 w-full max-w-full overflow-hidden">
           <div className="flex items-center gap-2 lg:gap-4 min-w-0 flex-1 max-w-full overflow-hidden">
             <Button
               variant="ghost"
@@ -77,16 +77,15 @@ export function Header({ onMenuClick }: HeaderProps) {
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <div className="flex items-center gap-2 min-w-0 max-w-full overflow-hidden">
-              <img src={logo} alt="StockAuto" className="h-8 w-8 lg:h-9 lg:w-9 flex-shrink-0 rounded-lg" />
+            <div className="flex items-center gap-2.5 min-w-0 max-w-full overflow-hidden md:hidden">
+              <img src={logo} alt="StockAuto" className="h-8 w-8 flex-shrink-0 rounded-lg" />
               <div className="min-w-0 max-w-full overflow-hidden hidden sm:block">
-                <h1 className="text-[17px] font-semibold text-foreground truncate leading-tight tracking-tight">StockAuto</h1>
-                <p className="text-[11px] text-muted-foreground truncate leading-tight">Gestion des stocks</p>
+                <h1 className="text-[15px] font-bold text-foreground truncate leading-tight tracking-tight">StockAuto</h1>
               </div>
             </div>
 
             {/* Recherche globale - Desktop */}
-            <div className="hidden lg:block ml-4 max-w-md flex-1">
+            <div className="hidden lg:block max-w-md flex-1">
               <GlobalSearch />
             </div>
           </div>
