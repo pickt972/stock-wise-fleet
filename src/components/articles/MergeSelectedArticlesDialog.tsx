@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Merge, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -21,6 +22,8 @@ export interface MergeArticleLite {
   reference: string;
   designation: string;
   marque: string;
+  categorie: string;
+  sous_categorie?: string | null;
   stock: number;
   emplacement?: string | null;
   emplacement_id?: string | null;
@@ -29,14 +32,21 @@ export interface MergeArticleLite {
   fournisseur_id?: string | null;
 }
 
+interface CategoryNode {
+  id: string;
+  nom: string;
+  parent_id: string | null;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   articles: MergeArticleLite[];
+  allCategories?: CategoryNode[];
   onDone?: () => void;
 }
 
-export function MergeSelectedArticlesDialog({ open, onOpenChange, articles, onDone }: Props) {
+export function MergeSelectedArticlesDialog({ open, onOpenChange, articles, allCategories = [], onDone }: Props) {
   const [busy, setBusy] = useState(false);
   // Par défaut : article avec le plus de stock
   const defaultWinner = useMemo(() => {
@@ -45,10 +55,53 @@ export function MergeSelectedArticlesDialog({ open, onOpenChange, articles, onDo
   }, [articles]);
   const [winnerId, setWinnerId] = useState<string>(defaultWinner);
 
-  // Reset quand on ouvre
-  useMemo(() => {
-    if (open) setWinnerId(defaultWinner);
+  // Catégorie / sous-catégorie cible
+  const parentCats = useMemo(() => allCategories.filter((c) => !c.parent_id), [allCategories]);
+  const childCats = useMemo(() => allCategories.filter((c) => c.parent_id), [allCategories]);
+
+  // Map nom-de-catégorie -> nom-du-parent (utilisé pour deviner le parent par défaut)
+  const childNameToParentName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const child of childCats) {
+      const parent = parentCats.find((p) => p.id === child.parent_id);
+      if (parent) m.set(child.nom, parent.nom);
+    }
+    return m;
+  }, [parentCats, childCats]);
+
+  const winnerArticle = articles.find((a) => a.id === winnerId);
+  const defaultParent = useMemo(() => {
+    if (!winnerArticle) return "";
+    // Si la catégorie de l'article est elle-même une sous-cat, on remonte au parent
+    return childNameToParentName.get(winnerArticle.categorie) ?? winnerArticle.categorie;
+  }, [winnerArticle, childNameToParentName]);
+  const defaultSub = useMemo(() => {
+    if (!winnerArticle) return "__none__";
+    if (childNameToParentName.has(winnerArticle.categorie)) return winnerArticle.categorie;
+    return winnerArticle.sous_categorie || "__none__";
+  }, [winnerArticle, childNameToParentName]);
+
+  const [targetParent, setTargetParent] = useState<string>(defaultParent);
+  const [targetSub, setTargetSub] = useState<string>(defaultSub);
+
+  // Reset à l'ouverture / changement de gagnant
+  useEffect(() => {
+    if (open) {
+      setWinnerId(defaultWinner);
+    }
   }, [open, defaultWinner]);
+
+  useEffect(() => {
+    setTargetParent(defaultParent);
+    setTargetSub(defaultSub);
+  }, [defaultParent, defaultSub]);
+
+  // Sous-catégories disponibles pour le parent choisi
+  const availableSubs = useMemo(() => {
+    const parent = parentCats.find((p) => p.nom === targetParent);
+    if (!parent) return [];
+    return childCats.filter((c) => c.parent_id === parent.id);
+  }, [targetParent, parentCats, childCats]);
 
   const winner = articles.find((a) => a.id === winnerId);
   const losers = articles.filter((a) => a.id !== winnerId);
