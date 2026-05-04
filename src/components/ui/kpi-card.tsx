@@ -93,17 +93,6 @@ export function KPICard({
               )}
             </div>
           )}
-        </div>
-
-        <div
-          className={cn(
-            "h-11 w-11 rounded-xl flex items-center justify-center flex-shrink-0",
-            "ring-4",
-            toneRing[tone],
-          )}
-        >
-          {icon}
-        </div>
       </div>
     </Card>
   );
