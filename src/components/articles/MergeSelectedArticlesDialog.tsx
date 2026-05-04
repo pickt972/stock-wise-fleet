@@ -191,6 +191,18 @@ export function MergeSelectedArticlesDialog({ open, onOpenChange, articles, allC
         if (p) updates.prix_achat = p;
       }
 
+      // Catégorie / sous-catégorie cible (s'applique à l'article conservé)
+      if (targetParent) {
+        if (targetSub && targetSub !== "__none__") {
+          // Si une sous-catégorie est choisie, c'est elle qui devient la "categorie"
+          updates.categorie = targetSub;
+          updates.sous_categorie = targetSub;
+        } else {
+          updates.categorie = targetParent;
+          updates.sous_categorie = null;
+        }
+      }
+
       const { error: upErr } = await supabase.from("articles").update(updates).eq("id", winner.id);
       if (upErr) throw upErr;
 
