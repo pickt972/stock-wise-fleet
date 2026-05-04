@@ -50,7 +50,7 @@ interface TransfertEmplacementDialogProps {
 }
 
 export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedArticleId, open, onOpenChange }: TransfertEmplacementDialogProps) {
-  const [internalOpen, setInternalOpen] = useState(!!preselectedArticleId);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [articlePopoverOpen, setArticlePopoverOpen] = useState(false);
   const isDialogOpen = open !== undefined ? open : internalOpen;
   const handleOpenChange = (value: boolean) => {
@@ -69,12 +69,6 @@ export function TransfertEmplacementDialog({ onTransfertCompleted, preselectedAr
 
   const { toast } = useToast();
   const { user } = useAuth();
-
-  useEffect(() => {
-    if (preselectedArticleId) {
-      handleOpenChange(true);
-    }
-  }, [preselectedArticleId]);
 
   useEffect(() => {
     if (isDialogOpen) {
