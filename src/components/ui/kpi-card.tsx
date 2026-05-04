@@ -45,20 +45,32 @@ export function KPICard({
   return (
     <Card
       className={cn(
-        "p-5 hover:shadow-medium hover:-translate-y-0.5 transition-all duration-200",
+        "p-4 sm:p-5 hover:shadow-medium hover:-translate-y-0.5 transition-all duration-200",
         "animate-fade-in opacity-0 [animation-fill-mode:forwards]",
         className,
       )}
       style={{ animationDelay: `${index * 60}ms` }}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1 space-y-1">
-          <p className="text-[12px] font-medium text-muted-foreground uppercase tracking-wide">
-            {label}
-          </p>
-          <div className="text-[28px] font-bold text-foreground tabular-nums leading-none tracking-tight">
-            {value}
-          </div>
+      {/* Header : pastille icône en haut, séparée de la valeur */}
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <p className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground uppercase tracking-wider truncate">
+          {label}
+        </p>
+        <div
+          className={cn(
+            "h-8 w-8 sm:h-9 sm:w-9 rounded-lg flex items-center justify-center flex-shrink-0",
+            "ring-2",
+            toneRing[tone],
+          )}
+        >
+          {icon}
+        </div>
+      </div>
+
+      <div className="min-w-0 space-y-1">
+        <div className="text-[22px] sm:text-[26px] font-bold text-foreground tabular-nums leading-none tracking-tight break-all">
+          {value}
+        </div>
           {(trend || helper) && (
             <div className="flex items-center gap-1.5 pt-1">
               {trend && (
@@ -81,17 +93,6 @@ export function KPICard({
               )}
             </div>
           )}
-        </div>
-
-        <div
-          className={cn(
-            "h-11 w-11 rounded-xl flex items-center justify-center flex-shrink-0",
-            "ring-4",
-            toneRing[tone],
-          )}
-        >
-          {icon}
-        </div>
       </div>
     </Card>
   );
