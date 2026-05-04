@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { Edit, Plus, AlertCircle, ChevronDown, Merge } from "lucide-react";
+import { Edit, Plus, AlertCircle, ChevronDown, Merge, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { PageHeader } from "@/components/ui/page-header";
@@ -29,6 +30,7 @@ import { CreateArticleDialog } from "@/components/articles/CreateArticleDialog";
 import { EditArticleDialog } from "@/components/articles/EditArticleDialog";
 import { ArticleDeleteDialog } from "@/components/articles/ArticleDeleteDialog";
 import { MergeDuplicateArticlesDialog } from "@/components/articles/MergeDuplicateArticlesDialog";
+import { MergeSelectedArticlesDialog } from "@/components/articles/MergeSelectedArticlesDialog";
 import DashboardLayout from "./DashboardLayout";
 
 interface Article {
@@ -66,6 +68,18 @@ export default function Articles() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [mergeDuplicatesOpen, setMergeDuplicatesOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [mergeSelectedOpen, setMergeSelectedOpen] = useState(false);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const clearSelection = () => setSelectedIds(new Set());
   const { toast } = useToast();
   const navigate = useNavigate();
   const { isAdmin } = useRoleAccess();
@@ -370,9 +384,26 @@ export default function Articles() {
                               return (
                                 <div
                                   key={article.id}
-                                  className="flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-accent/40 transition-colors cursor-pointer group"
+                                  className={`flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-accent/40 transition-colors cursor-pointer group ${
+                                    selectedIds.has(article.id) ? "bg-primary/5" : ""
+                                  }`}
                                   onClick={() => navigate(`/articles/${article.id}`)}
                                 >
+                                  {isAdmin() && (
+                                    <div
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleSelect(article.id);
+                                      }}
+                                      className="flex items-center pr-1"
+                                    >
+                                      <Checkbox
+                                        checked={selectedIds.has(article.id)}
+                                        onCheckedChange={() => toggleSelect(article.id)}
+                                        aria-label="Sélectionner cet article"
+                                      />
+                                    </div>
+                                  )}
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
                                       <span className="font-medium text-sm text-foreground truncate">
@@ -452,6 +483,43 @@ export default function Articles() {
           fetchCategories();
         }}
       />
+
+      <MergeSelectedArticlesDialog
+        open={mergeSelectedOpen}
+        onOpenChange={setMergeSelectedOpen}
+        articles={articles.filter((a) => selectedIds.has(a.id))}
+        onDone={() => {
+          clearSelection();
+          fetchArticles();
+        }}
+      />
+
+      {/* Barre d'actions de sélection (flottante en bas) */}
+      {isAdmin() && selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full border bg-card/95 backdrop-blur-xl shadow-lg px-3 py-2 animate-in fade-in slide-in-from-bottom-4">
+          <Badge variant="default" className="rounded-full px-2.5 py-0.5">
+            {selectedIds.size} sélectionné{selectedIds.size > 1 ? "s" : ""}
+          </Badge>
+          <Button
+            size="sm"
+            onClick={() => setMergeSelectedOpen(true)}
+            disabled={selectedIds.size < 2}
+            className="rounded-full"
+          >
+            <Merge className="h-4 w-4 mr-1.5" />
+            Fusionner
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={clearSelection}
+            className="rounded-full h-8 w-8 p-0"
+            aria-label="Annuler la sélection"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
