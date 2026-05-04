@@ -152,80 +152,92 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
   return (
     <nav
       className={cn(
-        "md:hidden fixed bottom-0 left-0 right-0 z-40 glass border-t-0",
-        "pb-[env(safe-area-inset-bottom)]",
+        "md:hidden fixed bottom-0 left-0 right-0 z-40",
+        "px-3 pb-[max(env(safe-area-inset-bottom),12px)] pt-3",
+        "pointer-events-none",
         className,
       )}
       aria-label="Navigation principale mobile"
     >
-      <div className="grid grid-cols-5 items-end h-[58px] relative">
-        <NavTab to="/dashboard" icon={LayoutDashboard} label="Accueil" />
-        <NavTab to="/articles" icon={Package} label="Articles" />
+      {/* Pill flottante glassmorphism */}
+      <div
+        className={cn(
+          "pointer-events-auto mx-auto max-w-md",
+          "rounded-3xl border border-border/60 shadow-large",
+          "bg-card/85 backdrop-blur-xl backdrop-saturate-150",
+        )}
+      >
+        <div className="grid grid-cols-5 items-end h-[64px] relative px-1">
+          <NavTab to="/dashboard" icon={LayoutDashboard} label="Accueil" />
+          <NavTab to="/articles" icon={Package} label="Articles" />
 
-        {/* Bouton scan central — FAB iOS */}
-        <div className="flex items-center justify-center h-full">
-          <button
-            type="button"
-            onClick={() => setShowScanner(true)}
-            aria-label="Scanner un code-barres"
-            className={cn(
-              "relative -mt-7 h-[60px] w-[60px] rounded-full bg-primary text-primary-foreground",
-              "shadow-large flex items-center justify-center",
-              "active:scale-90 transition-transform duration-150",
-              "ring-[3px] ring-background",
-            )}
-          >
-            <ScanLine className="h-7 w-7" />
-          </button>
-        </div>
-
-        <NavTab to="/alertes" icon={Bell} label="Alertes" badge={totalAlerts} />
-
-        <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
-          <SheetTrigger asChild>
+          {/* Bouton scan central — FAB orange premium */}
+          <div className="flex items-center justify-center h-full">
             <button
               type="button"
+              onClick={() => setShowScanner(true)}
+              aria-label="Scanner un code-barres"
               className={cn(
-                "flex flex-col items-center justify-center gap-0.5 h-full text-[10px] font-medium transition-all",
-                "active:scale-95 text-muted-foreground hover:text-foreground",
+                "relative -mt-8 h-[58px] w-[58px] rounded-full text-primary-foreground",
+                "bg-gradient-to-br from-primary to-[hsl(20_95%_50%)]",
+                "shadow-[0_8px_24px_-4px_hsl(25_95%_53%/0.45)]",
+                "flex items-center justify-center",
+                "active:scale-90 transition-transform duration-150",
+                "ring-[3px] ring-card",
               )}
-              aria-label="Plus d'options"
             >
-              <MoreHorizontal className="h-[22px] w-[22px]" />
-              <span className="leading-none">Plus</span>
+              <ScanLine className="h-6 w-6" />
             </button>
-          </SheetTrigger>
-          <SheetContent side="bottom" className="max-h-[85vh] p-0">
-            <SheetHeader className="px-5 pt-1 pb-3">
-              <SheetTitle className="text-[20px] font-bold tracking-tight">Toutes les sections</SheetTitle>
-            </SheetHeader>
-            <div className="overflow-y-auto px-4 pb-6 grid grid-cols-3 sm:grid-cols-4 gap-3">
-              {moreItems.map((item) => (
-                <button
-                  key={item.href}
-                  onClick={() => handleMoreClick(item.href)}
-                  className={cn(
-                    "flex flex-col items-center justify-center gap-2 p-3 rounded-2xl",
-                    "bg-muted/50 hover:bg-muted active:scale-95 transition-all min-h-[88px]",
-                    isActive(item.href) && "bg-primary/10 ring-1 ring-primary/30",
-                  )}
-                >
-                  <div
+          </div>
+
+          <NavTab to="/alertes" icon={Bell} label="Alertes" badge={totalAlerts} />
+
+          <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
+            <SheetTrigger asChild>
+              <button
+                type="button"
+                className={cn(
+                  "flex flex-col items-center justify-center gap-0.5 h-full text-[10px] font-medium transition-all",
+                  "active:scale-95 text-muted-foreground hover:text-foreground",
+                )}
+                aria-label="Plus d'options"
+              >
+                <MoreHorizontal className="h-[22px] w-[22px]" />
+                <span className="leading-none">Plus</span>
+              </button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="max-h-[85vh] p-0 rounded-t-3xl">
+              <SheetHeader className="px-5 pt-2 pb-3">
+                <SheetTitle className="text-[20px] font-bold tracking-tight">Toutes les sections</SheetTitle>
+              </SheetHeader>
+              <div className="overflow-y-auto px-4 pb-6 grid grid-cols-3 sm:grid-cols-4 gap-3">
+                {moreItems.map((item) => (
+                  <button
+                    key={item.href}
+                    onClick={() => handleMoreClick(item.href)}
                     className={cn(
-                      "h-10 w-10 rounded-xl flex items-center justify-center bg-card shadow-soft",
-                      isActive(item.href) ? "text-primary" : "text-foreground/80",
+                      "flex flex-col items-center justify-center gap-2 p-3 rounded-2xl",
+                      "bg-muted/50 hover:bg-muted active:scale-95 transition-all min-h-[88px]",
+                      isActive(item.href) && "bg-primary/10 ring-1 ring-primary/30",
                     )}
                   >
-                    <item.icon className="h-5 w-5" />
-                  </div>
-                  <span className="text-[11px] font-medium text-center leading-tight text-foreground">
-                    {item.name}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </SheetContent>
-        </Sheet>
+                    <div
+                      className={cn(
+                        "h-10 w-10 rounded-xl flex items-center justify-center bg-card shadow-soft",
+                        isActive(item.href) ? "text-primary" : "text-foreground/80",
+                      )}
+                    >
+                      <item.icon className="h-5 w-5" />
+                    </div>
+                    <span className="text-[11px] font-medium text-center leading-tight text-foreground">
+                      {item.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
 
       <BarcodeScanner
