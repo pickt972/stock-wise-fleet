@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { Edit, Plus, AlertCircle, ChevronDown, Merge } from "lucide-react";
+import { Edit, Plus, AlertCircle, ChevronDown, Merge, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { PageHeader } from "@/components/ui/page-header";
@@ -29,6 +30,7 @@ import { CreateArticleDialog } from "@/components/articles/CreateArticleDialog";
 import { EditArticleDialog } from "@/components/articles/EditArticleDialog";
 import { ArticleDeleteDialog } from "@/components/articles/ArticleDeleteDialog";
 import { MergeDuplicateArticlesDialog } from "@/components/articles/MergeDuplicateArticlesDialog";
+import { MergeSelectedArticlesDialog } from "@/components/articles/MergeSelectedArticlesDialog";
 import DashboardLayout from "./DashboardLayout";
 
 interface Article {
@@ -66,6 +68,18 @@ export default function Articles() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [mergeDuplicatesOpen, setMergeDuplicatesOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [mergeSelectedOpen, setMergeSelectedOpen] = useState(false);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const clearSelection = () => setSelectedIds(new Set());
   const { toast } = useToast();
   const navigate = useNavigate();
   const { isAdmin } = useRoleAccess();
