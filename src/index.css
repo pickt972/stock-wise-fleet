@@ -39,56 +39,58 @@ All colors MUST be HSL.
     --accent: 188 94% 43%;
     --accent-foreground: 0 0% 100%;
 
-    /* iOS systemGreen #34C759 */
-    --success: 142 71% 49%;
+    /* Success: vert frais */
+    --success: 152 76% 40%;
     --success-foreground: 0 0% 100%;
-    --success-light: 142 71% 93%;
+    --success-light: 152 76% 93%;
 
-    /* iOS systemOrange #FF9500 */
+    /* Warning: ambre */
     --warning: 35 100% 50%;
     --warning-foreground: 0 0% 100%;
     --warning-light: 35 100% 93%;
 
-    /* iOS systemRed #FF3B30 */
-    --destructive: 4 100% 59%;
+    /* Destructive: rouge SaaS */
+    --destructive: 0 84% 58%;
     --destructive-foreground: 0 0% 100%;
-    --destructive-light: 4 100% 95%;
+    --destructive-light: 0 84% 95%;
 
-    /* iOS separator (60% opacity gray) */
-    --border: 240 6% 88%;
-    --input: 240 6% 88%;
-    --ring: 211 100% 50%;
+    /* Borders fines neutres */
+    --border: 220 14% 90%;
+    --input: 220 14% 90%;
+    --ring: 25 95% 53%;
 
-    /* Subtle gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(211 100% 55%), hsl(211 100% 45%));
-    --gradient-secondary: linear-gradient(135deg, hsl(240 6% 95%), hsl(240 6% 90%));
-    --gradient-surface: linear-gradient(180deg, hsl(0 0% 100%), hsl(240 10% 98%));
-    --gradient-subtle: linear-gradient(135deg, hsl(240 10% 98%), hsl(240 6% 95%));
-    --gradient-glass: linear-gradient(180deg, hsla(0, 0%, 100%, 0.72), hsla(0, 0%, 100%, 0.55));
-    
-    /* iOS-style soft shadows (low opacity, neutral) */
-    --shadow-soft: 0 1px 2px 0 hsl(0 0% 0% / 0.04), 0 1px 3px 0 hsl(0 0% 0% / 0.06);
-    --shadow-medium: 0 4px 12px -2px hsl(0 0% 0% / 0.08), 0 2px 4px -1px hsl(0 0% 0% / 0.04);
-    --shadow-large: 0 12px 24px -4px hsl(0 0% 0% / 0.10), 0 4px 8px -2px hsl(0 0% 0% / 0.05);
-    --shadow-elegant: 0 20px 40px -8px hsl(0 0% 0% / 0.12), 0 8px 16px -4px hsl(0 0% 0% / 0.06);
-    --shadow-glow: 0 0 32px hsl(211 100% 50% / 0.25);
+    /* Gradients premium SaaS */
+    --gradient-primary: linear-gradient(135deg, hsl(25 95% 58%), hsl(20 95% 50%));
+    --gradient-accent: linear-gradient(135deg, hsl(188 94% 48%), hsl(195 94% 40%));
+    --gradient-secondary: linear-gradient(135deg, hsl(220 14% 96%), hsl(220 14% 92%));
+    --gradient-surface: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 20% 98%));
+    --gradient-subtle: linear-gradient(135deg, hsl(220 20% 99%), hsl(220 14% 96%));
+    --gradient-glass: linear-gradient(180deg, hsla(0, 0%, 100%, 0.78), hsla(0, 0%, 100%, 0.6));
+    --gradient-hero: linear-gradient(135deg, hsl(25 95% 58%) 0%, hsl(15 90% 55%) 50%, hsl(188 94% 43%) 100%);
 
-    /* iOS rounded corners scale */
-    --radius: 0.875rem;     /* 14px - cards/inputs */
+    /* Shadows douces, premium */
+    --shadow-soft: 0 1px 2px 0 hsl(220 25% 15% / 0.04), 0 1px 3px 0 hsl(220 25% 15% / 0.06);
+    --shadow-medium: 0 4px 12px -2px hsl(220 25% 15% / 0.08), 0 2px 4px -1px hsl(220 25% 15% / 0.04);
+    --shadow-large: 0 12px 24px -4px hsl(220 25% 15% / 0.10), 0 4px 8px -2px hsl(220 25% 15% / 0.05);
+    --shadow-elegant: 0 20px 40px -8px hsl(220 25% 15% / 0.12), 0 8px 16px -4px hsl(220 25% 15% / 0.06);
+    --shadow-glow: 0 0 32px hsl(25 95% 53% / 0.28);
 
-    /* iOS translucent surfaces */
-    --surface-blur: hsla(0, 0%, 100%, 0.72);
-    --surface-blur-strong: hsla(0, 0%, 100%, 0.88);
+    /* Coins arrondis 16-24px */
+    --radius: 1rem;     /* 16px - cards/inputs */
 
-    /* Sidebar inset iOS */
-    --sidebar-background: 240 10% 96%;
-    --sidebar-foreground: 0 0% 7%;
-    --sidebar-primary: 211 100% 50%;
+    /* Surfaces translucides */
+    --surface-blur: hsla(0, 0%, 100%, 0.78);
+    --surface-blur-strong: hsla(0, 0%, 100%, 0.92);
+
+    /* Sidebar premium */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 25% 18%;
+    --sidebar-primary: 25 95% 53%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 100%;
-    --sidebar-accent-foreground: 0 0% 7%;
-    --sidebar-border: 240 6% 88%;
-    --sidebar-ring: 211 100% 50%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 222 25% 12%;
+    --sidebar-border: 220 14% 92%;
+    --sidebar-ring: 25 95% 53%;
   }
 
   .dark {
