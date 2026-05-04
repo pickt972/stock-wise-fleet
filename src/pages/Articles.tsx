@@ -493,6 +493,7 @@ export default function Articles() {
         open={mergeSelectedOpen}
         onOpenChange={setMergeSelectedOpen}
         articles={articles.filter((a) => selectedIds.has(a.id))}
+        allCategories={allCategories}
         onDone={() => {
           clearSelection();
           fetchArticles();
