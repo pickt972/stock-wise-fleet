@@ -391,15 +391,20 @@ export default function Articles() {
                                 >
                                   {isAdmin() && (
                                     <div
+                                      role="button"
+                                      tabIndex={-1}
                                       onClick={(e) => {
                                         e.stopPropagation();
+                                        e.preventDefault();
                                         toggleSelect(article.id);
                                       }}
-                                      className="flex items-center pr-1"
+                                      onPointerDown={(e) => e.stopPropagation()}
+                                      className="flex items-center pr-1 -ml-1 py-2 px-1 cursor-pointer"
                                     >
                                       <Checkbox
                                         checked={selectedIds.has(article.id)}
-                                        onCheckedChange={() => toggleSelect(article.id)}
+                                        tabIndex={-1}
+                                        className="pointer-events-none"
                                         aria-label="Sélectionner cet article"
                                       />
                                     </div>
@@ -488,6 +493,7 @@ export default function Articles() {
         open={mergeSelectedOpen}
         onOpenChange={setMergeSelectedOpen}
         articles={articles.filter((a) => selectedIds.has(a.id))}
+        allCategories={allCategories}
         onDone={() => {
           clearSelection();
           fetchArticles();
