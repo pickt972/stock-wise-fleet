@@ -239,6 +239,39 @@ export function MergeSelectedArticlesDialog({ open, onOpenChange, articles, allC
           </span>
         </div>
 
+        {parentCats.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Catégorie cible</Label>
+              <SearchableSelect
+                options={parentCats.map((c) => ({ value: c.nom, label: c.nom }))}
+                value={targetParent}
+                onValueChange={(v) => {
+                  setTargetParent(v);
+                  setTargetSub("__none__");
+                }}
+                placeholder="Choisir une catégorie"
+                searchPlaceholder="Rechercher..."
+                triggerClassName="w-full"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Sous-catégorie (optionnel)</Label>
+              <SearchableSelect
+                options={[
+                  { value: "__none__", label: "— Aucune —" },
+                  ...availableSubs.map((c) => ({ value: c.nom, label: c.nom })),
+                ]}
+                value={targetSub}
+                onValueChange={setTargetSub}
+                placeholder="Aucune"
+                searchPlaceholder="Rechercher..."
+                triggerClassName="w-full"
+              />
+            </div>
+          </div>
+        )}
+
         <ScrollArea className="max-h-[380px] pr-2">
           <RadioGroup value={winnerId} onValueChange={setWinnerId} className="space-y-2">
             {articles.map((a) => {
