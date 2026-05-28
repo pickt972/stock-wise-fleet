@@ -13,6 +13,7 @@ import {
   ScanLine,
   Baby,
   Wrench,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -52,7 +53,10 @@ const getSections = (permissions: any): NavSection[] => [
   },
   {
     label: "Système",
-    items: [{ name: "Paramètres", href: "/parametres", icon: Settings, show: true }],
+    items: [
+      { name: "Journal d'audit", href: "/journal-audit", icon: Shield, show: !!permissions.manageUsers },
+      { name: "Paramètres", href: "/parametres", icon: Settings, show: true },
+    ],
   },
 ];
 
