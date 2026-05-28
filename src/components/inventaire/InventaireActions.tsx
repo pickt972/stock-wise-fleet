@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { CheckCircle, Lock, FileText, Calendar } from "lucide-react";
+import { CheckCircle, Lock, FileText, Calendar, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -28,6 +29,40 @@ export function InventaireActions({ inventaire, remainingItems, onStatusChange }
   const [isUpdating, setIsUpdating] = useState(false);
   const [discrepancies, setDiscrepancies] = useState<number>(0);
   const { toast } = useToast();
+  const { isAdmin } = useRoleAccess();
+
+  const cancelInventaire = async () => {
+    try {
+      setIsUpdating(true);
+
+      const { error: itemsError } = await supabase
+        .from('inventaire_items')
+        .delete()
+        .eq('inventaire_id', inventaire.id);
+      if (itemsError) throw itemsError;
+
+      const { error } = await supabase
+        .from('inventaires')
+        .delete()
+        .eq('id', inventaire.id);
+      if (error) throw error;
+
+      toast({
+        title: "Inventaire annulé",
+        description: "L'inventaire a été supprimé sans impact sur les stocks.",
+      });
+      onStatusChange();
+    } catch (error: any) {
+      console.error('Erreur annulation inventaire:', error);
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible d'annuler l'inventaire.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const getStatusBadge = (statut: string) => {
     switch (statut) {
@@ -294,6 +329,36 @@ export function InventaireActions({ inventaire, remainingItems, onStatusChange }
                 ✓ Inventaire validé et stocks mis à jour
               </p>
             </div>
+          )}
+
+          {isAdmin() && inventaire.statut !== 'valide' && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  disabled={isUpdating}
+                  className="w-full"
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Annuler l'inventaire
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Annuler l'inventaire ?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Cette action supprime définitivement l'inventaire et tous ses comptages.
+                    Les stocks des articles ne seront pas modifiés. Action réservée aux administrateurs.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Retour</AlertDialogCancel>
+                  <AlertDialogAction onClick={cancelInventaire}>
+                    Confirmer l'annulation
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
         </div>
       </CardContent>
