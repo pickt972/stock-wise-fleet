@@ -330,6 +330,36 @@ export function InventaireActions({ inventaire, remainingItems, onStatusChange }
               </p>
             </div>
           )}
+
+          {isAdmin() && inventaire.statut !== 'valide' && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  disabled={isUpdating}
+                  className="w-full"
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Annuler l'inventaire
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Annuler l'inventaire ?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Cette action supprime définitivement l'inventaire et tous ses comptages.
+                    Les stocks des articles ne seront pas modifiés. Action réservée aux administrateurs.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Retour</AlertDialogCancel>
+                  <AlertDialogAction onClick={cancelInventaire}>
+                    Confirmer l'annulation
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       </CardContent>
     </Card>
