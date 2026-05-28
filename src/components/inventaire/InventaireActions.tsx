@@ -29,6 +29,40 @@ export function InventaireActions({ inventaire, remainingItems, onStatusChange }
   const [isUpdating, setIsUpdating] = useState(false);
   const [discrepancies, setDiscrepancies] = useState<number>(0);
   const { toast } = useToast();
+  const { isAdmin } = useRoleAccess();
+
+  const cancelInventaire = async () => {
+    try {
+      setIsUpdating(true);
+
+      const { error: itemsError } = await supabase
+        .from('inventaire_items')
+        .delete()
+        .eq('inventaire_id', inventaire.id);
+      if (itemsError) throw itemsError;
+
+      const { error } = await supabase
+        .from('inventaires')
+        .delete()
+        .eq('id', inventaire.id);
+      if (error) throw error;
+
+      toast({
+        title: "Inventaire annulé",
+        description: "L'inventaire a été supprimé sans impact sur les stocks.",
+      });
+      onStatusChange();
+    } catch (error: any) {
+      console.error('Erreur annulation inventaire:', error);
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible d'annuler l'inventaire.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const getStatusBadge = (statut: string) => {
     switch (statut) {
