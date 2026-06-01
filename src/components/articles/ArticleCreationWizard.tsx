@@ -86,6 +86,13 @@ export function ArticleCreationWizard({
   const [quantite, setQuantite] = useState(1);
   const { data: articleSuggestions } = useArticleSuggestions();
 
+  // Sub-category tracking
+  const [sousCategorieId, setSousCategorieId] = useState("");
+
+  // Vehicle compatibility (optional, but systematically asked)
+  const [vehiculesList, setVehiculesList] = useState<any[]>([]);
+  const [selectedVehiculeGroups, setSelectedVehiculeGroups] = useState<string[]>([]);
+
   // Admin-only fields
   const [stockMin, setStockMin] = useState(0);
   const [stockMax, setStockMax] = useState(100);
@@ -95,8 +102,8 @@ export function ArticleCreationWizard({
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  // Steps: 1=Category, 2=Description, 3=Ref+Brand, 4=Fournisseur, 5=Emplacement, 6=Quantity, 7=Admin advanced
-  const totalSteps = isAdmin() ? 7 : 6;
+  // Steps: 1=Cat, 2=Sub+Desc, 3=Ref+Brand, 4=Fourn, 5=Emplact, 6=Vehicules, 7=Qte, 8=Admin
+  const totalSteps = isAdmin() ? 8 : 7;
 
   useEffect(() => {
     fetchCategories();
