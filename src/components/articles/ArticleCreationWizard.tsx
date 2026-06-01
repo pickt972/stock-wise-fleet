@@ -395,6 +395,22 @@ export function ArticleCreationWizard({
         });
       }
 
+      // Insert vehicle compatibilities (optional)
+      if (newArticle && selectedVehiculeGroups.length > 0 && userData?.user) {
+        const groupKey = (v: any) =>
+          `${v.marque.trim().toLowerCase()}|${v.modele.trim().toLowerCase()}|${(v.motorisation ?? "").trim().toLowerCase()}`;
+        const compatRows = vehiculesList
+          .filter((v) => selectedVehiculeGroups.includes(groupKey(v)))
+          .map((v) => ({
+            article_id: newArticle.id,
+            vehicule_id: v.id,
+            user_id: userData.user.id,
+          }));
+        if (compatRows.length > 0) {
+          await supabase.from("article_vehicules").insert(compatRows);
+        }
+      }
+
       toast({
         title: "Article créé ✓",
         description: `${designation} — ${quantite} unité(s) en stock`,
