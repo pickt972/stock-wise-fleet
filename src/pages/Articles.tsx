@@ -57,7 +57,7 @@ type SortOption = "designation" | "categorie" | "stock" | "prix_achat";
 
 export default function Articles() {
   const [searchTerm, setSearchTerm] = useState("");
-  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
+  const debouncedSearchTerm = searchTerm;
   const [articles, setArticles] = useState<Article[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [allCategories, setAllCategories] = useState<Category[]>([]);
