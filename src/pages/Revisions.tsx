@@ -395,7 +395,7 @@ export default function Revisions() {
 
     return (
       <DashboardLayout>
-        <div className="space-y-4 pb-32">
+        <div className="space-y-4 pb-40 md:pb-32">
           {/* Véhicule épinglé (sticky) */}
           <div className="sticky top-0 z-20 -mx-3 sm:-mx-4 lg:-mx-6 px-3 sm:px-4 lg:px-6 py-3 bg-background/95 backdrop-blur border-b border-border">
             <div className="flex items-center justify-between gap-3">
