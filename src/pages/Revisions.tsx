@@ -454,7 +454,7 @@ export default function Revisions() {
                         const u = { ...prev }; selectedArticles.forEach((id) => (u[id] = next)); return u;
                       });
                     }}>−</Button>
-                  <Input id="qty-rev" type="number" min={1} max={useNonRegisteredVehicle ? undefined : selectedGroup.count}
+                  <Input id="qty-rev" type="number" min={1}
                     value={quantiteRevision}
                     onChange={(e) => {
                       const v = e.target.value;
@@ -472,8 +472,7 @@ export default function Revisions() {
                   <Button variant="outline" size="icon" className="h-9 w-9"
                     onClick={() => {
                       const cur = typeof quantiteRevision === "number" ? quantiteRevision : 1;
-                      const max = useNonRegisteredVehicle ? Infinity : selectedGroup.count;
-                      const next = Math.min(max, cur + 1);
+                      const next = cur + 1;
                       setQuantiteRevision(next);
                       setArticleQuantities((prev) => {
                         const u = { ...prev }; selectedArticles.forEach((id) => (u[id] = next)); return u;
