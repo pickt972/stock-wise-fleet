@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, ArrowRight, Check, Plus, Package, Tag, Layers, Hash,
   MapPin, Truck, Battery, Wrench, Droplets, Disc, Zap, Cog, Car, CircleDot, Boxes, HelpCircle,
-  Edit, Trash2
+  Edit, Trash2, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

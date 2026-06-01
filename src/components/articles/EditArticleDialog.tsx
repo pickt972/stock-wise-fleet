@@ -21,6 +21,7 @@ import {
   ArrowLeft, ArrowRight, Check, Edit, Plus, Trash2,
   Layers, Package, Hash, Tag, MapPin, Truck,
   Battery, Disc, Droplets, Zap, Cog, CircleDot, Car, Wrench, Boxes, Camera,
+  ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
