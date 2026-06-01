@@ -119,7 +119,7 @@ export default function Articles() {
     try {
       const { data, error } = await supabase
         .from('articles')
-        .select('id, reference, designation, marque, categorie, stock, stock_min, stock_max, prix_achat, emplacement, fournisseur_id')
+        .select('id, reference, designation, marque, categorie, sous_categorie, stock, stock_min, stock_max, prix_achat, emplacement, fournisseur_id')
         .order('designation');
 
       if (error) throw error;
