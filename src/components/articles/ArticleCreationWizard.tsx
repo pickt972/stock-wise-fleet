@@ -786,8 +786,77 @@ export function ArticleCreationWizard({
         </div>
       )}
 
-      {/* Step 6: Quantité */}
-      {step === 6 && (
+      {/* Step 6: Compatibilité véhicule (optionnel) */}
+      {step === 6 && (() => {
+        const groupKey = (v: any) =>
+          `${v.marque.trim().toLowerCase()}|${v.modele.trim().toLowerCase()}|${(v.motorisation ?? "").trim().toLowerCase()}`;
+        const groupLabel = (v: any) =>
+          `${v.marque} ${v.modele}${v.motorisation ? ` (${v.motorisation})` : ""}`;
+        const groupsMap = new Map<string, { key: string; label: string; count: number }>();
+        vehiculesList.forEach((v) => {
+          const k = groupKey(v);
+          const existing = groupsMap.get(k);
+          if (existing) existing.count += 1;
+          else groupsMap.set(k, { key: k, label: groupLabel(v), count: 1 });
+        });
+        const groups = Array.from(groupsMap.values()).sort((a, b) => a.label.localeCompare(b.label));
+        const toggleGroup = (k: string) => {
+          setSelectedVehiculeGroups((prev) =>
+            prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]
+          );
+        };
+        return (
+          <div className="space-y-5 animate-in slide-in-from-right-4 duration-200">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Car className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-lg">Compatibilité véhicule</h2>
+                <p className="text-sm text-muted-foreground">Optionnel — sélectionnez les modèles compatibles</p>
+              </div>
+            </div>
+
+            {groups.length === 0 ? (
+              <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground text-center">
+                Aucun véhicule disponible. Vous pourrez en ajouter plus tard depuis la fiche article.
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 max-h-[50vh] overflow-y-auto pr-1">
+                {groups.map((g) => {
+                  const selected = selectedVehiculeGroups.includes(g.key);
+                  return (
+                    <button
+                      key={g.key}
+                      type="button"
+                      onClick={() => toggleGroup(g.key)}
+                      className={`w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all flex items-center justify-between gap-2 ${
+                        selected
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
+                      }`}
+                    >
+                      <span className="flex-1 min-w-0 truncate">{g.label}</span>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {g.count} véh.{selected ? " ✓" : ""}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {selectedVehiculeGroups.length > 0 && (
+              <p className="text-xs text-center text-muted-foreground">
+                {selectedVehiculeGroups.length} modèle(s) sélectionné(s)
+              </p>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Step 7: Quantité */}
+      {step === 7 && (
         <Card className="animate-in slide-in-from-right-4 duration-200">
           <CardContent className="pt-6 space-y-5">
             <div className="flex items-center gap-3 mb-2">
