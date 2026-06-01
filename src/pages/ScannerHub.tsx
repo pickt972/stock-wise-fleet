@@ -19,7 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "./DashboardLayout";
-import { Camera, Plus, Minus } from "lucide-react";
+import { Camera, Plus, Minus, Pencil } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
