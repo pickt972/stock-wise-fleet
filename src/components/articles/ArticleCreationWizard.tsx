@@ -555,7 +555,9 @@ export function ArticleCreationWizard({
 
           {/* Subcategory dropdown */}
           <div className="space-y-2">
-            <Label>Sous-catégorie</Label>
+            <Label>
+              Sous-catégorie {hasSubcategories() ? "*" : ""}
+            </Label>
             {(() => {
               const parent = allCategoriesData.find(p => p.nom === categorie && !p.parent_id);
               const subs = parent ? allCategoriesData.filter(c => c.parent_id === parent.id) : [];
@@ -563,20 +565,19 @@ export function ArticleCreationWizard({
                 ...subs.map(s => ({ value: s.id, label: s.nom })),
                 { value: "__new__", label: "＋ Nouvelle sous-catégorie" },
               ];
-              const selectedSubId = subs.find(s => s.nom === designation)?.id || "";
               return (
                 <SearchableSelect
                   options={subcatOptions}
-                  value={selectedSubId}
+                  value={sousCategorieId}
                   onValueChange={(val) => {
                     if (val === "__new__") {
                       setShowSubcategorieDialog(true);
                     } else {
                       const sub = subs.find(s => s.id === val);
                       if (sub) {
-                        setDesignation(sub.nom);
+                        setSousCategorieId(val);
+                        if (!designation.trim()) setDesignation(sub.nom);
                         setShowSuggestions(false);
-                        setStep(3);
                       }
                     }
                   }}
