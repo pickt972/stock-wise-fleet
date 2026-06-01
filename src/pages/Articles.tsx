@@ -224,6 +224,13 @@ export default function Articles() {
         ? (article.sous_categorie as string)
         : (catNameToParent.has(article.categorie) ? article.categorie : "");
 
+      if (!parentMap.has(parentName)) parentMap.set(parentName, new Map());
+      const subMap = parentMap.get(parentName)!;
+      if (!subMap.has(subName)) subMap.set(subName, []);
+      subMap.get(subName)!.push(article);
+    }
+
+
     // Sort parents by name
     const sortedParents = [...parentMap.keys()].sort((a, b) => a.localeCompare(b));
     for (const parentName of sortedParents) {
