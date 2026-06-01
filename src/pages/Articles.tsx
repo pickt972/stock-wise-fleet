@@ -213,14 +213,16 @@ export default function Articles() {
     const parentMap = new Map<string, Map<string, Article[]>>();
 
     for (const article of filteredArticles) {
-      const parentName = catNameToParent.get(article.categorie) || article.categorie;
-      const subName = catNameToParent.has(article.categorie) ? article.categorie : "";
-
-      if (!parentMap.has(parentName)) parentMap.set(parentName, new Map());
-      const subMap = parentMap.get(parentName)!;
-      if (!subMap.has(subName)) subMap.set(subName, []);
-      subMap.get(subName)!.push(article);
-    }
+      // Si l'article a une sous-catégorie explicite, on s'en sert pour le sous-groupe
+      // et on prend `categorie` comme parent. Sinon, on tente de déduire le parent
+      // à partir de la map (compat ancien schéma où `categorie` portait la sous-cat).
+      const hasExplicitSub = !!article.sous_categorie && article.sous_categorie.trim() !== "";
+      const parentName = hasExplicitSub
+        ? article.categorie
+        : (catNameToParent.get(article.categorie) || article.categorie);
+      const subName = hasExplicitSub
+        ? (article.sous_categorie as string)
+        : (catNameToParent.has(article.categorie) ? article.categorie : "");
 
     // Sort parents by name
     const sortedParents = [...parentMap.keys()].sort((a, b) => a.localeCompare(b));
