@@ -21,6 +21,7 @@ import {
   ArrowLeft, ArrowRight, Check, Edit, Plus, Trash2,
   Layers, Package, Hash, Tag, MapPin, Truck,
   Battery, Disc, Droplets, Zap, Cog, CircleDot, Car, Wrench, Boxes, Camera,
+  ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -355,9 +356,32 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
           </DialogDescription>
         </DialogHeader>
 
-        {/* Progress */}
-        <div className="text-center text-sm text-muted-foreground">
-          Étape {step} sur {totalSteps}
+        {/* Progress with step arrows */}
+        <div className="flex items-center justify-center gap-3">
+          {step > 1 ? (
+            <button
+              type="button"
+              onClick={handleBack}
+              className="h-8 w-8 rounded-full border border-border bg-card flex items-center justify-center hover:bg-muted transition-colors"
+              aria-label="Étape précédente"
+            >
+              <ChevronLeft className="h-4 w-4 text-foreground" />
+            </button>
+          ) : (
+            <div className="h-8 w-8" />
+          )}
+          <span className="text-sm text-muted-foreground font-medium">
+            Étape {step} sur {totalSteps}
+          </span>
+          <button
+            type="button"
+            onClick={handleNext}
+            disabled={!canProceed() || isLoading}
+            className="h-8 w-8 rounded-full border border-border bg-card flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            aria-label="Étape suivante"
+          >
+            <ChevronRight className="h-4 w-4 text-foreground" />
+          </button>
         </div>
 
         {/* Step 1: Catégorie + Sous-catégorie/Désignation */}
