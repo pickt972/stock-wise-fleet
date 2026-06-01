@@ -224,7 +224,8 @@ export function ArticleCreationWizard({
       if (error) throw error;
       toast({ title: "Sous-catégorie créée ✓", description: newSubcategorieName.trim() });
       setAllCategoriesData(prev => [...prev, data]);
-      setDesignation(data.nom);
+      setSousCategorieId(data.id);
+      if (!designation.trim()) setDesignation(data.nom);
       setNewSubcategorieName("");
       setShowSubcategorieDialog(false);
     } catch (error: any) {
