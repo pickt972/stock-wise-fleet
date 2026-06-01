@@ -306,26 +306,37 @@ export function ArticleCreationWizard({
     }
   };
 
+  // Check if current category has any sub-categories
+  const hasSubcategories = useCallback(() => {
+    const parent = allCategoriesData.find(c => c.nom === categorie && !c.parent_id);
+    if (!parent) return false;
+    return allCategoriesData.some(c => c.parent_id === parent.id);
+  }, [categorie, allCategoriesData]);
+
   const canProceed = useCallback(() => {
     switch (step) {
       case 1:
         return categorie.trim() !== "";
       case 2:
+        // Require sub-category selection if any exist for this category
+        if (hasSubcategories() && !sousCategorieId) return false;
         return designation.trim() !== "";
       case 3:
         return reference.trim() !== "" && marque.trim() !== "";
       case 4:
-        return true; // fournisseur is optional
+        return true; // fournisseur optional
       case 5:
-        return true; // emplacement is optional
+        return true; // emplacement optional
       case 6:
-        return quantite >= 0;
+        return true; // vehicle compatibility optional
       case 7:
+        return quantite >= 0;
+      case 8:
         return true;
       default:
         return false;
     }
-  }, [step, categorie, designation, reference, marque, quantite]);
+  }, [step, categorie, designation, reference, marque, quantite, sousCategorieId, hasSubcategories]);
 
   const handleSubmit = async () => {
     setIsLoading(true);
