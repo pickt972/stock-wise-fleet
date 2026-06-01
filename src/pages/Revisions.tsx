@@ -265,125 +265,139 @@ export default function Revisions() {
     setShowSortieDialog(true);
   };
 
+  // Décompose la sélection : ce qui peut sortir du stock + ce qu'il faut commander
+  const sortieEtCommandeBreakdown = useMemo(() => {
+    const aSortir: { article: Article; quantity: number }[] = [];
+    const aCommander: { article: Article; quantity: number }[] = [];
+    for (const articleId of selectedArticles) {
+      const article = articlesCompatibles.find((a) => a.id === articleId);
+      if (!article) continue;
+      const demande = articleQuantities[articleId] || 1;
+      const sortieQty = Math.min(demande, Math.max(0, article.stock));
+      const manquantQty = Math.max(0, demande - article.stock);
+      if (sortieQty > 0) aSortir.push({ article, quantity: sortieQty });
+      if (manquantQty > 0) aCommander.push({ article, quantity: manquantQty });
+    }
+    return { aSortir, aCommander };
+  }, [selectedArticles, articleQuantities, articlesCompatibles]);
+
+  // Crée les commandes brouillon groupées par fournisseur
+  const createCommandesForMissing = async (items: { article: Article; quantity: number }[]) => {
+    const articleIds = items.map((i) => i.article.id);
+    const { data: afList } = await supabase
+      .from("article_fournisseurs")
+      .select("article_id, fournisseur_id, prix_fournisseur, est_principal, actif")
+      .in("article_id", articleIds).eq("actif", true);
+
+    const fournisseurIdsSet = new Set<string>();
+    afList?.forEach((af) => fournisseurIdsSet.add(af.fournisseur_id));
+    items.forEach(({ article }) => { if (article.fournisseur_id) fournisseurIdsSet.add(article.fournisseur_id); });
+    if (fournisseurIdsSet.size === 0) throw new Error("Aucun fournisseur trouvé pour les articles manquants");
+
+    const { data: fournisseurs } = await supabase
+      .from("fournisseurs").select("id, nom, email, telephone, adresse, actif")
+      .in("id", Array.from(fournisseurIdsSet)).eq("actif", true);
+    const fournisseursMap = new Map((fournisseurs || []).map((f) => [f.id, f]));
+
+    const grouped: Record<string, any> = {};
+    for (const { article, quantity } of items) {
+      const articleFournisseurs = afList?.filter((af) => af.article_id === article.id) || [];
+      const best = articleFournisseurs.find((af) => af.est_principal) || articleFournisseurs[0];
+      let fournisseur: any, prixFournisseur: number | undefined;
+      if (best) { fournisseur = fournisseursMap.get(best.fournisseur_id); prixFournisseur = best.prix_fournisseur; }
+      else if (article.fournisseur_id) fournisseur = fournisseursMap.get(article.fournisseur_id);
+      if (!fournisseur) continue;
+      const fid = fournisseur.id;
+      if (!grouped[fid]) grouped[fid] = { fournisseur, items: [], total_ht: 0, total_ttc: 0 };
+      const prixUnitaire = prixFournisseur || article.prix_achat || 0;
+      const totalLigne = quantity * prixUnitaire;
+      grouped[fid].items.push({
+        article_id: article.id, designation: article.designation, reference: article.reference,
+        quantite_commandee: quantity, prix_unitaire: prixUnitaire, total_ligne: totalLigne,
+      });
+      grouped[fid].total_ht += totalLigne;
+      grouped[fid].total_ttc = grouped[fid].total_ht * 1.2;
+    }
+    if (Object.keys(grouped).length === 0) throw new Error("Impossible de grouper les articles par fournisseur");
+
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    const createdIds: string[] = [];
+    for (const [, orderData] of Object.entries(grouped)) {
+      const { data: commande, error: commandeError } = await supabase
+        .from("commandes").insert([{
+          fournisseur: orderData.fournisseur.nom,
+          email_fournisseur: orderData.fournisseur.email,
+          telephone_fournisseur: orderData.fournisseur.telephone,
+          adresse_fournisseur: orderData.fournisseur.adresse,
+          status: "brouillon", total_ht: orderData.total_ht, total_ttc: orderData.total_ttc,
+          tva_taux: 20, user_id: currentUser?.id, numero_commande: "",
+        }]).select().single();
+      if (commandeError) throw commandeError;
+      createdIds.push(commande.id);
+      const itemsToInsert = orderData.items.map((item: any) => ({
+        commande_id: commande.id, article_id: item.article_id, designation: item.designation,
+        reference: item.reference, quantite_commandee: item.quantite_commandee, quantite_recue: 0,
+        prix_unitaire: item.prix_unitaire, total_ligne: item.total_ligne,
+      }));
+      const { error: itemsError } = await supabase.from("commande_items").insert(itemsToInsert);
+      if (itemsError) throw itemsError;
+    }
+    return createdIds;
+  };
+
   const sortieStockMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Utilisateur non connecté");
-      const articlesAvecStock = [];
-      for (const articleId of selectedArticles) {
-        const article = articlesCompatibles.find((a) => a.id === articleId);
-        const quantity = articleQuantities[articleId] || 1;
-        if (!article) throw new Error(`Article non trouvé: ${articleId}`);
-        if (article.stock <= 0) throw new Error(`L'article "${article.designation}" est en rupture de stock`);
-        if (article.stock < quantity) throw new Error(`Stock insuffisant pour "${article.designation}". Stock: ${article.stock}, demandé: ${quantity}`);
-        articlesAvecStock.push({ articleId, article, quantity });
+      const { aSortir, aCommander } = sortieEtCommandeBreakdown;
+
+      if (aSortir.length === 0 && aCommander.length === 0) {
+        throw new Error("Aucun article à traiter");
       }
-      const mouvements = articlesAvecStock.map(({ articleId, quantity }) => ({
-        article_id: articleId,
-        type: "sortie",
-        motif: "révision",
-        quantity,
-        user_id: user.id,
-        vehicule_id: selectedGroup?.vehicules[0]?.id || null,
-      }));
-      const { error } = await supabase.from("stock_movements").insert(mouvements);
-      if (error) throw error;
-      for (const { articleId, quantity } of articlesAvecStock) {
-        await supabase.rpc("update_article_stock", { article_id: articleId, quantity_change: -quantity });
+
+      // 1) Sortie de stock pour les pièces disponibles
+      if (aSortir.length > 0) {
+        const mouvements = aSortir.map(({ article, quantity }) => ({
+          article_id: article.id,
+          type: "sortie",
+          motif: "révision",
+          quantity,
+          user_id: user.id,
+          vehicule_id: selectedGroup?.vehicules[0]?.id || null,
+        }));
+        const { error } = await supabase.from("stock_movements").insert(mouvements);
+        if (error) throw error;
+        for (const { article, quantity } of aSortir) {
+          await supabase.rpc("update_article_stock", { article_id: article.id, quantity_change: -quantity });
+        }
       }
+
+      // 2) Création des commandes pour les pièces manquantes
+      let commandeIds: string[] = [];
+      if (aCommander.length > 0) {
+        commandeIds = await createCommandesForMissing(aCommander);
+      }
+      return { sortieCount: aSortir.length, commandeCount: commandeIds.length, commandeIds };
     },
-    onSuccess: () => {
-      toast.success("Sortie de stock effectuée avec succès");
+    onSuccess: ({ sortieCount, commandeCount, commandeIds }) => {
+      const parts: string[] = [];
+      if (sortieCount > 0) parts.push(`${sortieCount} sortie(s)`);
+      if (commandeCount > 0) parts.push(`${commandeCount} commande(s) créée(s)`);
+      toast.success(parts.join(" · ") || "Opération effectuée");
       queryClient.invalidateQueries({ queryKey: ["articles-compatibles"] });
       setShowSortieDialog(false);
       setSelectedArticles(new Set());
       setArticleQuantities({});
+      if (commandeIds.length > 0) {
+        setTimeout(() => navigate("/commandes", { state: { openCommandeIds: commandeIds }, replace: true }), 400);
+      }
     },
-    onError: (error) => {
-      toast.error(`Erreur lors de la sortie de stock: ${error.message}`);
+    onError: (error: any) => {
+      toast.error(`Erreur: ${error.message}`);
     },
   });
 
-  const generateCommande = async () => {
-    if (!selectedGroup || !articlesCompatibles.length) return;
-    const piecesACommander = articlesCompatibles
-      .map((article) => ({ article, analyse: analyseStock(article, typeof quantiteRevision === "number" ? quantiteRevision : 1) }))
-      .filter(({ analyse }) => analyse.manquant > 0);
 
-    if (piecesACommander.length === 0) {
-      toast.info("Toutes les pièces sont disponibles en stock");
-      return;
-    }
-    try {
-      const articleIds = piecesACommander.map(({ article }) => article.id);
-      const { data: afList } = await supabase
-        .from("article_fournisseurs")
-        .select("article_id, fournisseur_id, prix_fournisseur, est_principal, actif")
-        .in("article_id", articleIds).eq("actif", true);
 
-      const fournisseurIdsSet = new Set<string>();
-      afList?.forEach((af) => fournisseurIdsSet.add(af.fournisseur_id));
-      piecesACommander.forEach(({ article }) => { if (article.fournisseur_id) fournisseurIdsSet.add(article.fournisseur_id); });
-      if (fournisseurIdsSet.size === 0) { toast.error("Aucun fournisseur trouvé pour ces articles"); return; }
-
-      const { data: fournisseurs } = await supabase
-        .from("fournisseurs").select("id, nom, email, telephone, adresse, actif")
-        .in("id", Array.from(fournisseurIdsSet)).eq("actif", true);
-
-      const fournisseursMap = new Map((fournisseurs || []).map((f) => [f.id, f]));
-      const grouped: Record<string, any> = {};
-
-      for (const { article, analyse } of piecesACommander) {
-        const articleFournisseurs = afList?.filter((af) => af.article_id === article.id) || [];
-        let bestFournisseur = articleFournisseurs.find((af) => af.est_principal) || articleFournisseurs[0];
-        let fournisseur, prixFournisseur;
-        if (bestFournisseur) {
-          fournisseur = fournisseursMap.get(bestFournisseur.fournisseur_id);
-          prixFournisseur = bestFournisseur.prix_fournisseur;
-        } else if (article.fournisseur_id) {
-          fournisseur = fournisseursMap.get(article.fournisseur_id);
-        }
-        if (!fournisseur) continue;
-        const fid = fournisseur.id;
-        if (!grouped[fid]) grouped[fid] = { fournisseur, items: [], total_ht: 0, total_ttc: 0 };
-        const prixUnitaire = prixFournisseur || article.prix_achat || 0;
-        const totalLigne = analyse.manquant * prixUnitaire;
-        grouped[fid].items.push({
-          article_id: article.id, designation: article.designation, reference: article.reference,
-          quantite_commandee: analyse.manquant, prix_unitaire: prixUnitaire, total_ligne: totalLigne,
-        });
-        grouped[fid].total_ht += totalLigne;
-        grouped[fid].total_ttc = grouped[fid].total_ht * 1.2;
-      }
-      if (Object.keys(grouped).length === 0) { toast.error("Impossible de grouper les articles par fournisseur"); return; }
-
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      const createdCommandeIds: string[] = [];
-      for (const [, orderData] of Object.entries(grouped)) {
-        const { data: commande, error: commandeError } = await supabase
-          .from("commandes").insert([{
-            fournisseur: orderData.fournisseur.nom,
-            email_fournisseur: orderData.fournisseur.email,
-            telephone_fournisseur: orderData.fournisseur.telephone,
-            adresse_fournisseur: orderData.fournisseur.adresse,
-            status: "brouillon", total_ht: orderData.total_ht, total_ttc: orderData.total_ttc,
-            tva_taux: 20, user_id: currentUser?.id, numero_commande: "",
-          }]).select().single();
-        if (commandeError) throw commandeError;
-        createdCommandeIds.push(commande.id);
-        const itemsToInsert = orderData.items.map((item: any) => ({
-          commande_id: commande.id, article_id: item.article_id, designation: item.designation,
-          reference: item.reference, quantite_commandee: item.quantite_commandee, quantite_recue: 0,
-          prix_unitaire: item.prix_unitaire, total_ligne: item.total_ligne,
-        }));
-        const { error: itemsError } = await supabase.from("commande_items").insert(itemsToInsert);
-        if (itemsError) throw itemsError;
-      }
-      toast.success(`${Object.keys(grouped).length} commande(s) créée(s) pour ${piecesACommander.length} pièces`);
-      setTimeout(() => navigate("/commandes", { state: { openCommandeIds: createdCommandeIds }, replace: true }), 300);
-    } catch (error: any) {
-      toast.error(`Erreur: ${error.message}`);
-    }
-  };
 
   // ============= RENDER =============
 
@@ -622,25 +636,26 @@ export default function Revisions() {
                 isCollapsed ? "md:left-[76px]" : "md:left-64",
               )}
             >
-              <div className="max-w-5xl mx-auto flex flex-col sm:flex-row gap-2">
-                <Button onClick={handleSortieStock} variant="outline" disabled={selectedArticles.size === 0} className="flex-1">
-                  <Minus className="h-4 w-4 mr-2" />
-                  Sortir {selectedArticles.size > 0 && `(${selectedArticles.size})`}
-                </Button>
-                <Button onClick={generateCommande} className="flex-1" disabled={manquant === 0}>
-                  <ShoppingCart className="h-4 w-4 mr-2" />
-                  Commander les manquants {manquant > 0 && `(${manquant})`}
+              <div className="max-w-5xl mx-auto">
+                <Button
+                  onClick={handleSortieStock}
+                  disabled={selectedArticles.size === 0}
+                  className="w-full h-12 text-base"
+                >
+                  <Wrench className="h-4 w-4 mr-2" />
+                  Sortir le dispo & commander les manquants
+                  {selectedArticles.size > 0 && ` (${selectedArticles.size})`}
                 </Button>
               </div>
             </div>
           )}
         </div>
 
-        {/* Dialog confirmation sortie */}
+        {/* Dialog confirmation sortie + commande */}
         <Dialog open={showSortieDialog} onOpenChange={setShowSortieDialog}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Confirmer la Sortie de Stock - Révision</DialogTitle>
+              <DialogTitle>Préparer la révision</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="p-4 bg-primary/10 rounded-lg">
@@ -649,28 +664,58 @@ export default function Revisions() {
                   {selectedGroup?.motorisation && ` (${selectedGroup.motorisation})`}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Motif : Révision · {selectedArticles.size} article{selectedArticles.size > 1 ? "s" : ""}
+                  Motif : Révision · {selectedArticles.size} article{selectedArticles.size > 1 ? "s" : ""} sélectionné{selectedArticles.size > 1 ? "s" : ""}
                 </p>
               </div>
-              <div className="max-h-64 overflow-y-auto space-y-2">
-                {Array.from(selectedArticles).map((articleId) => {
-                  const article = articlesCompatibles.find((a) => a.id === articleId);
-                  const quantity = articleQuantities[articleId] || 1;
-                  if (!article) return null;
-                  return (
-                    <div key={articleId} className="flex items-center justify-between p-2 border rounded">
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm truncate">{article.designation}</div>
-                        <div className="text-xs text-muted-foreground">{article.reference} · {article.marque}</div>
-                      </div>
-                      <div className="text-right text-sm">
-                        <div>Qté : {quantity}</div>
-                        <div className="text-xs text-muted-foreground">Stock : {article.stock}</div>
-                      </div>
+
+              <div className="max-h-72 overflow-y-auto space-y-4">
+                {sortieEtCommandeBreakdown.aSortir.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-success">
+                      <Minus className="h-4 w-4" />
+                      À sortir du stock ({sortieEtCommandeBreakdown.aSortir.length})
                     </div>
-                  );
-                })}
+                    <div className="space-y-2">
+                      {sortieEtCommandeBreakdown.aSortir.map(({ article, quantity }) => (
+                        <div key={`s-${article.id}`} className="flex items-center justify-between p-2 border rounded">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm truncate">{article.designation}</div>
+                            <div className="text-xs text-muted-foreground">{article.reference}</div>
+                          </div>
+                          <div className="text-right text-sm">
+                            <div>Qté : {quantity}</div>
+                            <div className="text-xs text-muted-foreground">Stock : {article.stock}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {sortieEtCommandeBreakdown.aCommander.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-warning">
+                      <ShoppingCart className="h-4 w-4" />
+                      À commander ({sortieEtCommandeBreakdown.aCommander.length})
+                    </div>
+                    <div className="space-y-2">
+                      {sortieEtCommandeBreakdown.aCommander.map(({ article, quantity }) => (
+                        <div key={`c-${article.id}`} className="flex items-center justify-between p-2 border rounded border-warning/40 bg-warning/5">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm truncate">{article.designation}</div>
+                            <div className="text-xs text-muted-foreground">{article.reference}</div>
+                          </div>
+                          <div className="text-right text-sm">
+                            <div className="font-semibold text-warning">+ {quantity}</div>
+                            <div className="text-xs text-muted-foreground">Stock : {article.stock}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
+
               <div className="flex gap-2 pt-2">
                 <Button variant="outline" onClick={() => setShowSortieDialog(false)} className="flex-1">Annuler</Button>
                 <Button onClick={() => sortieStockMutation.mutate()} disabled={sortieStockMutation.isPending} className="flex-1">
