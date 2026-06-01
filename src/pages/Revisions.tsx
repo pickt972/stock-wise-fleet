@@ -715,14 +715,15 @@ export default function Revisions() {
                 isCollapsed ? "md:left-[76px]" : "md:left-64",
               )}
             >
-              <div className="max-w-5xl mx-auto flex flex-col sm:flex-row gap-2">
-                <Button onClick={handleSortieStock} variant="outline" disabled={selectedArticles.size === 0} className="flex-1">
-                  <Minus className="h-4 w-4 mr-2" />
-                  Sortir {selectedArticles.size > 0 && `(${selectedArticles.size})`}
-                </Button>
-                <Button onClick={generateCommande} className="flex-1" disabled={manquant === 0}>
-                  <ShoppingCart className="h-4 w-4 mr-2" />
-                  Commander les manquants {manquant > 0 && `(${manquant})`}
+              <div className="max-w-5xl mx-auto">
+                <Button
+                  onClick={handleSortieStock}
+                  disabled={selectedArticles.size === 0}
+                  className="w-full h-12 text-base"
+                >
+                  <Wrench className="h-4 w-4 mr-2" />
+                  Sortir le dispo & commander les manquants
+                  {selectedArticles.size > 0 && ` (${selectedArticles.size})`}
                 </Button>
               </div>
             </div>
