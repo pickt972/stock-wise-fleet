@@ -110,7 +110,23 @@ export function ArticleCreationWizard({
     fetchDesignations();
     fetchFournisseurs();
     fetchEmplacements();
+    fetchVehicules();
   }, []);
+
+  const fetchVehicules = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("vehicules")
+        .select("id, marque, modele, motorisation, immatriculation")
+        .eq("actif", true)
+        .order("marque");
+      if (error) throw error;
+      setVehiculesList(data || []);
+    } catch {
+      console.error("Erreur chargement véhicules");
+    }
+  };
+
 
   const fetchCategories = async () => {
     try {
