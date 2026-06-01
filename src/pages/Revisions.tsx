@@ -63,6 +63,7 @@ export default function Revisions() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [isCollapsed] = useSidebarCollapsed();
 
   // Workflow étapes : marque -> modele -> motorisation -> catalog
   const [stepMarque, setStepMarque] = useState<string | null>(null);
