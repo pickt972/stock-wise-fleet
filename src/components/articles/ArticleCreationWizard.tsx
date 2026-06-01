@@ -86,6 +86,13 @@ export function ArticleCreationWizard({
   const [quantite, setQuantite] = useState(1);
   const { data: articleSuggestions } = useArticleSuggestions();
 
+  // Sub-category tracking
+  const [sousCategorieId, setSousCategorieId] = useState("");
+
+  // Vehicle compatibility (optional, but systematically asked)
+  const [vehiculesList, setVehiculesList] = useState<any[]>([]);
+  const [selectedVehiculeGroups, setSelectedVehiculeGroups] = useState<string[]>([]);
+
   // Admin-only fields
   const [stockMin, setStockMin] = useState(0);
   const [stockMax, setStockMax] = useState(100);
@@ -95,15 +102,31 @@ export function ArticleCreationWizard({
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  // Steps: 1=Category, 2=Description, 3=Ref+Brand, 4=Fournisseur, 5=Emplacement, 6=Quantity, 7=Admin advanced
-  const totalSteps = isAdmin() ? 7 : 6;
+  // Steps: 1=Cat, 2=Sub+Desc, 3=Ref+Brand, 4=Fourn, 5=Emplact, 6=Vehicules, 7=Qte, 8=Admin
+  const totalSteps = isAdmin() ? 8 : 7;
 
   useEffect(() => {
     fetchCategories();
     fetchDesignations();
     fetchFournisseurs();
     fetchEmplacements();
+    fetchVehicules();
   }, []);
+
+  const fetchVehicules = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("vehicules")
+        .select("id, marque, modele, motorisation, immatriculation")
+        .eq("actif", true)
+        .order("marque");
+      if (error) throw error;
+      setVehiculesList(data || []);
+    } catch {
+      console.error("Erreur chargement véhicules");
+    }
+  };
+
 
   const fetchCategories = async () => {
     try {
@@ -201,7 +224,8 @@ export function ArticleCreationWizard({
       if (error) throw error;
       toast({ title: "Sous-catégorie créée ✓", description: newSubcategorieName.trim() });
       setAllCategoriesData(prev => [...prev, data]);
-      setDesignation(data.nom);
+      setSousCategorieId(data.id);
+      if (!designation.trim()) setDesignation(data.nom);
       setNewSubcategorieName("");
       setShowSubcategorieDialog(false);
     } catch (error: any) {
@@ -283,26 +307,37 @@ export function ArticleCreationWizard({
     }
   };
 
+  // Check if current category has any sub-categories
+  const hasSubcategories = useCallback(() => {
+    const parent = allCategoriesData.find(c => c.nom === categorie && !c.parent_id);
+    if (!parent) return false;
+    return allCategoriesData.some(c => c.parent_id === parent.id);
+  }, [categorie, allCategoriesData]);
+
   const canProceed = useCallback(() => {
     switch (step) {
       case 1:
         return categorie.trim() !== "";
       case 2:
+        // Require sub-category selection if any exist for this category
+        if (hasSubcategories() && !sousCategorieId) return false;
         return designation.trim() !== "";
       case 3:
         return reference.trim() !== "" && marque.trim() !== "";
       case 4:
-        return true; // fournisseur is optional
+        return true; // fournisseur optional
       case 5:
-        return true; // emplacement is optional
+        return true; // emplacement optional
       case 6:
-        return quantite >= 0;
+        return true; // vehicle compatibility optional
       case 7:
+        return quantite >= 0;
+      case 8:
         return true;
       default:
         return false;
     }
-  }, [step, categorie, designation, reference, marque, quantite]);
+  }, [step, categorie, designation, reference, marque, quantite, sousCategorieId, hasSubcategories]);
 
   const handleSubmit = async () => {
     setIsLoading(true);
@@ -359,6 +394,22 @@ export function ArticleCreationWizard({
           user_id: userData.user.id,
           created_by: userData.user.id,
         });
+      }
+
+      // Insert vehicle compatibilities (optional)
+      if (newArticle && selectedVehiculeGroups.length > 0 && userData?.user) {
+        const groupKey = (v: any) =>
+          `${v.marque.trim().toLowerCase()}|${v.modele.trim().toLowerCase()}|${(v.motorisation ?? "").trim().toLowerCase()}`;
+        const compatRows = vehiculesList
+          .filter((v) => selectedVehiculeGroups.includes(groupKey(v)))
+          .map((v) => ({
+            article_id: newArticle.id,
+            vehicule_id: v.id,
+            user_id: userData.user.id,
+          }));
+        if (compatRows.length > 0) {
+          await supabase.from("article_vehicules").insert(compatRows);
+        }
       }
 
       toast({
@@ -505,7 +556,9 @@ export function ArticleCreationWizard({
 
           {/* Subcategory dropdown */}
           <div className="space-y-2">
-            <Label>Sous-catégorie</Label>
+            <Label>
+              Sous-catégorie {hasSubcategories() ? "*" : ""}
+            </Label>
             {(() => {
               const parent = allCategoriesData.find(p => p.nom === categorie && !p.parent_id);
               const subs = parent ? allCategoriesData.filter(c => c.parent_id === parent.id) : [];
@@ -513,20 +566,19 @@ export function ArticleCreationWizard({
                 ...subs.map(s => ({ value: s.id, label: s.nom })),
                 { value: "__new__", label: "＋ Nouvelle sous-catégorie" },
               ];
-              const selectedSubId = subs.find(s => s.nom === designation)?.id || "";
               return (
                 <SearchableSelect
                   options={subcatOptions}
-                  value={selectedSubId}
+                  value={sousCategorieId}
                   onValueChange={(val) => {
                     if (val === "__new__") {
                       setShowSubcategorieDialog(true);
                     } else {
                       const sub = subs.find(s => s.id === val);
                       if (sub) {
-                        setDesignation(sub.nom);
+                        setSousCategorieId(val);
+                        if (!designation.trim()) setDesignation(sub.nom);
                         setShowSuggestions(false);
-                        setStep(3);
                       }
                     }
                   }}
@@ -734,8 +786,77 @@ export function ArticleCreationWizard({
         </div>
       )}
 
-      {/* Step 6: Quantité */}
-      {step === 6 && (
+      {/* Step 6: Compatibilité véhicule (optionnel) */}
+      {step === 6 && (() => {
+        const groupKey = (v: any) =>
+          `${v.marque.trim().toLowerCase()}|${v.modele.trim().toLowerCase()}|${(v.motorisation ?? "").trim().toLowerCase()}`;
+        const groupLabel = (v: any) =>
+          `${v.marque} ${v.modele}${v.motorisation ? ` (${v.motorisation})` : ""}`;
+        const groupsMap = new Map<string, { key: string; label: string; count: number }>();
+        vehiculesList.forEach((v) => {
+          const k = groupKey(v);
+          const existing = groupsMap.get(k);
+          if (existing) existing.count += 1;
+          else groupsMap.set(k, { key: k, label: groupLabel(v), count: 1 });
+        });
+        const groups = Array.from(groupsMap.values()).sort((a, b) => a.label.localeCompare(b.label));
+        const toggleGroup = (k: string) => {
+          setSelectedVehiculeGroups((prev) =>
+            prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]
+          );
+        };
+        return (
+          <div className="space-y-5 animate-in slide-in-from-right-4 duration-200">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Car className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-lg">Compatibilité véhicule</h2>
+                <p className="text-sm text-muted-foreground">Optionnel — sélectionnez les modèles compatibles</p>
+              </div>
+            </div>
+
+            {groups.length === 0 ? (
+              <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground text-center">
+                Aucun véhicule disponible. Vous pourrez en ajouter plus tard depuis la fiche article.
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 max-h-[50vh] overflow-y-auto pr-1">
+                {groups.map((g) => {
+                  const selected = selectedVehiculeGroups.includes(g.key);
+                  return (
+                    <button
+                      key={g.key}
+                      type="button"
+                      onClick={() => toggleGroup(g.key)}
+                      className={`w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all flex items-center justify-between gap-2 ${
+                        selected
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
+                      }`}
+                    >
+                      <span className="flex-1 min-w-0 truncate">{g.label}</span>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {g.count} véh.{selected ? " ✓" : ""}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {selectedVehiculeGroups.length > 0 && (
+              <p className="text-xs text-center text-muted-foreground">
+                {selectedVehiculeGroups.length} modèle(s) sélectionné(s)
+              </p>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Step 7: Quantité */}
+      {step === 7 && (
         <Card className="animate-in slide-in-from-right-4 duration-200">
           <CardContent className="pt-6 space-y-5">
             <div className="flex items-center gap-3 mb-2">
@@ -830,8 +951,8 @@ export function ArticleCreationWizard({
         </Card>
       )}
 
-      {/* Step 7: Admin only - Advanced settings */}
-      {step === 7 && isAdmin() && (
+      {/* Step 8: Admin only - Advanced settings */}
+      {step === 8 && isAdmin() && (
         <Card className="animate-in slide-in-from-right-4 duration-200">
           <CardContent className="pt-6 space-y-5">
             <div className="flex items-center gap-3 mb-2">
