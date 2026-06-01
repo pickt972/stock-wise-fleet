@@ -396,87 +396,8 @@ export default function Revisions() {
     },
   });
 
-  const generateCommande = async () => {
-    if (!selectedGroup || !articlesCompatibles.length) return;
-    const piecesACommander = articlesCompatibles
-      .map((article) => ({ article, analyse: analyseStock(article, typeof quantiteRevision === "number" ? quantiteRevision : 1) }))
-      .filter(({ analyse }) => analyse.manquant > 0);
 
-    if (piecesACommander.length === 0) {
-      toast.info("Toutes les pièces sont disponibles en stock");
-      return;
-    }
-    try {
-      const articleIds = piecesACommander.map(({ article }) => article.id);
-      const { data: afList } = await supabase
-        .from("article_fournisseurs")
-        .select("article_id, fournisseur_id, prix_fournisseur, est_principal, actif")
-        .in("article_id", articleIds).eq("actif", true);
 
-      const fournisseurIdsSet = new Set<string>();
-      afList?.forEach((af) => fournisseurIdsSet.add(af.fournisseur_id));
-      piecesACommander.forEach(({ article }) => { if (article.fournisseur_id) fournisseurIdsSet.add(article.fournisseur_id); });
-      if (fournisseurIdsSet.size === 0) { toast.error("Aucun fournisseur trouvé pour ces articles"); return; }
-
-      const { data: fournisseurs } = await supabase
-        .from("fournisseurs").select("id, nom, email, telephone, adresse, actif")
-        .in("id", Array.from(fournisseurIdsSet)).eq("actif", true);
-
-      const fournisseursMap = new Map((fournisseurs || []).map((f) => [f.id, f]));
-      const grouped: Record<string, any> = {};
-
-      for (const { article, analyse } of piecesACommander) {
-        const articleFournisseurs = afList?.filter((af) => af.article_id === article.id) || [];
-        let bestFournisseur = articleFournisseurs.find((af) => af.est_principal) || articleFournisseurs[0];
-        let fournisseur, prixFournisseur;
-        if (bestFournisseur) {
-          fournisseur = fournisseursMap.get(bestFournisseur.fournisseur_id);
-          prixFournisseur = bestFournisseur.prix_fournisseur;
-        } else if (article.fournisseur_id) {
-          fournisseur = fournisseursMap.get(article.fournisseur_id);
-        }
-        if (!fournisseur) continue;
-        const fid = fournisseur.id;
-        if (!grouped[fid]) grouped[fid] = { fournisseur, items: [], total_ht: 0, total_ttc: 0 };
-        const prixUnitaire = prixFournisseur || article.prix_achat || 0;
-        const totalLigne = analyse.manquant * prixUnitaire;
-        grouped[fid].items.push({
-          article_id: article.id, designation: article.designation, reference: article.reference,
-          quantite_commandee: analyse.manquant, prix_unitaire: prixUnitaire, total_ligne: totalLigne,
-        });
-        grouped[fid].total_ht += totalLigne;
-        grouped[fid].total_ttc = grouped[fid].total_ht * 1.2;
-      }
-      if (Object.keys(grouped).length === 0) { toast.error("Impossible de grouper les articles par fournisseur"); return; }
-
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      const createdCommandeIds: string[] = [];
-      for (const [, orderData] of Object.entries(grouped)) {
-        const { data: commande, error: commandeError } = await supabase
-          .from("commandes").insert([{
-            fournisseur: orderData.fournisseur.nom,
-            email_fournisseur: orderData.fournisseur.email,
-            telephone_fournisseur: orderData.fournisseur.telephone,
-            adresse_fournisseur: orderData.fournisseur.adresse,
-            status: "brouillon", total_ht: orderData.total_ht, total_ttc: orderData.total_ttc,
-            tva_taux: 20, user_id: currentUser?.id, numero_commande: "",
-          }]).select().single();
-        if (commandeError) throw commandeError;
-        createdCommandeIds.push(commande.id);
-        const itemsToInsert = orderData.items.map((item: any) => ({
-          commande_id: commande.id, article_id: item.article_id, designation: item.designation,
-          reference: item.reference, quantite_commandee: item.quantite_commandee, quantite_recue: 0,
-          prix_unitaire: item.prix_unitaire, total_ligne: item.total_ligne,
-        }));
-        const { error: itemsError } = await supabase.from("commande_items").insert(itemsToInsert);
-        if (itemsError) throw itemsError;
-      }
-      toast.success(`${Object.keys(grouped).length} commande(s) créée(s) pour ${piecesACommander.length} pièces`);
-      setTimeout(() => navigate("/commandes", { state: { openCommandeIds: createdCommandeIds }, replace: true }), 300);
-    } catch (error: any) {
-      toast.error(`Erreur: ${error.message}`);
-    }
-  };
 
   // ============= RENDER =============
 
