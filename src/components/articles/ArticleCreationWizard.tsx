@@ -951,8 +951,8 @@ export function ArticleCreationWizard({
         </Card>
       )}
 
-      {/* Step 7: Admin only - Advanced settings */}
-      {step === 7 && isAdmin() && (
+      {/* Step 8: Admin only - Advanced settings */}
+      {step === 8 && isAdmin() && (
         <Card className="animate-in slide-in-from-right-4 duration-200">
           <CardContent className="pt-6 space-y-5">
             <div className="flex items-center gap-3 mb-2">
