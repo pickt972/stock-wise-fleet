@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "./DashboardLayout";
+import { useSidebarCollapsed } from "@/hooks/useSidebarCollapsed";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
