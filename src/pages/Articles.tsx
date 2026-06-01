@@ -272,83 +272,81 @@ export default function Articles() {
             </Alert>
           )}
 
-          {/* Barre d'actions */}
-          <div className="flex items-center justify-between gap-4">
-            <SearchWithScanner
-              placeholder="Chercher article..."
-              value={searchTerm}
-              onChange={setSearchTerm}
-              onArticleNotFound={() => {}}
-              returnTo="/articles"
-            />
-            
-            {isAdmin() && (
-              <>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={() => setMergeDuplicatesOpen(true)}
-                  className="flex-shrink-0"
-                  title="Détecter et fusionner les doublons"
-                >
-                  <Merge className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Fusionner les doublons</span>
-                  <span className="sm:hidden">Doublons</span>
-                </Button>
-                <Button
-                  size="lg"
-                  onClick={() => setShowCreateDialog(true)}
-                  className="flex-shrink-0"
-                >
-                  <Plus className="h-5 w-5 mr-2" />
-                  Ajouter
-                </Button>
-              </>
-            )}
-          </div>
+          {/* Barre d'actions + filtres : sticky pour rester visible au scroll */}
+          <div className="sticky top-0 z-30 -mx-4 px-4 py-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border/50 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <SearchWithScanner
+                placeholder="Chercher article..."
+                value={searchTerm}
+                onChange={setSearchTerm}
+                onArticleNotFound={() => {}}
+                returnTo="/articles"
+              />
 
-          {/* Filtres */}
-          <div className="flex flex-col sm:flex-row gap-2">
-            {/* Filtres stock */}
-            <div className="flex gap-2 overflow-x-auto pb-2 flex-1">
-              {stockFilters.map((filter) => (
-                <Button
-                  key={filter.id}
-                  variant={activeFilter === filter.id ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setActiveFilter(filter.id)}
-                  className="flex-shrink-0"
-                >
-                  {filter.label}
-                </Button>
-              ))}
+              {isAdmin() && (
+                <>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => setMergeDuplicatesOpen(true)}
+                    className="flex-shrink-0"
+                    title="Détecter et fusionner les doublons"
+                  >
+                    <Merge className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Fusionner les doublons</span>
+                  </Button>
+                  <Button
+                    size="lg"
+                    onClick={() => setShowCreateDialog(true)}
+                    className="flex-shrink-0"
+                  >
+                    <Plus className="h-5 w-5 sm:mr-2" />
+                    <span className="hidden sm:inline">Ajouter</span>
+                  </Button>
+                </>
+              )}
             </div>
 
-            {/* Filtre catégorie */}
-            <SearchableSelect
-              options={[
-                { value: "all", label: "Toutes catégories" },
-                ...categories.map((cat) => ({ value: cat, label: cat })),
-              ]}
-              value={categoryFilter}
-              onValueChange={setCategoryFilter}
-              placeholder="Catégorie"
-              searchPlaceholder="Rechercher une catégorie..."
-              triggerClassName="w-full sm:w-[200px]"
-            />
+            {/* Filtres */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex gap-2 overflow-x-auto pb-1 flex-1">
+                {stockFilters.map((filter) => (
+                  <Button
+                    key={filter.id}
+                    variant={activeFilter === filter.id ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setActiveFilter(filter.id)}
+                    className="flex-shrink-0"
+                  >
+                    {filter.label}
+                  </Button>
+                ))}
+              </div>
 
-            {/* Tri */}
-            <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
-              <SelectTrigger className="w-full sm:w-[200px]">
-                <SelectValue placeholder="Trier par" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="designation">Nom</SelectItem>
-                <SelectItem value="categorie">Catégorie</SelectItem>
-                <SelectItem value="stock">Stock</SelectItem>
-                <SelectItem value="prix_achat">Prix</SelectItem>
-              </SelectContent>
-            </Select>
+              <SearchableSelect
+                options={[
+                  { value: "all", label: "Toutes catégories" },
+                  ...categories.map((cat) => ({ value: cat, label: cat })),
+                ]}
+                value={categoryFilter}
+                onValueChange={setCategoryFilter}
+                placeholder="Catégorie"
+                searchPlaceholder="Rechercher une catégorie..."
+                triggerClassName="w-full sm:w-[200px]"
+              />
+
+              <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                  <SelectValue placeholder="Trier par" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="designation">Nom</SelectItem>
+                  <SelectItem value="categorie">Catégorie</SelectItem>
+                  <SelectItem value="stock">Stock</SelectItem>
+                  <SelectItem value="prix_achat">Prix</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Liste des articles groupés par catégorie */}
