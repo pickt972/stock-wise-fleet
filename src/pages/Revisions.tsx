@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "./DashboardLayout";
+import { useSidebarCollapsed } from "@/hooks/useSidebarCollapsed";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -62,6 +63,7 @@ export default function Revisions() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [isCollapsed] = useSidebarCollapsed();
 
   // Workflow étapes : marque -> modele -> motorisation -> catalog
   const [stepMarque, setStepMarque] = useState<string | null>(null);
@@ -393,7 +395,7 @@ export default function Revisions() {
 
     return (
       <DashboardLayout>
-        <div className="space-y-4 pb-32">
+        <div className="space-y-4 pb-40 md:pb-32">
           {/* Véhicule épinglé (sticky) */}
           <div className="sticky top-0 z-20 -mx-3 sm:-mx-4 lg:-mx-6 px-3 sm:px-4 lg:px-6 py-3 bg-background/95 backdrop-blur border-b border-border">
             <div className="flex items-center justify-between gap-3">
@@ -613,7 +615,13 @@ export default function Revisions() {
 
           {/* Footer actions sticky */}
           {articlesCompatibles.length > 0 && (
-            <div className="fixed bottom-0 left-0 right-0 md:left-56 z-30 bg-background/95 backdrop-blur border-t border-border p-3 shadow-large">
+            <div
+              className={cn(
+                "fixed left-0 right-0 z-30 bg-background/95 backdrop-blur border-t border-border p-3 shadow-large",
+                "bottom-[calc(env(safe-area-inset-bottom)+92px)] md:bottom-0",
+                isCollapsed ? "md:left-[76px]" : "md:left-64",
+              )}
+            >
               <div className="max-w-5xl mx-auto flex flex-col sm:flex-row gap-2">
                 <Button onClick={handleSortieStock} variant="outline" disabled={selectedArticles.size === 0} className="flex-1">
                   <Minus className="h-4 w-4 mr-2" />
