@@ -265,41 +265,134 @@ export default function Revisions() {
     setShowSortieDialog(true);
   };
 
+  // Décompose la sélection : ce qui peut sortir du stock + ce qu'il faut commander
+  const sortieEtCommandeBreakdown = useMemo(() => {
+    const aSortir: { article: Article; quantity: number }[] = [];
+    const aCommander: { article: Article; quantity: number }[] = [];
+    for (const articleId of selectedArticles) {
+      const article = articlesCompatibles.find((a) => a.id === articleId);
+      if (!article) continue;
+      const demande = articleQuantities[articleId] || 1;
+      const sortieQty = Math.min(demande, Math.max(0, article.stock));
+      const manquantQty = Math.max(0, demande - article.stock);
+      if (sortieQty > 0) aSortir.push({ article, quantity: sortieQty });
+      if (manquantQty > 0) aCommander.push({ article, quantity: manquantQty });
+    }
+    return { aSortir, aCommander };
+  }, [selectedArticles, articleQuantities, articlesCompatibles]);
+
+  // Crée les commandes brouillon groupées par fournisseur
+  const createCommandesForMissing = async (items: { article: Article; quantity: number }[]) => {
+    const articleIds = items.map((i) => i.article.id);
+    const { data: afList } = await supabase
+      .from("article_fournisseurs")
+      .select("article_id, fournisseur_id, prix_fournisseur, est_principal, actif")
+      .in("article_id", articleIds).eq("actif", true);
+
+    const fournisseurIdsSet = new Set<string>();
+    afList?.forEach((af) => fournisseurIdsSet.add(af.fournisseur_id));
+    items.forEach(({ article }) => { if (article.fournisseur_id) fournisseurIdsSet.add(article.fournisseur_id); });
+    if (fournisseurIdsSet.size === 0) throw new Error("Aucun fournisseur trouvé pour les articles manquants");
+
+    const { data: fournisseurs } = await supabase
+      .from("fournisseurs").select("id, nom, email, telephone, adresse, actif")
+      .in("id", Array.from(fournisseurIdsSet)).eq("actif", true);
+    const fournisseursMap = new Map((fournisseurs || []).map((f) => [f.id, f]));
+
+    const grouped: Record<string, any> = {};
+    for (const { article, quantity } of items) {
+      const articleFournisseurs = afList?.filter((af) => af.article_id === article.id) || [];
+      const best = articleFournisseurs.find((af) => af.est_principal) || articleFournisseurs[0];
+      let fournisseur: any, prixFournisseur: number | undefined;
+      if (best) { fournisseur = fournisseursMap.get(best.fournisseur_id); prixFournisseur = best.prix_fournisseur; }
+      else if (article.fournisseur_id) fournisseur = fournisseursMap.get(article.fournisseur_id);
+      if (!fournisseur) continue;
+      const fid = fournisseur.id;
+      if (!grouped[fid]) grouped[fid] = { fournisseur, items: [], total_ht: 0, total_ttc: 0 };
+      const prixUnitaire = prixFournisseur || article.prix_achat || 0;
+      const totalLigne = quantity * prixUnitaire;
+      grouped[fid].items.push({
+        article_id: article.id, designation: article.designation, reference: article.reference,
+        quantite_commandee: quantity, prix_unitaire: prixUnitaire, total_ligne: totalLigne,
+      });
+      grouped[fid].total_ht += totalLigne;
+      grouped[fid].total_ttc = grouped[fid].total_ht * 1.2;
+    }
+    if (Object.keys(grouped).length === 0) throw new Error("Impossible de grouper les articles par fournisseur");
+
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    const createdIds: string[] = [];
+    for (const [, orderData] of Object.entries(grouped)) {
+      const { data: commande, error: commandeError } = await supabase
+        .from("commandes").insert([{
+          fournisseur: orderData.fournisseur.nom,
+          email_fournisseur: orderData.fournisseur.email,
+          telephone_fournisseur: orderData.fournisseur.telephone,
+          adresse_fournisseur: orderData.fournisseur.adresse,
+          status: "brouillon", total_ht: orderData.total_ht, total_ttc: orderData.total_ttc,
+          tva_taux: 20, user_id: currentUser?.id, numero_commande: "",
+        }]).select().single();
+      if (commandeError) throw commandeError;
+      createdIds.push(commande.id);
+      const itemsToInsert = orderData.items.map((item: any) => ({
+        commande_id: commande.id, article_id: item.article_id, designation: item.designation,
+        reference: item.reference, quantite_commandee: item.quantite_commandee, quantite_recue: 0,
+        prix_unitaire: item.prix_unitaire, total_ligne: item.total_ligne,
+      }));
+      const { error: itemsError } = await supabase.from("commande_items").insert(itemsToInsert);
+      if (itemsError) throw itemsError;
+    }
+    return createdIds;
+  };
+
   const sortieStockMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Utilisateur non connecté");
-      const articlesAvecStock = [];
-      for (const articleId of selectedArticles) {
-        const article = articlesCompatibles.find((a) => a.id === articleId);
-        const quantity = articleQuantities[articleId] || 1;
-        if (!article) throw new Error(`Article non trouvé: ${articleId}`);
-        if (article.stock <= 0) throw new Error(`L'article "${article.designation}" est en rupture de stock`);
-        if (article.stock < quantity) throw new Error(`Stock insuffisant pour "${article.designation}". Stock: ${article.stock}, demandé: ${quantity}`);
-        articlesAvecStock.push({ articleId, article, quantity });
+      const { aSortir, aCommander } = sortieEtCommandeBreakdown;
+
+      if (aSortir.length === 0 && aCommander.length === 0) {
+        throw new Error("Aucun article à traiter");
       }
-      const mouvements = articlesAvecStock.map(({ articleId, quantity }) => ({
-        article_id: articleId,
-        type: "sortie",
-        motif: "révision",
-        quantity,
-        user_id: user.id,
-        vehicule_id: selectedGroup?.vehicules[0]?.id || null,
-      }));
-      const { error } = await supabase.from("stock_movements").insert(mouvements);
-      if (error) throw error;
-      for (const { articleId, quantity } of articlesAvecStock) {
-        await supabase.rpc("update_article_stock", { article_id: articleId, quantity_change: -quantity });
+
+      // 1) Sortie de stock pour les pièces disponibles
+      if (aSortir.length > 0) {
+        const mouvements = aSortir.map(({ article, quantity }) => ({
+          article_id: article.id,
+          type: "sortie",
+          motif: "révision",
+          quantity,
+          user_id: user.id,
+          vehicule_id: selectedGroup?.vehicules[0]?.id || null,
+        }));
+        const { error } = await supabase.from("stock_movements").insert(mouvements);
+        if (error) throw error;
+        for (const { article, quantity } of aSortir) {
+          await supabase.rpc("update_article_stock", { article_id: article.id, quantity_change: -quantity });
+        }
       }
+
+      // 2) Création des commandes pour les pièces manquantes
+      let commandeIds: string[] = [];
+      if (aCommander.length > 0) {
+        commandeIds = await createCommandesForMissing(aCommander);
+      }
+      return { sortieCount: aSortir.length, commandeCount: commandeIds.length, commandeIds };
     },
-    onSuccess: () => {
-      toast.success("Sortie de stock effectuée avec succès");
+    onSuccess: ({ sortieCount, commandeCount, commandeIds }) => {
+      const parts: string[] = [];
+      if (sortieCount > 0) parts.push(`${sortieCount} sortie(s)`);
+      if (commandeCount > 0) parts.push(`${commandeCount} commande(s) créée(s)`);
+      toast.success(parts.join(" · ") || "Opération effectuée");
       queryClient.invalidateQueries({ queryKey: ["articles-compatibles"] });
       setShowSortieDialog(false);
       setSelectedArticles(new Set());
       setArticleQuantities({});
+      if (commandeIds.length > 0) {
+        setTimeout(() => navigate("/commandes", { state: { openCommandeIds: commandeIds }, replace: true }), 400);
+      }
     },
-    onError: (error) => {
-      toast.error(`Erreur lors de la sortie de stock: ${error.message}`);
+    onError: (error: any) => {
+      toast.error(`Erreur: ${error.message}`);
     },
   });
 
