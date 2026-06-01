@@ -730,11 +730,11 @@ export default function Revisions() {
           )}
         </div>
 
-        {/* Dialog confirmation sortie */}
+        {/* Dialog confirmation sortie + commande */}
         <Dialog open={showSortieDialog} onOpenChange={setShowSortieDialog}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Confirmer la Sortie de Stock - Révision</DialogTitle>
+              <DialogTitle>Préparer la révision</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="p-4 bg-primary/10 rounded-lg">
@@ -743,28 +743,58 @@ export default function Revisions() {
                   {selectedGroup?.motorisation && ` (${selectedGroup.motorisation})`}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Motif : Révision · {selectedArticles.size} article{selectedArticles.size > 1 ? "s" : ""}
+                  Motif : Révision · {selectedArticles.size} article{selectedArticles.size > 1 ? "s" : ""} sélectionné{selectedArticles.size > 1 ? "s" : ""}
                 </p>
               </div>
-              <div className="max-h-64 overflow-y-auto space-y-2">
-                {Array.from(selectedArticles).map((articleId) => {
-                  const article = articlesCompatibles.find((a) => a.id === articleId);
-                  const quantity = articleQuantities[articleId] || 1;
-                  if (!article) return null;
-                  return (
-                    <div key={articleId} className="flex items-center justify-between p-2 border rounded">
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm truncate">{article.designation}</div>
-                        <div className="text-xs text-muted-foreground">{article.reference} · {article.marque}</div>
-                      </div>
-                      <div className="text-right text-sm">
-                        <div>Qté : {quantity}</div>
-                        <div className="text-xs text-muted-foreground">Stock : {article.stock}</div>
-                      </div>
+
+              <div className="max-h-72 overflow-y-auto space-y-4">
+                {sortieEtCommandeBreakdown.aSortir.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-success">
+                      <Minus className="h-4 w-4" />
+                      À sortir du stock ({sortieEtCommandeBreakdown.aSortir.length})
                     </div>
-                  );
-                })}
+                    <div className="space-y-2">
+                      {sortieEtCommandeBreakdown.aSortir.map(({ article, quantity }) => (
+                        <div key={`s-${article.id}`} className="flex items-center justify-between p-2 border rounded">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm truncate">{article.designation}</div>
+                            <div className="text-xs text-muted-foreground">{article.reference}</div>
+                          </div>
+                          <div className="text-right text-sm">
+                            <div>Qté : {quantity}</div>
+                            <div className="text-xs text-muted-foreground">Stock : {article.stock}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {sortieEtCommandeBreakdown.aCommander.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-warning">
+                      <ShoppingCart className="h-4 w-4" />
+                      À commander ({sortieEtCommandeBreakdown.aCommander.length})
+                    </div>
+                    <div className="space-y-2">
+                      {sortieEtCommandeBreakdown.aCommander.map(({ article, quantity }) => (
+                        <div key={`c-${article.id}`} className="flex items-center justify-between p-2 border rounded border-warning/40 bg-warning/5">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm truncate">{article.designation}</div>
+                            <div className="text-xs text-muted-foreground">{article.reference}</div>
+                          </div>
+                          <div className="text-right text-sm">
+                            <div className="font-semibold text-warning">+ {quantity}</div>
+                            <div className="text-xs text-muted-foreground">Stock : {article.stock}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
+
               <div className="flex gap-2 pt-2">
                 <Button variant="outline" onClick={() => setShowSortieDialog(false)} className="flex-1">Annuler</Button>
                 <Button onClick={() => sortieStockMutation.mutate()} disabled={sortieStockMutation.isPending} className="flex-1">
