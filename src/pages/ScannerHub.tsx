@@ -19,7 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "./DashboardLayout";
-import { Camera, Plus, Minus } from "lucide-react";
+import { Camera, Plus, Minus, Pencil } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -420,11 +420,20 @@ export default function ScannerHub() {
           {scannedArticle && (
             <Card>
               <CardContent className="p-5 space-y-4">
-                <div>
-                  <h3 className="text-lg font-semibold">{scannedArticle.designation}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {scannedArticle.marque} - {scannedArticle.categorie}
-                  </p>
+              <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold">{scannedArticle.designation}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {scannedArticle.marque} - {scannedArticle.categorie}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate(`/articles/${scannedArticle.id}`)}
+                    className="p-2 rounded-lg hover:bg-muted transition-colors"
+                    title="Modifier l'article"
+                  >
+                    <Pencil className="h-5 w-5 text-muted-foreground" />
+                  </button>
                 </div>
 
                 <div className="flex items-center justify-between">
