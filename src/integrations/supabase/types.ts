@@ -915,6 +915,7 @@ export type Database = {
           created_at: string
           first_name: string
           id: string
+          is_active: boolean
           last_name: string
           role: string
           updated_at: string
@@ -924,6 +925,7 @@ export type Database = {
           created_at?: string
           first_name: string
           id: string
+          is_active?: boolean
           last_name: string
           role?: string
           updated_at?: string
@@ -933,6 +935,7 @@ export type Database = {
           created_at?: string
           first_name?: string
           id?: string
+          is_active?: boolean
           last_name?: string
           role?: string
           updated_at?: string
