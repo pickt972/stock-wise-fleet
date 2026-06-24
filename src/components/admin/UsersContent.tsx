@@ -182,10 +182,24 @@ export function UsersContent() {
                 <div>
                   <h3 className="font-medium">{user.first_name} {user.last_name}</h3>
                   <p className="text-sm text-muted-foreground">{user.username || 'Aucun nom d\'utilisateur'}</p>
-                  <Badge variant="secondary" className="mt-1">{getRoleDisplay(user.role)}</Badge>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant="secondary">{getRoleDisplay(user.role)}</Badge>
+                    <Badge variant={user.is_active ? "default" : "destructive"}>
+                      {user.is_active ? "Actif" : "Désactivé"}
+                    </Badge>
+                  </div>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
+                {currentUser?.id !== user.id && (
+                  <div className="flex items-center gap-1 mr-1" title={user.is_active ? "Désactiver" : "Activer"}>
+                    {user.is_active ? <UserCheck className="h-4 w-4 text-muted-foreground" /> : <UserX className="h-4 w-4 text-muted-foreground" />}
+                    <Switch
+                      checked={user.is_active}
+                      onCheckedChange={() => handleToggleActive(user)}
+                    />
+                  </div>
+                )}
                 <Button variant="outline" size="sm" onClick={() => handleEditUser(user)}>
                   <UserCog className="h-4 w-4" />
                 </Button>
