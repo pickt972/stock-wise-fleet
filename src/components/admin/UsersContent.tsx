@@ -28,6 +28,7 @@ interface User {
   username: string | null;
   role: string;
   created_at: string;
+  is_active: boolean;
 }
 
 export function UsersContent() {
