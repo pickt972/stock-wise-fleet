@@ -45,6 +45,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Erreur profil:', profileError);
       }
 
+      // Bloquer les comptes désactivés
+      if (profileData && (profileData as any).is_active === false) {
+        await supabase.auth.signOut();
+        setProfile(null);
+        setUserRole(null);
+        setUser(null);
+        setSession(null);
+        const { toast } = await import("sonner");
+        toast.error("Votre compte a été désactivé. Contactez un administrateur.");
+        return;
+      }
+
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
