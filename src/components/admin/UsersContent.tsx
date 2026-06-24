@@ -92,17 +92,23 @@ export function UsersContent() {
 
     setIsDeleting(true);
     try {
-      const { error } = await supabase.functions.invoke('admin-delete-user', {
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
         body: { userId: userToDelete.id }
       });
 
-      if (error) throw error;
+      if (error) {
+        const detailed = (data as any)?.error || (data as any)?.hint || error.message;
+        throw new Error(detailed || "Erreur inconnue");
+      }
+      if (data && (data as any).error) {
+        throw new Error((data as any).hint || (data as any).error);
+      }
 
       toast.success(`${userToDelete.first_name} ${userToDelete.last_name} a été supprimé`);
       await fetchUsers();
     } catch (error: any) {
       console.error('Erreur suppression utilisateur:', error);
-      toast.error(error.message || "Impossible de supprimer l'utilisateur");
+      toast.error(error.message || "Impossible de supprimer l'utilisateur. Essayez de le désactiver à la place.");
     } finally {
       setIsDeleting(false);
       setUserToDelete(null);
