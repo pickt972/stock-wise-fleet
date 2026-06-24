@@ -126,8 +126,11 @@ export default function Users() {
         bValue = b.is_active ? '1' : '0';
       }
 
-      if (aValue === bValue) return 0;
-      const result = aValue < bValue ? -1 : 1;
+      const comparableA = String(aValue ?? '');
+      const comparableB = String(bValue ?? '');
+
+      if (comparableA === comparableB) return 0;
+      const result = comparableA < comparableB ? -1 : 1;
       return currentDirection === 'asc' ? result : -result;
     });
   };
