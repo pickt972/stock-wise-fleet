@@ -101,7 +101,34 @@ serve(async (req) => {
       });
     }
 
-    // Delete user roles first
+    // Delete auth user first: if Auth deletion fails, keep profile/roles intact.
+    const deleteAuthResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users/${userId}`, {
+      method: 'DELETE',
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!deleteAuthResponse.ok) {
+      const responseText = await deleteAuthResponse.text();
+      console.error('delete auth user error', {
+        status: deleteAuthResponse.status,
+        statusText: deleteAuthResponse.statusText,
+        body: responseText,
+      });
+      return new Response(
+        JSON.stringify({
+          error: 'delete_auth_user_failed',
+          details: responseText || deleteAuthResponse.statusText,
+          hint: `La suppression définitive du compte d'authentification a échoué côté Supabase Auth (${deleteAuthResponse.status}). Vous pouvez désactiver l'utilisateur à la place.`,
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    // Cleanup app data after Auth deletion succeeded.
     const { error: deleteRolesErr } = await supabase
       .from('user_roles')
       .delete()
@@ -111,7 +138,6 @@ serve(async (req) => {
       console.error('delete roles error', deleteRolesErr);
     }
 
-    // Delete profile
     const { error: deleteProfileErr } = await supabase
       .from('profiles')
       .delete()
@@ -119,21 +145,6 @@ serve(async (req) => {
 
     if (deleteProfileErr) {
       console.error('delete profile error', deleteProfileErr);
-    }
-
-    // Delete auth user
-    const { error: deleteUserErr } = await supabase.auth.admin.deleteUser(userId);
-
-    if (deleteUserErr) {
-      console.error('delete user error', deleteUserErr);
-      return new Response(
-        JSON.stringify({
-          error: deleteUserErr.message || 'delete_user_failed',
-          details: deleteUserErr,
-          hint: "La suppression définitive du compte d'authentification a échoué. Vous pouvez désactiver l'utilisateur à la place.",
-        }),
-        { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-      );
     }
 
     return new Response(JSON.stringify({ success: true }), {
