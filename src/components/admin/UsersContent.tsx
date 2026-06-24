@@ -109,6 +109,25 @@ export function UsersContent() {
     }
   };
 
+  const handleToggleActive = async (user: User) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_active: !user.is_active })
+        .eq('id', user.id);
+      if (error) throw error;
+      toast.success(
+        !user.is_active
+          ? `${user.first_name} ${user.last_name} a été activé`
+          : `${user.first_name} ${user.last_name} a été désactivé`
+      );
+      await fetchUsers();
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.message || "Impossible de modifier le statut");
+    }
+  };
+
   const getRoleDisplay = (role: string) => {
     switch (role) {
       case 'admin': return 'Administrateur';
