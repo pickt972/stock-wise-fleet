@@ -10,10 +10,11 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Plus, Trash2, UserCog, Edit } from "lucide-react";
+import { Loader2, Plus, Trash2, UserCog, Edit, UserCheck, UserX } from "lucide-react";
 import DashboardLayout from "./DashboardLayout";
 import EditUserDialog from "@/components/users/EditUserDialog";
 
@@ -25,6 +26,7 @@ interface UserProfile {
   last_name: string;
   username: string;
   role: UserRole;
+  is_active: boolean;
 }
 
 interface UserRoleData {
@@ -48,14 +50,14 @@ export default function Users() {
   const [currentSort, setCurrentSort] = useState('first_name');
   const [currentDirection, setCurrentDirection] = useState<'asc' | 'desc'>('asc');
   const { toast } = useToast();
-  const { userRole } = useAuth();
+  const { userRole, user: currentUser } = useAuth();
 
   const fetchUsers = async () => {
     try {
       // Récupérer d'abord tous les profils
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, username')
+        .select('id, first_name, last_name, username, is_active')
         .order('first_name');
 
       if (profilesError) throw profilesError;
@@ -103,7 +105,8 @@ export default function Users() {
     { value: 'first_name', label: 'Prénom' },
     { value: 'last_name', label: 'Nom' },
     { value: 'username', label: "Nom d'utilisateur" },
-    { value: 'role', label: 'Rôle' }
+    { value: 'role', label: 'Rôle' },
+    { value: 'is_active', label: 'Statut' }
   ];
 
   const applySorting = (data: UserProfile[]) => {
@@ -116,6 +119,11 @@ export default function Users() {
         const roleOrder = { 'admin': '3', 'chef_agence': '2', 'magasinier': '1' };
         aValue = roleOrder[a.role] || '0';
         bValue = roleOrder[b.role] || '0';
+      }
+
+      if (currentSort === 'is_active') {
+        aValue = a.is_active ? '1' : '0';
+        bValue = b.is_active ? '1' : '0';
       }
 
       if (aValue === bValue) return 0;
@@ -224,11 +232,30 @@ export default function Users() {
     }
   };
 
+  const getFunctionErrorMessage = async (data: unknown, error: any) => {
+    const response = error?.context;
+    let body: any = data;
+
+    if (response && typeof response.json === 'function') {
+      try {
+        body = await response.clone().json();
+      } catch {
+        body = data;
+      }
+    }
+
+    return body?.hint || body?.error || error?.message || "Impossible de supprimer l'utilisateur";
+  };
+
   const deleteUser = async (userId: string) => {
     try {
-      const { error } = await supabase.auth.admin.deleteUser(userId);
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+        body: { userId },
+      });
       
-      if (error) throw error;
+      if (error || (data as any)?.error) {
+        throw new Error(await getFunctionErrorMessage(data, error));
+      }
 
       toast({
         title: "Utilisateur supprimé",
@@ -236,10 +263,37 @@ export default function Users() {
       });
 
       fetchUsers();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Erreur suppression utilisateur:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de supprimer l'utilisateur",
+        description: error?.message || "Impossible de supprimer l'utilisateur",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleUserActive = async (targetUser: UserProfile) => {
+    try {
+      const nextStatus = !targetUser.is_active;
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_active: nextStatus })
+        .eq('id', targetUser.id);
+
+      if (error) throw error;
+
+      toast({
+        title: nextStatus ? "Utilisateur activé" : "Utilisateur désactivé",
+        description: `${targetUser.first_name} ${targetUser.last_name} est maintenant ${nextStatus ? 'actif' : 'désactivé'}`,
+      });
+
+      fetchUsers();
+    } catch (error: any) {
+      console.error('Erreur statut utilisateur:', error);
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible de modifier le statut de l'utilisateur",
         variant: "destructive",
       });
     }
@@ -388,6 +442,7 @@ export default function Users() {
                     <TableHead>Nom</TableHead>
                     <TableHead className="hidden sm:table-cell">Nom d'utilisateur</TableHead>
                     <TableHead>Rôle</TableHead>
+                    <TableHead>Statut</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -407,8 +462,28 @@ export default function Users() {
                           user.role === 'chef_agence' ? 'Chef' : 'Mag.'}
                        </Badge>
                      </TableCell>
+                     <TableCell>
+                       <Badge variant={user.is_active ? "default" : "destructive"} className="text-xs">
+                         {user.is_active ? 'Actif' : 'Désactivé'}
+                       </Badge>
+                     </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1 md:gap-2">
+                          {currentUser?.id !== user.id && (
+                            <div className="flex h-8 items-center gap-1 rounded-md border px-2" title={user.is_active ? "Désactiver l'utilisateur" : "Activer l'utilisateur"}>
+                              {user.is_active ? (
+                                <UserCheck className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+                              ) : (
+                                <UserX className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+                              )}
+                              <Switch
+                                checked={user.is_active}
+                                onCheckedChange={() => toggleUserActive(user)}
+                                aria-label={user.is_active ? "Désactiver l'utilisateur" : "Activer l'utilisateur"}
+                              />
+                            </div>
+                          )}
+
                           <Button 
                             variant="outline" 
                             size="sm" 
