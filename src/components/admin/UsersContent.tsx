@@ -47,7 +47,7 @@ export function UsersContent() {
       // Récupérer les profils avec leurs rôles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, username, created_at')
+        .select('id, first_name, last_name, username, created_at, is_active')
         .order('first_name');
 
       if (profilesError) throw profilesError;
