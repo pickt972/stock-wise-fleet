@@ -3,7 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, UserCog, Trash2 } from "lucide-react";
+import { Plus, Search, UserCog, Trash2, UserCheck, UserX } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -27,6 +28,7 @@ interface User {
   username: string | null;
   role: string;
   created_at: string;
+  is_active: boolean;
 }
 
 export function UsersContent() {
@@ -45,7 +47,7 @@ export function UsersContent() {
       // Récupérer les profils avec leurs rôles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, username, created_at')
+        .select('id, first_name, last_name, username, created_at, is_active')
         .order('first_name');
 
       if (profilesError) throw profilesError;
@@ -90,20 +92,45 @@ export function UsersContent() {
 
     setIsDeleting(true);
     try {
-      const { error } = await supabase.functions.invoke('admin-delete-user', {
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
         body: { userId: userToDelete.id }
       });
 
-      if (error) throw error;
+      if (error) {
+        const detailed = (data as any)?.error || (data as any)?.hint || error.message;
+        throw new Error(detailed || "Erreur inconnue");
+      }
+      if (data && (data as any).error) {
+        throw new Error((data as any).hint || (data as any).error);
+      }
 
       toast.success(`${userToDelete.first_name} ${userToDelete.last_name} a été supprimé`);
       await fetchUsers();
     } catch (error: any) {
       console.error('Erreur suppression utilisateur:', error);
-      toast.error(error.message || "Impossible de supprimer l'utilisateur");
+      toast.error(error.message || "Impossible de supprimer l'utilisateur. Essayez de le désactiver à la place.");
     } finally {
       setIsDeleting(false);
       setUserToDelete(null);
+    }
+  };
+
+  const handleToggleActive = async (user: User) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_active: !user.is_active })
+        .eq('id', user.id);
+      if (error) throw error;
+      toast.success(
+        !user.is_active
+          ? `${user.first_name} ${user.last_name} a été activé`
+          : `${user.first_name} ${user.last_name} a été désactivé`
+      );
+      await fetchUsers();
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.message || "Impossible de modifier le statut");
     }
   };
 
@@ -161,10 +188,24 @@ export function UsersContent() {
                 <div>
                   <h3 className="font-medium">{user.first_name} {user.last_name}</h3>
                   <p className="text-sm text-muted-foreground">{user.username || 'Aucun nom d\'utilisateur'}</p>
-                  <Badge variant="secondary" className="mt-1">{getRoleDisplay(user.role)}</Badge>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant="secondary">{getRoleDisplay(user.role)}</Badge>
+                    <Badge variant={user.is_active ? "default" : "destructive"}>
+                      {user.is_active ? "Actif" : "Désactivé"}
+                    </Badge>
+                  </div>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
+                {currentUser?.id !== user.id && (
+                  <div className="flex items-center gap-1 mr-1" title={user.is_active ? "Désactiver" : "Activer"}>
+                    {user.is_active ? <UserCheck className="h-4 w-4 text-muted-foreground" /> : <UserX className="h-4 w-4 text-muted-foreground" />}
+                    <Switch
+                      checked={user.is_active}
+                      onCheckedChange={() => handleToggleActive(user)}
+                    />
+                  </div>
+                )}
                 <Button variant="outline" size="sm" onClick={() => handleEditUser(user)}>
                   <UserCog className="h-4 w-4" />
                 </Button>

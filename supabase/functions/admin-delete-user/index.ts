@@ -127,7 +127,11 @@ serve(async (req) => {
     if (deleteUserErr) {
       console.error('delete user error', deleteUserErr);
       return new Response(
-        JSON.stringify({ error: deleteUserErr.message || 'delete_user_failed' }),
+        JSON.stringify({
+          error: deleteUserErr.message || 'delete_user_failed',
+          details: deleteUserErr,
+          hint: "La suppression définitive du compte d'authentification a échoué. Vous pouvez désactiver l'utilisateur à la place.",
+        }),
         { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
