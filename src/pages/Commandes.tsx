@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import DashboardLayout from "./DashboardLayout";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface Article {
   id: string;
@@ -119,6 +120,7 @@ export default function Commandes() {
   }>({ isOpen: false });
   const [currentFournisseurId, setCurrentFournisseurId] = useState<string>("");
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { isAdmin } = useRoleAccess();
 
   useEffect(() => {
@@ -1394,19 +1396,12 @@ export default function Commandes() {
               </CardContent>
             </Card>
           )) : (
-            <Card>
-              <CardContent className="text-center py-12">
-                <ShoppingCart className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Aucune commande</h3>
-                <p className="text-muted-foreground mb-4">
-                  Créez votre première commande pour commencer
-                </p>
-                <Button onClick={() => setIsCreating(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nouvelle commande
-                </Button>
-              </CardContent>
-            </Card>
+            <EmptyState
+              icon={<ShoppingCart className="h-8 w-8" />}
+              title="Aucune commande"
+              description="Créez votre première commande fournisseur depuis les alertes stock."
+              action={{ label: "Voir les alertes", onClick: () => navigate('/alertes') }}
+            />
           )}
         </div>
         )}

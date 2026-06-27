@@ -20,7 +20,8 @@ import DashboardLayout from "./DashboardLayout";
 import { ArticleListSkeleton } from "@/components/ui/skeletons/ArticleListSkeleton";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { FileText, Download } from "lucide-react";
+import { FileText, Download, History } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface Movement {
   id: string;
@@ -286,18 +287,11 @@ export default function HistoriqueMouvements() {
 
           {/* Liste des mouvements */}
           {filteredMovements.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="text-6xl mb-4">📋</div>
-                <h3 className="text-lg font-semibold mb-2">Aucun mouvement trouvé</h3>
-                <p className="text-sm text-muted-foreground mb-6">
-                  Commencez par ajouter du stock pour voir l'historique
-                </p>
-                <Button onClick={() => navigate('/entrees')}>
-                  ➕ Ajouter du stock
-                </Button>
-              </CardContent>
-            </Card>
+            <EmptyState
+              icon={<History className="h-8 w-8" />}
+              title="Aucun mouvement trouvé"
+              description="Essayez d'élargir la plage de dates ou d'effacer les filtres."
+            />
           ) : (
             filteredMovements.map((movement) => (
               <Card 

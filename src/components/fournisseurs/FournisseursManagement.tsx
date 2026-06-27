@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Plus, Edit, Trash2, Building2, Mail, Phone, User } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -270,9 +271,12 @@ export const FournisseursManagement = () => {
       </div>
 
       {filtered.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
-          {searchQuery ? "Aucun fournisseur trouvé" : "Aucun fournisseur enregistré"}
-        </div>
+        <EmptyState
+          icon={<Building2 className="h-8 w-8" />}
+          title="Aucun fournisseur"
+          description="Ajoutez vos fournisseurs pour générer des bons de commande automatiques."
+          action={{ label: "Ajouter un fournisseur", onClick: () => { resetForm(); setOpenCreateDialog(true); } }}
+        />
       )}
 
       {/* Dialog création */}
