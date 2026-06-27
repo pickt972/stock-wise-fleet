@@ -16,6 +16,14 @@ import { EntryList } from "@/components/stock/EntryList";
 import { EntryStats } from "@/components/stock/EntryStats";
 import { NewEntryForm } from "@/components/stock/NewEntryForm";
 import DashboardLayout from "./DashboardLayout";
+import { cn } from "@/lib/utils";
+
+const PERIODS = [
+  { value: "today", label: "Aujourd'hui" },
+  { value: "week", label: "7 jours" },
+  { value: "month", label: "30 jours" },
+  { value: "all", label: "Tout" },
+];
 
 export default function Entrees() {
   const { toast } = useToast();
