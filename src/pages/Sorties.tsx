@@ -137,38 +137,48 @@ export default function Sorties() {
         <ExitStats todayCount={stats.todayCount} monthCount={stats.monthCount} />
 
         {/* Filtres et recherche */}
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="flex flex-wrap gap-2 w-full md:w-auto">
-            <Input
-              placeholder="Rechercher par N° ou véhicule..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full md:w-64"
-            />
-            <Select value={dateRange} onValueChange={setDateRange}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les dates</SelectItem>
-                <SelectItem value="today">Aujourd'hui</SelectItem>
-                <SelectItem value="week">Cette semaine</SelectItem>
-                <SelectItem value="month">Ce mois</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={exitTypeFilter} onValueChange={setExitTypeFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les types</SelectItem>
-                <SelectItem value="utilisation_vehicule">Utilisation véhicule</SelectItem>
-                <SelectItem value="location_accessoire">Location accessoire</SelectItem>
-                <SelectItem value="consommation">Consommation</SelectItem>
-                <SelectItem value="perte_casse">Perte/Casse</SelectItem>
-                <SelectItem value="autre">Autre</SelectItem>
-              </SelectContent>
-            </Select>
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+          <div className="flex flex-col gap-2 w-full md:w-auto">
+            <div className="flex flex-wrap gap-2 w-full md:w-auto">
+              <Input
+                placeholder="Rechercher par N° ou véhicule..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full md:w-64"
+              />
+              <Select value={exitTypeFilter} onValueChange={setExitTypeFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les types</SelectItem>
+                  <SelectItem value="utilisation_vehicule">Utilisation véhicule</SelectItem>
+                  <SelectItem value="location_accessoire">Location accessoire</SelectItem>
+                  <SelectItem value="consommation">Consommation</SelectItem>
+                  <SelectItem value="perte_casse">Perte/Casse</SelectItem>
+                  <SelectItem value="autre">Autre</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+              {PERIODS.map(p => (
+                <button
+                  key={p.value}
+                  onClick={() => setDateRange(p.value)}
+                  className={cn(
+                    "px-4 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap transition-all",
+                    dateRange === p.value
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  )}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {exits.length} sortie(s)
+            </div>
           </div>
         </div>
 
