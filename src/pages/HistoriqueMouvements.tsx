@@ -52,7 +52,7 @@ export default function HistoriqueMouvements() {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const [filterType, setFilterType] = useState<string>("all");
-  const [filterPeriod, setFilterPeriod] = useState<string>("all");
+  const [filterPeriod, setFilterPeriod] = useState<string>("today");
   const [filterArticle, setFilterArticle] = useState<string>("");
 
   useEffect(() => {
