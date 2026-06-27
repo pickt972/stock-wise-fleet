@@ -27,6 +27,12 @@ import {
   FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { useSidebarCollapsed } from "@/hooks/useSidebarCollapsed";
@@ -148,55 +154,75 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             </Button>
           </div>
 
-          <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-5">
-            {sections.map((section) => {
-              const visibleItems = section.items.filter((i) => i.show);
-              if (visibleItems.length === 0) return null;
+          <TooltipProvider delayDuration={200}>
+            <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-5">
+              {sections.map((section) => {
+                const visibleItems = section.items.filter((i) => i.show);
+                if (visibleItems.length === 0) return null;
 
-              return (
-                <div key={section.label}>
-                  {!isCollapsed && (
-                    <div className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/80">
-                      {section.label}
-                    </div>
-                  )}
-                  <div className="space-y-0.5">
-                    {visibleItems.map((item) => (
-                      <NavLink
-                        key={item.name}
-                        to={item.href}
-                        onClick={() => window.innerWidth < 768 && onClose()}
-                        className={({ isActive }) =>
-                          cn(
-                            "group relative flex items-center gap-3 px-3 rounded-xl text-[13.5px] font-medium transition-all min-h-[38px]",
-                            isActive
-                              ? "bg-primary/10 text-primary"
-                              : "text-foreground/75 hover:bg-muted hover:text-foreground",
-                            isCollapsed && "justify-center px-2",
-                          )
-                        }
-                      >
-                        {({ isActive }) => (
-                          <>
-                            {isActive && !isCollapsed && (
-                              <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-primary" />
-                            )}
-                            <item.icon
-                              className={cn(
-                                "h-[17px] w-[17px] flex-shrink-0 transition-transform",
-                                isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground",
+                return (
+                  <div key={section.label}>
+                    {!isCollapsed && (
+                      <div className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/80">
+                        {section.label}
+                      </div>
+                    )}
+                    <div className="space-y-0.5">
+                      {visibleItems.map((item) => (
+                        <NavLink
+                          key={item.name}
+                          to={item.href}
+                          onClick={() => window.innerWidth < 768 && onClose()}
+                          className={({ isActive }) =>
+                            cn(
+                              "group relative flex items-center gap-3 px-3 rounded-xl text-[13.5px] font-medium transition-all min-h-[38px]",
+                              isActive
+                                ? "bg-primary/10 text-primary"
+                                : "text-foreground/75 hover:bg-muted hover:text-foreground",
+                              isCollapsed && "justify-center px-2",
+                            )
+                          }
+                        >
+                          {({ isActive }) => (
+                            <>
+                              {isActive && !isCollapsed && (
+                                <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-primary" />
                               )}
-                            />
-                            {!isCollapsed && <span className="truncate">{item.name}</span>}
-                          </>
-                        )}
-                      </NavLink>
-                    ))}
+                              {isCollapsed ? (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="flex items-center justify-center">
+                                      <item.icon
+                                        className={cn(
+                                          "h-[17px] w-[17px] flex-shrink-0 transition-transform",
+                                          isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground",
+                                        )}
+                                      />
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="right" sideOffset={12}>
+                                    {item.name}
+                                  </TooltipContent>
+                                </Tooltip>
+                              ) : (
+                                <item.icon
+                                  className={cn(
+                                    "h-[17px] w-[17px] flex-shrink-0 transition-transform",
+                                    isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground",
+                                  )}
+                                />
+                              )}
+                              {!isCollapsed && <span className="truncate">{item.name}</span>}
+                            </>
+                          )}
+                        </NavLink>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </nav>
+                );
+              })}
+            </nav>
+          </TooltipProvider>
 
           {!isCollapsed && (
             <div className="px-4 py-3 border-t border-border/60">
