@@ -18,6 +18,14 @@ import { ActiveRentals } from "@/components/stock/ActiveRentals";
 import { NewExitForm } from "@/components/stock/NewExitForm";
 import DashboardLayout from "./DashboardLayout";
 import { PageSkeleton } from "@/components/ui/skeletons/PageSkeleton";
+import { cn } from "@/lib/utils";
+
+const PERIODS = [
+  { value: "today", label: "Aujourd'hui" },
+  { value: "week", label: "7 jours" },
+  { value: "month", label: "30 jours" },
+  { value: "all", label: "Tout" },
+];
 
 export default function Sorties() {
   const { toast } = useToast();
