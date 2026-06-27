@@ -32,7 +32,7 @@ export default function Entrees() {
   const [showNewEntryForm, setShowNewEntryForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [entryTypeFilter, setEntryTypeFilter] = useState("all");
-  const [dateRange, setDateRange] = useState("all");
+  const [dateRange, setDateRange] = useState("today");
 
   useEffect(() => {
     fetchEntries();
