@@ -82,6 +82,15 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
     }
   };
 
+  const generateExitNumber = () => {
+    const now = new Date();
+    const yy = now.getFullYear().toString().slice(-2);
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const rand = Math.floor(Math.random() * 9000) + 1000;
+    return `SRT-${yy}${mm}${dd}-${rand}`;
+  };
+
   const handleSubmit = async () => {
     if (!articleId) {
       toast({ title: "Erreur", description: "Sélectionnez un article", variant: "destructive" });
@@ -93,12 +102,22 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
       return;
     }
 
+    const selectedArticle = articles.find((a) => a.id === articleId);
+    if (selectedArticle && qty > selectedArticle.stock) {
+      toast({
+        title: "Stock insuffisant",
+        description: `Disponible : ${selectedArticle.stock} unité(s)`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const { data: exit, error: exitError } = await supabase
         .from("stock_exits")
         .insert([{
-          exit_number: "",
+          exit_number: generateExitNumber(),
           exit_type: exitType,
           vehicule_id: vehiculeId || null,
           notes: notes || null,
