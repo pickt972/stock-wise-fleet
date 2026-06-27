@@ -14,6 +14,9 @@ import {
   Baby,
   Wrench,
   Shield,
+  ShieldCheck,
+  FileSearch,
+  BookOpen,
   AlertTriangle,
   Layers,
   Tags,
@@ -80,9 +83,9 @@ const getSections = (permissions: any, userRole: string | null): NavSection[] =>
     label: "Administration",
     items: [
       { name: "Utilisateurs", href: "/users", icon: Users, show: !!permissions.manageUsers },
-      { name: "Rôles & Permissions", href: "/roles-permissions", icon: Shield, show: !!permissions.manageUsers },
-      { name: "Journal d'audit", href: "/journal-audit", icon: Shield, show: !!permissions.manageUsers },
-      { name: "Historique articles", href: "/historique-articles", icon: History, show: !!permissions.manageUsers },
+      { name: "Rôles & Permissions", href: "/roles-permissions", icon: ShieldCheck, show: !!permissions.manageUsers },
+      { name: "Journal d'audit", href: "/journal-audit", icon: FileSearch, show: !!permissions.manageUsers },
+      { name: "Historique articles", href: "/historique-articles", icon: BookOpen, show: !!permissions.manageUsers },
     ],
   },
   {

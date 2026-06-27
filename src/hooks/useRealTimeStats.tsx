@@ -110,9 +110,9 @@ export function useRealTimeStats() {
         todayMovements: todayMovements || 0,
         trends: {
           articles: movementsTrend,
-          value: Math.round(Math.random() * 20 - 5), // Simplifié
-          alerts: -Math.round(Math.random() * 15),
-          rotation: Math.round(Math.random() * 10),
+          value: 0,
+          alerts: 0,
+          rotation: 0,
         },
       });
     } catch (error) {
