@@ -1,7 +1,8 @@
 import { useState, useCallback } from "react";
-import { Package, BarChart3, Settings, AlertTriangle, RotateCcw, ScanLine, Search, PlusCircle, PackageX, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { Package, AlertTriangle, ScanLine, Search, PlusCircle, PackageX, ArrowLeftRight, Wrench, ArrowUpFromLine } from "lucide-react";
 import { KPICard } from "@/components/ui/kpi-card";
 import { useRealTimeStats } from "@/hooks/useRealTimeStats";
+import { useAlerts } from "@/hooks/useAlerts";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,7 @@ interface Article {
 
 export default function Dashboard() {
   const { stats, isLoading } = useRealTimeStats();
+  const { totalAlerts } = useAlerts();
   const { profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -106,7 +108,8 @@ export default function Dashboard() {
     setSearchQuery("");
   }, []);
 
-  const lastUpdate = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+
+
 
   // If article found → show quick stock action
   if (foundArticle) {
@@ -223,30 +226,40 @@ export default function Dashboard() {
           </div>
           <div onClick={() => navigate("/historique")} className="cursor-pointer">
             <KPICard
-              icon={<RotateCcw className="h-5 w-5" />}
-              value={lastUpdate}
-              label="Mise à jour"
-              tone="muted"
+              icon={<ArrowLeftRight className="h-5 w-5" />}
+              value={isLoading ? "..." : stats.todayMovements}
+              label="Mouvements du jour"
+              tone="accent"
               index={2}
             />
           </div>
         </div>
 
         {/* Quick nav iOS-style */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <Button variant="outline" className="h-16 flex-col gap-1" onClick={() => navigate("/articles")}>
             <Package className="h-5 w-5" />
             <span className="text-[12px] font-medium">Articles</span>
           </Button>
-          <Button variant="outline" className="h-16 flex-col gap-1" onClick={() => navigate("/entrees")}>
-            <ArrowDownToLine className="h-5 w-5" />
-            <span className="text-[12px] font-medium">Entrées</span>
+          <Button variant="outline" className="h-16 flex-col gap-1" onClick={() => navigate("/revisions")}>
+            <Wrench className="h-5 w-5" />
+            <span className="text-[12px] font-medium">Révisions</span>
+          </Button>
+          <Button variant="outline" className="relative h-16 flex-col gap-1" onClick={() => navigate("/alertes")}>
+            <AlertTriangle className="h-5 w-5" />
+            <span className="text-[12px] font-medium">Alertes</span>
+            {totalAlerts > 0 && (
+              <span className="absolute top-1.5 right-2 min-w-5 h-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
+                {totalAlerts}
+              </span>
+            )}
           </Button>
           <Button variant="outline" className="h-16 flex-col gap-1" onClick={() => navigate("/sorties")}>
             <ArrowUpFromLine className="h-5 w-5" />
             <span className="text-[12px] font-medium">Sorties</span>
           </Button>
         </div>
+
       </div>
 
       <BarcodeScanner
