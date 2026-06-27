@@ -48,6 +48,9 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
   const { toast } = useToast();
   const [moreOpen, setMoreOpen] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [scanChoiceOpen, setScanChoiceOpen] = useState(false);
+  const [exitMode, setExitMode] = useState(false);
+  const [quickExitArticle, setQuickExitArticle] = useState<{ id: string; reference: string; designation: string; stock: number } | null>(null);
 
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + "/");
