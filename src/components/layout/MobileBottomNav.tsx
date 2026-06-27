@@ -85,29 +85,33 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
     const raw = code.trim();
     const numeric = raw.replace(/\D/g, "");
     const q = numeric.length >= 8 ? numeric : raw;
+    const wasExitMode = exitMode;
+    setExitMode(false);
 
     try {
       const { data } = await supabase
         .from("articles")
-        .select("id, designation, reference")
+        .select("id, designation, reference, stock")
         .or(`reference.eq.${q},code_barre.eq.${q}`)
         .maybeSingle();
 
-      if (data) {
-        toast({ title: "✅ Article trouvé", description: data.designation });
-        navigate(`/articles/${data.id}`);
-        return;
+      let found = data;
+      if (!found) {
+        const { data: partials } = await supabase
+          .from("articles")
+          .select("id, designation, reference, stock")
+          .or(`reference.ilike.%${q}%,code_barre.ilike.%${q}%,designation.ilike.%${q}%`)
+          .limit(1);
+        if (partials && partials.length > 0) found = partials[0];
       }
 
-      const { data: partials } = await supabase
-        .from("articles")
-        .select("id, designation")
-        .or(`reference.ilike.%${q}%,code_barre.ilike.%${q}%,designation.ilike.%${q}%`)
-        .limit(1);
-
-      if (partials && partials.length > 0) {
-        toast({ title: "✅ Article trouvé", description: partials[0].designation });
-        navigate(`/articles/${partials[0].id}`);
+      if (found) {
+        if (wasExitMode) {
+          setQuickExitArticle(found);
+        } else {
+          toast({ title: "✅ Article trouvé", description: found.designation });
+          navigate(`/articles/${found.id}`);
+        }
       } else {
         toast({
           title: "📦 Article introuvable",
@@ -120,6 +124,13 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
     } catch {
       toast({ title: "Erreur de recherche", variant: "destructive" });
     }
+  };
+
+  const openScanChoice = () => setScanChoiceOpen(true);
+  const startScan = (asExit: boolean) => {
+    setExitMode(asExit);
+    setScanChoiceOpen(false);
+    setShowScanner(true);
   };
 
   const NavTab = ({
