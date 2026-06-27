@@ -1,13 +1,13 @@
-import { useState, useEffect, useMemo } from "react";
-import { Edit, Plus, AlertCircle, ChevronDown, Merge, X } from "lucide-react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { Edit, Plus, AlertCircle, ChevronDown, Merge, X, LayoutList, LayoutGrid, Minus, ChevronRight } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
-import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   Select,
   SelectContent,
@@ -25,13 +25,16 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { SearchWithScanner } from "@/components/SearchWithScanner";
 import { CreateArticleDialog } from "@/components/articles/CreateArticleDialog";
 import { EditArticleDialog } from "@/components/articles/EditArticleDialog";
 import { ArticleDeleteDialog } from "@/components/articles/ArticleDeleteDialog";
 import { MergeDuplicateArticlesDialog } from "@/components/articles/MergeDuplicateArticlesDialog";
 import { MergeSelectedArticlesDialog } from "@/components/articles/MergeSelectedArticlesDialog";
+import { QuickMovementDialog } from "@/components/articles/QuickMovementDialog";
 import DashboardLayout from "./DashboardLayout";
+import { cn } from "@/lib/utils";
 
 interface Article {
   id: string;
@@ -55,6 +58,9 @@ interface Category {
 }
 
 type SortOption = "designation" | "categorie" | "stock" | "prix_achat";
+type ViewMode = "dense" | "comfort";
+
+const VIEW_MODE_KEY = "articles-view-mode";
 
 export default function Articles() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -71,6 +77,22 @@ export default function Articles() {
   const [mergeDuplicatesOpen, setMergeDuplicatesOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [mergeSelectedOpen, setMergeSelectedOpen] = useState(false);
+
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window === "undefined") return "comfort";
+    return (localStorage.getItem(VIEW_MODE_KEY) as ViewMode) || "comfort";
+  });
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [quickAction, setQuickAction] = useState<{ article: Article; mode: "add" | "remove" } | null>(null);
+  const [mobileActionArticle, setMobileActionArticle] = useState<Article | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggeredRef = useRef(false);
+
+  const isMobile = useIsMobile();
+
+  useEffect(() => {
+    localStorage.setItem(VIEW_MODE_KEY, viewMode);
+  }, [viewMode]);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -89,28 +111,22 @@ export default function Articles() {
     fetchArticles();
     fetchCategories();
 
-    // Rafraîchir quand l'utilisateur revient sur l'onglet (ex: après modif dans Paramètres)
     const handleFocus = () => {
       fetchCategories();
       fetchArticles();
     };
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') handleFocus();
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") handleFocus();
     });
 
-    // Realtime : se synchroniser dès qu'une catégorie change
     const channel = supabase
-      .channel('categories-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'categories' },
-        () => fetchCategories()
-      )
+      .channel("categories-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, () => fetchCategories())
       .subscribe();
 
     return () => {
-      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener("focus", handleFocus);
       supabase.removeChannel(channel);
     };
   }, []);
@@ -118,18 +134,14 @@ export default function Articles() {
   const fetchArticles = async () => {
     try {
       const { data, error } = await supabase
-        .from('articles')
-        .select('id, reference, designation, marque, categorie, sous_categorie, stock, stock_min, stock_max, prix_achat, emplacement, fournisseur_id')
-        .order('designation');
+        .from("articles")
+        .select("id, reference, designation, marque, categorie, sous_categorie, stock, stock_min, stock_max, prix_achat, emplacement, fournisseur_id")
+        .order("designation");
 
       if (error) throw error;
       setArticles(data || []);
     } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les articles",
-        variant: "destructive",
-      });
+      toast({ title: "Erreur", description: "Impossible de charger les articles", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -138,18 +150,18 @@ export default function Articles() {
   const fetchCategories = async () => {
     try {
       const { data, error } = await supabase
-        .from('categories')
-        .select('id, nom, parent_id')
-        .eq('actif', true)
-        .order('sort_order')
-        .order('nom');
+        .from("categories")
+        .select("id, nom, parent_id")
+        .eq("actif", true)
+        .order("sort_order")
+        .order("nom");
 
       if (error) throw error;
       setAllCategories(data || []);
-      const uniqueCategories = [...new Set(data?.map(cat => cat.nom) || [])];
+      const uniqueCategories = [...new Set(data?.map((cat) => cat.nom) || [])];
       setCategories(uniqueCategories);
     } catch (error: any) {
-      console.error('Erreur chargement catégories:', error);
+      console.error("Erreur chargement catégories:", error);
     }
   };
 
@@ -160,69 +172,53 @@ export default function Articles() {
   };
 
   const filteredArticles = useMemo(() => {
-    let filtered = articles.filter(article => {
-      // Filtre de recherche avec debounce
-      const matchesSearch = debouncedSearchTerm === "" || 
+    let filtered = articles.filter((article) => {
+      const matchesSearch =
+        debouncedSearchTerm === "" ||
         article.designation.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
         article.reference.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
         article.marque.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
 
-      // Filtre par statut stock
       const status = getStockStatus(article.stock, article.stock_min);
       const matchesStockFilter = activeFilter === "tous" || status.filter === activeFilter;
-
-      // Filtre par catégorie
       const matchesCategoryFilter = categoryFilter === "all" || article.categorie === categoryFilter;
 
       return matchesSearch && matchesStockFilter && matchesCategoryFilter;
     });
 
-    // Tri
     filtered.sort((a, b) => {
       switch (sortBy) {
-        case "designation":
-          return a.designation.localeCompare(b.designation);
-        case "categorie":
-          return a.categorie.localeCompare(b.categorie);
-        case "stock":
-          return b.stock - a.stock;
-        case "prix_achat":
-          return b.prix_achat - a.prix_achat;
-        default:
-          return 0;
+        case "designation": return a.designation.localeCompare(b.designation);
+        case "categorie": return a.categorie.localeCompare(b.categorie);
+        case "stock": return b.stock - a.stock;
+        case "prix_achat": return b.prix_achat - a.prix_achat;
+        default: return 0;
       }
     });
 
     return filtered;
   }, [articles, debouncedSearchTerm, activeFilter, categoryFilter, sortBy]);
 
-  // Build category hierarchy grouped articles
   const groupedByCategory = useMemo(() => {
-    const parentCategories = allCategories.filter(c => !c.parent_id);
-    const childCategories = allCategories.filter(c => c.parent_id);
-
-    // Map category names to their parent
+    const parentCategories = allCategories.filter((c) => !c.parent_id);
+    const childCategories = allCategories.filter((c) => c.parent_id);
     const catNameToParent = new Map<string, string>();
     for (const child of childCategories) {
-      const parent = parentCategories.find(p => p.id === child.parent_id);
+      const parent = parentCategories.find((p) => p.id === child.parent_id);
       if (parent) catNameToParent.set(child.nom, parent.nom);
     }
 
-    // Group articles: parent -> subcategory -> articles
     const groups: { parentName: string; subcategories: { subName: string; articles: Article[] }[] }[] = [];
     const parentMap = new Map<string, Map<string, Article[]>>();
 
     for (const article of filteredArticles) {
-      // Si l'article a une sous-catégorie explicite, on s'en sert pour le sous-groupe
-      // et on prend `categorie` comme parent. Sinon, on tente de déduire le parent
-      // à partir de la map (compat ancien schéma où `categorie` portait la sous-cat).
       const hasExplicitSub = !!article.sous_categorie && article.sous_categorie.trim() !== "";
       const parentName = hasExplicitSub
         ? article.categorie
-        : (catNameToParent.get(article.categorie) || article.categorie);
+        : catNameToParent.get(article.categorie) || article.categorie;
       const subName = hasExplicitSub
         ? (article.sous_categorie as string)
-        : (catNameToParent.has(article.categorie) ? article.categorie : "");
+        : catNameToParent.has(article.categorie) ? article.categorie : "";
 
       if (!parentMap.has(parentName)) parentMap.set(parentName, new Map());
       const subMap = parentMap.get(parentName)!;
@@ -230,8 +226,6 @@ export default function Articles() {
       subMap.get(subName)!.push(article);
     }
 
-
-    // Sort parents by name
     const sortedParents = [...parentMap.keys()].sort((a, b) => a.localeCompare(b));
     for (const parentName of sortedParents) {
       const subMap = parentMap.get(parentName)!;
@@ -250,6 +244,34 @@ export default function Articles() {
     { id: "rupture", label: "Rupture" },
   ];
 
+  const toggleGroup = (name: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
+  const collapseAll = () => setCollapsedGroups(new Set(groupedByCategory.map((g) => g.parentName)));
+  const expandAll = () => setCollapsedGroups(new Set());
+  const allCollapsed = groupedByCategory.length > 0 && collapsedGroups.size >= groupedByCategory.length;
+
+  // Mobile long-press handlers
+  const handleTouchStart = (article: Article) => {
+    if (!isMobile) return;
+    longPressTriggeredRef.current = false;
+    longPressTimerRef.current = setTimeout(() => {
+      longPressTriggeredRef.current = true;
+      if (navigator.vibrate) navigator.vibrate(40);
+      setMobileActionArticle(article);
+    }, 500);
+  };
+  const handleTouchEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
 
   if (isLoading) {
     return (
@@ -260,6 +282,207 @@ export default function Articles() {
       </DashboardLayout>
     );
   }
+
+  // ---------- Dense row ----------
+  const renderDenseRow = (article: Article) => {
+    const status = getStockStatus(article.stock, article.stock_min);
+    const stockColor =
+      status.filter === "rupture"
+        ? "bg-destructive text-destructive-foreground"
+        : status.filter === "stock-bas"
+        ? "bg-warning text-warning-foreground"
+        : "bg-success text-success-foreground";
+
+    return (
+      <div
+        key={article.id}
+        className={cn(
+          "group flex items-center gap-3 px-3 h-[52px] border-b border-border/40 hover:bg-accent/40 transition-colors cursor-pointer",
+          selectedIds.has(article.id) && "bg-primary/5"
+        )}
+        onClick={() => {
+          if (longPressTriggeredRef.current) {
+            longPressTriggeredRef.current = false;
+            return;
+          }
+          navigate(`/articles/${article.id}`);
+        }}
+        onTouchStart={() => handleTouchStart(article)}
+        onTouchEnd={handleTouchEnd}
+        onTouchMove={handleTouchEnd}
+        onContextMenu={(e) => {
+          if (isMobile) {
+            e.preventDefault();
+            setMobileActionArticle(article);
+          }
+        }}
+      >
+        {isAdmin() && (
+          <div
+            role="button"
+            tabIndex={-1}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              toggleSelect(article.id);
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="flex items-center -ml-1 px-1 py-2 cursor-pointer"
+          >
+            <Checkbox
+              checked={selectedIds.has(article.id)}
+              tabIndex={-1}
+              className="pointer-events-none"
+              aria-label="Sélectionner cet article"
+            />
+          </div>
+        )}
+
+        {/* Stock badge pill */}
+        <div
+          className={cn(
+            "flex items-center justify-center h-7 min-w-[36px] px-2 rounded-full text-xs font-bold tabular-nums flex-shrink-0",
+            stockColor
+          )}
+          title={`Stock: ${article.stock} (min ${article.stock_min})`}
+        >
+          {article.stock}
+        </div>
+
+        {/* Référence (mono, fixed) */}
+        <div className="w-[90px] font-mono text-xs text-muted-foreground truncate flex-shrink-0 hidden sm:block">
+          {article.reference}
+        </div>
+
+        {/* Désignation */}
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-medium truncate">{article.designation}</div>
+          <div className="sm:hidden text-[11px] font-mono text-muted-foreground truncate">{article.reference}</div>
+        </div>
+
+        {/* Catégorie badge - hidden under md */}
+        <Badge variant="secondary" className="hidden md:inline-flex text-[10px] font-normal max-w-[140px] truncate flex-shrink-0">
+          {article.sous_categorie || article.categorie}
+        </Badge>
+
+        {/* Prix achat */}
+        <div className="hidden sm:block w-[70px] text-right text-xs text-muted-foreground tabular-nums flex-shrink-0">
+          {article.prix_achat.toFixed(2)}€
+        </div>
+
+        {/* Quick actions - inline on hover (desktop) */}
+        {isAdmin() && (
+          <div
+            className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 text-success hover:bg-success/10"
+              onClick={() => setQuickAction({ article, mode: "add" })}
+              title="Entrée stock"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
+              onClick={() => setQuickAction({ article, mode: "remove" })}
+              title="Sortie stock"
+              disabled={article.stock === 0}
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setEditingArticle(article)}
+              title="Éditer"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
+        {/* Always-visible edit on mobile/comfort */}
+        {isAdmin() && (
+          <div className="md:hidden flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setEditingArticle(article)}>
+              <Edit className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ---------- Comfort row (existing card-ish look) ----------
+  const renderComfortRow = (article: Article) => {
+    const status = getStockStatus(article.stock, article.stock_min);
+    return (
+      <div
+        key={article.id}
+        className={cn(
+          "flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-accent/40 transition-colors cursor-pointer group",
+          selectedIds.has(article.id) && "bg-primary/5"
+        )}
+        onClick={() => navigate(`/articles/${article.id}`)}
+      >
+        {isAdmin() && (
+          <div
+            role="button"
+            tabIndex={-1}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              toggleSelect(article.id);
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="flex items-center pr-1 -ml-1 py-2 px-1 cursor-pointer"
+          >
+            <Checkbox checked={selectedIds.has(article.id)} tabIndex={-1} className="pointer-events-none" />
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-sm text-foreground truncate">{article.designation}</span>
+          </div>
+          <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground pl-4">
+            <span>{article.reference}</span>
+            <span>{article.emplacement || "—"}</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="text-right">
+            <div
+              className={cn(
+                "text-sm font-semibold tabular-nums",
+                status.filter === "rupture" && "text-destructive",
+                status.filter === "stock-bas" && "text-warning"
+              )}
+            >
+              {article.stock}
+            </div>
+            <div className="text-xs text-muted-foreground">{article.prix_achat.toFixed(2)}€</div>
+          </div>
+          {isAdmin() && (
+            <div
+              className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setEditingArticle(article)}>
+                <Edit className="h-3.5 w-3.5" />
+              </Button>
+              <ArticleDeleteDialog article={article} onArticleDeleted={fetchArticles} />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <DashboardLayout>
@@ -272,195 +495,206 @@ export default function Articles() {
           onBack={() => navigate("/dashboard")}
         />
 
-          {/* Message informatif pour non-admins */}
-          {!isAdmin() && (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                ℹ️ Consultation seule - Contactez un administrateur pour modifier les articles
-              </AlertDescription>
-            </Alert>
-          )}
+        {!isAdmin() && (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              ℹ️ Consultation seule - Contactez un administrateur pour modifier les articles
+            </AlertDescription>
+          </Alert>
+        )}
 
-          {/* Barre d'actions + filtres : sticky pour rester visible au scroll */}
-          <div className="sticky top-0 z-30 -mx-4 px-4 py-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border/50 space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <SearchWithScanner
-                placeholder="Chercher article..."
-                value={searchTerm}
-                onChange={setSearchTerm}
-                onArticleNotFound={() => {}}
-                returnTo="/articles"
-              />
+        <div className="sticky top-0 z-30 -mx-4 px-4 py-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border/50 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <SearchWithScanner
+              placeholder="Chercher article..."
+              value={searchTerm}
+              onChange={setSearchTerm}
+              onArticleNotFound={() => {}}
+              returnTo="/articles"
+            />
 
-              {isAdmin() && (
-                <>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    onClick={() => setMergeDuplicatesOpen(true)}
-                    className="flex-shrink-0"
-                    title="Détecter et fusionner les doublons"
-                  >
-                    <Merge className="h-4 w-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Fusionner les doublons</span>
-                  </Button>
-                  <Button
-                    size="lg"
-                    onClick={() => setShowCreateDialog(true)}
-                    className="flex-shrink-0"
-                  >
-                    <Plus className="h-5 w-5 sm:mr-2" />
-                    <span className="hidden sm:inline">Ajouter</span>
-                  </Button>
-                </>
-              )}
+            {/* View mode toggle */}
+            <div className="flex items-center rounded-md border border-border bg-background flex-shrink-0">
+              <Button
+                size="sm"
+                variant={viewMode === "dense" ? "default" : "ghost"}
+                onClick={() => setViewMode("dense")}
+                className="h-9 w-9 p-0 rounded-r-none"
+                title="Vue dense"
+              >
+                <LayoutList className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant={viewMode === "comfort" ? "default" : "ghost"}
+                onClick={() => setViewMode("comfort")}
+                className="h-9 w-9 p-0 rounded-l-none"
+                title="Vue confort"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
             </div>
 
-            {/* Filtres */}
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="flex gap-2 overflow-x-auto pb-1 flex-1">
-                {stockFilters.map((filter) => (
-                  <Button
-                    key={filter.id}
-                    variant={activeFilter === filter.id ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setActiveFilter(filter.id)}
-                    className="flex-shrink-0"
-                  >
-                    {filter.label}
-                  </Button>
-                ))}
-              </div>
-
-              <SearchableSelect
-                options={[
-                  { value: "all", label: "Toutes catégories" },
-                  ...categories.map((cat) => ({ value: cat, label: cat })),
-                ]}
-                value={categoryFilter}
-                onValueChange={setCategoryFilter}
-                placeholder="Catégorie"
-                searchPlaceholder="Rechercher une catégorie..."
-                triggerClassName="w-full sm:w-[200px]"
-              />
-
-              <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
-                <SelectTrigger className="w-full sm:w-[200px]">
-                  <SelectValue placeholder="Trier par" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="designation">Nom</SelectItem>
-                  <SelectItem value="categorie">Catégorie</SelectItem>
-                  <SelectItem value="stock">Stock</SelectItem>
-                  <SelectItem value="prix_achat">Prix</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Liste des articles groupés par catégorie */}
-          <div className="space-y-2">
-            {filteredArticles.length === 0 ? (
-              <Card className="p-8 text-center">
-                <p className="text-muted-foreground">Aucun article trouvé</p>
-              </Card>
-            ) : (
-              <Accordion type="multiple" defaultValue={groupedByCategory.map(g => g.parentName)} className="space-y-2">
-                {groupedByCategory.map((group) => (
-                  <AccordionItem key={group.parentName} value={group.parentName} className="border rounded-lg overflow-hidden">
-                    <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-accent/30">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-foreground">{group.parentName}</span>
-                        <Badge variant="secondary" className="text-xs">
-                          {group.subcategories.reduce((sum, s) => sum + s.articles.length, 0)}
-                        </Badge>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="px-2 pb-2">
-                      {group.subcategories.map((sub) => (
-                        <div key={sub.subName || '__root__'} className="mb-2">
-                          {sub.subName && (
-                            <div className="flex items-center gap-2 px-3 py-1.5 mb-1">
-                              <span className="text-sm font-medium text-muted-foreground">{sub.subName}</span>
-                              <Badge variant="outline" className="text-xs">{sub.articles.length}</Badge>
-                            </div>
-                          )}
-                          <div className="divide-y divide-border ml-2 rounded-md border border-border overflow-hidden bg-card">
-                            {sub.articles.map((article) => {
-                              const status = getStockStatus(article.stock, article.stock_min);
-                              return (
-                                <div
-                                  key={article.id}
-                                  className={`flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-accent/40 transition-colors cursor-pointer group ${
-                                    selectedIds.has(article.id) ? "bg-primary/5" : ""
-                                  }`}
-                                  onClick={() => navigate(`/articles/${article.id}`)}
-                                >
-                                  {isAdmin() && (
-                                    <div
-                                      role="button"
-                                      tabIndex={-1}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        e.preventDefault();
-                                        toggleSelect(article.id);
-                                      }}
-                                      onPointerDown={(e) => e.stopPropagation()}
-                                      className="flex items-center pr-1 -ml-1 py-2 px-1 cursor-pointer"
-                                    >
-                                      <Checkbox
-                                        checked={selectedIds.has(article.id)}
-                                        tabIndex={-1}
-                                        className="pointer-events-none"
-                                        aria-label="Sélectionner cet article"
-                                      />
-                                    </div>
-                                  )}
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-medium text-sm text-foreground truncate">
-                                        {article.designation}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground pl-4">
-                                      <span>{article.reference}</span>
-                                      <span>{article.emplacement || '—'}</span>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-3 flex-shrink-0">
-                                    <div className="text-right">
-                                      <div className={`text-sm font-semibold tabular-nums ${
-                                        status.filter === 'rupture' ? 'text-destructive' : 
-                                        status.filter === 'stock-bas' ? 'text-warning' : 'text-foreground'
-                                      }`}>
-                                        {article.stock}
-                                      </div>
-                                      <div className="text-xs text-muted-foreground">{article.prix_achat.toFixed(2)}€</div>
-                                    </div>
-                                    {isAdmin() && (
-                                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
-                                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setEditingArticle(article)}>
-                                          <Edit className="h-3.5 w-3.5" />
-                                        </Button>
-                                        <ArticleDeleteDialog article={article} onArticleDeleted={fetchArticles} />
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
+            {isAdmin() && (
+              <>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setMergeDuplicatesOpen(true)}
+                  className="flex-shrink-0 hidden sm:inline-flex"
+                  title="Détecter et fusionner les doublons"
+                >
+                  <Merge className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Fusionner les doublons</span>
+                </Button>
+                <Button size="lg" onClick={() => setShowCreateDialog(true)} className="flex-shrink-0">
+                  <Plus className="h-5 w-5 sm:mr-2" />
+                  <span className="hidden sm:inline">Ajouter</span>
+                </Button>
+              </>
             )}
           </div>
 
-        {/* Stats */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex gap-2 overflow-x-auto pb-1 flex-1">
+              {stockFilters.map((filter) => (
+                <Button
+                  key={filter.id}
+                  variant={activeFilter === filter.id ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveFilter(filter.id)}
+                  className="flex-shrink-0"
+                >
+                  {filter.label}
+                </Button>
+              ))}
+            </div>
+
+            <SearchableSelect
+              options={[
+                { value: "all", label: "Toutes catégories" },
+                ...categories.map((cat) => ({ value: cat, label: cat })),
+              ]}
+              value={categoryFilter}
+              onValueChange={setCategoryFilter}
+              placeholder="Catégorie"
+              searchPlaceholder="Rechercher une catégorie..."
+              triggerClassName="w-full sm:w-[200px]"
+            />
+
+            <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectValue placeholder="Trier par" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="designation">Nom</SelectItem>
+                <SelectItem value="categorie">Catégorie</SelectItem>
+                <SelectItem value="stock">Stock</SelectItem>
+                <SelectItem value="prix_achat">Prix</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {viewMode === "dense" && groupedByCategory.length > 0 && (
+              <Button variant="outline" size="sm" onClick={allCollapsed ? expandAll : collapseAll} className="flex-shrink-0">
+                {allCollapsed ? "Tout déplier" : "Tout replier"}
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* List */}
+        <div className="space-y-2">
+          {filteredArticles.length === 0 ? (
+            <Card className="p-8 text-center">
+              <p className="text-muted-foreground">Aucun article trouvé</p>
+            </Card>
+          ) : viewMode === "dense" ? (
+            <div className="space-y-3">
+              {groupedByCategory.map((group) => {
+                const totalArticles = group.subcategories.reduce((sum, s) => sum + s.articles.length, 0);
+                const alertCount = group.subcategories.reduce(
+                  (sum, s) => sum + s.articles.filter((a) => a.stock === 0 || a.stock <= a.stock_min).length,
+                  0
+                );
+                const isCollapsed = collapsedGroups.has(group.parentName);
+
+                return (
+                  <div key={group.parentName} className="border border-border rounded-lg overflow-hidden bg-card">
+                    <button
+                      onClick={() => toggleGroup(group.parentName)}
+                      className="sticky top-[120px] z-10 w-full flex items-center justify-between gap-2 px-4 py-2.5 bg-card hover:bg-accent/30 border-b border-border/60 text-left"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        {isCollapsed ? (
+                          <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        )}
+                        <h3 className="font-semibold text-sm truncate">{group.parentName}</h3>
+                        <Badge variant="secondary" className="text-[10px] flex-shrink-0">{totalArticles}</Badge>
+                        {alertCount > 0 && (
+                          <Badge variant="destructive" className="text-[10px] flex-shrink-0">
+                            {alertCount} en alerte
+                          </Badge>
+                        )}
+                      </div>
+                    </button>
+
+                    {!isCollapsed && (
+                      <div>
+                        {group.subcategories.map((sub) => (
+                          <div key={sub.subName || "__root__"}>
+                            {sub.subName && (
+                              <div className="flex items-center gap-2 px-4 py-1.5 bg-muted/30 border-b border-border/40">
+                                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                                  {sub.subName}
+                                </span>
+                                <Badge variant="outline" className="text-[10px]">{sub.articles.length}</Badge>
+                              </div>
+                            )}
+                            {sub.articles.map((a) => renderDenseRow(a))}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <Accordion type="multiple" defaultValue={groupedByCategory.map((g) => g.parentName)} className="space-y-2">
+              {groupedByCategory.map((group) => (
+                <AccordionItem key={group.parentName} value={group.parentName} className="border rounded-lg overflow-hidden">
+                  <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-accent/30">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-foreground">{group.parentName}</span>
+                      <Badge variant="secondary" className="text-xs">
+                        {group.subcategories.reduce((sum, s) => sum + s.articles.length, 0)}
+                      </Badge>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-2 pb-2">
+                    {group.subcategories.map((sub) => (
+                      <div key={sub.subName || "__root__"} className="mb-2">
+                        {sub.subName && (
+                          <div className="flex items-center gap-2 px-3 py-1.5 mb-1">
+                            <span className="text-sm font-medium text-muted-foreground">{sub.subName}</span>
+                            <Badge variant="outline" className="text-xs">{sub.articles.length}</Badge>
+                          </div>
+                        )}
+                        <div className="divide-y divide-border ml-2 rounded-md border border-border overflow-hidden bg-card">
+                          {sub.articles.map((a) => renderComfortRow(a))}
+                        </div>
+                      </div>
+                    ))}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          )}
+        </div>
+
         <div className="text-[12px] text-muted-foreground text-center pt-1">
           {filteredArticles.length} article(s) affiché(s) sur {articles.length}
         </div>
@@ -508,7 +742,58 @@ export default function Articles() {
         }}
       />
 
-      {/* Barre d'actions de sélection (flottante en bas) */}
+      <QuickMovementDialog
+        article={quickAction?.article || null}
+        mode={quickAction?.mode || null}
+        onOpenChange={(o) => !o && setQuickAction(null)}
+        onDone={fetchArticles}
+      />
+
+      {/* Mobile long-press action sheet */}
+      <Sheet open={!!mobileActionArticle} onOpenChange={(o) => !o && setMobileActionArticle(null)}>
+        <SheetContent side="bottom" className="rounded-t-2xl">
+          <SheetHeader>
+            <SheetTitle className="text-left truncate">{mobileActionArticle?.designation}</SheetTitle>
+          </SheetHeader>
+          {mobileActionArticle && (
+            <div className="grid grid-cols-3 gap-3 mt-4">
+              <Button
+                className="h-20 flex-col gap-1 bg-success hover:bg-success/90 text-success-foreground"
+                onClick={() => {
+                  setQuickAction({ article: mobileActionArticle, mode: "add" });
+                  setMobileActionArticle(null);
+                }}
+              >
+                <Plus className="h-6 w-6" />
+                <span className="text-xs">Entrée</span>
+              </Button>
+              <Button
+                className="h-20 flex-col gap-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                disabled={mobileActionArticle.stock === 0}
+                onClick={() => {
+                  setQuickAction({ article: mobileActionArticle, mode: "remove" });
+                  setMobileActionArticle(null);
+                }}
+              >
+                <Minus className="h-6 w-6" />
+                <span className="text-xs">Sortie</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-20 flex-col gap-1"
+                onClick={() => {
+                  setEditingArticle(mobileActionArticle);
+                  setMobileActionArticle(null);
+                }}
+              >
+                <Edit className="h-6 w-6" />
+                <span className="text-xs">Éditer</span>
+              </Button>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
       {isAdmin() && selectedIds.size > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full border bg-card/95 backdrop-blur-xl shadow-lg px-3 py-2 animate-in fade-in slide-in-from-bottom-4">
           <Badge variant="default" className="rounded-full px-2.5 py-0.5">
