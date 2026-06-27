@@ -11,6 +11,7 @@ import { TransfertEmplacementDialog } from "@/components/transferts/TransfertEmp
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import DashboardLayout from "./DashboardLayout";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface TransfertMovement {
   id: string;
@@ -190,9 +191,12 @@ export default function Transferts() {
             {isLoading ? (
               <div className="text-center py-8 text-muted-foreground">Chargement...</div>
             ) : groupedTransferts.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Aucun transfert trouvé
-              </div>
+              <EmptyState
+                icon={<ArrowLeftRight className="h-8 w-8" />}
+                title="Aucun transfert"
+                description="Les transferts entre sites apparaîtront ici."
+                action={{ label: "Nouveau transfert", onClick: () => setDialogOpen(true) }}
+              />
             ) : (
               <div className="space-y-3">
                 {groupedTransferts.map((transfert) => (
