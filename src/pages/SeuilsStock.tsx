@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { PageSkeleton } from "@/components/ui/skeletons/PageSkeleton";
 import { ArrowLeft, Plus, Trash2, Save, Layers } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -211,7 +212,7 @@ export default function SeuilsStock() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <p className="text-sm text-muted-foreground">Chargement...</p>
+              <PageSkeleton rows={4} />
             ) : thresholds.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 Aucun seuil personnalisé. Le système utilisera la somme des stock_min des

@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import DashboardLayout from "./DashboardLayout";
 import { PageHeader } from "@/components/ui/page-header";
+import { PageSkeleton } from "@/components/ui/skeletons/PageSkeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -313,7 +314,7 @@ export default function Accessoires() {
 
             {/* Accessoire cards */}
             {loading ? (
-              <div className="text-center py-12 text-muted-foreground">Chargement...</div>
+              <PageSkeleton rows={4} />
             ) : filtered.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">Aucun accessoire trouvé</div>
             ) : (

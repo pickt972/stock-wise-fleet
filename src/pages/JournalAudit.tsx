@@ -1,5 +1,6 @@
 import { useState } from "react";
 import DashboardLayout from "./DashboardLayout";
+import { PageSkeleton } from "@/components/ui/skeletons/PageSkeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -278,7 +279,7 @@ export default function JournalAudit() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <p className="text-center py-8 text-muted-foreground">Chargement...</p>
+              <PageSkeleton rows={5} />
             ) : filteredLogs.length === 0 ? (
               <p className="text-center py-8 text-muted-foreground">Aucun événement trouvé</p>
             ) : (

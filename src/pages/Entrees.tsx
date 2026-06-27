@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { PackagePlus } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
+import { PageSkeleton } from "@/components/ui/skeletons/PageSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -130,7 +131,7 @@ export default function Entrees() {
       <DashboardLayout>
         <PageHeader title="Entrées de stock" />
         <div className="flex items-center justify-center py-12">
-          <p>Chargement...</p>
+          <PageSkeleton rows={5} />
         </div>
       </DashboardLayout>
     );

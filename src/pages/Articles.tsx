@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { SearchWithScanner } from "@/components/SearchWithScanner";
+import { ArticleListSkeleton } from "@/components/ui/skeletons/ArticleListSkeleton";
 import { CreateArticleDialog } from "@/components/articles/CreateArticleDialog";
 import { EditArticleDialog } from "@/components/articles/EditArticleDialog";
 import { ArticleDeleteDialog } from "@/components/articles/ArticleDeleteDialog";
@@ -277,7 +278,7 @@ export default function Articles() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="text-lg text-muted-foreground">Chargement...</div>
+          <ArticleListSkeleton />
         </div>
       </DashboardLayout>
     );
