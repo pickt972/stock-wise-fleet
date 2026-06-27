@@ -176,6 +176,28 @@ export function ArticleCreationWizard({
     }
   }, [categorie, allCategoriesData]);
 
+  // Pre-fill stock_min from sub-category threshold (rappel)
+  useEffect(() => {
+    const sub = allCategoriesData.find(c => c.id === sousCategorieId);
+    if (!sub) {
+      setSubcategoryThreshold(null);
+      return;
+    }
+    (async () => {
+      const { data } = await supabase
+        .from("subcategory_stock_thresholds")
+        .select("stock_min")
+        .eq("sous_categorie", sub.nom)
+        .is("vehicule_id", null)
+        .maybeSingle();
+      const seuil = data?.stock_min ?? null;
+      setSubcategoryThreshold(seuil);
+      if (seuil != null && !stockMinTouched) {
+        setStockMin(seuil);
+      }
+    })();
+  }, [sousCategorieId, allCategoriesData, stockMinTouched]);
+
   const handleDesignationChange = (val: string) => {
     const formatted = val.replace(/\s+/g, " ");
     setDesignation(formatted.charAt(0).toUpperCase() + formatted.slice(1));
