@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import DashboardLayout from "./DashboardLayout";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageSkeleton } from "@/components/ui/skeletons/PageSkeleton";
 
 interface Article {
   id: string;
