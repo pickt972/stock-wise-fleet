@@ -9,7 +9,7 @@ const THROTTLE_DELAY = 1000; // Évite de réinitialiser le timer trop souvent
 export function useAutoLogout() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
 
   const resetTimer = useCallback(() => {
