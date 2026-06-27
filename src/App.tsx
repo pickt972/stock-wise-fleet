@@ -31,7 +31,7 @@ import Inventaire from "./pages/Inventaire";
 import Rapports from "./pages/Rapports";
 import RolesPermissions from "./pages/RolesPermissions";
 import Emplacements from "./pages/Emplacements";
-import AuditLogs from "./pages/AuditLogs";
+
 import JournalAudit from "./pages/JournalAudit";
 import ArticleHistory from "./pages/ArticleHistory";
 import ResetPassword from "./pages/ResetPassword";
