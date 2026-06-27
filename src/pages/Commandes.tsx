@@ -32,6 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import DashboardLayout from "./DashboardLayout";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface Article {
   id: string;
