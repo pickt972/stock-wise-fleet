@@ -14,6 +14,14 @@ import {
   Baby,
   Wrench,
   Shield,
+  AlertTriangle,
+  Layers,
+  Tags,
+  Building2,
+  Truck,
+  MapPin,
+  Users,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -24,7 +32,7 @@ import logo from "@/assets/logo.png";
 type NavItem = { name: string; href: string; icon: any; show: boolean };
 type NavSection = { label: string; items: NavItem[] };
 
-const getSections = (permissions: any): NavSection[] => [
+const getSections = (permissions: any, userRole: string | null): NavSection[] => [
   {
     label: "Vue d'ensemble",
     items: [
@@ -49,12 +57,37 @@ const getSections = (permissions: any): NavSection[] => [
       { name: "Commandes", href: "/commandes", icon: ShoppingCart, show: permissions.createOrders },
       { name: "Inventaire", href: "/inventaire", icon: ClipboardList, show: permissions.manageStock },
       { name: "Historique", href: "/historique", icon: History, show: permissions.viewReports },
+      { name: "Rapports", href: "/rapports", icon: FileText, show: permissions.viewReports },
+    ],
+  },
+  {
+    label: "Alertes & Seuils",
+    items: [
+      { name: "Alertes", href: "/alertes", icon: AlertTriangle, show: true },
+      { name: "Seuils de stock", href: "/seuils-stock", icon: Layers, show: permissions.manageStock },
+    ],
+  },
+  {
+    label: "Référentiel",
+    items: [
+      { name: "Catégories", href: "/categories", icon: Tags, show: permissions.manageCategories },
+      { name: "Fournisseurs", href: "/fournisseurs", icon: Building2, show: permissions.manageSuppliers },
+      { name: "Véhicules", href: "/vehicules", icon: Truck, show: permissions.manageVehicles },
+      { name: "Emplacements", href: "/emplacements", icon: MapPin, show: userRole === "admin" },
+    ],
+  },
+  {
+    label: "Administration",
+    items: [
+      { name: "Utilisateurs", href: "/users", icon: Users, show: !!permissions.manageUsers },
+      { name: "Rôles & Permissions", href: "/roles-permissions", icon: Shield, show: !!permissions.manageUsers },
+      { name: "Journal d'audit", href: "/journal-audit", icon: Shield, show: !!permissions.manageUsers },
+      { name: "Historique articles", href: "/historique-articles", icon: History, show: !!permissions.manageUsers },
     ],
   },
   {
     label: "Système",
     items: [
-      { name: "Journal d'audit", href: "/journal-audit", icon: Shield, show: !!permissions.manageUsers },
       { name: "Paramètres", href: "/parametres", icon: Settings, show: true },
     ],
   },
@@ -65,18 +98,10 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-/**
- * Sidebar SaaS premium :
- * - Surface card flottante (rounded-2xl, ombre douce)
- * - Sections avec labels uppercase fins
- * - Active : pill primary/8 + texte primary + barre latérale gauche orange
- * - Hover : bg muted très léger
- * - Mode collapsed : icônes seules, labels masqués
- */
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useSidebarCollapsed();
-  const { permissions } = useRoleAccess();
-  const sections = getSections(permissions);
+  const { permissions, userRole } = useRoleAccess();
+  const sections = getSections(permissions, userRole);
 
   return (
     <>
@@ -97,7 +122,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         )}
       >
         <div className="h-full bg-card border border-border/60 shadow-soft rounded-2xl flex flex-col overflow-hidden">
-          {/* Header sidebar : brand mini + collapse */}
           <div
             className={cn(
               "flex items-center px-3 py-3 border-b border-border/60",
@@ -151,7 +175,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                       >
                         {({ isActive }) => (
                           <>
-                            {/* Barre latérale active premium */}
                             {isActive && !isCollapsed && (
                               <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-primary" />
                             )}
@@ -172,7 +195,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             })}
           </nav>
 
-          {/* Footer sidebar : badge edition */}
           {!isCollapsed && (
             <div className="px-4 py-3 border-t border-border/60">
               <div className="flex items-center gap-2 text-[11px] text-muted-foreground">

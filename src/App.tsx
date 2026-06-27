@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { useAutoLogout } from "@/hooks/useAutoLogout";
 import { ThemeProvider } from "next-themes";
@@ -31,7 +31,7 @@ import Inventaire from "./pages/Inventaire";
 import Rapports from "./pages/Rapports";
 import RolesPermissions from "./pages/RolesPermissions";
 import Emplacements from "./pages/Emplacements";
-import AuditLogs from "./pages/AuditLogs";
+
 import JournalAudit from "./pages/JournalAudit";
 import ArticleHistory from "./pages/ArticleHistory";
 import ResetPassword from "./pages/ResetPassword";
@@ -181,11 +181,8 @@ const App = () => (
                   <RolesPermissions />
                 </ProtectedRoute>
               } />
-              <Route path="/audit-logs" element={
-                <ProtectedRoute>
-                  <AuditLogs />
-                </ProtectedRoute>
-              } />
+              <Route path="/audit-logs" element={<Navigate to="/journal-audit" replace />} />
+
               <Route path="/journal-audit" element={
                 <ProtectedRoute>
                   <JournalAudit />
