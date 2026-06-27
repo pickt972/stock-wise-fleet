@@ -33,7 +33,7 @@ export default function Sorties() {
   const [exits, setExits] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [exitTypeFilter, setExitTypeFilter] = useState("all");
-  const [dateRange, setDateRange] = useState("all");
+  const [dateRange, setDateRange] = useState("today");
   const [showNewExit, setShowNewExit] = useState(false);
 
   useEffect(() => {
