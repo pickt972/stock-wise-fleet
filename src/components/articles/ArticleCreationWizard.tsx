@@ -1019,10 +1019,27 @@ export function ArticleCreationWizard({
                   type="number"
                   min={0}
                   value={stockMin}
-                  onChange={(e) => setStockMin(parseInt(e.target.value) || 0)}
+                  onChange={(e) => { setStockMinTouched(true); setStockMin(parseInt(e.target.value) || 0); }}
                   onFocus={(e) => e.target.select()}
                   className="h-12"
                 />
+                {subcategoryThreshold != null && (
+                  <p className="text-xs text-muted-foreground">
+                    Rappel : seuil de la sous-catégorie = <span className="font-semibold text-foreground">{subcategoryThreshold}</span>
+                    {stockMinTouched && stockMin !== subcategoryThreshold && (
+                      <>
+                        {" · "}
+                        <button
+                          type="button"
+                          className="text-primary underline"
+                          onClick={() => { setStockMin(subcategoryThreshold); setStockMinTouched(false); }}
+                        >
+                          réinitialiser
+                        </button>
+                      </>
+                    )}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Stock maximum</Label>
