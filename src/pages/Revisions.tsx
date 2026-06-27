@@ -19,6 +19,7 @@ import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "./DashboardLayout";
 import { useSidebarCollapsed } from "@/hooks/useSidebarCollapsed";
 import { cn } from "@/lib/utils";
+import { PageSkeleton } from "@/components/ui/skeletons/PageSkeleton";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Vehicule = Tables<"vehicules">;
