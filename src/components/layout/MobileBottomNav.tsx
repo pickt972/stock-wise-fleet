@@ -13,8 +13,10 @@ import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { useAlerts } from "@/hooks/useAlerts";
 import { Badge } from "@/components/ui/badge";
 import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
+import { QuickExitDialog } from "@/components/stock/QuickExitDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { PackageMinus, Search } from "lucide-react";
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
@@ -46,6 +48,9 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
   const { toast } = useToast();
   const [moreOpen, setMoreOpen] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [scanChoiceOpen, setScanChoiceOpen] = useState(false);
+  const [exitMode, setExitMode] = useState(false);
+  const [quickExitArticle, setQuickExitArticle] = useState<{ id: string; reference: string; designation: string; stock: number } | null>(null);
 
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + "/");
@@ -80,29 +85,33 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
     const raw = code.trim();
     const numeric = raw.replace(/\D/g, "");
     const q = numeric.length >= 8 ? numeric : raw;
+    const wasExitMode = exitMode;
+    setExitMode(false);
 
     try {
       const { data } = await supabase
         .from("articles")
-        .select("id, designation, reference")
+        .select("id, designation, reference, stock")
         .or(`reference.eq.${q},code_barre.eq.${q}`)
         .maybeSingle();
 
-      if (data) {
-        toast({ title: "✅ Article trouvé", description: data.designation });
-        navigate(`/articles/${data.id}`);
-        return;
+      let found = data;
+      if (!found) {
+        const { data: partials } = await supabase
+          .from("articles")
+          .select("id, designation, reference, stock")
+          .or(`reference.ilike.%${q}%,code_barre.ilike.%${q}%,designation.ilike.%${q}%`)
+          .limit(1);
+        if (partials && partials.length > 0) found = partials[0];
       }
 
-      const { data: partials } = await supabase
-        .from("articles")
-        .select("id, designation")
-        .or(`reference.ilike.%${q}%,code_barre.ilike.%${q}%,designation.ilike.%${q}%`)
-        .limit(1);
-
-      if (partials && partials.length > 0) {
-        toast({ title: "✅ Article trouvé", description: partials[0].designation });
-        navigate(`/articles/${partials[0].id}`);
+      if (found) {
+        if (wasExitMode) {
+          setQuickExitArticle(found);
+        } else {
+          toast({ title: "✅ Article trouvé", description: found.designation });
+          navigate(`/articles/${found.id}`);
+        }
       } else {
         toast({
           title: "📦 Article introuvable",
@@ -115,6 +124,13 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
     } catch {
       toast({ title: "Erreur de recherche", variant: "destructive" });
     }
+  };
+
+  const openScanChoice = () => setScanChoiceOpen(true);
+  const startScan = (asExit: boolean) => {
+    setExitMode(asExit);
+    setScanChoiceOpen(false);
+    setShowScanner(true);
   };
 
   const NavTab = ({
@@ -175,7 +191,7 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
           <div className="flex items-center justify-center h-full">
             <button
               type="button"
-              onClick={() => setShowScanner(true)}
+              onClick={openScanChoice}
               aria-label="Scanner un code-barres"
               className={cn(
                 "relative -mt-8 h-[58px] w-[58px] rounded-full text-primary-foreground",
@@ -240,10 +256,60 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
         </div>
       </div>
 
+      <Sheet open={scanChoiceOpen} onOpenChange={setScanChoiceOpen}>
+        <SheetContent side="bottom" className="rounded-t-3xl p-0">
+          <SheetHeader className="px-5 pt-2 pb-3">
+            <SheetTitle className="text-[20px] font-bold tracking-tight">Scanner un code-barres</SheetTitle>
+          </SheetHeader>
+          <div className="px-4 pb-6 space-y-3">
+            <button
+              type="button"
+              onClick={() => startScan(true)}
+              className={cn(
+                "w-full flex items-center gap-4 p-5 rounded-2xl text-left",
+                "bg-gradient-to-br from-destructive/90 to-destructive text-destructive-foreground",
+                "shadow-medium active:scale-[0.98] transition-transform",
+              )}
+            >
+              <div className="h-14 w-14 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+                <PackageMinus className="h-7 w-7" />
+              </div>
+              <div className="flex-1">
+                <div className="text-lg font-bold leading-tight">Sortie rapide (scan)</div>
+                <div className="text-sm opacity-90 mt-0.5">Scannez puis confirmez en 1 tap</div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => startScan(false)}
+              className={cn(
+                "w-full flex items-center gap-4 p-5 rounded-2xl text-left",
+                "bg-muted hover:bg-muted/80 active:scale-[0.98] transition-all",
+              )}
+            >
+              <div className="h-14 w-14 rounded-2xl bg-card shadow-soft flex items-center justify-center shrink-0 text-primary">
+                <Search className="h-7 w-7" />
+              </div>
+              <div className="flex-1">
+                <div className="text-lg font-bold leading-tight text-foreground">Consulter / Identifier</div>
+                <div className="text-sm text-muted-foreground mt-0.5">Ouvrir la fiche de l'article</div>
+              </div>
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
       <BarcodeScanner
         isOpen={showScanner}
         onScanResult={handleScanResult}
-        onClose={() => setShowScanner(false)}
+        onClose={() => { setShowScanner(false); setExitMode(false); }}
+      />
+
+      <QuickExitDialog
+        article={quickExitArticle}
+        open={!!quickExitArticle}
+        onOpenChange={(o) => { if (!o) setQuickExitArticle(null); }}
       />
     </nav>
   );
