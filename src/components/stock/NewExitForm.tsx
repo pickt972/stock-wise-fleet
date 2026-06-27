@@ -82,15 +82,6 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
     }
   };
 
-  const generateExitNumber = () => {
-    const now = new Date();
-    const yy = now.getFullYear().toString().slice(-2);
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const dd = String(now.getDate()).padStart(2, "0");
-    const rand = Math.floor(Math.random() * 9000) + 1000;
-    return `SRT-${yy}${mm}${dd}-${rand}`;
-  };
-
   const handleSubmit = async () => {
     if (!articleId) {
       toast({ title: "Erreur", description: "Sélectionnez un article", variant: "destructive" });
@@ -114,10 +105,14 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
 
     setIsLoading(true);
     try {
+      // exit_number laissé vide → le trigger Supabase (trigger_set_exit_number)
+      // génère automatiquement le numéro séquentiel SOR-YYYY-XXXXXX avant l'INSERT.
+      // Le décrément de articles.stock est aussi géré côté Supabase par le trigger
+      // trigger_decrease_stock_on_exit après INSERT dans stock_exit_items.
       const { data: exit, error: exitError } = await supabase
         .from("stock_exits")
         .insert([{
-          exit_number: generateExitNumber(),
+          exit_number: "",        // sera remplacé par le trigger BEFORE INSERT
           exit_type: exitType,
           vehicule_id: vehiculeId || null,
           notes: notes || null,
@@ -128,6 +123,8 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
 
       if (exitError) throw exitError;
 
+      // L'INSERT dans stock_exit_items déclenche trigger_decrease_stock_on_exit
+      // qui décrémente articles.stock et insère un mouvement dans stock_movements.
       const { error: itemError } = await supabase
         .from("stock_exit_items")
         .insert([{
@@ -138,11 +135,16 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
 
       if (itemError) throw itemError;
 
-      toast({ title: "✅ Sortie enregistrée", description: `${qty} unité(s) sortie(s) du stock` });
+      toast({
+        title: "✅ Sortie enregistrée",
+        description: `${qty} unité(s) sortie(s) — N° ${exit.exit_number}`,
+      });
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
       console.error("Erreur création sortie:", error);
+      // Le trigger Supabase lève une exception si stock insuffisant côté DB —
+      // on affiche le message exact pour que l'utilisateur comprenne.
       toast({
         title: "Erreur",
         description: error.message || "Impossible de créer la sortie",

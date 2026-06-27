@@ -27,15 +27,6 @@ interface QuickExitDialogProps {
   onDone?: () => void;
 }
 
-const generateExitNumber = () => {
-  const now = new Date();
-  const yy = now.getFullYear().toString().slice(-2);
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  const rand = Math.floor(Math.random() * 9000) + 1000;
-  return `SRT-${yy}${mm}${dd}-${rand}`;
-};
-
 export function QuickExitDialog({ article, open, onOpenChange, onDone }: QuickExitDialogProps) {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -62,10 +53,12 @@ export function QuickExitDialog({ article, open, onOpenChange, onDone }: QuickEx
     }
     setSubmitting(true);
     try {
+      // exit_number vide → trigger Supabase génère SOR-YYYY-XXXXXX automatiquement.
+      // Le décrément stock est géré par trigger_decrease_stock_on_exit côté DB.
       const { data: exit, error: exitError } = await supabase
         .from("stock_exits")
         .insert([{
-          exit_number: generateExitNumber(),
+          exit_number: "",
           exit_type: "consommation",
           notes: "Sortie rapide (scan)",
           created_by: user?.id,
@@ -85,7 +78,7 @@ export function QuickExitDialog({ article, open, onOpenChange, onDone }: QuickEx
 
       toast({
         title: "✅ Sortie enregistrée",
-        description: `${quantity} × ${article.designation}`,
+        description: `${quantity} × ${article.designation} — N° ${exit.exit_number}`,
       });
       onOpenChange(false);
       onDone?.();
