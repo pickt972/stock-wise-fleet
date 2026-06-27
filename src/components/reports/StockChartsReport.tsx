@@ -221,7 +221,7 @@ export function StockChartsReport() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={(entry) => `${entry.name} (${entry.valeur}€)`}
+                  label={(entry: any) => `${entry.name} (${entry.valeur}€)`}
                   outerRadius={80}
                   fill="hsl(var(--primary))"
                   dataKey="valeur"
