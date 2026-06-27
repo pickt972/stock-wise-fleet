@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -119,6 +119,7 @@ export default function Commandes() {
   }>({ isOpen: false });
   const [currentFournisseurId, setCurrentFournisseurId] = useState<string>("");
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { isAdmin } = useRoleAccess();
 
   useEffect(() => {
