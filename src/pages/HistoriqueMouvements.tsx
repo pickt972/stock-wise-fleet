@@ -22,6 +22,15 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { FileText, Download, History } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
+import { cn } from "@/lib/utils";
+
+const PERIODS = [
+  { value: "today", label: "Aujourd'hui" },
+  { value: "week", label: "7 jours" },
+  { value: "month", label: "30 jours" },
+  { value: "all", label: "Tout" },
+];
+
 
 interface Movement {
   id: string;
