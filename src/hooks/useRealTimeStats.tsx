@@ -10,6 +10,7 @@ export interface RealTimeStats {
   lowStockCount: number;
   criticalStockCount: number;
   recentMovements: number;
+  todayMovements: number;
   trends: {
     articles: number;
     value: number;
