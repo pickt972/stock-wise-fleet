@@ -181,11 +181,8 @@ const App = () => (
                   <RolesPermissions />
                 </ProtectedRoute>
               } />
-              <Route path="/audit-logs" element={
-                <ProtectedRoute>
-                  <AuditLogs />
-                </ProtectedRoute>
-              } />
+              <Route path="/audit-logs" element={<Navigate to="/journal-audit" replace />} />
+
               <Route path="/journal-audit" element={
                 <ProtectedRoute>
                   <JournalAudit />
