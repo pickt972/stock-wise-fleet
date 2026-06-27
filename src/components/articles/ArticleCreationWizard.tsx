@@ -97,6 +97,8 @@ export function ArticleCreationWizard({
   const [stockMin, setStockMin] = useState(0);
   const [stockMax, setStockMax] = useState(100);
   const [prixAchat, setPrixAchat] = useState(0);
+  const [subcategoryThreshold, setSubcategoryThreshold] = useState<number | null>(null);
+  const [stockMinTouched, setStockMinTouched] = useState(false);
 
   // Autocomplete
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -173,6 +175,28 @@ export function ArticleCreationWizard({
       setSubcategories([]);
     }
   }, [categorie, allCategoriesData]);
+
+  // Pre-fill stock_min from sub-category threshold (rappel)
+  useEffect(() => {
+    const sub = allCategoriesData.find(c => c.id === sousCategorieId);
+    if (!sub) {
+      setSubcategoryThreshold(null);
+      return;
+    }
+    (async () => {
+      const { data } = await supabase
+        .from("subcategory_stock_thresholds")
+        .select("stock_min")
+        .eq("sous_categorie", sub.nom)
+        .is("vehicule_id", null)
+        .maybeSingle();
+      const seuil = data?.stock_min ?? null;
+      setSubcategoryThreshold(seuil);
+      if (seuil != null && !stockMinTouched) {
+        setStockMin(seuil);
+      }
+    })();
+  }, [sousCategorieId, allCategoriesData, stockMinTouched]);
 
   const handleDesignationChange = (val: string) => {
     const formatted = val.replace(/\s+/g, " ");
@@ -995,10 +1019,27 @@ export function ArticleCreationWizard({
                   type="number"
                   min={0}
                   value={stockMin}
-                  onChange={(e) => setStockMin(parseInt(e.target.value) || 0)}
+                  onChange={(e) => { setStockMinTouched(true); setStockMin(parseInt(e.target.value) || 0); }}
                   onFocus={(e) => e.target.select()}
                   className="h-12"
                 />
+                {subcategoryThreshold != null && (
+                  <p className="text-xs text-muted-foreground">
+                    Rappel : seuil de la sous-catégorie = <span className="font-semibold text-foreground">{subcategoryThreshold}</span>
+                    {stockMinTouched && stockMin !== subcategoryThreshold && (
+                      <>
+                        {" · "}
+                        <button
+                          type="button"
+                          className="text-primary underline"
+                          onClick={() => { setStockMin(subcategoryThreshold); setStockMinTouched(false); }}
+                        >
+                          réinitialiser
+                        </button>
+                      </>
+                    )}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Stock maximum</Label>
