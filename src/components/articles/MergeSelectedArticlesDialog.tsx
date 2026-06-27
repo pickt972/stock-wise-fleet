@@ -203,7 +203,7 @@ export function MergeSelectedArticlesDialog({ open, onOpenChange, articles, allC
         }
       }
 
-      const { error: upErr } = await supabase.from("articles").update(updates).eq("id", winner.id);
+      const { error: upErr } = await supabase.from("articles").update(updates as any).eq("id", winner.id);
       if (upErr) throw upErr;
 
       const { error: delErr } = await supabase.from("articles").delete().in("id", loserIds);
