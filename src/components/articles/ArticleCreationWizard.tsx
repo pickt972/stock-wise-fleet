@@ -97,6 +97,8 @@ export function ArticleCreationWizard({
   const [stockMin, setStockMin] = useState(0);
   const [stockMax, setStockMax] = useState(100);
   const [prixAchat, setPrixAchat] = useState(0);
+  const [subcategoryThreshold, setSubcategoryThreshold] = useState<number | null>(null);
+  const [stockMinTouched, setStockMinTouched] = useState(false);
 
   // Autocomplete
   const [suggestions, setSuggestions] = useState<string[]>([]);
