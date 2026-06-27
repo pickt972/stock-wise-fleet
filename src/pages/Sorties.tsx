@@ -109,9 +109,7 @@ export default function Sorties() {
     return (
       <DashboardLayout>
         <PageHeader title="Sorties de stock" />
-        <div className="flex items-center justify-center py-12">
-          <p>Chargement...</p>
-        </div>
+        <PageSkeleton />
       </DashboardLayout>
     );
   }
