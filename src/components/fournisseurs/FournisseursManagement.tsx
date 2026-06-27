@@ -193,7 +193,7 @@ export const FournisseursManagement = () => {
   );
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-64"><div className="text-muted-foreground">Chargement...</div></div>;
+    return <PageSkeleton />;
   }
 
   return (
