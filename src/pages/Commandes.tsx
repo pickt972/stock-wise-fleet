@@ -1292,9 +1292,7 @@ export default function Commandes() {
           </div>
 
         {isLoading ? (
-          <div className="flex justify-center items-center py-12">
-            <div className="text-muted-foreground">Chargement des commandes...</div>
-          </div>
+          <PageSkeleton />
         ) : (
 
         <div className="grid gap-4 sm:gap-6">
