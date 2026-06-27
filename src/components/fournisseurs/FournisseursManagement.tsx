@@ -11,6 +11,7 @@ import { Plus, Edit, Trash2, Building2, Mail, Phone, User } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageSkeleton } from "@/components/ui/skeletons/PageSkeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -192,7 +193,7 @@ export const FournisseursManagement = () => {
   );
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-64"><div className="text-muted-foreground">Chargement...</div></div>;
+    return <PageSkeleton />;
   }
 
   return (

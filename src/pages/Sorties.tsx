@@ -17,6 +17,7 @@ import { ExitStats } from "@/components/stock/ExitStats";
 import { ActiveRentals } from "@/components/stock/ActiveRentals";
 import { NewExitForm } from "@/components/stock/NewExitForm";
 import DashboardLayout from "./DashboardLayout";
+import { PageSkeleton } from "@/components/ui/skeletons/PageSkeleton";
 
 export default function Sorties() {
   const { toast } = useToast();
@@ -108,9 +109,7 @@ export default function Sorties() {
     return (
       <DashboardLayout>
         <PageHeader title="Sorties de stock" />
-        <div className="flex items-center justify-center py-12">
-          <p>Chargement...</p>
-        </div>
+        <PageSkeleton />
       </DashboardLayout>
     );
   }

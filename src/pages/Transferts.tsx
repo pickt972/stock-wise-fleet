@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import DashboardLayout from "./DashboardLayout";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageSkeleton } from "@/components/ui/skeletons/PageSkeleton";
 
 interface TransfertMovement {
   id: string;
@@ -189,7 +190,7 @@ export default function Transferts() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="text-center py-8 text-muted-foreground">Chargement...</div>
+              <PageSkeleton />
             ) : groupedTransferts.length === 0 ? (
               <EmptyState
                 icon={<ArrowLeftRight className="h-8 w-8" />}
