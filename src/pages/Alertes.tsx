@@ -58,8 +58,15 @@ export default function Alertes() {
         .filter(sub => sub.alertArticles.length > 0)
     : subcategoryAlerts;
 
-  const highPriority = filtered.filter(s => s.priority === "high");
-  const mediumPriority = filtered.filter(s => s.priority === "medium");
+  // Sort rupture-first inside each subcategory list
+  const sorted = [...filtered].sort((a, b) => {
+    const aRupture = a.alertArticles.filter(x => x.type === "rupture").length;
+    const bRupture = b.alertArticles.filter(x => x.type === "rupture").length;
+    return bRupture - aRupture;
+  });
+
+  const highPriority = sorted.filter(s => s.priority === "high");
+  const mediumPriority = sorted.filter(s => s.priority === "medium");
 
   if (isLoading) {
     return (
@@ -73,7 +80,7 @@ export default function Alertes() {
 
   const renderSubcategoryCard = (sub: SubcategoryAlert) => {
     const isExpanded = expandedCategories.has(sub.key);
-    const alertCount = sub.ruptureCount + sub.faibleCount;
+    const hasRuptures = sub.alertArticles.some(a => a.type === "rupture");
 
     return (
       <Card 
@@ -84,14 +91,14 @@ export default function Alertes() {
           className="cursor-pointer pb-3" 
           onClick={() => toggleCategory(sub.key)}
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
               {sub.priority === "high" ? (
                 <Package className="h-5 w-5 text-destructive flex-shrink-0" />
               ) : (
                 <TrendingDown className="h-5 w-5 text-warning flex-shrink-0" />
               )}
-              <div>
+              <div className="min-w-0">
                 <CardTitle className="text-base">
                   {sub.subcategory}
                   {sub.vehiculeLabel && (
@@ -99,24 +106,33 @@ export default function Alertes() {
                   )}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                  Stock total : <span className="font-semibold text-foreground">{sub.totalStock}</span> / Min agrégé : {sub.stockMin}
+                  {sub.ruptureCount > 0 && (
+                    <span className="font-semibold text-destructive">{sub.ruptureCount} rupture{sub.ruptureCount > 1 ? 's' : ''}</span>
+                  )}
+                  {sub.ruptureCount > 0 && sub.faibleCount > 0 && (
+                    <span className="mx-1.5 text-muted-foreground/60">·</span>
+                  )}
+                  {sub.faibleCount > 0 && (
+                    <span className="font-semibold text-warning">{sub.faibleCount} faible{sub.faibleCount > 1 ? 's' : ''}</span>
+                  )}
                   {" "}· {sub.totalArticles} référence{sub.totalArticles > 1 ? "s" : ""}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex gap-1.5">
-                {sub.ruptureCount > 0 && (
-                  <Badge variant="destructive" className="text-xs">
-                    {sub.ruptureCount} rupture{sub.ruptureCount > 1 ? 's' : ''}
-                  </Badge>
-                )}
-                {sub.faibleCount > 0 && (
-                  <Badge variant="secondary" className="text-xs">
-                    {sub.faibleCount} faible{sub.faibleCount > 1 ? 's' : ''}
-                  </Badge>
-                )}
-              </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {hasRuptures && (
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCreateOrderForSubcategory(sub);
+                  }}
+                  size="sm"
+                  variant="outline"
+                >
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Commander
+                </Button>
+              )}
               {isExpanded ? (
                 <ChevronUp className="h-4 w-4 text-muted-foreground" />
               ) : (
@@ -128,38 +144,37 @@ export default function Alertes() {
 
         {isExpanded && (
           <CardContent className="pt-0 space-y-3">
-            {sub.alertArticles.map(article => (
-              <div key={article.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg text-sm">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  {article.type === "rupture" ? (
-                    <Package className="h-4 w-4 text-destructive flex-shrink-0" />
-                  ) : (
-                    <TrendingDown className="h-4 w-4 text-warning flex-shrink-0" />
-                  )}
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{article.designation}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Réf: {article.reference} — Stock: {article.stock} / Min: {article.stock_min}
-                    </p>
-                  </div>
-                </div>
-                <Badge 
-                  variant={article.type === "rupture" ? "destructive" : "secondary"} 
-                  className="text-xs flex-shrink-0 ml-2"
+            {sub.alertArticles.map(article => {
+              const isRupture = article.type === "rupture";
+              return (
+                <div 
+                  key={article.id} 
+                  className={`flex items-center justify-between p-3 bg-muted/30 rounded-lg text-sm border-l-4 ${
+                    isRupture ? "border-l-destructive" : "border-l-warning"
+                  }`}
                 >
-                  {article.type === "rupture" ? "Rupture" : "Faible"}
-                </Badge>
-              </div>
-            ))}
-            <Button
-              onClick={() => handleCreateOrderForSubcategory(sub)}
-              size="sm"
-              className="w-full"
-              variant={sub.priority === "high" ? "destructive" : "outline"}
-            >
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              Commander pour cette catégorie ({alertCount} articles)
-            </Button>
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    {isRupture ? (
+                      <Package className="h-4 w-4 text-destructive flex-shrink-0" />
+                    ) : (
+                      <TrendingDown className="h-4 w-4 text-warning flex-shrink-0" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{article.designation}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Réf: {article.reference} — Stock: {article.stock} / Min: {article.stock_min}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge 
+                    variant={isRupture ? "destructive" : "secondary"} 
+                    className={`text-xs flex-shrink-0 ml-2 ${!isRupture ? "bg-warning/10 text-warning border-warning/20 hover:bg-warning/20" : ""}`}
+                  >
+                    {isRupture ? "RUPTURE" : "FAIBLE"}
+                  </Badge>
+                </div>
+              );
+            })}
           </CardContent>
         )}
       </Card>
@@ -216,7 +231,7 @@ export default function Alertes() {
           </section>
         )}
 
-        {filtered.length === 0 && (
+        {sorted.length === 0 && (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
               <div className="text-6xl mb-4">✅</div>
