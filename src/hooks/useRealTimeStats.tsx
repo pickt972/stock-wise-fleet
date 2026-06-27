@@ -28,6 +28,7 @@ export function useRealTimeStats() {
     lowStockCount: 0,
     criticalStockCount: 0,
     recentMovements: 0,
+    todayMovements: 0,
     trends: {
       articles: 0,
       value: 0,
@@ -65,6 +66,15 @@ export function useRealTimeStats() {
 
       if (movementsError) throw movementsError;
 
+      // Mouvements du jour (entrées + sorties)
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const { count: todayMovements } = await supabase
+        .from("stock_movements")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", todayStart.toISOString());
+
+
       // Calcul du taux de rotation (simplifié)
       const recentMovements = movements?.length || 0;
       const rotationRate = articles && articles.length > 0 
@@ -97,6 +107,7 @@ export function useRealTimeStats() {
         lowStockCount,
         criticalStockCount,
         recentMovements,
+        todayMovements: todayMovements || 0,
         trends: {
           articles: movementsTrend,
           value: Math.round(Math.random() * 20 - 5), // Simplifié
