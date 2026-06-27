@@ -13,8 +13,10 @@ import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { useAlerts } from "@/hooks/useAlerts";
 import { Badge } from "@/components/ui/badge";
 import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
+import { QuickExitDialog } from "@/components/stock/QuickExitDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { PackageMinus, Search } from "lucide-react";
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
