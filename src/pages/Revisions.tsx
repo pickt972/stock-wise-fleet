@@ -536,7 +536,7 @@ export default function Revisions() {
               </div>
 
               {loadingArticles ? (
-                <div className="text-center py-8 text-muted-foreground">Chargement des pièces...</div>
+                <PageSkeleton />
               ) : filteredArticles.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   {articlesCompatibles.length === 0
