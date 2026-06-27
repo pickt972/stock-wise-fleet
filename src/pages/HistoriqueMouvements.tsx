@@ -22,6 +22,15 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { FileText, Download, History } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
+import { cn } from "@/lib/utils";
+
+const PERIODS = [
+  { value: "today", label: "Aujourd'hui" },
+  { value: "week", label: "7 jours" },
+  { value: "month", label: "30 jours" },
+  { value: "all", label: "Tout" },
+];
+
 
 interface Movement {
   id: string;
@@ -43,7 +52,7 @@ export default function HistoriqueMouvements() {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const [filterType, setFilterType] = useState<string>("all");
-  const [filterPeriod, setFilterPeriod] = useState<string>("all");
+  const [dateRange, setDateRange] = useState<string>("today");
   const [filterArticle, setFilterArticle] = useState<string>("");
 
   useEffect(() => {
@@ -85,7 +94,7 @@ export default function HistoriqueMouvements() {
 
   useEffect(() => {
     applyFilters();
-  }, [filterType, filterPeriod, filterArticle, movements]);
+  }, [filterType, dateRange, filterArticle, movements]);
 
   const applyFilters = () => {
     let filtered = [...movements];
@@ -96,14 +105,14 @@ export default function HistoriqueMouvements() {
     }
 
     // Filtre par période
-    if (filterPeriod !== "all") {
+    if (dateRange !== "all") {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       
       filtered = filtered.filter(m => {
         const movementDate = new Date(m.created_at);
         
-        switch (filterPeriod) {
+        switch (dateRange) {
           case "today":
             return movementDate >= today;
           case "week":
@@ -239,7 +248,29 @@ export default function HistoriqueMouvements() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground">Période</label>
+                  <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                    {PERIODS.map(p => (
+                      <button
+                        key={p.value}
+                        onClick={() => setDateRange(p.value)}
+                        className={cn(
+                          "px-4 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap transition-all",
+                          dateRange === p.value
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        )}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {filteredMovements.length} mouvement(s)
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <label className="text-xs text-muted-foreground">Type d'opération</label>
                   <Select value={filterType} onValueChange={setFilterType}>
@@ -253,23 +284,6 @@ export default function HistoriqueMouvements() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-xs text-muted-foreground">Période</label>
-                  <Select value={filterPeriod} onValueChange={setFilterPeriod}>
-                    <SelectTrigger className="h-10">
-                      <SelectValue placeholder="Tous" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tous</SelectItem>
-                      <SelectItem value="today">Aujourd'hui</SelectItem>
-                      <SelectItem value="week">Cette semaine</SelectItem>
-                      <SelectItem value="month">Ce mois</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="text-xs text-muted-foreground text-center pt-2">
-                {filteredMovements.length} mouvement(s) affiché(s)
               </div>
               
               {filteredMovements.length > 0 && (

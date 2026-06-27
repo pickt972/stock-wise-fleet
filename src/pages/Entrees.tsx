@@ -16,6 +16,14 @@ import { EntryList } from "@/components/stock/EntryList";
 import { EntryStats } from "@/components/stock/EntryStats";
 import { NewEntryForm } from "@/components/stock/NewEntryForm";
 import DashboardLayout from "./DashboardLayout";
+import { cn } from "@/lib/utils";
+
+const PERIODS = [
+  { value: "today", label: "Aujourd'hui" },
+  { value: "week", label: "7 jours" },
+  { value: "month", label: "30 jours" },
+  { value: "all", label: "Tout" },
+];
 
 export default function Entrees() {
   const { toast } = useToast();
@@ -24,7 +32,7 @@ export default function Entrees() {
   const [showNewEntryForm, setShowNewEntryForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [entryTypeFilter, setEntryTypeFilter] = useState("all");
-  const [dateRange, setDateRange] = useState("all");
+  const [dateRange, setDateRange] = useState("today");
 
   useEffect(() => {
     fetchEntries();
@@ -136,39 +144,49 @@ export default function Entrees() {
         <EntryStats {...stats} />
 
         {/* Filtres et recherche */}
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="flex gap-2 w-full md:w-auto">
-            <Input
-              placeholder="Rechercher par N° ou fournisseur..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full md:w-64"
-            />
-            <Select value={dateRange} onValueChange={setDateRange}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les dates</SelectItem>
-                <SelectItem value="today">Aujourd'hui</SelectItem>
-                <SelectItem value="week">Cette semaine</SelectItem>
-                <SelectItem value="month">Ce mois</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={entryTypeFilter} onValueChange={setEntryTypeFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les types</SelectItem>
-                <SelectItem value="achat">Achat</SelectItem>
-                <SelectItem value="retour">Retour</SelectItem>
-                <SelectItem value="transfert">Transfert</SelectItem>
-                <SelectItem value="ajustement">Ajustement</SelectItem>
-                <SelectItem value="reparation">Réparation</SelectItem>
-                <SelectItem value="autre">Autre</SelectItem>
-              </SelectContent>
-            </Select>
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+          <div className="flex flex-col gap-2 w-full md:w-auto">
+            <div className="flex flex-wrap gap-2 w-full md:w-auto">
+              <Input
+                placeholder="Rechercher par N° ou fournisseur..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full md:w-64"
+              />
+              <Select value={entryTypeFilter} onValueChange={setEntryTypeFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les types</SelectItem>
+                  <SelectItem value="achat">Achat</SelectItem>
+                  <SelectItem value="retour">Retour</SelectItem>
+                  <SelectItem value="transfert">Transfert</SelectItem>
+                  <SelectItem value="ajustement">Ajustement</SelectItem>
+                  <SelectItem value="reparation">Réparation</SelectItem>
+                  <SelectItem value="autre">Autre</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+              {PERIODS.map(p => (
+                <button
+                  key={p.value}
+                  onClick={() => setDateRange(p.value)}
+                  className={cn(
+                    "px-4 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap transition-all",
+                    dateRange === p.value
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  )}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {entries.length} entrée(s)
+            </div>
           </div>
           <Button onClick={() => setShowNewEntryForm(true)}>
             <PackagePlus className="mr-2 h-4 w-4" />
