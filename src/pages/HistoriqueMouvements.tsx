@@ -94,7 +94,7 @@ export default function HistoriqueMouvements() {
 
   useEffect(() => {
     applyFilters();
-  }, [filterType, filterPeriod, filterArticle, movements]);
+  }, [filterType, dateRange, filterArticle, movements]);
 
   const applyFilters = () => {
     let filtered = [...movements];
@@ -105,14 +105,14 @@ export default function HistoriqueMouvements() {
     }
 
     // Filtre par période
-    if (filterPeriod !== "all") {
+    if (dateRange !== "all") {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       
       filtered = filtered.filter(m => {
         const movementDate = new Date(m.created_at);
         
-        switch (filterPeriod) {
+        switch (dateRange) {
           case "today":
             return movementDate >= today;
           case "week":
