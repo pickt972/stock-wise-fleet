@@ -32,7 +32,10 @@ export function ActiveRentals({ onReturnComplete }: ActiveRentalsProps) {
   const { toast } = useToast();
   const [rentals, setRentals] = useState<ActiveRental[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [returnDialog, setReturnDialog] = useState<{ open: boolean; rental: ActiveRental | null }>({ open: false, rental: null });
+  const [returnDialog, setReturnDialog] = useState<{
+    open: boolean;
+    rental: ActiveRental | null;
+  }>({ open: false, rental: null });
 
   useEffect(() => {
     fetchActiveRentals();
@@ -40,13 +43,6 @@ export function ActiveRentals({ onReturnComplete }: ActiveRentalsProps) {
 
   const fetchActiveRentals = async () => {
     try {
-      
-      // Premier test : récupérer TOUTES les locations sans filtre
-      const { data: allRentals, error: allError } = await supabase
-        .from("stock_exits")
-        .select("*")
-        .eq("exit_type", "location_accessoire");
-      
       const { data, error } = await supabase
         .from("stock_exits")
         .select(`
@@ -60,7 +56,6 @@ export function ActiveRentals({ onReturnComplete }: ActiveRentalsProps) {
         .is("actual_return_date", null);
 
       if (error) throw error;
-
       setRentals(data || []);
     } catch (error: any) {
       toast({
@@ -117,7 +112,7 @@ export function ActiveRentals({ onReturnComplete }: ActiveRentalsProps) {
   }
 
   return (
-    <>
+    <div>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -144,11 +139,9 @@ export function ActiveRentals({ onReturnComplete }: ActiveRentalsProps) {
                       </div>
                     ))}
                   </div>
-
                   <div className="text-sm text-muted-foreground">
                     Client: {rental.client_name || "Non renseigné"}
                   </div>
-
                   {rental.caution_amount && (
                     <div className="text-sm text-muted-foreground">
                       Caution: {rental.caution_amount}€
@@ -161,9 +154,7 @@ export function ActiveRentals({ onReturnComplete }: ActiveRentalsProps) {
                     <div className="text-sm text-right">
                       <div className="text-muted-foreground">Retour prévu</div>
                       <div className="font-medium flex items-center gap-2">
-                        {format(parseISO(rental.expected_return_date), "dd/MM/yyyy", {
-                          locale: fr,
-                        })}
+                        {format(parseISO(rental.expected_return_date), "dd/MM/yyyy", { locale: fr })}
                         {isLate(rental.expected_return_date) && (
                           <Badge variant="destructive" className="gap-1">
                             <AlertCircle className="h-3 w-3" />
@@ -173,7 +164,6 @@ export function ActiveRentals({ onReturnComplete }: ActiveRentalsProps) {
                       </div>
                     </div>
                   )}
-
                   <Button
                     variant="outline"
                     size="sm"
@@ -192,7 +182,9 @@ export function ActiveRentals({ onReturnComplete }: ActiveRentalsProps) {
         <AccessoryReturnDialog
           exit={returnDialog.rental as any}
           open={returnDialog.open}
-          onOpenChange={(open) => setReturnDialog({ open, rental: open ? returnDialog.rental : null })}
+          onOpenChange={(open) =>
+            setReturnDialog({ open, rental: open ? returnDialog.rental : null })
+          }
           onSuccess={() => {
             setReturnDialog({ open: false, rental: null });
             fetchActiveRentals();
@@ -200,6 +192,6 @@ export function ActiveRentals({ onReturnComplete }: ActiveRentalsProps) {
           }}
         />
       )}
-    </>
+    </div>
   );
 }
