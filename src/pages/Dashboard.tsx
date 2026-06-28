@@ -150,7 +150,18 @@ export default function Dashboard() {
   if (foundArticle) {
     return (
       <DashboardLayout>
-        <div className="max-w-lg mx-auto">
+        <div className="max-w-lg mx-auto space-y-3">
+          {/* Lien vers la fiche complète */}
+          <button
+            onClick={() => navigate(`/articles/${foundArticle.id}`)}
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl bg-muted/60 hover:bg-muted transition-colors text-left"
+          >
+            <Package className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <span className="text-sm text-muted-foreground flex-1 truncate">
+              Voir la fiche complète de <strong className="text-foreground">{foundArticle.designation}</strong>
+            </span>
+            <span className="text-xs text-primary font-medium flex-shrink-0">Ouvrir →</span>
+          </button>
           <QuickStockAction article={foundArticle} onBack={handleReset} onComplete={handleReset} />
         </div>
       </DashboardLayout>
@@ -247,8 +258,17 @@ export default function Dashboard() {
                   <PlusCircle className="h-4 w-4 mr-1.5" />
                   Créer
                 </Button>
-                <Button variant="outline" onClick={() => setNotFoundCode(null)}>Annuler</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate(`/articles?q=${encodeURIComponent(notFoundCode!)}`)}
+                >
+                  <Search className="h-4 w-4 mr-1.5" />
+                  Rechercher
+                </Button>
               </div>
+              <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={() => setNotFoundCode(null)}>
+                Annuler
+              </Button>
             </CardContent>
           </Card>
         )}
