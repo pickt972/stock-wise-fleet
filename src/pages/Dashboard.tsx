@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Package, AlertTriangle, ScanLine, Search, PlusCircle, PackageX, ArrowLeftRight, Wrench, ArrowUpFromLine, ArrowDownToLine, PackageCheck } from "lucide-react";
 import { KPICard } from "@/components/ui/kpi-card";
 import { useRealTimeStats } from "@/hooks/useRealTimeStats";
@@ -97,37 +97,53 @@ export default function Dashboard() {
   const [showScanner, setShowScanner] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<Article[]>([]);
   const [foundArticle, setFoundArticle] = useState<Article | null>(null);
   const [notFoundCode, setNotFoundCode] = useState<string | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const searchArticle = useCallback(async (query: string, fromScan = false) => {
-    if (!query.trim()) return;
-    const raw = query.trim();
-    const numeric = raw.replace(/\D/g, "");
-    const q = numeric.length >= 8 ? numeric : raw;
+    if (!query.trim()) {
+      setSearchResults([]);
+      setNotFoundCode(null);
+      return;
+    }
+    const q = query.trim();
 
     setIsSearching(true);
     setNotFoundCode(null);
+    setSearchResults([]);
     try {
       if (fromScan) {
+        // Scan : recherche exacte code-barres d'abord
+        const numeric = q.replace(/\D/g, "");
+        const scanQ = numeric.length >= 8 ? numeric : q;
         const { data: byBarcode } = await supabase
-          .from("articles").select("*").eq("code_barre", q).maybeSingle();
+          .from("articles").select("*").eq("code_barre", scanQ).maybeSingle();
         if (byBarcode) { setFoundArticle(byBarcode); return; }
+        const { data: byRef } = await supabase
+          .from("articles").select("*").eq("reference", scanQ).maybeSingle();
+        if (byRef) { setFoundArticle(byRef); return; }
+        setNotFoundCode(scanQ);
+        return;
       }
-      const { data } = await supabase
-        .from("articles").select("*")
-        .or(`reference.eq.${q},code_barre.eq.${q}`).maybeSingle();
-      if (data) { setFoundArticle(data); return; }
 
-      if (!fromScan) {
-        const likeKey = q.length > 8 ? q.slice(0, -1) : q;
-        const { data: partials } = await supabase
-          .from("articles").select("*")
-          .or(`reference.ilike.%${likeKey}%,code_barre.ilike.%${likeKey}%,designation.ilike.%${likeKey}%`)
-          .limit(1);
-        if (partials && partials.length > 0) { setFoundArticle(partials[0]); return; }
+      // Recherche live : désignation + référence + marque + code-barres
+      const { data } = await supabase
+        .from("articles")
+        .select("*")
+        .is("archived_at", null)
+        .or(
+          `designation.ilike.%${q}%,reference.ilike.%${q}%,marque.ilike.%${q}%,code_barre.ilike.%${q}%`
+        )
+        .order("designation", { ascending: true })
+        .limit(8);
+
+      if (data && data.length > 0) {
+        setSearchResults(data as Article[]);
+      } else {
+        setNotFoundCode(q);
       }
-      setNotFoundCode(q);
     } catch {
       toast({ title: "Erreur de recherche", variant: "destructive" });
     } finally {
@@ -135,9 +151,23 @@ export default function Dashboard() {
     }
   }, [toast]);
 
+  // Debounce au fil de la saisie
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value);
+    setFoundArticle(null);
+    setNotFoundCode(null);
+    setSearchResults([]);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!value.trim()) return;
+    debounceRef.current = setTimeout(() => {
+      searchArticle(value);
+    }, 300);
+  }, [searchArticle]);
+
   const handleScanResult = useCallback((code: string) => {
     setShowScanner(false);
     setSearchQuery(code);
+    setSearchResults([]);
     searchArticle(code, true);
   }, [searchArticle]);
 
@@ -145,6 +175,7 @@ export default function Dashboard() {
     setFoundArticle(null);
     setNotFoundCode(null);
     setSearchQuery("");
+    setSearchResults([]);
   }, []);
 
   if (foundArticle) {
@@ -210,31 +241,74 @@ export default function Dashboard() {
           </div>
         </button>
 
-        {/* Manual search */}
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Référence, désignation..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && !isSearching) searchArticle(searchQuery); }}
-              className="pl-9"
-            />
+        {/* Live search */}
+        <div className="relative">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Référence, désignation, marque..."
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") { handleReset(); }
+                }}
+                className="pl-9 pr-4"
+                autoComplete="off"
+              />
+              {searchQuery && (
+                <button
+                  onClick={handleReset}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label="Effacer"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           </div>
-          <Button
-            onClick={() => searchArticle(searchQuery)}
-            disabled={isSearching || !searchQuery.trim()}
-            size="icon"
-            aria-label="Rechercher"
-          >
-            <Search className="h-4 w-4" />
-          </Button>
-        </div>
 
-        {isSearching && (
-          <p className="text-center text-sm text-muted-foreground animate-pulse">Recherche en cours...</p>
-        )}
+          {/* Résultats live */}
+          {(isSearching || searchResults.length > 0) && (
+            <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-card border border-border rounded-2xl shadow-xl overflow-hidden">
+              {isSearching ? (
+                <div className="px-4 py-3 text-sm text-muted-foreground animate-pulse">
+                  Recherche en cours...
+                </div>
+              ) : (
+                <div className="divide-y divide-border/60">
+                  {searchResults.map((article) => {
+                    const isRupture = article.stock === 0;
+                    const isFaible = article.stock > 0 && article.stock <= article.stock_min;
+                    return (
+                      <button
+                        key={article.id}
+                        onClick={() => {
+                          setFoundArticle(article);
+                          setSearchResults([]);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors text-left"
+                      >
+                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold ${
+                          isRupture ? "bg-destructive/10 text-destructive" :
+                          isFaible  ? "bg-warning/10 text-warning" :
+                                      "bg-success/10 text-success"
+                        }`}>
+                          {article.stock}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{article.designation}</p>
+                          <p className="text-xs text-muted-foreground truncate">{article.marque} · {article.reference}</p>
+                        </div>
+                        <span className="text-xs text-primary flex-shrink-0">Sélectionner →</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {notFoundCode && !isSearching && (
           <Card className="border-l-4 border-l-warning animate-in fade-in slide-in-from-bottom-2 duration-200">
