@@ -66,9 +66,15 @@ export default function Auth() {
       return;
     }
 
+    // Le reset nécessite un vrai email — on ne peut pas deviner le domaine
+    if (!email.includes("@")) {
+      toast({ title: "Email invalide", description: "Saisissez votre adresse email complète (ex: nom@domaine.com).", variant: "destructive" });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const finalEmail = email.includes("@") ? email.trim().toLowerCase() : `${email.trim().toLowerCase()}@stock-wise.local`;
+      const finalEmail = email.trim().toLowerCase();
 
       const { error } = await supabase.auth.resetPasswordForEmail(finalEmail, {
         redirectTo: `${window.location.origin}/reset-password`,
@@ -78,8 +84,8 @@ export default function Auth() {
 
       setResetSent(true);
       toast({ title: "Email envoyé", description: "Vérifiez votre boîte mail pour réinitialiser votre mot de passe." });
-    } catch {
-      toast({ title: "Erreur", description: "Impossible d'envoyer l'email de réinitialisation.", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Erreur", description: err?.message || "Impossible d'envoyer l'email de réinitialisation.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
