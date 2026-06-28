@@ -137,6 +137,7 @@ export default function Articles() {
       const { data, error } = await supabase
         .from("articles")
         .select("id, reference, designation, marque, categorie, sous_categorie, stock, stock_min, stock_max, prix_achat, emplacement, fournisseur_id")
+        .is("archived_at", null)
         .order("designation");
 
       if (error) throw error;

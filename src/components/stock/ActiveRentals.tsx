@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { format, isPast, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { AlertCircle, Package } from "lucide-react";
+import { AccessoryReturnDialog } from "@/components/stock/AccessoryReturnDialog";
 
 interface ActiveRental {
   id: string;
@@ -14,6 +15,8 @@ interface ActiveRental {
   expected_return_date: string | null;
   caution_amount: number | null;
   stock_exit_items: Array<{
+    article_id: string;
+    quantity: number;
     articles: {
       designation: string;
       reference: string;
@@ -29,6 +32,7 @@ export function ActiveRentals({ onReturnComplete }: ActiveRentalsProps) {
   const { toast } = useToast();
   const [rentals, setRentals] = useState<ActiveRental[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [returnDialog, setReturnDialog] = useState<{ open: boolean; rental: ActiveRental | null }>({ open: false, rental: null });
 
   useEffect(() => {
     fetchActiveRentals();
@@ -36,7 +40,6 @@ export function ActiveRentals({ onReturnComplete }: ActiveRentalsProps) {
 
   const fetchActiveRentals = async () => {
     try {
-      console.log('🔍 START: Chargement locations actives...');
       
       // Premier test : récupérer TOUTES les locations sans filtre
       const { data: allRentals, error: allError } = await supabase
@@ -44,9 +47,6 @@ export function ActiveRentals({ onReturnComplete }: ActiveRentalsProps) {
         .select("*")
         .eq("exit_type", "location_accessoire");
       
-      console.log('📊 TOUTES les locations:', allRentals?.length, allRentals);
-      
-      // Deuxième test : avec filtre return_date null
       const { data, error } = await supabase
         .from("stock_exits")
         .select(`
@@ -57,16 +57,12 @@ export function ActiveRentals({ onReturnComplete }: ActiveRentalsProps) {
           )
         `)
         .eq("exit_type", "location_accessoire")
-        .is("return_date", null);
-
-      console.log('📦 AVEC FILTRE return_date null:', data?.length, data);
-      console.log('❌ ERROR:', error);
+        .is("actual_return_date", null);
 
       if (error) throw error;
 
       setRentals(data || []);
     } catch (error: any) {
-      console.error("🔥 ERREUR:", error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les accessoires en location",
@@ -77,13 +73,8 @@ export function ActiveRentals({ onReturnComplete }: ActiveRentalsProps) {
     }
   };
 
-  const handleReturn = async (rentalId: string) => {
-    // Cette fonction sera liée au dialog de retour existant
-    // Pour l'instant, simple placeholder
-    toast({
-      title: "Retour d'accessoire",
-      description: "Fonctionnalité de retour à venir",
-    });
+  const handleReturn = (rental: ActiveRental) => {
+    setReturnDialog({ open: true, rental });
   };
 
   const isLate = (date: string | null) => {
@@ -126,7 +117,7 @@ export function ActiveRentals({ onReturnComplete }: ActiveRentalsProps) {
   }
 
   return (
-    <Card>
+    <>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Package className="h-5 w-5" />
@@ -185,7 +176,7 @@ export function ActiveRentals({ onReturnComplete }: ActiveRentalsProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleReturn(rental.id)}
+                  onClick={() => handleReturn(rental)}
                 >
                   Retour
                 </Button>
@@ -195,5 +186,19 @@ export function ActiveRentals({ onReturnComplete }: ActiveRentalsProps) {
         </div>
       </CardContent>
     </Card>
+
+      {returnDialog.rental && (
+        <AccessoryReturnDialog
+          exit={returnDialog.rental as any}
+          open={returnDialog.open}
+          onOpenChange={(open) => setReturnDialog({ open, rental: open ? returnDialog.rental : null })}
+          onSuccess={() => {
+            setReturnDialog({ open: false, rental: null });
+            fetchActiveRentals();
+            onReturnComplete?.();
+          }}
+        />
+      )}
+    </>
   );
 }

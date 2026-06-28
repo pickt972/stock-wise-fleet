@@ -29,7 +29,7 @@ export function InventaireActions({ inventaire, remainingItems, onStatusChange }
   const [isUpdating, setIsUpdating] = useState(false);
   const [discrepancies, setDiscrepancies] = useState<number>(0);
   const { toast } = useToast();
-  const { isAdmin } = useRoleAccess();
+  const { isAdmin, isChefAgence } = useRoleAccess();
 
   const cancelInventaire = async () => {
     try {
@@ -331,7 +331,7 @@ export function InventaireActions({ inventaire, remainingItems, onStatusChange }
             </div>
           )}
 
-          {isAdmin() && inventaire.statut !== 'valide' && (
+          {(isAdmin() || isChefAgence()) && inventaire.statut !== 'valide' && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button

@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
+  PackageCheck,
   Package,
   ArrowDownToLine,
   ArrowUpFromLine,
@@ -38,10 +39,96 @@ import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { useSidebarCollapsed } from "@/hooks/useSidebarCollapsed";
 import logo from "@/assets/logo.png";
 
-type NavItem = { name: string; href: string; icon: any; show: boolean };
-type NavSection = { label: string; items: NavItem[] };
+type NavItem = { name: string; href: string; icon: any; show: boolean };\ntype NavSection = { label: string; items: NavItem[] };
+
+// Items visibles pour le magasinier uniquement (vue simplifiée terrain)
+const MAGASINIER_SECTIONS = (permissions: any): NavSection[] => [
+  {
+    label: "Vue d'ensemble",
+    items: [
+      { name: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard, show: true },
+      { name: "Scanner", href: "/scanner", icon: ScanLine, show: true },
+    ],
+  },
+  {
+    label: "Stock",
+    items: [
+      { name: "Articles", href: "/articles", icon: Package, show: true },
+      { name: "Accessoires", href: "/accessoires", icon: Baby, show: true },
+      { name: "Entrées", href: "/entrees", icon: ArrowDownToLine, show: true },
+      { name: "Sorties", href: "/sorties", icon: ArrowUpFromLine, show: true },
+      { name: "Révisions", href: "/revisions", icon: Wrench, show: true },
+      { name: "Réceptions", href: "/receptions", icon: PackageCheck, show: true },
+    ],
+  },
+  {
+    label: "Alertes",
+    items: [
+      { name: "Alertes", href: "/alertes", icon: AlertTriangle, show: true },
+    ],
+  },
+];
 
 const getSections = (permissions: any, userRole: string | null): NavSection[] => [
+  {
+    label: "Vue d'ensemble",
+    items: [
+      { name: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard, show: true },
+      { name: "Scanner", href: "/scanner", icon: ScanLine, show: true },
+    ],
+  },
+  {
+    label: "Stock",
+    items: [
+      { name: "Articles", href: "/articles", icon: Package, show: permissions.manageStock },
+      { name: "Accessoires", href: "/accessoires", icon: Baby, show: true },
+      { name: "Entrées", href: "/entrees", icon: ArrowDownToLine, show: permissions.manageStock },
+      { name: "Sorties", href: "/sorties", icon: ArrowUpFromLine, show: permissions.manageStock },
+      { name: "Transferts", href: "/transferts", icon: ArrowLeftRight, show: permissions.manageStock },
+      { name: "Révisions", href: "/revisions", icon: Wrench, show: permissions.manageStock },
+    ],
+  },
+  {
+    label: "Gestion",
+    items: [
+      { name: "Commandes", href: "/commandes", icon: ShoppingCart, show: permissions.createOrders },
+      { name: "Inventaire", href: "/inventaire", icon: ClipboardList, show: permissions.manageStock },
+      { name: "Historique", href: "/historique", icon: History, show: permissions.viewReports },
+      { name: "Rapports", href: "/rapports", icon: FileText, show: permissions.viewReports },
+    ],
+  },
+  {
+    label: "Alertes & Seuils",
+    items: [
+      { name: "Alertes", href: "/alertes", icon: AlertTriangle, show: true },
+      { name: "Seuils de stock", href: "/seuils-stock", icon: Layers, show: permissions.manageStock },
+    ],
+  },
+  {
+    label: "Référentiel",
+    items: [
+      { name: "Catégories", href: "/categories", icon: Tags, show: permissions.manageCategories },
+      { name: "Fournisseurs", href: "/fournisseurs", icon: Building2, show: permissions.manageSuppliers },
+      { name: "Véhicules", href: "/vehicules", icon: Truck, show: permissions.manageVehicles },
+      { name: "Emplacements", href: "/emplacements", icon: MapPin, show: userRole === "admin" },
+    ],
+  },
+  {
+    label: "Administration",
+    items: [
+      { name: "Utilisateurs", href: "/users", icon: Users, show: !!permissions.manageUsers },
+      { name: "Rôles & Permissions", href: "/roles-permissions", icon: ShieldCheck, show: !!permissions.manageUsers },
+      { name: "Journal d'audit", href: "/journal-audit", icon: FileSearch, show: !!permissions.manageUsers },
+      { name: "Historique articles", href: "/historique-articles", icon: BookOpen, show: !!permissions.manageUsers },
+    ],
+  },
+  {
+    label: "Système",
+    items: [
+      { name: "Paramètres", href: "/parametres", icon: Settings, show: true },
+    ],
+  },
+];
   {
     label: "Vue d'ensemble",
     items: [
@@ -110,7 +197,10 @@ interface SidebarProps {
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useSidebarCollapsed();
   const { permissions, userRole } = useRoleAccess();
-  const sections = getSections(permissions, userRole);
+  // Magasinier gets a simplified sidebar — only operational items, no admin noise
+  const sections = userRole === "magasinier"
+    ? MAGASINIER_SECTIONS(permissions)
+    : getSections(permissions, userRole);
 
   return (
     <>

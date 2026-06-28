@@ -35,6 +35,7 @@ interface Article {
   designation: string;
   marque: string;
   categorie: string;
+  sous_categorie?: string | null;
   stock: number;
   stock_min: number;
   stock_max: number;
@@ -193,6 +194,12 @@ export default function ArticleDetail() {
                   <div className="text-muted-foreground text-sm">Catégorie</div>
                   <div className="font-medium">{article.categorie}</div>
                 </div>
+                {article.sous_categorie && (
+                  <div>
+                    <div className="text-muted-foreground text-sm">Sous-catégorie</div>
+                    <div className="font-medium">{article.sous_categorie}</div>
+                  </div>
+                )}
                 <div>
                   <div className="text-muted-foreground text-sm">Marque</div>
                   <div className="font-medium">{article.marque}</div>

@@ -20,6 +20,7 @@ import HistoriqueMouvements from "./pages/HistoriqueMouvements";
 import Revisions from "./pages/Revisions";
 import Fournisseurs from "./pages/Fournisseurs";
 import Commandes from "./pages/Commandes";
+import Receptions from "./pages/Receptions";
 import Entrees from "./pages/Entrees";
 import Sorties from "./pages/Sorties";
 import Users from "./pages/Users";
@@ -119,6 +120,11 @@ const App = () => (
               <Route path="/commandes" element={
                 <ProtectedRoute>
                   <Commandes />
+                </ProtectedRoute>
+              } />
+              <Route path="/receptions" element={
+                <ProtectedRoute>
+                  <Receptions />
                 </ProtectedRoute>
               } />
               <Route path="/entrees" element={

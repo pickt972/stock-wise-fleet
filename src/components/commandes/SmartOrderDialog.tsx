@@ -135,6 +135,7 @@ export const SmartOrderDialog = ({ isOpen, onClose, onOrdersCreated }: SmartOrde
 
       // 5) Construire les commandes groupées par fournisseur
       const grouped: GroupedBySupplier = {};
+      const orphanArticles: SmartOrderItem[] = [];
 
       for (const [articleId, af] of bestAssociationByArticle.entries()) {
         const article: any = articlesMap.get(articleId);
@@ -172,6 +173,31 @@ export const SmartOrderDialog = ({ isOpen, onClose, onOrdersCreated }: SmartOrde
         grouped[fid].items.push(item);
         grouped[fid].total_ht += item.total_ligne;
         grouped[fid].total_ttc = grouped[fid].total_ht * 1.2; // TVA 20%
+      }
+
+      // Articles sans fournisseur associé — les collecter séparément
+      const articlesWithSupplier = new Set(bestAssociationByArticle.keys());
+      for (const article of lowStockArticles as any[]) {
+        if (!articlesWithSupplier.has(article.id)) {
+          orphanArticles.push({
+            article_id: article.id,
+            designation: article.designation,
+            reference: article.reference,
+            quantite_commandee: article._aggregated_shortage || 1,
+            prix_unitaire: article.prix_achat || 0,
+            total_ligne: 0,
+            fournisseur: { id: '__orphan__', nom: 'Sans fournisseur', email: '', telephone: '', adresse: '' },
+          });
+        }
+      }
+
+      if (orphanArticles.length > 0) {
+        grouped['__orphan__'] = {
+          fournisseur: { id: '__orphan__', nom: '⚠️ Sans fournisseur assigné', email: '', telephone: '', adresse: '' },
+          items: orphanArticles,
+          total_ht: 0,
+          total_ttc: 0,
+        };
       }
 
       setGroupedOrders(grouped);

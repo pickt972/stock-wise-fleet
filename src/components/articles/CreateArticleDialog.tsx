@@ -646,12 +646,12 @@ const articleSchema = z.object({
                 value={formData.stock}
                 onChange={(e) => setFormData(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
                 onFocus={(e) => e.target.select()}
-                disabled={!isAdmin()}
-                className={!isAdmin() ? 'bg-muted cursor-not-allowed' : ''}
+                disabled={!permissions.manageStock}
+                className={!permissions.manageStock ? 'bg-muted cursor-not-allowed' : ''}
               />
-              {!isAdmin() && (
+              {!permissions.manageStock && (
                 <p className="text-xs text-muted-foreground">
-                  Réservé aux administrateurs
+                  Accès restreint
                 </p>
               )}
             </div>

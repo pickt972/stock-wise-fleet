@@ -101,11 +101,20 @@ export function InventaireSession({ onSessionCreated }: InventaireSessionProps) 
       });
 
       onSessionCreated(inventaire.id);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur lors de la création de l\'inventaire:', error);
+      const msg = error?.message || "";
+      const isActiveSession =
+        msg.toLowerCase().includes("already") ||
+        msg.toLowerCase().includes("actif") ||
+        msg.toLowerCase().includes("en cours") ||
+        msg.toLowerCase().includes("duplicate") ||
+        msg.toLowerCase().includes("unique");
       toast({
-        title: "Erreur",
-        description: "Impossible de créer l'inventaire.",
+        title: isActiveSession ? "Inventaire déjà en cours" : "Erreur",
+        description: isActiveSession
+          ? "Un inventaire est déjà actif. Reprenez-le depuis la liste ou clôturez-le avant d'en créer un nouveau."
+          : "Impossible de créer l'inventaire. Veuillez réessayer.",
         variant: "destructive",
       });
     } finally {

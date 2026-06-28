@@ -122,7 +122,7 @@ export default function Commandes() {
   const [currentFournisseurId, setCurrentFournisseurId] = useState<string>("");
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { isAdmin } = useRoleAccess();
+  const { isAdmin, isChefAgence } = useRoleAccess();
 
   useEffect(() => {
     const loadData = async () => {
@@ -1334,7 +1334,7 @@ export default function Commandes() {
                         <span className="hidden sm:inline">Réceptionner</span>
                       </Button>
                     )}
-                    {commande?.status === 'brouillon' && isAdmin() && (
+                    {commande?.status === 'brouillon' && (isAdmin() || isChefAgence()) && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -1347,7 +1347,7 @@ export default function Commandes() {
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
                     )}
-                    {isAdmin() && (
+                    {(isAdmin() || isChefAgence()) && (
                       <Button
                         variant="outline"
                         size="sm"
