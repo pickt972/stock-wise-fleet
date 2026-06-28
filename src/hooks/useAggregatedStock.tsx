@@ -1,18 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 
-/**
- * Représente un groupe agrégé : toutes les marques d'une même sous-catégorie
- * compatibles avec un même véhicule.
- * Si vehiculeId est null, le groupe ne dépend pas d'un véhicule spécifique
- * (sous-catégorie sans aucune compatibilité véhicule renseignée).
- */
 export interface AggregatedGroup {
-  key: string; // "sous_categorie::vehicule_id"
+  key: string;
   sousCategorie: string;
   vehiculeId: string | null;
   vehiculeLabel: string | null;
   totalStock: number;
-  stockMin: number; // seuil agrégé (depuis subcategory_stock_thresholds, fallback = somme des stock_min)
+  stockMin: number;
   articleIds: string[];
   articles: Array<{
     id: string;
@@ -28,52 +22,32 @@ export interface AggregatedGroup {
 }
 
 interface FetchAggregatedOptions {
-  /** N'inclure que les groupes en alerte (stock total <= stockMin) */
   onlyAlerts?: boolean;
 }
 
-/**
- * Construit l'agrégation : pour chaque (sous-catégorie, véhicule compatible)
- * on additionne les stocks de toutes les marques d'articles de cette
- * sous-catégorie compatibles avec ce véhicule.
- *
- * Le seuil min utilisé est :
- *   1. Si un seuil existe dans subcategory_stock_thresholds pour
- *      (sous_categorie, vehicule_id) → on utilise ce seuil.
- *   2. Sinon si un seuil "global" existe (vehicule_id NULL) pour la
- *      sous-catégorie → on l'utilise.
- *   3. Sinon fallback : somme des stock_min des articles du groupe.
- */
 export async function fetchAggregatedStockGroups(
   options: FetchAggregatedOptions = {}
 ): Promise<AggregatedGroup[]> {
-  // 1. Charger tous les articles ayant une sous-catégorie
+
+  // 1. Tous les articles actifs (avec ou sans sous_categorie)
   const { data: articles, error: artErr } = await supabase
     .from("articles")
-    .select(
-      "id, designation, reference, marque, stock, stock_min, prix_achat, categorie, sous_categorie"
-    );
+    .select("id, designation, reference, marque, stock, stock_min, prix_achat, categorie, sous_categorie")
+    .is("archived_at", null);
   if (artErr) throw artErr;
+  if (!articles || articles.length === 0) return [];
 
-  const articlesWithSubcat = (articles || []).filter(
-    (a: any) => a.sous_categorie && a.sous_categorie.trim() !== ""
-  );
-  if (articlesWithSubcat.length === 0) return [];
+  const articleIds = articles.map((a: any) => a.id);
 
-  const articleIds = articlesWithSubcat.map((a: any) => a.id);
-
-  // 2. Charger les compatibilités véhicules
+  // 2. Compatibilités véhicules
   const { data: compat, error: compatErr } = await supabase
     .from("article_vehicules")
     .select("article_id, vehicule_id")
     .in("article_id", articleIds);
   if (compatErr) throw compatErr;
 
-  const vehiculeIds = Array.from(
-    new Set((compat || []).map((c: any) => c.vehicule_id))
-  );
-
-  // 3. Charger les véhicules pour obtenir leur libellé
+  // 3. Labels véhicules
+  const vehiculeIds = Array.from(new Set((compat || []).map((c: any) => c.vehicule_id)));
   let vehiculesMap: Record<string, string> = {};
   if (vehiculeIds.length > 0) {
     const { data: vehs } = await supabase
@@ -81,13 +55,11 @@ export async function fetchAggregatedStockGroups(
       .select("id, marque, modele, immatriculation")
       .in("id", vehiculeIds);
     (vehs || []).forEach((v: any) => {
-      vehiculesMap[v.id] = `${v.marque} ${v.modele}${
-        v.immatriculation ? ` (${v.immatriculation})` : ""
-      }`;
+      vehiculesMap[v.id] = `${v.marque} ${v.modele}${v.immatriculation ? ` (${v.immatriculation})` : ""}`;
     });
   }
 
-  // 4. Charger les seuils configurés
+  // 4. Seuils configurés
   const { data: thresholds } = await supabase
     .from("subcategory_stock_thresholds")
     .select("sous_categorie, vehicule_id, stock_min");
@@ -97,27 +69,34 @@ export async function fetchAggregatedStockGroups(
     thresholdMap[k] = t.stock_min;
   });
 
-  // 5. Construire l'index article -> véhicules compatibles
+  // 5. Index article → véhicules
   const articleToVehicules: Record<string, string[]> = {};
   (compat || []).forEach((c: any) => {
     if (!articleToVehicules[c.article_id]) articleToVehicules[c.article_id] = [];
     articleToVehicules[c.article_id].push(c.vehicule_id);
   });
 
-  // 6. Grouper par (sous_categorie, vehicule_id)
+  // 6. Grouper par (sous_categorie_normalisée, vehicule_id)
+  // Articles sans sous_categorie → regroupés sous leur catégorie principale
   const groups: Record<string, AggregatedGroup> = {};
-  for (const a of articlesWithSubcat) {
+
+  for (const a of articles as any[]) {
+    // Utiliser sous_categorie si dispo, sinon fallback sur categorie
+    const groupLabel = (a.sous_categorie && a.sous_categorie.trim() !== "")
+      ? a.sous_categorie.trim()
+      : (a.categorie || "Sans catégorie");
+
     const compatVehs = articleToVehicules[a.id] || [];
-    const targets: Array<string | null> =
-      compatVehs.length > 0 ? compatVehs : [null];
+    const targets: Array<string | null> = compatVehs.length > 0 ? compatVehs : [null];
+
     for (const vehId of targets) {
-      const key = `${a.sous_categorie}::${vehId ?? "null"}`;
+      const key = `${groupLabel}::${vehId ?? "null"}`;
       if (!groups[key]) {
         groups[key] = {
           key,
-          sousCategorie: a.sous_categorie!,
+          sousCategorie: groupLabel,
           vehiculeId: vehId,
-          vehiculeLabel: vehId ? vehiculesMap[vehId] || null : null,
+          vehiculeLabel: vehId ? (vehiculesMap[vehId] || null) : null,
           totalStock: 0,
           stockMin: 0,
           articleIds: [],
@@ -126,11 +105,11 @@ export async function fetchAggregatedStockGroups(
       }
       groups[key].totalStock += a.stock || 0;
       groups[key].articleIds.push(a.id);
-      groups[key].articles.push(a as any);
+      groups[key].articles.push(a);
     }
   }
 
-  // 7. Calculer le stockMin de chaque groupe
+  // 7. StockMin par groupe
   for (const g of Object.values(groups)) {
     const specificKey = `${g.sousCategorie}::${g.vehiculeId ?? "null"}`;
     const globalKey = `${g.sousCategorie}::null`;
@@ -139,7 +118,7 @@ export async function fetchAggregatedStockGroups(
     } else if (thresholdMap[globalKey] !== undefined) {
       g.stockMin = thresholdMap[globalKey];
     } else {
-      // Fallback : somme des stock_min des articles uniques du groupe
+      // Fallback : somme des stock_min individuels (dédupliqués)
       const seen = new Set<string>();
       g.stockMin = g.articles.reduce((sum, a) => {
         if (seen.has(a.id)) return sum;
@@ -150,10 +129,22 @@ export async function fetchAggregatedStockGroups(
   }
 
   let result = Object.values(groups);
+
   if (options.onlyAlerts) {
-    result = result.filter((g) => g.totalStock <= g.stockMin);
+    result = result.filter((g) => {
+      // Alerte si : au moins un article en rupture (stock=0)
+      // OU stock total sous le seuil minimum (avec seuil > 0)
+      const hasRupture = g.articles.some((a) => a.stock === 0);
+      const hasFaible = g.stockMin > 0 && g.totalStock < g.stockMin;
+      return hasRupture || hasFaible;
+    });
   }
+
   return result.sort((a, b) => {
+    // Trier : ruptures en premier, puis déficit décroissant
+    const aHasRupture = a.articles.some((x) => x.stock === 0) ? 1 : 0;
+    const bHasRupture = b.articles.some((x) => x.stock === 0) ? 1 : 0;
+    if (bHasRupture !== aHasRupture) return bHasRupture - aHasRupture;
     const da = a.stockMin - a.totalStock;
     const db = b.stockMin - b.totalStock;
     return db - da;
