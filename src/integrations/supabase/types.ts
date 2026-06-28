@@ -201,6 +201,7 @@ export type Database = {
       }
       articles: {
         Row: {
+          archived_at: string | null
           categorie: string
           code_barre: string | null
           created_at: string
@@ -220,6 +221,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          archived_at?: string | null
           categorie: string
           code_barre?: string | null
           created_at?: string
@@ -239,6 +241,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          archived_at?: string | null
           categorie?: string
           code_barre?: string | null
           created_at?: string
