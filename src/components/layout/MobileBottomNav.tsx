@@ -14,9 +14,11 @@ import { useAlerts } from "@/hooks/useAlerts";
 import { Badge } from "@/components/ui/badge";
 import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
 import { QuickExitDialog } from "@/components/stock/QuickExitDialog";
+import { QuickEntryDialog } from "@/components/stock/QuickEntryDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { PackageMinus, Search } from "lucide-react";
+import { PackageMinus,
+  PackagePlus, Search } from "lucide-react";
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
@@ -49,8 +51,10 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
   const [moreOpen, setMoreOpen] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [scanChoiceOpen, setScanChoiceOpen] = useState(false);
+  const [scanMode, setScanMode] = useState<"exit" | "entry" | "consult">("consult");
   const [exitMode, setExitMode] = useState(false);
   const [quickExitArticle, setQuickExitArticle] = useState<{ id: string; reference: string; designation: string; stock: number } | null>(null);
+  const [quickEntryArticle, setQuickEntryArticle] = useState<{ id: string; reference: string; designation: string; stock: number } | null>(null);
 
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + "/");
@@ -86,6 +90,7 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
     const numeric = raw.replace(/\D/g, "");
     const q = numeric.length >= 8 ? numeric : raw;
     const wasExitMode = exitMode;
+    const currentScanMode = scanMode;
     setExitMode(false);
 
     try {
@@ -107,7 +112,13 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
 
       if (found) {
         if (wasExitMode) {
-          setQuickExitArticle(found);
+          if (wasExitMode) {
+            setQuickExitArticle(found);
+          } else if (currentScanMode === "entry") {
+            setQuickEntryArticle(found);
+          } else {
+            navigate(`/articles/${found.id}`);
+          }
         } else {
           toast({ title: "✅ Article trouvé", description: found.designation });
           navigate(`/articles/${found.id}`);
@@ -264,7 +275,7 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
           <div className="px-4 pb-6 space-y-3">
             <button
               type="button"
-              onClick={() => startScan(true)}
+              onClick={() => { setScanMode("exit"); startScan(true); }}
               className={cn(
                 "w-full flex items-center gap-4 p-5 rounded-2xl text-left",
                 "bg-gradient-to-br from-destructive/90 to-destructive text-destructive-foreground",
@@ -282,7 +293,25 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
 
             <button
               type="button"
-              onClick={() => startScan(false)}
+              onClick={() => { setScanMode("entry"); startScan(false); }}
+              className={cn(
+                "w-full flex items-center gap-4 p-5 rounded-2xl text-left",
+                "bg-gradient-to-br from-success/90 to-success text-success-foreground",
+                "shadow-medium active:scale-[0.98] transition-transform",
+              )}
+            >
+              <div className="h-14 w-14 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+                <PackagePlus className="h-7 w-7" />
+              </div>
+              <div className="flex-1">
+                <div className="text-lg font-bold leading-tight">Entrée rapide (scan)</div>
+                <div className="text-sm opacity-90 mt-0.5">Réceptionner du stock en 1 tap</div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setScanMode("consult"); startScan(false); }}
               className={cn(
                 "w-full flex items-center gap-4 p-5 rounded-2xl text-left",
                 "bg-muted hover:bg-muted/80 active:scale-[0.98] transition-all",
@@ -310,6 +339,12 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
         article={quickExitArticle}
         open={!!quickExitArticle}
         onOpenChange={(o) => { if (!o) setQuickExitArticle(null); }}
+      />
+
+      <QuickEntryDialog
+        article={quickEntryArticle}
+        open={!!quickEntryArticle}
+        onOpenChange={(o) => { if (!o) setQuickEntryArticle(null); }}
       />
     </nav>
   );
