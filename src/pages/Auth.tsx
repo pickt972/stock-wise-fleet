@@ -42,13 +42,23 @@ export default function Auth() {
 
     setIsLoading(true);
     try {
-      // Si pas de @, ajouter le domaine par défaut
-      const finalEmail = email.includes("@") ? email.trim().toLowerCase() : `${email.trim().toLowerCase()}@stock-wise.local`;
+      // Connexion avec l'email complet — les nouveaux comptes utilisent de vrais emails
+      // Rétrocompatibilité : si pas de @, on essaie d'abord avec @stock-wise.local (anciens comptes)
+      let finalEmail = email.trim().toLowerCase();
+      let usedFallback = false;
+
+      if (!finalEmail.includes("@")) {
+        finalEmail = `${finalEmail}@stock-wise.local`;
+        usedFallback = true;
+      }
 
       const { error } = await supabase.auth.signInWithPassword({ email: finalEmail, password });
 
       if (error) {
-        toast({ title: "Échec de connexion", description: "Identifiant ou mot de passe incorrect.", variant: "destructive" });
+        const msg = usedFallback
+          ? "Identifiant ou mot de passe incorrect. Si votre compte a été migré, utilisez votre adresse email complète."
+          : "Email ou mot de passe incorrect.";
+        toast({ title: "Échec de connexion", description: msg, variant: "destructive" });
       } else {
         toast({ title: "Bienvenue !", description: "Connexion réussie." });
         navigate("/dashboard", { replace: true });
@@ -150,13 +160,13 @@ export default function Auth() {
                 className="space-y-4"
               >
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email ou identifiant</Label>
+                  <Label htmlFor="email">Adresse email</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="email"
-                      type="text"
-                      placeholder="exemple@email.com"
+                      type="email"
+                      placeholder="prenom.nom@domaine.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       disabled={isLoading}

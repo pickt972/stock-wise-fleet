@@ -1,16 +1,18 @@
 // Supabase Edge Function: admin-create-user
-// Creates a new user using the service role and ensures profile + role are set
-// Only callable by admins
+// Crée un utilisateur avec son VRAI email pour permettre reset password et notifications
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+type UserRole = 'admin' | 'chef_agence' | 'magasinier';
+
 type Payload = {
-  username: string;
+  email: string;         // vrai email de l'utilisateur
   password: string;
   firstName: string;
   lastName: string;
-  role: 'admin' | 'chef_agence' | 'magasinier';
+  role: UserRole;
+  username?: string;     // identifiant court optionnel (affiché dans l'UI)
 };
 
 const corsHeaders = {
@@ -50,13 +52,11 @@ serve(async (req) => {
       });
     }
 
-    // Create client for verifying the calling user
     const clientForUser = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
       global: { headers: { Authorization: authHeader } },
     });
 
-    // Verify caller user
     const { data: userData, error: userError } = await clientForUser.auth.getUser();
     if (userError || !userData?.user) {
       return new Response(JSON.stringify({ error: 'unauthorized' }), {
@@ -65,24 +65,14 @@ serve(async (req) => {
       });
     }
 
-    // Create admin client with service role (no auth header)
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
     });
 
-    // Check admin role
-    const { data: isAdmin, error: roleErr } = await supabase.rpc('has_role', {
+    const { data: isAdmin } = await supabase.rpc('has_role', {
       _user_id: userData.user.id,
       _role: 'admin',
     });
-
-    if (roleErr) {
-      console.error('role check error', roleErr);
-      return new Response(JSON.stringify({ error: 'role_check_failed' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
-    }
 
     if (!isAdmin) {
       return new Response(JSON.stringify({ error: 'not_admin' }), {
@@ -92,27 +82,36 @@ serve(async (req) => {
     }
 
     const body: Payload = await req.json();
-    const { username, password, firstName, lastName, role } = body || {};
+    const { email, password, firstName, lastName, role, username } = body || {};
 
-    if (!username || !password || !firstName || !lastName || !role) {
+    if (!email || !password || !firstName || !lastName || !role) {
       return new Response(JSON.stringify({ error: 'invalid_payload' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
     }
 
-    const email = `${username}@stock-wise.local`.toLowerCase();
+    // Validation email basique
+    if (!email.includes('@') || !email.includes('.')) {
+      return new Response(JSON.stringify({ error: 'invalid_email' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
 
-    // Create auth user
+    const finalEmail = email.trim().toLowerCase();
+    // username affiché dans l'UI = partie avant le @ si non fourni
+    const finalUsername = username?.trim() || finalEmail.split('@')[0];
+
+    // Créer l'utilisateur Supabase Auth avec son VRAI email
     const { data: created, error: createErr } = await supabase.auth.admin.createUser({
-      email,
+      email: finalEmail,
       password,
-      email_confirm: true,
+      email_confirm: true, // pas besoin de confirmation — l'admin crée directement
       user_metadata: { first_name: firstName, last_name: lastName },
     });
 
     if (createErr || !created?.user) {
-      console.error('create user error', createErr);
       return new Response(
         JSON.stringify({ error: createErr?.message || 'create_user_failed' }),
         { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
@@ -121,44 +120,32 @@ serve(async (req) => {
 
     const newUserId = created.user.id;
 
-    // Ensure profile exists and is up to date
+    // Créer/mettre à jour le profil
     const { error: upsertProfileErr } = await supabase.from('profiles').upsert({
       id: newUserId,
-      username,
+      username: finalUsername,
       first_name: firstName,
       last_name: lastName,
     });
 
     if (upsertProfileErr) {
       console.error('upsert profile error', upsertProfileErr);
-      // continue but report in response
     }
 
-    // Ensure role is set
-    const { data: existingRole, error: fetchRoleErr } = await supabase
+    // Assigner le rôle
+    const { data: existingRole } = await supabase
       .from('user_roles')
       .select('id')
       .eq('user_id', newUserId)
       .maybeSingle();
 
-    if (fetchRoleErr) {
-      console.error('fetch role error', fetchRoleErr);
-    }
-
     if (existingRole?.id) {
-      const { error: updateRoleErr } = await supabase
-        .from('user_roles')
-        .update({ role })
-        .eq('id', existingRole.id);
-      if (updateRoleErr) console.error('update role error', updateRoleErr);
+      await supabase.from('user_roles').update({ role }).eq('id', existingRole.id);
     } else {
-      const { error: insertRoleErr } = await supabase
-        .from('user_roles')
-        .insert({ user_id: newUserId, role });
-      if (insertRoleErr) console.error('insert role error', insertRoleErr);
+      await supabase.from('user_roles').insert({ user_id: newUserId, role });
     }
 
-    return new Response(JSON.stringify({ id: newUserId, email }), {
+    return new Response(JSON.stringify({ id: newUserId, email: finalEmail }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });
