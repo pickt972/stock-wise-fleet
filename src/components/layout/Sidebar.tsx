@@ -39,7 +39,8 @@ import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { useSidebarCollapsed } from "@/hooks/useSidebarCollapsed";
 import logo from "@/assets/logo.png";
 
-type NavItem = { name: string; href: string; icon: any; show: boolean };\ntype NavSection = { label: string; items: NavItem[] };
+type NavItem = { name: string; href: string; icon: any; show: boolean };
+type NavSection = { label: string; items: NavItem[] };
 
 // Items visibles pour le magasinier uniquement (vue simplifiée terrain)
 const MAGASINIER_SECTIONS = (permissions: any): NavSection[] => [
