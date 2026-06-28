@@ -46,7 +46,7 @@ export function CreateArticleDialog({
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange 
 }: CreateArticleDialogProps) {
-  const { isAdmin } = useRoleAccess();
+  const { isAdmin, permissions } = useRoleAccess();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = controlledOnOpenChange ?? setInternalOpen;
