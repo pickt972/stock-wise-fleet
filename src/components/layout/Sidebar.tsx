@@ -230,7 +230,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             {!isCollapsed && (
               <div className="flex items-center gap-2 min-w-0">
                 <img src={logo} alt="" className="h-7 w-7 rounded-lg flex-shrink-0" />
-                <span className="text-[14px] font-bold tracking-tight truncate">StockAuto</span>
+                <span className="text-[14px] font-bold tracking-tight truncate gradient-text">StockAuto</span>
               </div>
             )}
             <Button

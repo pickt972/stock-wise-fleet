@@ -1,27 +1,44 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
-export function PageSkeleton({ rows = 6 }: { rows?: number }) {
+interface PageSkeletonProps {
+  rows?: number;
+  className?: string;
+}
+
+export function PageSkeleton({ rows = 6, className }: PageSkeletonProps) {
   return (
-    <div className="space-y-6">
-      {/* Header simulé */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-10 w-32" />
+    <div className={cn("space-y-4 animate-in fade-in duration-300", className)}>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="space-y-1.5">
+          <Skeleton className="h-7 w-40 rounded-xl" />
+          <Skeleton className="h-4 w-24 rounded-lg" />
+        </div>
+        <Skeleton className="h-9 w-28 rounded-xl" />
       </div>
 
-      {/* Rows simulées */}
-      <div className="space-y-3">
+      {/* Filter chips */}
+      <div className="flex gap-2">
+        {[60, 48, 56, 40].map((w, i) => (
+          <Skeleton key={i} className="h-7 rounded-full" style={{ width: w }} />
+        ))}
+      </div>
+
+      {/* Rows */}
+      <div className="space-y-2.5">
         {Array.from({ length: rows }).map((_, i) => (
           <div
             key={i}
-            className="flex items-center gap-4 p-4 rounded-lg border border-border"
+            className="flex items-center gap-3 p-3.5 rounded-2xl border border-border/60 bg-card"
+            style={{ opacity: 1 - i * 0.07 }}
           >
-            <Skeleton className="h-10 w-10 rounded-full" />
-            <div className="flex-1 space-y-2">
-              <Skeleton className="h-4 w-1/3" />
-              <Skeleton className="h-3 w-1/2" />
+            <Skeleton className="h-9 w-9 rounded-xl flex-shrink-0" />
+            <div className="flex-1 space-y-1.5">
+              <Skeleton className="h-3.5 rounded-lg" style={{ width: `${55 + (i % 3) * 15}%` }} />
+              <Skeleton className="h-3 rounded-lg" style={{ width: `${35 + (i % 4) * 10}%` }} />
             </div>
-            <Skeleton className="h-8 w-20" />
+            <Skeleton className="h-6 w-14 rounded-lg flex-shrink-0" />
           </div>
         ))}
       </div>

@@ -8,92 +8,71 @@ interface KPICardProps {
   label: string;
   className?: string;
   index?: number;
-  /** Tonalité (couleur de la pastille icône) */
   tone?: "primary" | "success" | "warning" | "destructive" | "muted" | "accent";
-  /** Optionnel : delta affiché sous le label (ex: "+12%") */
   trend?: { value: string; positive?: boolean };
-  /** Texte d'aide secondaire (ex: "vs hier") */
   helper?: string;
+  live?: boolean;
 }
 
-const toneRing: Record<NonNullable<KPICardProps["tone"]>, string> = {
-  primary: "bg-primary/10 text-primary ring-primary/15",
-  accent: "bg-accent/12 text-accent ring-accent/20",
-  success: "bg-success/12 text-success ring-success/20",
-  warning: "bg-warning/15 text-[hsl(28_90%_38%)] dark:text-warning ring-warning/20",
-  destructive: "bg-destructive/12 text-destructive ring-destructive/20",
-  muted: "bg-muted text-muted-foreground ring-border",
+const toneConfig: Record<NonNullable<KPICardProps["tone"]>, { ring: string; dot: string }> = {
+  primary:     { ring: "bg-primary/10 text-primary",       dot: "bg-primary" },
+  accent:      { ring: "bg-accent/10 text-accent",         dot: "bg-accent" },
+  success:     { ring: "bg-success/10 text-success",       dot: "bg-success" },
+  warning:     { ring: "bg-warning/10 text-warning",       dot: "bg-warning" },
+  destructive: { ring: "bg-destructive/10 text-destructive", dot: "bg-destructive" },
+  muted:       { ring: "bg-muted text-muted-foreground",   dot: "bg-muted-foreground" },
 };
 
-/**
- * KPI Card SaaS premium :
- * - Layout horizontal : valeur + label à gauche, pastille icône à droite (style Stripe / Linear)
- * - Pastille avec double-ring décoratif pour effet "premium"
- * - Trend optionnel avec flèche directionnelle
- * - Animation fade-in séquentielle
- */
 export function KPICard({
-  icon,
-  value,
-  label,
-  className,
-  index = 0,
-  tone = "primary",
-  trend,
-  helper,
+  icon, value, label, className, index = 0, tone = "primary",
+  trend, helper, live = false,
 }: KPICardProps) {
+  const cfg = toneConfig[tone];
+
   return (
     <Card
       className={cn(
-        "p-4 sm:p-5 hover:shadow-medium hover:-translate-y-0.5 transition-all duration-200",
-        "animate-fade-in opacity-0 [animation-fill-mode:forwards]",
+        "relative overflow-hidden p-3 sm:p-4",
+        "hover:shadow-medium hover:-translate-y-0.5 transition-all duration-200",
+        // spring entrance: scale + fade
+        "opacity-0 translate-y-1 [animation-fill-mode:forwards]",
+        "[animation-name:kpi-spring] [animation-duration:500ms] [animation-timing-function:cubic-bezier(0.34,1.56,0.64,1)]",
         className,
       )}
-      style={{ animationDelay: `${index * 60}ms` }}
+      style={{ animationDelay: `${index * 70}ms` }}
     >
-      {/* Header : pastille icône en haut, séparée de la valeur */}
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <p className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground uppercase tracking-wider truncate">
-          {label}
-        </p>
-        <div
-          className={cn(
-            "h-8 w-8 sm:h-9 sm:w-9 rounded-lg flex items-center justify-center flex-shrink-0",
-            "ring-2",
-            toneRing[tone],
-          )}
-        >
+      {/* Icon + live dot */}
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className={cn("h-8 w-8 rounded-xl flex items-center justify-center flex-shrink-0", cfg.ring)}>
           {icon}
         </div>
+        {live && (
+          <div className="flex items-center gap-1 mt-0.5">
+            <span className={cn("h-1.5 w-1.5 rounded-full animate-pulse", cfg.dot)} />
+            <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider">Live</span>
+          </div>
+        )}
       </div>
 
-      <div className="min-w-0 space-y-1">
-        <div className="text-[22px] sm:text-[26px] font-bold text-foreground tabular-nums leading-none tracking-tight break-all">
-          {value}
-        </div>
-          {(trend || helper) && (
-            <div className="flex items-center gap-1.5 pt-1">
-              {trend && (
-                <span
-                  className={cn(
-                    "inline-flex items-center gap-0.5 text-[12px] font-semibold tabular-nums",
-                    trend.positive ? "text-success" : "text-destructive",
-                  )}
-                >
-                  {trend.positive ? (
-                    <ArrowUpRight className="h-3 w-3" />
-                  ) : (
-                    <ArrowDownRight className="h-3 w-3" />
-                  )}
-                  {trend.value}
-                </span>
-              )}
-              {helper && (
-                <span className="text-[12px] text-muted-foreground">{helper}</span>
-              )}
-            </div>
-          )}
+      {/* Value */}
+      <div className="text-[20px] sm:text-[24px] font-bold tabular-nums leading-none tracking-tight text-foreground">
+        {value}
       </div>
+
+      {/* Label */}
+      <p className="text-[10px] font-medium text-muted-foreground mt-1 truncate">{label}</p>
+
+      {/* Trend */}
+      {trend && (
+        <div className={cn(
+          "inline-flex items-center gap-0.5 text-[10px] font-semibold mt-1.5 tabular-nums",
+          trend.positive ? "text-success" : "text-destructive",
+        )}>
+          {trend.positive ? <ArrowUpRight className="h-2.5 w-2.5" /> : <ArrowDownRight className="h-2.5 w-2.5" />}
+          {trend.value}
+          {helper && <span className="text-muted-foreground font-normal ml-0.5">{helper}</span>}
+        </div>
+      )}
     </Card>
   );
 }

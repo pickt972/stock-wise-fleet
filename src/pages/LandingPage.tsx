@@ -62,8 +62,8 @@ export default function LandingPage() {
                 <img src={logo} alt="StockAuto Logo" className="h-32 w-32 md:h-64 md:w-64" />
               </div>
             </div>
-            <h1 className="text-3xl md:text-5xl font-bold text-foreground">
-              Stock<span className="text-primary">Auto</span>
+            <h1 className="text-3xl md:text-5xl font-bold">
+              <span className="gradient-text">StockAuto</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
               Solution complète de gestion des stocks pour votre entreprise automobile
@@ -90,8 +90,8 @@ export default function LandingPage() {
       {/* Features Section */}
       <div className="container mx-auto px-4 pb-16 md:pb-24">
         <div className="text-center mb-12 md:mb-16">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3 md:mb-4">
-            Pourquoi choisir StockAuto ?
+          <h2 className="text-2xl md:text-3xl font-bold mb-3 md:mb-4">
+            Pourquoi choisir <span className="gradient-text">StockAuto</span> ?
           </h2>
           <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4">
             Une solution moderne et intuitive pour optimiser la gestion de vos stocks

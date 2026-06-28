@@ -506,7 +506,7 @@ export default function Articles() {
           </Alert>
         )}
 
-        <div className="sticky top-0 z-30 -mx-4 px-4 py-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border/50 space-y-2">
+        <div className="sticky top-0 z-30 -mx-4 px-4 py-2 bg-card/80 backdrop-blur-xl backdrop-saturate-150 border-b border-border/60 space-y-2">
           <div className="flex items-center justify-between gap-2">
             <SearchWithScanner
               placeholder="Chercher article..."
