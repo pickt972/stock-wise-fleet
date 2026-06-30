@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Plus, Trash2, UserCog, Edit, UserCheck, UserX } from "lucide-react";
+import { Loader2, Plus, Trash2, UserCog, Edit, UserCheck, UserX, Mail } from "lucide-react";
 import DashboardLayout from "./DashboardLayout";
 import EditUserDialog from "@/components/users/EditUserDialog";
 
@@ -22,15 +22,12 @@ type UserRole = 'admin' | 'chef_agence' | 'magasinier';
 
 interface UserProfile {
   id: string;
+  email: string;
   first_name: string;
   last_name: string;
   username: string;
   role: UserRole;
   is_active: boolean;
-}
-
-interface UserRoleData {
-  role: UserRole;
 }
 
 export default function Users() {
@@ -41,11 +38,12 @@ export default function Users() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [formData, setFormData] = useState({
+    email: "",
     username: "",
     firstName: "",
     lastName: "",
     password: "",
-    role: "magasinier"
+    role: "magasinier" as UserRole,
   });
   const [currentSort, setCurrentSort] = useState('first_name');
   const [currentDirection, setCurrentDirection] = useState<'asc' | 'desc'>('asc');
@@ -54,37 +52,10 @@ export default function Users() {
 
   const fetchUsers = async () => {
     try {
-      // Récupérer d'abord tous les profils
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, username, is_active')
-        .order('first_name');
-
-      if (profilesError) throw profilesError;
-
-      if (!profiles || profiles.length === 0) {
-        setUsers([]);
-        return;
-      }
-
-      // Récupérer tous les rôles en une seule requête
-      const { data: roles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role')
-        .in('user_id', profiles.map(p => p.id));
-
-      if (rolesError) throw rolesError;
-
-      // Mapper les profils avec leurs rôles
-      const usersWithRoles = profiles.map((profile) => {
-        const userRole = roles?.find(r => r.user_id === profile.id);
-        return {
-          ...profile,
-          role: (userRole?.role as UserRole) || 'magasinier'
-        };
-      });
-
-      setUsers(usersWithRoles);
+      // RPC sécurisée : récupère email (auth.users) + profil + rôle en un appel
+      const { data, error } = await supabase.rpc('get_users_with_email');
+      if (error) throw error;
+      setUsers((data || []) as UserProfile[]);
     } catch (error: any) {
       console.error('Erreur lors du chargement des utilisateurs:', error);
       toast({
@@ -104,33 +75,30 @@ export default function Users() {
   const sortOptions = [
     { value: 'first_name', label: 'Prénom' },
     { value: 'last_name', label: 'Nom' },
-    { value: 'username', label: "Nom d'utilisateur" },
+    { value: 'email', label: 'Email' },
     { value: 'role', label: 'Rôle' },
-    { value: 'is_active', label: 'Statut' }
+    { value: 'is_active', label: 'Statut' },
   ];
 
   const applySorting = (data: UserProfile[]) => {
     return [...data].sort((a, b) => {
-      let aValue = a[currentSort as keyof UserProfile];
-      let bValue = b[currentSort as keyof UserProfile];
+      let aValue: any = a[currentSort as keyof UserProfile];
+      let bValue: any = b[currentSort as keyof UserProfile];
 
-      // Gestion spéciale pour le rôle
       if (currentSort === 'role') {
-        const roleOrder = { 'admin': '3', 'chef_agence': '2', 'magasinier': '1' };
+        const roleOrder: Record<string, string> = { admin: '3', chef_agence: '2', magasinier: '1' };
         aValue = roleOrder[a.role] || '0';
         bValue = roleOrder[b.role] || '0';
       }
-
       if (currentSort === 'is_active') {
         aValue = a.is_active ? '1' : '0';
         bValue = b.is_active ? '1' : '0';
       }
 
-      const comparableA = String(aValue ?? '');
-      const comparableB = String(bValue ?? '');
-
-      if (comparableA === comparableB) return 0;
-      const result = comparableA < comparableB ? -1 : 1;
+      const ca = String(aValue ?? '');
+      const cb = String(bValue ?? '');
+      if (ca === cb) return 0;
+      const result = ca < cb ? -1 : 1;
       return currentDirection === 'asc' ? result : -result;
     });
   };
@@ -142,16 +110,13 @@ export default function Users() {
 
   const sortedUsers = applySorting(users);
 
-  // Vérifier que l'utilisateur est admin
   if (userRole !== 'admin') {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-96">
           <Card>
             <CardContent className="p-6">
-              <p className="text-center text-muted-foreground">
-                Accès restreint aux administrateurs
-              </p>
+              <p className="text-center text-muted-foreground">Accès restreint aux administrateurs</p>
             </CardContent>
           </Card>
         </div>
@@ -159,53 +124,51 @@ export default function Users() {
     );
   }
 
-
   const createUser = async () => {
-    if (!formData.username || !formData.firstName || !formData.lastName || !formData.password) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez remplir tous les champs",
-        variant: "destructive",
-      });
+    if (!formData.email || !formData.firstName || !formData.lastName || !formData.password) {
+      toast({ title: "Erreur", description: "Veuillez remplir tous les champs requis.", variant: "destructive" });
+      return;
+    }
+    if (!formData.email.includes("@") || !formData.email.includes(".")) {
+      toast({ title: "Email invalide", description: "Saisissez une adresse email valide.", variant: "destructive" });
+      return;
+    }
+    if (formData.password.length < 6) {
+      toast({ title: "Mot de passe trop court", description: "Minimum 6 caractères.", variant: "destructive" });
       return;
     }
 
     setIsCreating(true);
     try {
-      // Appel sécurisé à l'Edge Function (utilise le service role côté serveur)
       const { data, error } = await supabase.functions.invoke('admin-create-user', {
         body: {
-          username: formData.username,
+          email: formData.email.trim().toLowerCase(),
+          username: formData.username.trim() || undefined,
           password: formData.password,
           firstName: formData.firstName,
           lastName: formData.lastName,
-          role: formData.role as UserRole,
+          role: formData.role,
         },
       });
 
-      if (error) throw error;
+      if (error || (data as any)?.error) {
+        throw new Error((data as any)?.error || error?.message || "Impossible de créer l'utilisateur");
+      }
 
       toast({
-        title: "Utilisateur créé",
-        description: `${formData.firstName} ${formData.lastName} a été ajouté avec succès`,
+        title: "✅ Utilisateur créé",
+        description: `${formData.firstName} ${formData.lastName} (${formData.email}) a été ajouté avec succès`,
       });
 
-      setFormData({
-        username: "",
-        firstName: "",
-        lastName: "",
-        password: "",
-        role: "magasinier",
-      });
+      setFormData({ email: "", username: "", firstName: "", lastName: "", password: "", role: "magasinier" });
       setIsDialogOpen(false);
       fetchUsers();
     } catch (error: any) {
       console.error('Erreur création utilisateur:', error);
-      toast({
-        title: "Erreur",
-        description: error?.message || "Impossible de créer l'utilisateur",
-        variant: "destructive",
-      });
+      const msg = error?.message?.includes("already") || error?.message?.includes("registered")
+        ? "Cette adresse email est déjà utilisée."
+        : error?.message || "Impossible de créer l'utilisateur";
+      toast({ title: "Erreur", description: msg, variant: "destructive" });
     } finally {
       setIsCreating(false);
     }
@@ -213,92 +176,51 @@ export default function Users() {
 
   const updateUserRole = async (userId: string, newRole: UserRole) => {
     try {
-      const { error } = await supabase
-        .from('user_roles')
-        .update({ role: newRole })
-        .eq('user_id', userId);
-
+      const { error } = await supabase.from('user_roles').update({ role: newRole }).eq('user_id', userId);
       if (error) throw error;
-
-      toast({
-        title: "Rôle modifié",
-        description: "Le rôle de l'utilisateur a été mis à jour",
-      });
-
+      toast({ title: "Rôle modifié", description: "Le rôle de l'utilisateur a été mis à jour" });
       fetchUsers();
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de modifier le rôle",
-        variant: "destructive",
-      });
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de modifier le rôle", variant: "destructive" });
     }
   };
 
   const getFunctionErrorMessage = async (data: unknown, error: any) => {
     const response = error?.context;
     let body: any = data;
-
     if (response && typeof response.json === 'function') {
-      try {
-        body = await response.clone().json();
-      } catch {
-        body = data;
-      }
+      try { body = await response.clone().json(); } catch { body = data; }
     }
-
     return body?.hint || body?.error || error?.message || "Impossible de supprimer l'utilisateur";
   };
 
   const deleteUser = async (userId: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
-        body: { userId },
-      });
-      
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', { body: { userId } });
       if (error || (data as any)?.error) {
         throw new Error(await getFunctionErrorMessage(data, error));
       }
-
-      toast({
-        title: "Utilisateur supprimé",
-        description: "L'utilisateur a été supprimé avec succès",
-      });
-
+      toast({ title: "Utilisateur supprimé", description: "L'utilisateur a été supprimé avec succès" });
       fetchUsers();
     } catch (error: any) {
       console.error('Erreur suppression utilisateur:', error);
-      toast({
-        title: "Erreur",
-        description: error?.message || "Impossible de supprimer l'utilisateur",
-        variant: "destructive",
-      });
+      toast({ title: "Erreur", description: error?.message || "Impossible de supprimer l'utilisateur", variant: "destructive" });
     }
   };
 
   const toggleUserActive = async (targetUser: UserProfile) => {
     try {
       const nextStatus = !targetUser.is_active;
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_active: nextStatus })
-        .eq('id', targetUser.id);
-
+      const { error } = await supabase.from('profiles').update({ is_active: nextStatus }).eq('id', targetUser.id);
       if (error) throw error;
-
       toast({
         title: nextStatus ? "Utilisateur activé" : "Utilisateur désactivé",
         description: `${targetUser.first_name} ${targetUser.last_name} est maintenant ${nextStatus ? 'actif' : 'désactivé'}`,
       });
-
       fetchUsers();
     } catch (error: any) {
       console.error('Erreur statut utilisateur:', error);
-      toast({
-        title: "Erreur",
-        description: error?.message || "Impossible de modifier le statut de l'utilisateur",
-        variant: "destructive",
-      });
+      toast({ title: "Erreur", description: error?.message || "Impossible de modifier le statut", variant: "destructive" });
     }
   };
 
@@ -324,7 +246,7 @@ export default function Users() {
   return (
     <DashboardLayout>
       <div className="space-y-4 md:space-y-6">
-        
+
         <div className="flex items-center justify-between">
           <CompactSortControls
             sortOptions={sortOptions}
@@ -334,15 +256,15 @@ export default function Users() {
             showDragHandle={false}
           />
         </div>
-        
+
         <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">Gestion des utilisateurs</h1>
             <p className="text-sm md:text-base text-muted-foreground">
-              Gérez les comptes utilisateurs et leurs rôles
+              Gérez les comptes utilisateurs, leurs emails et leurs rôles
             </p>
           </div>
-          
+
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className="w-full md:w-auto">
@@ -354,17 +276,31 @@ export default function Users() {
               <DialogHeader>
                 <DialogTitle>Créer un nouvel utilisateur</DialogTitle>
                 <DialogDescription>
-                  Ajoutez un nouveau membre à l'équipe
+                  L'email servira à la connexion et aux réinitialisations de mot de passe.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="username">Nom d'utilisateur</Label>
+                  <Label htmlFor="new-email">Adresse email <span className="text-destructive">*</span></Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="new-email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="prenom.nom@domaine.com"
+                      className="pl-9"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="username">Nom d'utilisateur (optionnel)</Label>
                   <Input
                     id="username"
                     value={formData.username}
-                    onChange={(e) => setFormData({...formData, username: e.target.value})}
-                    placeholder="nom_utilisateur"
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                    placeholder="Auto si vide (avant le @)"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -373,7 +309,7 @@ export default function Users() {
                     <Input
                       id="firstName"
                       value={formData.firstName}
-                      onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                       placeholder="Prénom"
                     />
                   </div>
@@ -382,7 +318,7 @@ export default function Users() {
                     <Input
                       id="lastName"
                       value={formData.lastName}
-                      onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                       placeholder="Nom"
                     />
                   </div>
@@ -392,19 +328,14 @@ export default function Users() {
                   <PasswordInput
                     id="password"
                     value={formData.password}
-                    onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    placeholder="Mot de passe"
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    placeholder="Mot de passe temporaire"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="role">Rôle</Label>
-                  <Select 
-                    value={formData.role} 
-                    onValueChange={(value) => setFormData({...formData, role: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+                  <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value as UserRole })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="magasinier">Magasinier</SelectItem>
                       <SelectItem value="chef_agence">Chef d'agence</SelectItem>
@@ -414,11 +345,7 @@ export default function Users() {
                 </div>
               </div>
               <DialogFooter>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsDialogOpen(false)}
-                  disabled={isCreating}
-                >
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isCreating}>
                   Annuler
                 </Button>
                 <Button onClick={createUser} disabled={isCreating}>
@@ -443,37 +370,36 @@ export default function Users() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nom</TableHead>
-                    <TableHead className="hidden sm:table-cell">Nom d'utilisateur</TableHead>
+                    <TableHead className="hidden sm:table-cell">Email</TableHead>
                     <TableHead>Rôle</TableHead>
                     <TableHead>Statut</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-               <TableBody>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {sortedUsers.map((user) => (
                     <TableRow key={user.id}>
-                     <TableCell className="font-medium text-sm">
-                       <div>
-                         <div>{user.first_name} {user.last_name}</div>
-                         <div className="text-xs text-muted-foreground sm:hidden">{user.username}</div>
-                       </div>
-                     </TableCell>
-                     <TableCell className="hidden sm:table-cell text-sm">{user.username}</TableCell>
-                     <TableCell>
-                       <Badge variant={getRoleBadgeVariant(user.role)} className="text-xs">
-                         {user.role === 'admin' ? 'Admin' :
-                          user.role === 'chef_agence' ? 'Chef' : 'Mag.'}
-                       </Badge>
-                     </TableCell>
-                     <TableCell>
-                       <Badge variant={user.is_active ? "default" : "destructive"} className="text-xs">
-                         {user.is_active ? 'Actif' : 'Désactivé'}
-                       </Badge>
-                     </TableCell>
+                      <TableCell className="font-medium text-sm">
+                        <div>
+                          <div>{user.first_name} {user.last_name}</div>
+                          <div className="text-xs text-muted-foreground sm:hidden truncate max-w-[160px]">{user.email}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">{user.email}</TableCell>
+                      <TableCell>
+                        <Badge variant={getRoleBadgeVariant(user.role)} className="text-xs">
+                          {user.role === 'admin' ? 'Admin' : user.role === 'chef_agence' ? 'Chef' : 'Mag.'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={user.is_active ? "default" : "destructive"} className="text-xs">
+                          {user.is_active ? 'Actif' : 'Désactivé'}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1 md:gap-2">
                           {currentUser?.id !== user.id && (
-                            <div className="flex h-8 items-center gap-1 rounded-md border px-2" title={user.is_active ? "Désactiver l'utilisateur" : "Activer l'utilisateur"}>
+                            <div className="flex h-8 items-center gap-1 rounded-md border px-2" title={user.is_active ? "Désactiver" : "Activer"}>
                               {user.is_active ? (
                                 <UserCheck className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
                               ) : (
@@ -482,27 +408,22 @@ export default function Users() {
                               <Switch
                                 checked={user.is_active}
                                 onCheckedChange={() => toggleUserActive(user)}
-                                aria-label={user.is_active ? "Désactiver l'utilisateur" : "Activer l'utilisateur"}
+                                aria-label={user.is_active ? "Désactiver" : "Activer"}
                               />
                             </div>
                           )}
 
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="h-8 w-8 p-0"
-                            onClick={() => {
-                              setSelectedUser(user);
-                              setIsEditDialogOpen(true);
-                            }}
+                            onClick={() => { setSelectedUser(user); setIsEditDialogOpen(true); }}
+                            title="Modifier (email, nom, rôle, mot de passe)"
                           >
                             <Edit className="h-3 w-3 md:h-4 md:w-4" />
                           </Button>
-                          
-                          <Select
-                            value={user.role}
-                            onValueChange={(value) => updateUserRole(user.id, value as UserRole)}
-                          >
+
+                          <Select value={user.role} onValueChange={(value) => updateUserRole(user.id, value as UserRole)}>
                             <SelectTrigger className="w-24 md:w-36 text-xs md:text-sm">
                               <UserCog className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
                               <SelectValue />
@@ -513,49 +434,45 @@ export default function Users() {
                               <SelectItem value="admin">Administrateur</SelectItem>
                             </SelectContent>
                           </Select>
-                          
+
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="sm" className="h-8 w-8 p-0">
+                              <Button variant="destructive" size="sm" className="h-8 w-8 p-0" disabled={currentUser?.id === user.id}>
                                 <Trash2 className="h-3 w-3 md:h-4 md:w-4" />
                               </Button>
                             </AlertDialogTrigger>
-                           <AlertDialogContent>
-                             <AlertDialogHeader>
-                               <AlertDialogTitle>Supprimer l'utilisateur</AlertDialogTitle>
-                               <AlertDialogDescription>
-                                 Êtes-vous sûr de vouloir supprimer {user.first_name} {user.last_name} ?
-                                 Cette action est irréversible.
-                               </AlertDialogDescription>
-                             </AlertDialogHeader>
-                             <AlertDialogFooter>
-                               <AlertDialogCancel>Annuler</AlertDialogCancel>
-                               <AlertDialogAction
-                                 onClick={() => deleteUser(user.id)}
-                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                               >
-                                 Supprimer
-                               </AlertDialogAction>
-                             </AlertDialogFooter>
-                           </AlertDialogContent>
-                         </AlertDialog>
-                       </div>
-                     </TableCell>
-                  </TableRow>
-                ))}
-               </TableBody>
-            </Table>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Supprimer cet utilisateur ?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {user.first_name} {user.last_name} ({user.email}) sera définitivement supprimé. Cette action est irréversible.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => deleteUser(user.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                  Supprimer
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>
-
-        <EditUserDialog
-          user={selectedUser}
-          isOpen={isEditDialogOpen}
-          onOpenChange={setIsEditDialogOpen}
-          onUserUpdated={fetchUsers}
-        />
       </div>
+
+      <EditUserDialog
+        user={selectedUser}
+        isOpen={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        onUserUpdated={fetchUsers}
+      />
     </DashboardLayout>
   );
 }
