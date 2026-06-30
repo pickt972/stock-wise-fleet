@@ -57,14 +57,14 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Non authentifié");
 
-      // Insert movement with proper user tracking
+      // Insert movement
       const { error: mvtError } = await supabase.from("stock_movements").insert({
         article_id: article.id,
         type: movementType,
         quantity: quantity,
         motif: motif || (mode === "add" ? "Ajout rapide via scan" : "Sortie rapide via scan"),
         user_id: user.id,
-        created_by: user.id,
+        // created_by a auth.uid() comme valeur par défaut — inutile de le dupliquer
       });
 
       if (mvtError) throw mvtError;
