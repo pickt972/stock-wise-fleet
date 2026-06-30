@@ -309,21 +309,27 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
       const { error } = await supabase.from('articles').update(updateData).eq('id', article.id);
       if (error) throw error;
 
-      if (isAdmin() && formData.stock !== article.stock) {
+      // Si le stock a changé, enregistrer un mouvement via la RPC sécurisée
+      if (formData.stock !== article.stock) {
         const delta = (formData.stock ?? 0) - (article.stock ?? 0);
         if (delta !== 0) {
-          const { error: stockError } = await supabase.rpc('update_article_stock', {
-            article_id: article.id,
-            quantity_change: delta,
+          const movementType = delta > 0 ? "entree" : "sortie";
+          const { error: mvtError } = await supabase.rpc('insert_stock_movement', {
+            p_article_id: article.id,
+            p_type: movementType,
+            p_quantity: Math.abs(delta),
+            p_motif: "Correction stock via fiche article",
           });
-          if (stockError) throw stockError;
+          if (mvtError) throw mvtError;
         }
       }
 
       toast({ title: "Article modifié", description: "L'article a été modifié avec succès" });
       handleClose();
     } catch (error: any) {
-      toast({ title: "Erreur", description: "Impossible de modifier l'article", variant: "destructive" });
+      console.error("Erreur modification article:", JSON.stringify(error));
+      const msg = error?.message || error?.details || error?.hint || "Impossible de modifier l'article";
+      toast({ title: "Erreur", description: msg, variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
