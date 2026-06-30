@@ -29,6 +29,7 @@ interface User {
   role: string;
   created_at: string;
   is_active: boolean;
+  email: string;
 }
 
 export function UsersContent() {
@@ -44,29 +45,19 @@ export function UsersContent() {
 
   const fetchUsers = async () => {
     try {
-      // Récupérer les profils avec leurs rôles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, username, created_at, is_active')
-        .order('first_name');
+      const { data, error } = await supabase.rpc('get_users_with_email');
+      if (error) throw error;
 
-      if (profilesError) throw profilesError;
-
-      // Récupérer les rôles pour chaque utilisateur
-      const usersWithRoles = await Promise.all(
-        (profiles || []).map(async (profile) => {
-          const { data: roleData } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', profile.id)
-            .single();
-
-          return {
-            ...profile,
-            role: roleData?.role || 'magasinier'
-          };
-        })
-      );
+      const usersWithRoles: User[] = (data || []).map((u: any) => ({
+        id: u.id,
+        first_name: u.first_name,
+        last_name: u.last_name,
+        username: u.username,
+        email: u.email,
+        is_active: u.is_active,
+        role: u.role || 'magasinier',
+        created_at: '',
+      }));
 
       setUsers(usersWithRoles);
     } catch (error) {

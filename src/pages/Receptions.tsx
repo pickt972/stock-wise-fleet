@@ -19,7 +19,7 @@ interface CommandeEnAttente {
   numero_commande: string;
   fournisseur: string;
   status: string;
-  date_commande: string;
+  date_creation: string;
   commande_items: Array<{
     designation: string;
     quantite_commandee: number;
@@ -37,11 +37,11 @@ export default function Receptions() {
       const { data, error } = await supabase
         .from("commandes")
         .select(`
-          id, numero_commande, fournisseur, status, date_commande,
+          id, numero_commande, fournisseur, status, date_creation,
           commande_items (designation, quantite_commandee, quantite_recue)
         `)
         .in("status", ["confirme", "recu_partiel", "envoye"])
-        .order("date_commande", { ascending: false });
+        .order("date_creation", { ascending: false });
       if (error) throw error;
       return (data || []) as CommandeEnAttente[];
     },
@@ -93,7 +93,7 @@ export default function Receptions() {
                         <p className="font-medium text-sm truncate">{cmd.fournisseur}</p>
                         <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
                           <Clock className="h-3 w-3" />
-                          {format(new Date(cmd.date_commande), "dd MMM yyyy", { locale: fr })}
+                          {format(new Date(cmd.date_creation), "dd MMM yyyy", { locale: fr })}
                         </div>
                         <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
                           <Package className="h-3 w-3" />

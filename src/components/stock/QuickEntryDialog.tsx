@@ -67,7 +67,7 @@ export function QuickEntryDialog({ article, open, onOpenChange, onDone }: QuickE
           entry_id: entry.id,
           article_id: article.id,
           quantity,
-          prix_unitaire: null,       // prix non renseigné en mode rapide
+          unit_price: 0,             // prix non renseigné en mode rapide
         }]);
 
       if (itemError) throw itemError;
