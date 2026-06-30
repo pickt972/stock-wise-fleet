@@ -50,42 +50,31 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
 
     setIsSubmitting(true);
     try {
-      const delta = mode === "add" ? quantity : -quantity;
       const movementType = mode === "add" ? "entree" : "sortie";
+      const motifFinal = motif.trim() || (mode === "add" ? "Ajout rapide via scan" : "Sortie rapide via scan");
 
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Non authentifié");
-
-      // Insert movement with proper user tracking
-      const { error: mvtError } = await supabase.from("stock_movements").insert({
-        article_id: article.id,
-        type: movementType,
-        quantity: quantity,
-        motif: motif || (mode === "add" ? "Ajout rapide via scan" : "Sortie rapide via scan"),
-        user_id: user.id,
-        created_by: user.id,
+      // RPC SECURITY DEFINER — bypass les conflits RLS, fait mouvement + update stock en une transaction
+      const { error } = await supabase.rpc("insert_stock_movement", {
+        p_article_id: article.id,
+        p_type: movementType,
+        p_quantity: quantity,
+        p_motif: motifFinal,
       });
 
-      if (mvtError) throw mvtError;
-
-      // Use RPC for safe stock update with negative check
-      const { error: stockError } = await supabase.rpc("update_article_stock", {
-        article_id: article.id,
-        quantity_change: delta,
-      });
-
-      if (stockError) throw stockError;
+      if (error) throw error;
 
       toast({
-        title: mode === "add" ? "Stock ajouté" : "Stock retiré",
+        title: mode === "add" ? "✅ Stock ajouté" : "✅ Stock retiré",
         description: `${quantity} × ${article.designation}`,
       });
 
       onComplete();
     } catch (error: any) {
       console.error("Erreur mouvement stock:", error);
-      toast({ title: "Erreur", description: "Impossible d'enregistrer le mouvement", variant: "destructive" });
+      const msg = error?.message?.includes("insuffisant")
+        ? "Stock insuffisant pour cette sortie."
+        : error?.message || "Impossible d'enregistrer le mouvement";
+      toast({ title: "Erreur", description: msg, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }

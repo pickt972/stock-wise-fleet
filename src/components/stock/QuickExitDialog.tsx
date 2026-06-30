@@ -53,32 +53,19 @@ export function QuickExitDialog({ article, open, onOpenChange, onDone }: QuickEx
     }
     setSubmitting(true);
     try {
-      // exit_number vide → trigger Supabase génère SOR-YYYY-XXXXXX automatiquement.
-      // Le décrément stock est géré par trigger_decrease_stock_on_exit côté DB.
-      const { data: exit, error: exitError } = await supabase
-        .from("stock_exits")
-        .insert([{
-          exit_number: "",
-          exit_type: "consommation",
-          notes: "Sortie rapide (scan)",
-          created_by: user?.id,
-        }])
-        .select()
-        .single();
-      if (exitError) throw exitError;
+      // RPC SECURITY DEFINER — mouvement + update stock en une transaction, bypass RLS
+      const { error } = await supabase.rpc("insert_stock_movement", {
+        p_article_id: article.id,
+        p_type: "sortie",
+        p_quantity: quantity,
+        p_motif: "Sortie rapide (scan)",
+      });
 
-      const { error: itemError } = await supabase
-        .from("stock_exit_items")
-        .insert([{
-          exit_id: exit.id,
-          article_id: article.id,
-          quantity,
-        }]);
-      if (itemError) throw itemError;
+      if (error) throw error;
 
       toast({
         title: "✅ Sortie enregistrée",
-        description: `${quantity} × ${article.designation} — N° ${exit.exit_number}`,
+        description: `-${quantity} × ${article.designation}`,
       });
       onOpenChange(false);
       onDone?.();
