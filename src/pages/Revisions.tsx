@@ -563,6 +563,11 @@ export default function Revisions() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-sm truncate">{article.designation}</div>
+                          {article.sous_categorie && (
+                            <div className="text-[10px] font-semibold text-primary/70 uppercase tracking-wide mb-0.5">
+                              {article.sous_categorie}
+                            </div>
+                          )}
                           <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
                             <span className="font-mono">{article.reference}</span>
                             <span>·</span>
@@ -680,6 +685,9 @@ export default function Revisions() {
                         <div key={`s-${article.id}`} className="flex items-center justify-between p-2 border rounded">
                           <div className="flex-1 min-w-0">
                             <div className="font-medium text-sm truncate">{article.designation}</div>
+                            {article.sous_categorie && (
+                              <div className="text-[10px] font-semibold text-primary/70 uppercase tracking-wide">{article.sous_categorie}</div>
+                            )}
                             <div className="text-xs text-muted-foreground">{article.reference}</div>
                           </div>
                           <div className="text-right text-sm">
@@ -703,6 +711,9 @@ export default function Revisions() {
                         <div key={`c-${article.id}`} className="flex items-center justify-between p-2 border rounded border-warning/40 bg-warning/5">
                           <div className="flex-1 min-w-0">
                             <div className="font-medium text-sm truncate">{article.designation}</div>
+                            {article.sous_categorie && (
+                              <div className="text-[10px] font-semibold text-warning/80 uppercase tracking-wide">{article.sous_categorie}</div>
+                            )}
                             <div className="text-xs text-muted-foreground">{article.reference}</div>
                           </div>
                           <div className="text-right text-sm">
