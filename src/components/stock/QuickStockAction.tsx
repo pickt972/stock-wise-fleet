@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { Plus, Minus, ArrowLeft, Package, MapPin, Tag } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Minus, ArrowLeft, Package, MapPin, Tag, Car, StickyNote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -30,8 +31,26 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
   const [mode, setMode] = useState<"choose" | "add" | "remove">("choose");
   const [quantity, setQuantity] = useState(1);
   const [motif, setMotif] = useState("");
+  const [vehiculeId, setVehiculeId] = useState<string>("");
+  const [vehicules, setVehicules] = useState<Array<{ id: string; label: string }>>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
+  // Charger les véhicules au montage
+  useEffect(() => {
+    supabase
+      .from("vehicules")
+      .select("id, marque, modele, immatriculation")
+      .order("immatriculation")
+      .then(({ data }) => {
+        setVehicules(
+          (data || []).map((v) => ({
+            id: v.id,
+            label: `${v.immatriculation || "—"} · ${v.marque} ${v.modele}`,
+          }))
+        );
+      });
+  }, []);
 
   const getStockBadge = () => {
     if (article.stock === 0) return { variant: "destructive" as const, label: "Rupture" };
@@ -59,6 +78,7 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
         p_type: movementType,
         p_quantity: quantity,
         p_motif: motifFinal,
+        p_vehicule_id: vehiculeId || null,
       });
 
       if (error) throw error;
@@ -205,12 +225,36 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
             )}
 
             <Textarea
-              placeholder="Motif (optionnel)"
+              placeholder="Note (optionnel)"
               value={motif}
               onChange={(e) => setMotif(e.target.value)}
               className="resize-none"
               rows={2}
             />
+
+            {/* Véhicule — uniquement pour les sorties */}
+            {mode === "remove" && (
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Car className="h-4 w-4 text-muted-foreground" />
+                  Véhicule concerné
+                  <span className="text-xs text-muted-foreground font-normal">(optionnel)</span>
+                </div>
+                <Select value={vehiculeId} onValueChange={setVehiculeId}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Sélectionner un véhicule…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">— Aucun véhicule —</SelectItem>
+                    {vehicules.map((v) => (
+                      <SelectItem key={v.id} value={v.id}>
+                        {v.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <Button
               onClick={handleSubmit}
