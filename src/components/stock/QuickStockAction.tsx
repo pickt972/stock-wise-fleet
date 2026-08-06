@@ -168,6 +168,42 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
               </Button>
             </div>
 
+            {/* Véhicule — mis en avant en premier pour les sorties */}
+            {mode === "remove" && (
+              <div className={`rounded-xl border-2 p-3 space-y-2 transition-colors ${
+                vehiculeId ? "border-primary/40 bg-primary/5" : "border-dashed border-muted-foreground/30 bg-muted/30"
+              }`}>
+                <div className="flex items-center gap-2">
+                  <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    vehiculeId ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                  }`}>
+                    <Car className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      Véhicule concerné
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {vehiculeId ? "✓ Sélectionné" : "Non renseigné — optionnel mais recommandé"}
+                    </p>
+                  </div>
+                </div>
+                <Select value={vehiculeId} onValueChange={setVehiculeId}>
+                  <SelectTrigger className="h-10 bg-background">
+                    <SelectValue placeholder="🚗  Immatriculation / Véhicule…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">— Aucun véhicule —</SelectItem>
+                    {vehicules.map((v) => (
+                      <SelectItem key={v.id} value={v.id}>
+                        {v.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             {/* Big quantity controls */}
             <div className="flex items-center justify-center gap-4">
               <Button
@@ -231,30 +267,6 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
               className="resize-none"
               rows={2}
             />
-
-            {/* Véhicule — uniquement pour les sorties */}
-            {mode === "remove" && (
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <Car className="h-4 w-4 text-muted-foreground" />
-                  Véhicule concerné
-                  <span className="text-xs text-muted-foreground font-normal">(optionnel)</span>
-                </div>
-                <Select value={vehiculeId} onValueChange={setVehiculeId}>
-                  <SelectTrigger className="h-10">
-                    <SelectValue placeholder="Sélectionner un véhicule…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">— Aucun véhicule —</SelectItem>
-                    {vehicules.map((v) => (
-                      <SelectItem key={v.id} value={v.id}>
-                        {v.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
 
             <Button
               onClick={handleSubmit}
