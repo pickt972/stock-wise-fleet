@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -48,6 +50,7 @@ interface Article {
   emplacement: string;
   fournisseur_id?: string;
   code_barre?: string | null;
+  vehicule_required?: boolean;
 }
 
 interface EditArticleDialogProps {
@@ -116,6 +119,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
     emplacement: article.emplacement || "",
     fournisseur_id: article.fournisseur_id || "none",
     code_barre: article.code_barre || "",
+    vehicule_required: article.vehicule_required ?? false,
   });
 
   useEffect(() => {
@@ -132,6 +136,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
       emplacement: article.emplacement || "",
       fournisseur_id: article.fournisseur_id || "none",
       code_barre: article.code_barre || "",
+      vehicule_required: article.vehicule_required ?? false,
     });
   }, [article]);
 
@@ -303,6 +308,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
         emplacement: formData.emplacement,
         fournisseur_id: formData.fournisseur_id === "none" ? null : formData.fournisseur_id,
         code_barre: formData.code_barre?.trim() ? formData.code_barre.trim() : null,
+        vehicule_required: formData.vehicule_required,
       };
       // Sync local state for recap rendering after save
       setFormData(prev => ({ ...prev, designation: newDesignation }));
@@ -749,6 +755,28 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
                 <h2 className="font-semibold text-lg">Compatibilité</h2>
                 <p className="text-sm text-muted-foreground">Véhicules et emplacements associés</p>
               </div>
+            </div>
+
+            {/* Toggle véhicule obligatoire */}
+            <div className={`flex items-center justify-between rounded-xl border-2 p-4 transition-colors ${
+              formData.vehicule_required ? "border-primary/40 bg-primary/5" : "border-border"
+            }`}>
+              <div className="space-y-1">
+                <Label className="text-sm font-semibold flex items-center gap-2">
+                  🚗 Véhicule obligatoire à la sortie
+                </Label>
+                <p className="text-[11px] text-muted-foreground">
+                  {formData.vehicule_required
+                    ? "L'utilisateur devra sélectionner un véhicule avant de valider la sortie."
+                    : "Le véhicule sera suggéré mais pas exigé lors de la sortie."}
+                </p>
+              </div>
+              <Switch
+                checked={formData.vehicule_required}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, vehicule_required: checked })
+                }
+              />
             </div>
 
             {/* Recap */}

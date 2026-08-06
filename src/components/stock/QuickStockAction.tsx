@@ -19,6 +19,7 @@ interface Article {
   stock_min: number;
   prix_achat: number;
   emplacement: string;
+  vehicule_required?: boolean;
 }
 
 interface QuickStockActionProps {
@@ -64,6 +65,15 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
     if (quantity <= 0) return;
     if (mode === "remove" && quantity > article.stock) {
       toast({ title: "Quantité insuffisante", description: `Stock disponible : ${article.stock}`, variant: "destructive" });
+      return;
+    }
+    // Véhicule obligatoire pour certains articles
+    if (mode === "remove" && article.vehicule_required && !vehiculeId) {
+      toast({
+        title: "Véhicule requis",
+        description: `Cet article (${article.designation}) doit être associé à un véhicule lors de la sortie.`,
+        variant: "destructive",
+      });
       return;
     }
 
@@ -171,25 +181,44 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
             {/* Véhicule — mis en avant en premier pour les sorties */}
             {mode === "remove" && (
               <div className={`rounded-xl border-2 p-3 space-y-2 transition-colors ${
-                vehiculeId ? "border-primary/40 bg-primary/5" : "border-dashed border-muted-foreground/30 bg-muted/30"
+                vehiculeId
+                  ? "border-primary/40 bg-primary/5"
+                  : article.vehicule_required
+                  ? "border-destructive/50 bg-destructive/5"
+                  : "border-dashed border-muted-foreground/30 bg-muted/30"
               }`}>
                 <div className="flex items-center gap-2">
                   <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    vehiculeId ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                    vehiculeId
+                      ? "bg-primary/10 text-primary"
+                      : article.vehicule_required
+                      ? "bg-destructive/10 text-destructive"
+                      : "bg-muted text-muted-foreground"
                   }`}>
                     <Car className="h-4 w-4" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-foreground">
+                    <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
                       Véhicule concerné
+                      {article.vehicule_required && !vehiculeId && (
+                        <span className="text-[10px] font-bold bg-destructive text-destructive-foreground px-1.5 py-0.5 rounded-full">
+                          REQUIS
+                        </span>
+                      )}
                     </p>
                     <p className="text-[11px] text-muted-foreground">
-                      {vehiculeId ? "✓ Sélectionné" : "Non renseigné — optionnel mais recommandé"}
+                      {vehiculeId
+                        ? "✓ Véhicule sélectionné"
+                        : article.vehicule_required
+                        ? "⚠️ Obligatoire pour cet article"
+                        : "Non renseigné — optionnel mais recommandé"}
                     </p>
                   </div>
                 </div>
                 <Select value={vehiculeId} onValueChange={setVehiculeId}>
-                  <SelectTrigger className="h-10 bg-background">
+                  <SelectTrigger className={`h-10 bg-background ${
+                    article.vehicule_required && !vehiculeId ? "border-destructive" : ""
+                  }`}>
                     <SelectValue placeholder="🚗  Immatriculation / Véhicule…" />
                   </SelectTrigger>
                   <SelectContent>
