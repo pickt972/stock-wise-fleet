@@ -219,6 +219,7 @@ export type Database = {
           stock_min: number
           updated_at: string
           user_id: string | null
+          vehicule_required: boolean
         }
         Insert: {
           archived_at?: string | null
@@ -239,6 +240,7 @@ export type Database = {
           stock_min?: number
           updated_at?: string
           user_id?: string | null
+          vehicule_required?: boolean
         }
         Update: {
           archived_at?: string | null
@@ -259,6 +261,7 @@ export type Database = {
           stock_min?: number
           updated_at?: string
           user_id?: string | null
+          vehicule_required?: boolean
         }
         Relationships: [
           {
@@ -1440,6 +1443,18 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      insert_stock_movement: {
+        Args: {
+          p_article_id: string
+          p_fournisseur_id?: string
+          p_motif?: string
+          p_quantity: number
+          p_site_id?: string
+          p_type: string
+          p_vehicule_id?: string
+        }
+        Returns: string
       }
       is_admin: { Args: { uid?: string }; Returns: boolean }
       log_audit: {
