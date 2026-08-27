@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { 
   Users, Truck, MapPin, Building2, Tags, Mail, Building, 
-  Shield, BarChart3, History, KeyRound, ClipboardList, Bell, Palette, Baby, UserCog
+  Shield, BarChart3, History, KeyRound, ClipboardList, Bell, Palette, Baby, UserCog, Wrench
 } from "lucide-react";
 import { MailSettingsForm } from "@/components/mail/MailSettingsForm";
 import { CompanySettingsForm } from "@/components/company/CompanySettingsForm";
@@ -18,6 +18,7 @@ import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { ColorPreferencesSettings } from "@/components/settings/ColorPreferencesSettings";
 import { AdminResetPasswordForm } from "@/components/settings/AdminResetPasswordForm";
 import { AdminMailSettingsForm } from "@/components/settings/AdminMailSettingsForm";
+import { MaintenanceModeSettings } from "@/components/settings/MaintenanceModeSettings";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
