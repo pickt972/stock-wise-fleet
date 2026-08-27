@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { 
   Users, Truck, MapPin, Building2, Tags, Mail, Building, 
-  Shield, BarChart3, History, KeyRound, ClipboardList, Bell, Palette, Baby, UserCog
+  Shield, BarChart3, History, KeyRound, ClipboardList, Bell, Palette, Baby, UserCog, Wrench
 } from "lucide-react";
 import { MailSettingsForm } from "@/components/mail/MailSettingsForm";
 import { CompanySettingsForm } from "@/components/company/CompanySettingsForm";
@@ -18,6 +18,7 @@ import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { ColorPreferencesSettings } from "@/components/settings/ColorPreferencesSettings";
 import { AdminResetPasswordForm } from "@/components/settings/AdminResetPasswordForm";
 import { AdminMailSettingsForm } from "@/components/settings/AdminMailSettingsForm";
+import { MaintenanceModeSettings } from "@/components/settings/MaintenanceModeSettings";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -200,6 +201,7 @@ export default function Parametres() {
   const [showColors, setShowColors] = useState(false);
   const [showAdminReset, setShowAdminReset] = useState(false);
   const [showAdminMail, setShowAdminMail] = useState(false);
+  const [showMaintenance, setShowMaintenance] = useState(false);
 
   useEffect(() => {
     document.title = "Paramètres | StockAuto";
@@ -396,6 +398,13 @@ export default function Parametres() {
                 description="Suivi détaillé par article"
                 onClick={() => navigate('/historique-articles')}
               />
+              <SettingsCard
+                index={16}
+                icon={<Wrench className="h-5 w-5" />}
+                title="Mode maintenance"
+                description="Geler toute saisie utilisateur"
+                onClick={() => setShowMaintenance(true)}
+              />
             </div>
           </section>
         )}
@@ -461,6 +470,15 @@ export default function Parametres() {
             <DialogTitle>Gestion des boîtes mail</DialogTitle>
           </DialogHeader>
           <AdminMailSettingsForm />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showMaintenance} onOpenChange={setShowMaintenance}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Mode maintenance</DialogTitle>
+          </DialogHeader>
+          <MaintenanceModeSettings />
         </DialogContent>
       </Dialog>
     </DashboardLayout>

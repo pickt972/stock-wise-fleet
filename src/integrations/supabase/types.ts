@@ -91,6 +91,24 @@ export type Database = {
         }
         Relationships: []
       }
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       article_fournisseurs: {
         Row: {
           actif: boolean | null
@@ -1457,6 +1475,7 @@ export type Database = {
         Returns: string
       }
       is_admin: { Args: { uid?: string }; Returns: boolean }
+      is_maintenance: { Args: never; Returns: boolean }
       log_audit: {
         Args: {
           p_action: string
