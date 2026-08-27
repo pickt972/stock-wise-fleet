@@ -472,6 +472,15 @@ export default function Parametres() {
           <AdminMailSettingsForm />
         </DialogContent>
       </Dialog>
+
+      <Dialog open={showMaintenance} onOpenChange={setShowMaintenance}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Mode maintenance</DialogTitle>
+          </DialogHeader>
+          <MaintenanceModeSettings />
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
