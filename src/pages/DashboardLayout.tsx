@@ -3,6 +3,7 @@ import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { useSidebarCollapsed } from "@/hooks/useSidebarCollapsed";
+import { MaintenanceGate } from "@/components/maintenance/MaintenanceGate";
 import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
