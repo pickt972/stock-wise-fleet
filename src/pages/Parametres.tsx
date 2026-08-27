@@ -398,6 +398,13 @@ export default function Parametres() {
                 description="Suivi détaillé par article"
                 onClick={() => navigate('/historique-articles')}
               />
+              <SettingsCard
+                index={16}
+                icon={<Wrench className="h-5 w-5" />}
+                title="Mode maintenance"
+                description="Geler toute saisie utilisateur"
+                onClick={() => setShowMaintenance(true)}
+              />
             </div>
           </section>
         )}
