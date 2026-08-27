@@ -107,7 +107,6 @@ export function MaintenanceModeSettings() {
               Activer
             </AlertDialogAction>
           </AlertDialogFooter>
-        </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
