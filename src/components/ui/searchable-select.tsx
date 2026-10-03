@@ -79,7 +79,10 @@ export function SearchableSelect({
 
     const resizeObserver = new ResizeObserver(updateScrollIndicator);
     resizeObserver.observe(list);
-    if (list.firstElementChild) {
+    // Ne pas observer firstElementChild sur mobile — le clavier iOS change
+    // la hauteur du viewport et déclenche un setState qui referme le Popover
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+    if (!isMobile && list.firstElementChild) {
       resizeObserver.observe(list.firstElementChild);
     }
 
@@ -139,6 +142,15 @@ export function SearchableSelect({
         className={cn("w-[--radix-popover-trigger-width] p-0", className)}
         align="start"
         style={{ maxHeight: "var(--radix-popover-content-available-height)" }}
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onInteractOutside={(e) => {
+          // Sur mobile, le tap sur le clavier virtuel déclenche un "interact outside"
+          // On vérifie si la cible est bien en dehors du popover avant de fermer
+          const target = e.target as HTMLElement;
+          if (target && listRef.current?.contains(target)) {
+            e.preventDefault();
+          }
+        }}
       >
         <Command>
           <CommandInput placeholder={searchPlaceholder} />

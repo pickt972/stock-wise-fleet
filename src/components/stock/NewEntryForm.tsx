@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Plus, Trash2, ChevronLeft, ChevronRight, Check, Package, FileText, ClipboardList } from "lucide-react";
 import {
   Dialog,
@@ -238,6 +238,13 @@ export function NewEntryForm({ open, onOpenChange, onSuccess }: NewEntryFormProp
     }
   };
 
+  // Mémoïser les options articles pour éviter un nouveau tableau à chaque render
+  // → empêche le SearchableSelect de perdre le focus à chaque frappe sur mobile
+  const articleOptions = useMemo(
+    () => articles.map((a) => ({ value: a.id, label: `${a.reference} - ${a.designation}` })),
+    [articles]
+  );
+
   const getEntryTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       achat: "Achat fournisseur",
@@ -374,7 +381,7 @@ export function NewEntryForm({ open, onOpenChange, onSuccess }: NewEntryFormProp
                   <div>
                     <Label>Article *</Label>
                     <SearchableSelect
-                      options={articles.map((a) => ({ value: a.id, label: `${a.reference} - ${a.designation}` }))}
+                      options={articleOptions}
                       value={item.articleId}
                       onValueChange={(value) => updateItem(index, "articleId", value)}
                       placeholder="Sélectionner un article..."
