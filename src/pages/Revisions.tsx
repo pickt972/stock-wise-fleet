@@ -190,10 +190,11 @@ export default function Revisions() {
         return true;
       })
       .sort((a, b) => {
-        // 1. Catégorie principale
-        const catA = (a.categorie || "").toLowerCase();
-        const catB = (b.categorie || "").toLowerCase();
-        if (catA !== catB) return catA.localeCompare(catB, "fr");
+        // 1. Label normalisé (getCategoryMeta regroupe "Filtre à air",
+        //    "Filtre à huile", "Filtres"... sous "Filtration")
+        const metaA = getCategoryMeta(a.categorie).label;
+        const metaB = getCategoryMeta(b.categorie).label;
+        if (metaA !== metaB) return metaA.localeCompare(metaB, "fr");
         // 2. Sous-catégorie
         const subA = (a.sous_categorie || "").toLowerCase();
         const subB = (b.sous_categorie || "").toLowerCase();
@@ -564,15 +565,17 @@ export default function Revisions() {
                     const meta = getCategoryMeta(article.categorie);
                     const Icon = meta.icon;
 
-                    // Séparateurs de groupe catégorie > sous-catégorie
+                    // Séparateurs de groupe — sur label normalisé pour regrouper
+                    // les catégories synonymes ("Filtre à air" = "Filtration")
                     const prev = filteredArticles[index - 1];
-                    const newCat = !prev || prev.categorie !== article.categorie;
+                    const prevMeta = prev ? getCategoryMeta(prev.categorie).label : null;
+                    const newCat = !prev || prevMeta !== meta.label;
                     const newSub = !prev
-                      || prev.categorie !== article.categorie
+                      || prevMeta !== meta.label
                       || (prev.sous_categorie || "") !== (article.sous_categorie || "");
                     const groupLabel = article.sous_categorie
-                      ? `${article.categorie} › ${article.sous_categorie}`
-                      : article.categorie;
+                      ? `${meta.label} › ${article.sous_categorie}`
+                      : meta.label;
 
                     return (
                       <React.Fragment key={article.id}>
