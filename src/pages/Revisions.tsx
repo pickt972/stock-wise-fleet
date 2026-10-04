@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -177,17 +177,30 @@ export default function Revisions() {
   }, [articlesCompatibles]);
 
   const filteredArticles = useMemo(() => {
-    return articlesCompatibles.filter((a) => {
-      if (activeCategory) {
-        const meta = getCategoryMeta(a.categorie);
-        if (meta.label !== activeCategory) return false;
-      }
-      if (articleSearchQuery) {
-        const q = articleSearchQuery.toLowerCase();
-        if (!a.designation.toLowerCase().includes(q) && !a.reference.toLowerCase().includes(q)) return false;
-      }
-      return true;
-    });
+    return articlesCompatibles
+      .filter((a) => {
+        if (activeCategory) {
+          const meta = getCategoryMeta(a.categorie);
+          if (meta.label !== activeCategory) return false;
+        }
+        if (articleSearchQuery) {
+          const q = articleSearchQuery.toLowerCase();
+          if (!a.designation.toLowerCase().includes(q) && !a.reference.toLowerCase().includes(q)) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        // 1. Catégorie principale
+        const catA = (a.categorie || "").toLowerCase();
+        const catB = (b.categorie || "").toLowerCase();
+        if (catA !== catB) return catA.localeCompare(catB, "fr");
+        // 2. Sous-catégorie
+        const subA = (a.sous_categorie || "").toLowerCase();
+        const subB = (b.sous_categorie || "").toLowerCase();
+        if (subA !== subB) return subA.localeCompare(subB, "fr");
+        // 3. Désignation
+        return (a.designation || "").localeCompare(b.designation || "", "fr");
+      });
   }, [articlesCompatibles, activeCategory, articleSearchQuery]);
 
   const analyseStock = (article: Article, quantiteNecessaire: number) => {
@@ -545,13 +558,39 @@ export default function Revisions() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {filteredArticles.map((article) => {
+                  {filteredArticles.map((article, index) => {
                     const analyse = analyseStock(article, qty);
                     const isSelected = selectedArticles.has(article.id);
                     const meta = getCategoryMeta(article.categorie);
                     const Icon = meta.icon;
+
+                    // Séparateurs de groupe catégorie > sous-catégorie
+                    const prev = filteredArticles[index - 1];
+                    const newCat = !prev || prev.categorie !== article.categorie;
+                    const newSub = !prev
+                      || prev.categorie !== article.categorie
+                      || (prev.sous_categorie || "") !== (article.sous_categorie || "");
+                    const groupLabel = article.sous_categorie
+                      ? `${article.categorie} › ${article.sous_categorie}`
+                      : article.categorie;
+
                     return (
-                      <div key={article.id}
+                      <React.Fragment key={article.id}>
+                        {/* Header de groupe — affiché à chaque changement de cat ou sous-cat */}
+                        {(newCat || newSub) && (
+                          <div className={cn(
+                            "flex items-center gap-2 px-1 pt-3",
+                            index === 0 && "pt-0"
+                          )}>
+                            <Icon className="h-3.5 w-3.5 text-primary/60 flex-shrink-0" />
+                            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                              {groupLabel}
+                            </span>
+                            <div className="flex-1 h-px bg-border/60" />
+                          </div>
+                        )}
+                      <div
+                        key={article.id}
                         className={cn(
                           "flex items-center gap-3 p-3 rounded-lg border transition-colors",
                           isSelected ? "border-primary bg-primary/5" : "border-border hover:bg-accent/40"
@@ -598,6 +637,7 @@ export default function Revisions() {
                           )}
                         </div>
                       </div>
+                      </React.Fragment>
                     );
                   })}
                 </div>
