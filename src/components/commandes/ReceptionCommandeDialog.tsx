@@ -81,35 +81,59 @@ export function ReceptionCommandeDialog({
   const handleReceptionPartielle = async () => {
     setIsLoading(true);
     try {
-      // Mettre à jour les quantités reçues pour chaque item
-      for (const item of items) {
-        if (item.quantite_a_recevoir > 0) {
-          const nouvelleQuantiteRecue = item.quantite_recue + item.quantite_a_recevoir;
-          
-          const { error } = await supabase
-            .from('commande_items')
-            .update({ quantite_recue: nouvelleQuantiteRecue })
-            .eq('id', item.id);
+      // Récupérer les article_id de tous les items d'un coup
+      const { data: commandeItemsData } = await supabase
+        .from('commande_items')
+        .select('id, article_id')
+        .eq('commande_id', commandeId);
 
-          if (error) throw error;
+      const articleIdByItemId: Record<string, string | null> = {};
+      (commandeItemsData || []).forEach((ci: any) => {
+        articleIdByItemId[ci.id] = ci.article_id;
+      });
 
-          // Mettre à jour le stock de l'article si article_id existe
-          if (item.id) {
-            const { data: itemData } = await supabase
-              .from('commande_items')
-              .select('article_id')
-              .eq('id', item.id)
-              .single();
+      // Créer une entrée stock globale pour cette réception
+      const itemsARecevoir = items.filter(i => i.quantite_a_recevoir > 0);
 
-            if (itemData?.article_id) {
-              const { error: stockError } = await supabase.rpc('update_article_stock', {
-                article_id: itemData.article_id,
-                quantity_change: item.quantite_a_recevoir
-              });
+      const { data: stockEntry, error: entryError } = await supabase
+        .from('stock_entries')
+        .insert([{
+          entry_number: '',           // trigger génère ENT-YYYY-XXXXXX
+          entry_type: 'commande',
+          notes: `Réception commande ${commandeNumero}`,
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+        }])
+        .select()
+        .single();
 
-              if (stockError) throw stockError;
-            }
-          }
+      if (entryError) throw entryError;
+
+      // Insérer les items de l'entrée pour chaque article reçu
+      // Le trigger trigger_update_stock_on_entry incrémente automatiquement articles.stock
+      for (const item of itemsARecevoir) {
+        const articleId = articleIdByItemId[item.id];
+
+        // Mettre à jour quantite_recue dans commande_items
+        const nouvelleQuantiteRecue = item.quantite_recue + item.quantite_a_recevoir;
+        const { error: ciError } = await supabase
+          .from('commande_items')
+          .update({ quantite_recue: nouvelleQuantiteRecue })
+          .eq('id', item.id);
+        if (ciError) throw ciError;
+
+        // Créer le stock_entry_item seulement si l'article est lié
+        if (articleId) {
+          const { error: itemError } = await supabase
+            .from('stock_entry_items')
+            .insert([{
+              entry_id: stockEntry.id,
+              article_id: articleId,
+              quantity: item.quantite_a_recevoir,
+              unit_price: 0,
+            }]);
+          if (itemError) throw itemError;
+          // Le trigger update_stock_on_entry incrémente articles.stock
+          // et crée le mouvement dans stock_movements automatiquement
         }
       }
 

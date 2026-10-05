@@ -47,7 +47,7 @@ export function useRealTimeStats() {
 
       if (articlesError) throw articlesError;
 
-      const totalArticles = articles?.reduce((sum, a) => sum + a.stock, 0) || 0;
+      const totalArticles = articles?.length || 0; // nombre d'articles distincts, pas somme des stocks
       const totalValue = articles?.reduce((sum, a) => sum + (a.stock * a.prix_achat), 0) || 0;
 
       // Alertes agrégées par (sous-catégorie, véhicule)

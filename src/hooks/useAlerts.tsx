@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 import {
   fetchAggregatedStockGroups,
   AggregatedGroup,
@@ -18,7 +17,6 @@ export interface ArticleAlert {
 }
 
 export interface SubcategoryAlert {
-  /** Clé unique sous-catégorie + véhicule */
   key: string;
   subcategory: string;
   vehiculeId: string | null;
@@ -32,67 +30,47 @@ export interface SubcategoryAlert {
   priority: "high" | "medium";
 }
 
+const buildAlerts = (groups: AggregatedGroup[]): SubcategoryAlert[] =>
+  groups.map((g) => {
+    const alertArticles: ArticleAlert[] = g.articles.map((a) => ({
+      id: a.id,
+      designation: a.designation,
+      reference: a.reference,
+      stock: a.stock,
+      stock_min: a.stock_min,
+      categorie: a.categorie,
+      marque: a.marque,
+      prix_achat: a.prix_achat,
+      type: a.stock === 0 ? "rupture" : "faible",
+    }));
+    const ruptureCount = alertArticles.filter((a) => a.type === "rupture").length;
+    const faibleCount  = alertArticles.filter((a) => a.type === "faible").length;
+    return {
+      key: g.key,
+      subcategory: g.sousCategorie,
+      vehiculeId: g.vehiculeId,
+      vehiculeLabel: g.vehiculeLabel,
+      totalStock: g.totalStock,
+      stockMin: g.stockMin,
+      totalArticles: g.articles.length,
+      ruptureCount,
+      faibleCount,
+      alertArticles,
+      priority: g.totalStock === 0 ? ("high" as const) : ("medium" as const),
+    };
+  });
+
 export const useAlerts = () => {
-  const [subcategoryAlerts, setSubcategoryAlerts] = useState<SubcategoryAlert[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ["alerts"],
+    queryFn: () => fetchAggregatedStockGroups({ onlyAlerts: true }),
+    staleTime: 1000 * 60 * 2,   // 2 min de cache — évite les requêtes répétées
+    refetchOnWindowFocus: false, // pas de rechargement au focus (coûteux sur mobile)
+  });
 
-  const fetchAlerts = async () => {
-    try {
-      setIsLoading(true);
-      const groups: AggregatedGroup[] = await fetchAggregatedStockGroups({
-        onlyAlerts: true,
-      });
-
-      const result: SubcategoryAlert[] = groups.map((g) => {
-        const alertArticles: ArticleAlert[] = g.articles.map((a) => ({
-          id: a.id,
-          designation: a.designation,
-          reference: a.reference,
-          stock: a.stock,
-          stock_min: a.stock_min,
-          categorie: a.categorie,
-          marque: a.marque,
-          prix_achat: a.prix_achat,
-          type: a.stock === 0 ? "rupture" : "faible",
-        }));
-        const ruptureCount = alertArticles.filter((a) => a.type === "rupture").length;
-        const faibleCount = alertArticles.filter((a) => a.type === "faible").length;
-        const isCritical = g.totalStock === 0;
-        return {
-          key: g.key,
-          subcategory: g.sousCategorie,
-          vehiculeId: g.vehiculeId,
-          vehiculeLabel: g.vehiculeLabel,
-          totalStock: g.totalStock,
-          stockMin: g.stockMin,
-          totalArticles: g.articles.length,
-          ruptureCount,
-          faibleCount,
-          alertArticles,
-          priority: isCritical ? ("high" as const) : ("medium" as const),
-        };
-      });
-
-      setSubcategoryAlerts(result);
-    } catch (error: any) {
-      console.error("Error fetching alerts:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les alertes",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchAlerts();
-  }, []);
-
+  const subcategoryAlerts = data ? buildAlerts(data) : [];
   const totalRupture = subcategoryAlerts.filter((s) => s.totalStock === 0).length;
-  const totalFaible = subcategoryAlerts.filter((s) => s.totalStock > 0).length;
+  const totalFaible  = subcategoryAlerts.filter((s) => s.totalStock > 0).length;
 
   return {
     subcategoryAlerts,
@@ -100,6 +78,6 @@ export const useAlerts = () => {
     totalFaible,
     totalAlerts: subcategoryAlerts.length,
     isLoading,
-    refetch: fetchAlerts,
+    refetch,
   };
 };
