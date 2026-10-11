@@ -101,8 +101,12 @@ export default function Alertes() {
               <div className="min-w-0">
                 <CardTitle className="text-base">
                   {sub.subcategory}
-                  {sub.vehiculeLabel && (
-                    <span className="text-xs text-muted-foreground font-normal ml-1">· {sub.vehiculeLabel}</span>
+                  {sub.vehiculeLabels && sub.vehiculeLabels.length > 0 && (
+                    <span className="text-xs text-muted-foreground font-normal ml-1">
+                      · {sub.vehiculeLabels.length <= 3
+                          ? sub.vehiculeLabels.join(", ")
+                          : `${sub.vehiculeLabels.slice(0, 3).join(", ")} +${sub.vehiculeLabels.length - 3}`}
+                    </span>
                   )}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground mt-0.5">

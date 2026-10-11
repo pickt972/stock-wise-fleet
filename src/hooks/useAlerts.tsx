@@ -19,8 +19,10 @@ export interface ArticleAlert {
 export interface SubcategoryAlert {
   key: string;
   subcategory: string;
-  vehiculeId: string | null;
-  vehiculeLabel: string | null;
+  vehiculeId: string | null;      // déprécié
+  vehiculeLabel: string | null;   // déprécié
+  vehiculeIds: string[];
+  vehiculeLabels: string[];
   totalStock: number;
   stockMin: number;
   totalArticles: number;
@@ -50,6 +52,8 @@ const buildAlerts = (groups: AggregatedGroup[]): SubcategoryAlert[] =>
       subcategory: g.sousCategorie,
       vehiculeId: g.vehiculeId,
       vehiculeLabel: g.vehiculeLabel,
+      vehiculeIds: g.vehiculeIds ?? [],
+      vehiculeLabels: g.vehiculeLabels ?? [],
       totalStock: g.totalStock,
       stockMin: g.stockMin,
       totalArticles: g.articles.length,
