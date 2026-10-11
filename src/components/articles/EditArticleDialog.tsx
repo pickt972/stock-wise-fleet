@@ -9,6 +9,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -81,6 +91,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [showScanner, setShowScanner] = useState(false);
+  const [showConfirmClose, setShowConfirmClose] = useState(false);
 
   // Total steps: 1=Cat+Designation, 2=Ref+Marque, 3=Fournisseur, 4=Emplacement, 5=Stock+Prix, 6=Compatibilité, 7=Récapitulatif
   const totalSteps = 7;
@@ -286,9 +297,28 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
     }
   }, [step, formData]);
 
+  const hasChanges =
+    article.categorie !== formData.categorie ||
+    (article.sous_categorie || "") !== formData.sous_categorie ||
+    article.reference !== formData.reference ||
+    article.marque !== formData.marque ||
+    article.stock !== formData.stock ||
+    article.stock_min !== formData.stock_min ||
+    article.stock_max !== formData.stock_max ||
+    article.prix_achat !== formData.prix_achat ||
+    (article.emplacement || "") !== formData.emplacement;
+
   const handleClose = () => {
     setOpen(false);
     onArticleUpdated();
+  };
+
+  const handleCloseRequest = () => {
+    if (hasChanges) {
+      setShowConfirmClose(true);
+    } else {
+      handleClose();
+    }
   };
 
   const handleSubmit = async () => {
@@ -359,7 +389,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
 
   return (
     <>
-    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); }}>
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleCloseRequest(); }}>
       <DialogContent className="w-[96vw] max-w-[96vw] sm:max-w-[640px] sm:w-full rounded-lg max-h-[95dvh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
         <DialogHeader className="pb-2">
           <DialogTitle className="text-base sm:text-xl">Modifier l'article</DialogTitle>
@@ -926,7 +956,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
           <Button
             type="button"
             variant="outline"
-            onClick={step === 1 ? handleClose : handleBack}
+            onClick={step === 1 ? handleCloseRequest : handleBack}
             className="flex-1 h-12 text-base"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -966,6 +996,25 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
       }}
       onClose={() => setShowScanner(false)}
     />
+    <AlertDialog open={showConfirmClose} onOpenChange={setShowConfirmClose}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Quitter sans sauvegarder ?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Vous avez des modifications non sauvegardées. Si vous quittez maintenant, toutes vos modifications seront perdues.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Continuer les modifications</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleClose}
+            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+          >
+            Quitter sans sauvegarder
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }
