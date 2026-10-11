@@ -21,8 +21,7 @@ export function SubcategoryStockContext({
       const { data, error } = await supabase
         .from("articles")
         .select("id, stock, stock_min")
-        .eq("sous_categorie", sousCategorieNom)
-        .eq("actif", true);
+        .eq("sous_categorie", sousCategorieNom);
       if (error) throw error;
       return data ?? [];
     },

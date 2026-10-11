@@ -643,7 +643,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
             </div>
 
             {/* Contexte sous-catégorie */}
-            {formData.sous_categorie && (
+            {formData.sous_categorie.trim() !== "" && (
               <SubcategoryStockContext
                 sousCategorieNom={formData.sous_categorie}
                 currentArticleId={article.id}
