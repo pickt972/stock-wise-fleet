@@ -28,6 +28,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import ArticleVehicleCompatibility from "./ArticleVehicleCompatibility";
+import { SubcategoryStockContext } from "./SubcategoryStockContext";
 import { ArticleEmplacementsList } from "./ArticleEmplacementsList";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
@@ -641,8 +642,18 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
               </div>
             </div>
 
+            {/* Contexte sous-catégorie */}
+            {formData.sous_categorie && (
+              <SubcategoryStockContext
+                sousCategorieNom={formData.sous_categorie}
+                currentArticleId={article.id}
+                currentArticleStock={formData.stock}
+                currentStockMin={formData.stock_min}
+              />
+            )}
+
             <div className="space-y-1.5">
-              <Label className="text-xs sm:text-sm">Stock actuel</Label>
+              <Label className="text-xs sm:text-sm">Stock actuel <span className="text-muted-foreground font-normal">(cet article)</span></Label>
               <Input
                 type="number"
                 min="0"
