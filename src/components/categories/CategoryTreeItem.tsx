@@ -127,7 +127,7 @@ export function CategoryTreeItem({
         )}
 
         {/* Ligne 1 : handle + chevron + icône + nom */}
-        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 relative">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-1.5 sm:gap-2 min-w-0 relative">
           {/* Poignée de drag — SEULE zone qui déclenche le déplacement */}
           <Button
             type="button"
@@ -164,7 +164,7 @@ export function CategoryTreeItem({
           {depth === 0 ? <CategoryIcon name={category.nom} className="h-6 w-6 text-primary flex-shrink-0" /> : <Tag className={`${depth === 0 ? "h-6 w-6 text-primary" : depth === 1 ? "h-5 w-5 text-primary/70" : "h-4 w-4 text-muted-foreground"} flex-shrink-0`} />}
 
           <h3
-            className={`flex-1 min-w-0 break-words text-left ${
+            className={`order-last basis-full sm:order-none sm:basis-auto sm:flex-1 min-w-0 break-words text-left ${
               depth === 0
                 ? "text-base sm:text-lg font-extrabold tracking-tight uppercase text-primary leading-tight"
                 : depth === 1

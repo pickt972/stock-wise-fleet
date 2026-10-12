@@ -10,6 +10,7 @@
 - [x] Migration SQL : 'Siege bébé' (Accessoires / Équipements) -> 'Accessoires' / 'Siège bébé'
 - [x] Créer les catégories et sous-catégories demandées (réalisé précédemment)
 - [x] Désactiver les catégories remplacées, dont Électricité (réalisé précédemment)
-- [ ] Clarifier les zones 30/40/30, les dépôts interdits et le fantôme à taille réelle
-- [ ] Ajouter les flèches mobiles, le défilement à 80px et la confirmation visuelle
-- [ ] Vérifier les règles de déplacement et l'affichage
+- [x] Clarifier les zones 30/40/30, les dépôts interdits et le fantôme à taille réelle
+- [x] Ajouter les flèches mobiles, le défilement à 80px et la confirmation visuelle
+- [x] Vérifier les règles et l'affichage avec des catégories de test (10 tests réussis, essais ordinateur/téléphone)
+- [ ] Vérifier l'enregistrement avec un compte connecté — accès Supabase externe indisponible dans les essais
