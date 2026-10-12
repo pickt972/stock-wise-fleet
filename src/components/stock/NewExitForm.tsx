@@ -60,6 +60,7 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
   const [modele, setModele] = useState("");
   const [selectedVehicule, setSelectedVehicule] = useState<Vehicule | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [openField, setOpenField] = useState<"marque" | "modele" | null>(null);
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
@@ -91,6 +92,23 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
     : [];
   const needsVehicle = !!articles.find((a) => a.id === articleId)?.vehicule_required;
   const vehiculeValid = !needsVehicle || !!plate.trim() && (!!selectedVehicule || (!!marque.trim() && !!modele.trim()));
+
+  const titleCase = (v: string) => v.toLowerCase().replace(/(^|[\s-])(\S)/g, (_m, a, b) => a + b.toUpperCase());
+  const uniq = (arr: string[]) => {
+    const map = new Map<string, string>();
+    arr.forEach((x) => { const t = x?.trim(); if (t && !map.has(t.toLowerCase())) map.set(t.toLowerCase(), t); });
+    return Array.from(map.values()).sort((a, b) => a.localeCompare(b, "fr"));
+  };
+  const marqueSuggestions = uniq(vehicules.map((v) => v.marque || ""))
+    .filter((m) => m.toLowerCase().includes(marque.trim().toLowerCase()) && m.toLowerCase() !== marque.trim().toLowerCase())
+    .slice(0, 8);
+  const modeleSuggestions = uniq(
+    vehicules
+      .filter((v) => !marque.trim() || (v.marque || "").trim().toLowerCase() === marque.trim().toLowerCase())
+      .map((v) => v.modele || "")
+  )
+    .filter((m) => m.toLowerCase().includes(modele.trim().toLowerCase()) && m.toLowerCase() !== modele.trim().toLowerCase())
+    .slice(0, 8);
 
   const handlePlateChange = (value: string) => {
     setPlate(formatPlate(value));
@@ -291,15 +309,27 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
               )}
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div>
+              <div className="relative">
                 <Label htmlFor="marque">Marque{selectedVehicule ? "" : " *"}</Label>
-                <Input id="marque" value={marque} readOnly={!!selectedVehicule}
-                  disabled={!!selectedVehicule} onChange={(e) => setMarque(e.target.value)} />
+                <Input id="marque" value={marque} readOnly={!!selectedVehicule} autoComplete="off"
+                  disabled={!!selectedVehicule}
+                  onChange={(e) => { setMarque(e.target.value.toUpperCase()); setOpenField("marque"); }}
+                  onFocus={() => setOpenField("marque")}
+                  onBlur={() => setTimeout(() => setOpenField(null), 150)} />
+                {openField === "marque" && !selectedVehicule && marqueSuggestions.length > 0 && (
+                  <SuggestList items={marqueSuggestions} onPick={(v) => { setMarque(v.toUpperCase()); setOpenField(null); }} />
+                )}
               </div>
-              <div>
+              <div className="relative">
                 <Label htmlFor="modele">Modèle{selectedVehicule ? "" : " *"}</Label>
-                <Input id="modele" value={modele} readOnly={!!selectedVehicule}
-                  disabled={!!selectedVehicule} onChange={(e) => setModele(e.target.value)} />
+                <Input id="modele" value={modele} readOnly={!!selectedVehicule} autoComplete="off"
+                  disabled={!!selectedVehicule}
+                  onChange={(e) => { setModele(titleCase(e.target.value)); setOpenField("modele"); }}
+                  onFocus={() => setOpenField("modele")}
+                  onBlur={() => setTimeout(() => setOpenField(null), 150)} />
+                {openField === "modele" && !selectedVehicule && modeleSuggestions.length > 0 && (
+                  <SuggestList items={modeleSuggestions} onPick={(v) => { setModele(v); setOpenField(null); }} />
+                )}
               </div>
             </div>
             {selectedVehicule && (
@@ -333,5 +363,18 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function SuggestList({ items, onPick }: { items: string[]; onPick: (v: string) => void }) {
+  return (
+    <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md max-h-56 overflow-y-auto">
+      {items.map((it) => (
+        <button key={it} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => onPick(it)}
+          className="w-full text-left px-3 py-2 text-sm hover:bg-muted">
+          {it}
+        </button>
+      ))}
+    </div>
   );
 }
