@@ -1,0 +1,16 @@
+CREATE INDEX IF NOT EXISTS idx_stock_movements_user_id ON public.stock_movements(user_id);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_vehicule_id ON public.stock_movements(vehicule_id);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_fournisseur_id ON public.stock_movements(fournisseur_id);
+CREATE INDEX IF NOT EXISTS idx_stock_entries_supplier_id ON public.stock_entries(supplier_id);
+CREATE INDEX IF NOT EXISTS idx_article_fournisseurs_fournisseur_id ON public.article_fournisseurs(fournisseur_id);
+CREATE INDEX IF NOT EXISTS idx_article_fournisseurs_user_id ON public.article_fournisseurs(user_id);
+CREATE INDEX IF NOT EXISTS idx_article_vehicules_vehicule_id ON public.article_vehicules(vehicule_id);
+CREATE INDEX IF NOT EXISTS idx_article_vehicules_user_id ON public.article_vehicules(user_id);
+CREATE INDEX IF NOT EXISTS idx_accessoire_transferts_accessoire_id ON public.accessoire_transferts(accessoire_id);
+CREATE INDEX IF NOT EXISTS idx_accessoire_transferts_transferred_by ON public.accessoire_transferts(transferred_by);
+CREATE INDEX IF NOT EXISTS idx_accessoires_created_by ON public.accessoires(created_by);
+CREATE INDEX IF NOT EXISTS idx_inventaire_items_emplacement_id ON public.inventaire_items(emplacement_id);
+CREATE INDEX IF NOT EXISTS idx_categories_user_id ON public.categories(user_id);
+CREATE INDEX IF NOT EXISTS idx_vehicules_user_id ON public.vehicules(user_id);
+CREATE INDEX IF NOT EXISTS idx_mail_settings_user_id ON public.mail_settings(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_created_by ON public.notifications(created_by);
