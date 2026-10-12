@@ -52,6 +52,7 @@ interface RawCategory {
   sort_order: number;
   created_at: string;
   updated_at: string;
+  requires_vehicle?: boolean | null;
 }
 
 export function CategoriesManagement() {

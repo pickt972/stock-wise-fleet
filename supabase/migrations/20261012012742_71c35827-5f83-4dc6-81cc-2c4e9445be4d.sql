@@ -1,0 +1,2 @@
+ALTER TABLE public.categories ADD COLUMN requires_vehicle boolean DEFAULT NULL;
+COMMENT ON COLUMN public.categories.requires_vehicle IS 'Catégorie racine: true/false (null = false). Sous-catégorie: null = hérite du parent, true/false = surcharge.';
