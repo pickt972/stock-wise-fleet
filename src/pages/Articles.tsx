@@ -50,6 +50,7 @@ interface Article {
   prix_achat: number;
   emplacement: string;
   fournisseur_id?: string;
+  is_draft?: boolean;
 }
 
 interface Category {
@@ -136,7 +137,7 @@ export default function Articles() {
     try {
       const { data, error } = await supabase
         .from("articles")
-        .select("id, reference, designation, marque, categorie, sous_categorie, stock, stock_min, stock_max, prix_achat, emplacement, fournisseur_id")
+        .select("id, reference, designation, marque, categorie, sous_categorie, stock, stock_min, stock_max, prix_achat, emplacement, fournisseur_id, is_draft")
         .is("archived_at", null)
         .order("designation");
 
@@ -182,7 +183,7 @@ export default function Articles() {
         article.marque.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
 
       const status = getStockStatus(article.stock, article.stock_min);
-      const matchesStockFilter = activeFilter === "tous" || status.filter === activeFilter;
+      const matchesStockFilter = activeFilter === "tous" || (activeFilter === "incompletes" ? !!article.is_draft : status.filter === activeFilter);
       const matchesCategoryFilter = categoryFilter === "all" || article.categorie === categoryFilter;
 
       return matchesSearch && matchesStockFilter && matchesCategoryFilter;
@@ -358,7 +359,12 @@ export default function Articles() {
 
         {/* Désignation */}
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium truncate">{article.designation}</div>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-sm font-medium truncate">{article.designation}</span>
+            {article.is_draft && (
+              <Badge className="shrink-0 bg-warning/15 text-warning border-warning/40 text-[10px]" variant="outline">⚠️ Fiche incomplète</Badge>
+            )}
+          </div>
           <div className="sm:hidden text-[11px] font-mono text-muted-foreground truncate">{article.reference}</div>
         </div>
 
@@ -571,6 +577,14 @@ export default function Articles() {
                   {filter.label}
                 </Button>
               ))}
+              <Button
+                variant={activeFilter === "incompletes" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveFilter("incompletes")}
+                className="flex-shrink-0"
+              >
+                ⚠️ Fiches incomplètes ({articles.filter((a) => a.is_draft).length})
+              </Button>
             </div>
 
             <SearchableSelect
