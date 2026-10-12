@@ -1246,20 +1246,24 @@ export default function Commandes() {
                     <p className="text-sm text-muted-foreground mt-1 break-words">
                       {commande?.fournisseur || 'Fournisseur non renseigné'} • {commande?.items?.length || 0} article(s)
                     </p>
+                    {commande?.status === 'annule' && (commande as any).motif_annulation && (
+                      <p className="text-sm text-destructive mt-1 break-words">Motif d'annulation : {(commande as any).motif_annulation}</p>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2 self-start sm:self-auto">
-                    {commande?.status === 'brouillon' && (
+                  {(() => { const perm = orderPermissions(userRole, commande.status, commande.user_id === user?.id); return (
+                  <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                    {perm.canEdit && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => editCommande(commande)}
                       className="shrink-0"
-                      aria-label="Modifier le brouillon"
+                      aria-label="Modifier la commande"
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
                     )}
-                    {(commande?.status === 'envoye' || commande?.status === 'confirme' || commande?.status === 'recu_partiel') && (
+                    {perm.canReceive && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -1273,7 +1277,14 @@ export default function Commandes() {
                         <span className="hidden sm:inline">Réceptionner</span>
                       </Button>
                     )}
-                    {commande?.status === 'brouillon' && (isAdmin() || isChefAgence()) && (
+                    {perm.canCancel && (
+                      <Button variant="outline" size="sm" className="shrink-0 text-destructive"
+                        onClick={() => { setCancelMotif(""); setCancelDialog({ isOpen: true, commande }); }}>
+                        <XCircle className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Annuler la commande</span>
+                      </Button>
+                    )}
+                    {perm.canDelete && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -1282,6 +1293,7 @@ export default function Commandes() {
                           commande: commande
                         })}
                         className="shrink-0"
+                        aria-label="Supprimer"
                       >
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
