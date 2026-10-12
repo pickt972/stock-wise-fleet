@@ -29,10 +29,12 @@ export function OrderArticleSearch({
   articles,
   onSelect,
   onScanClick,
+  onFreeText,
 }: {
   articles: OrderSearchArticle[];
   onSelect: (a: OrderSearchArticle) => void;
   onScanClick?: () => void;
+  onFreeText?: (text: string) => void;
 }) {
   const [cats, setCats] = useState<{ id: string; nom: string; parent_id: string | null }[]>([]);
   const [cat, setCat] = useState(ALL);
@@ -101,6 +103,13 @@ export function OrderArticleSearch({
           onChange={(e) => { setQ(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter" || !onFreeText) return;
+            e.preventDefault();
+            const flat = results.flatMap(([, it]) => it);
+            if (flat.length === 1) { onSelect(flat[0]); setQ(""); setOpen(false); }
+            else if (q.trim().length >= 2 && flat.length === 0) { onFreeText(q.trim()); setQ(""); }
+          }}
           placeholder="Désignation, référence, marque, catégorie…"
           className={onScanClick ? "pl-9 pr-11" : "pl-9"}
         />
@@ -139,6 +148,12 @@ export function OrderArticleSearch({
               </div>
             ))}
           </div>
+        )}
+        {onFreeText && q.trim().length >= 2 && (
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { onFreeText(q.trim()); setQ(""); setOpen(false); }}
+            className="mt-1 w-full rounded-lg border border-dashed border-primary/40 px-3 py-2 text-left text-sm text-primary hover:bg-primary/5">
+            + Ajouter « {q.trim()} » comme article libre
+          </button>
         )}
       </div>
     </div>
