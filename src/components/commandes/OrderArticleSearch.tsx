@@ -151,10 +151,10 @@ export function OrderArticleSearch({
             ))}
           </div>
         )}
-        {onFreeText && q.trim().length >= 1 && (
-          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { onFreeText(q.trim(), 1, 0); setQ(""); setOpen(false); }}
-            className="mt-1 w-full rounded-lg border border-dashed border-primary/40 px-3 py-2 text-left text-sm text-primary hover:bg-primary/5">
-            + Ajouter « {q.trim()} » comme article inconnu
+        {onFreeText && (
+          <button type="button" onMouseDown={(e) => e.preventDefault()} disabled={!q.trim()} title={q.trim() ? undefined : "Tapez d'abord une désignation"} onClick={() => { onFreeText(q.trim(), 1, 0); setQ(""); setOpen(false); }}
+            className="mt-1 w-full rounded-lg border border-dashed border-primary/40 px-3 py-2 text-left text-sm text-primary hover:bg-primary/5 disabled:opacity-60 disabled:cursor-not-allowed">
+            {q.trim() ? `+ Ajouter « ${q.trim()} » comme article inconnu` : "+ Ajouter un article inconnu (tapez sa désignation)"}
           </button>
         )}
       </div>
