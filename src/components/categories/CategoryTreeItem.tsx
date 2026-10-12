@@ -1,3 +1,4 @@
+import { CategoryIcon } from "./CategoryIcon";
 import { useState } from "react";
 import { ChevronRight, ChevronDown, Edit, Trash2, Tag, GripVertical, Plus, CornerDownRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -166,7 +167,7 @@ export function CategoryTreeItem({
             )}
           </Button>
 
-          <Tag className={`${depth === 0 ? "h-6 w-6 text-primary" : depth === 1 ? "h-5 w-5 text-primary/70" : "h-4 w-4 text-muted-foreground"} flex-shrink-0`} />
+          {depth === 0 ? <CategoryIcon name={category.nom} className="h-6 w-6 text-primary flex-shrink-0" /> : <Tag className={`${depth === 0 ? "h-6 w-6 text-primary" : depth === 1 ? "h-5 w-5 text-primary/70" : "h-4 w-4 text-muted-foreground"} flex-shrink-0`} />}
 
           <h3
             className={`flex-1 min-w-0 break-words text-left ${

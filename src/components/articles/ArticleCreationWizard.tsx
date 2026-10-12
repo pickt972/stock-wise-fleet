@@ -1,3 +1,4 @@
+import { getCategoryIcon } from "@/components/categories/CategoryIcon";
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -30,22 +31,6 @@ interface ArticleCreationWizardProps {
   returnTo?: string;
 }
 
-// Map category names to icons
-const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  "Batteries": <Battery className="h-6 w-6" />,
-  "Freinage": <Disc className="h-6 w-6" />,
-  "Filtration": <Droplets className="h-6 w-6" />,
-  "Électrique": <Zap className="h-6 w-6" />,
-  "Moteur": <Cog className="h-6 w-6" />,
-  "Transmission": <CircleDot className="h-6 w-6" />,
-  "Pneumatiques": <Car className="h-6 w-6" />,
-  "Carrosserie": <Wrench className="h-6 w-6" />,
-  "Consommables": <Boxes className="h-6 w-6" />,
-};
-
-function getCategoryIcon(name: string) {
-  return CATEGORY_ICONS[name] || <Tag className="h-6 w-6" />;
-}
 
 export function ArticleCreationWizard({
   defaultCodeBarre = "",
@@ -531,12 +516,13 @@ export function ArticleCreationWizard({
                   key={cat}
                   type="button"
                   onClick={() => { setCategorie(cat); setStep(2); }}
-                  className={`w-full text-left px-4 py-3.5 rounded-lg border-2 text-base font-medium transition-all ${
+                  className={`w-full text-left px-4 py-3.5 rounded-lg border-2 text-base font-medium transition-all flex items-center gap-3 ${
                     categorie === cat
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
                   }`}
                 >
+                  <span className="text-primary shrink-0">{getCategoryIcon(cat)}</span>
                   {cat}
                 </button>
               ))}
