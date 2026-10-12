@@ -380,13 +380,9 @@ export function NewEntryForm({ open, onOpenChange, onSuccess }: NewEntryFormProp
                   </div>
                   <div>
                     <Label>Article *</Label>
-                    <SearchableSelect
-                      options={articleOptions}
+                    <ArticlePickerField
                       value={item.articleId}
-                      onValueChange={(value) => updateItem(index, "articleId", value)}
-                      placeholder="Sélectionner un article..."
-                      searchPlaceholder="Rechercher un article..."
-                      emptyMessage="Aucun article trouvé."
+                      onChange={(value) => updateItem(index, "articleId", value)}
                     />
                   </div>
                   <div className="grid grid-cols-3 gap-3">
