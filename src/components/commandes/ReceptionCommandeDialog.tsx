@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { PackageCheck, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { DraftArticleCompletionDialog, DraftCompletion } from "./DraftArticleCompletionDialog";
 
 interface ReceptionItem {
   id: string;
@@ -15,6 +16,8 @@ interface ReceptionItem {
   quantite_commandee: number;
   quantite_recue: number;
   quantite_a_recevoir: number;
+  article_id?: string | null;
+  prix_unitaire: number;
 }
 
 interface ReceptionCommandeDialogProps {
@@ -35,6 +38,54 @@ export function ReceptionCommandeDialog({
   const [items, setItems] = useState<ReceptionItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const [draftQueue, setDraftQueue] = useState<ReceptionItem[]>([]);
+  const [draftStep, setDraftStep] = useState(0);
+  const [completions, setCompletions] = useState<Record<string, DraftCompletion | null>>({});
+
+  const startValidation = () => {
+    const drafts = items.filter((i) => i.quantite_a_recevoir > 0 && !i.article_id);
+    if (drafts.length === 0) return handleReceptionPartielle({});
+    setCompletions({});
+    setDraftStep(0);
+    setDraftQueue(drafts);
+  };
+
+  const recordCompletion = (c: DraftCompletion | null) => {
+    const current = draftQueue[draftStep];
+    const next = { ...completions, [current.id]: c };
+    setCompletions(next);
+    if (draftStep + 1 < draftQueue.length) setDraftStep(draftStep + 1);
+    else { setDraftQueue([]); handleReceptionPartielle(next); }
+  };
+
+  const createDraftArticles = async (done: Record<string, DraftCompletion | null>) => {
+    const { data: u } = await supabase.auth.getUser();
+    const map: Record<string, string> = {};
+    for (const item of items.filter((i) => i.quantite_a_recevoir > 0 && !i.article_id)) {
+      const c = done[item.id];
+      const ref = c?.reference?.trim() || `A-COMPLETER-${item.id.slice(0, 6).toUpperCase()}`;
+      const { data: art, error } = await supabase.from('articles').insert([{
+        designation: c?.designation?.trim() || item.designation,
+        reference: ref,
+        marque: c?.marque?.trim() || '',
+        categorie: c?.categorie || 'À classer',
+        sous_categorie: c?.sous_categorie || null,
+        code_barre: c?.code_barre?.trim() || null,
+        prix_achat: c ? c.prix_achat : item.prix_unitaire,
+        emplacement_id: c?.emplacement_id || null,
+        stock: 0, stock_min: 0, stock_max: 0,
+        is_draft: !c,
+        user_id: u.user?.id,
+      }]).select('id').single();
+      if (error) throw error;
+      map[item.id] = art.id;
+      const { error: ciErr } = await supabase.from('commande_items')
+        .update({ article_id: art.id, is_draft: !c, reference: ref, ...(c ? { designation: c.designation.trim(), prix_unitaire: c.prix_achat } : {}) })
+        .eq('id', item.id);
+      if (ciErr) throw ciErr;
+    }
+    return map;
+  };
 
   useEffect(() => {
     if (isOpen && commandeId) {
@@ -57,7 +108,9 @@ export function ReceptionCommandeDialog({
         reference: item.reference,
         quantite_commandee: item.quantite_commandee,
         quantite_recue: item.quantite_recue,
-        quantite_a_recevoir: item.quantite_commandee - item.quantite_recue
+        quantite_a_recevoir: item.quantite_commandee - item.quantite_recue,
+        article_id: item.article_id,
+        prix_unitaire: Number(item.prix_unitaire) || 0,
       }));
 
       setItems(receptionItems);
@@ -78,9 +131,10 @@ export function ReceptionCommandeDialog({
     ));
   };
 
-  const handleReceptionPartielle = async () => {
+  const handleReceptionPartielle = async (done: Record<string, DraftCompletion | null>) => {
     setIsLoading(true);
     try {
+      const createdIds = await createDraftArticles(done);
       // Récupérer les article_id de tous les items d'un coup
       const { data: commandeItemsData } = await supabase
         .from('commande_items')
@@ -91,6 +145,7 @@ export function ReceptionCommandeDialog({
       (commandeItemsData || []).forEach((ci: any) => {
         articleIdByItemId[ci.id] = ci.article_id;
       });
+      Object.assign(articleIdByItemId, createdIds);
 
       // Créer une entrée stock globale pour cette réception
       const itemsARecevoir = items.filter(i => i.quantite_a_recevoir > 0);
@@ -204,6 +259,7 @@ export function ReceptionCommandeDialog({
   const totalARecevoir = items.reduce((sum, item) => sum + item.quantite_a_recevoir, 0);
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -230,6 +286,7 @@ export function ReceptionCommandeDialog({
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <p className="font-medium">{item.designation}</p>
+                    {!item.article_id && <p className="text-xs text-warning">📋 Fiche incomplète — à compléter à la réception</p>}
                     {item.reference && (
                       <p className="text-sm text-muted-foreground">Réf: {item.reference}</p>
                     )}
@@ -281,7 +338,7 @@ export function ReceptionCommandeDialog({
             Annuler
           </Button>
           <Button 
-            onClick={handleReceptionPartielle} 
+            onClick={startValidation} 
             disabled={isLoading || totalARecevoir === 0}
           >
             <Package className="mr-2 h-4 w-4" />
@@ -290,5 +347,16 @@ export function ReceptionCommandeDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    {draftQueue[draftStep] && (
+      <DraftArticleCompletionDialog
+        open
+        designation={draftQueue[draftStep].designation}
+        estimatedPrice={draftQueue[draftStep].prix_unitaire}
+        position={`${draftStep + 1}/${draftQueue.length}`}
+        onSubmit={(c) => recordCompletion(c)}
+        onSkip={() => recordCompletion(null)}
+      />
+    )}
+    </>
   );
 }
