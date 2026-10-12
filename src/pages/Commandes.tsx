@@ -1117,28 +1117,17 @@ export default function Commandes() {
                   <div><p className="text-xs text-muted-foreground">Articles</p><p className="font-semibold">{currentItems.length}</p></div>
                   <div><p className="text-xs text-muted-foreground">Unités</p><p className="font-semibold">{nbArticles}</p></div>
                 </div>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="validate-mode" checked={validateMode === 'email'} onChange={() => setValidateMode('email')} className="accent-primary" />
-                    Envoyer par email
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="validate-mode" checked={validateMode === 'pdf'} onChange={() => setValidateMode('pdf')} className="accent-primary" />
-                    Télécharger le PDF uniquement
-                  </label>
+                <div>
+                  <Label htmlFor="email-fournisseur" className="text-xs">Email du fournisseur</Label>
+                  <Input id="email-fournisseur" type="email" placeholder="email@fournisseur.com"
+                    value={currentCommande.email_fournisseur || ''}
+                    onChange={(e) => setCurrentCommande(prev => ({ ...prev, email_fournisseur: e.target.value }))} />
+                  <p className="mt-1 text-xs text-muted-foreground">Le bon de commande est envoyé automatiquement à cette adresse après validation.</p>
                 </div>
-                {validateMode === 'email' && (
-                  <div>
-                    <Label htmlFor="email-fournisseur" className="text-xs">Email du fournisseur</Label>
-                    <Input id="email-fournisseur" type="email" placeholder="email@fournisseur.com"
-                      value={currentCommande.email_fournisseur || ''}
-                      onChange={(e) => setCurrentCommande(prev => ({ ...prev, email_fournisseur: e.target.value }))} />
-                  </div>
-                )}
               </div>
               <AlertDialogFooter>
                 <AlertDialogCancel>Retour</AlertDialogCancel>
-                <Button onClick={() => confirmValidation()} disabled={validateMode === 'email' && !currentCommande.email_fournisseur?.trim()}>Confirmer</Button>
+                <Button onClick={() => confirmValidation()} disabled={!currentCommande.email_fournisseur?.trim()}>Confirmer</Button>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -1261,6 +1250,19 @@ export default function Commandes() {
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
                     )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => printPurchaseOrder({
+                        numero: commande.numero_commande,
+                        fournisseur: commande.fournisseur,
+                        items: (commande.items || []).map(i => ({ ...i, vehicule_label: i.vehicule_id ? vehicMap[i.vehicule_id] : (i.vehicule_libre || null) })),
+                      })}
+                      className="shrink-0"
+                    >
+                      <Download className="w-4 h-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Générer PDF</span>
+                    </Button>
                     {(isAdmin() || isChefAgence()) && (
                       <Button
                         variant="outline"
