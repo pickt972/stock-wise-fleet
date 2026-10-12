@@ -83,6 +83,8 @@ export function ReceptionCommandeDialog({
       }]).select('id').single();
       if (error) throw error;
       map[item.id] = art.id;
+      const vid = (item as any).vehicule_id;
+      if (vid) await supabase.from('article_vehicules').insert([{ article_id: art.id, vehicule_id: vid, user_id: u.user?.id }]);
       const { error: ciErr } = await supabase.from('commande_items')
         .update({ article_id: art.id, is_draft: !c, reference: ref, ...(c ? { designation: c.designation.trim(), prix_unitaire: c.prix_achat } : {}) })
         .eq('id', item.id);
@@ -118,6 +120,7 @@ export function ReceptionCommandeDialog({
         code_barre: (item as any).code_barre,
         categorie: (item as any).categorie,
         sous_categorie: (item as any).sous_categorie,
+        vehicule_id: (item as any).vehicule_id,
       } as any));
 
       setItems(receptionItems);
