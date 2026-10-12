@@ -59,6 +59,7 @@ interface CommandeItem {
   prix_unitaire: number;
   total_ligne: number;
   is_draft?: boolean;
+  code_barre?: string;
 }
 
 interface Commande {
@@ -1106,7 +1107,7 @@ export default function Commandes() {
                 <CardTitle>Ajouter des articles</CardTitle>
                 <div className="flex flex-col sm:flex-row sm:items-end gap-2 w-full lg:w-auto">
                   <div className="w-full sm:w-[28rem]">
-                    <OrderArticleSearch articles={filteredArticles} onSelect={(a) => addArticleDirectly(a.id)} />
+                    <OrderArticleSearch articles={filteredArticles} onSelect={(a) => addArticleDirectly(a.id)} onScanClick={() => setShowScanner(true)} />
                   </div>
                   <Button onClick={addItem} size="sm" variant="outline" className="w-full sm:w-auto border-primary/40 text-primary">
                     <Plus className="w-4 h-4 mr-2" />

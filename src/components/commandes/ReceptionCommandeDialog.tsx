@@ -356,6 +356,7 @@ export function ReceptionCommandeDialog({
         open
         designation={draftQueue[draftStep].designation}
         estimatedPrice={draftQueue[draftStep].prix_unitaire}
+        initialBarcode={(draftQueue[draftStep] as any).code_barre}
         position={`${draftStep + 1}/${draftQueue.length}`}
         onSubmit={(c) => recordCompletion(c)}
         onSkip={() => recordCompletion(null)}
