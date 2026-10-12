@@ -24,13 +24,13 @@ export function PendingDraftReceptions({ onReceived }: { onReceived?: () => void
   const load = async () => {
     const { data } = await supabase
       .from("commande_items")
-      .select("id, commande_id, designation, quantite_commandee, quantite_recue, prix_unitaire, code_barre, commandes!inner(numero_commande, status)")
+      .select("id, commande_id, designation, quantite_commandee, quantite_recue, prix_unitaire, code_barre, categorie, sous_categorie, precision_note, vehicule_id, vehicules(immatriculation, marque, modele), commandes!inner(numero_commande, status)")
       .eq("is_draft", true)
       .is("article_id", null)
       .in("commandes.status", ["envoye", "confirme", "recu_partiel"]);
     setLines(((data as any[]) || [])
       .filter((l) => l.quantite_recue < l.quantite_commandee)
-      .map((l) => ({ ...l, prix_unitaire: Number(l.prix_unitaire) || 0, numero_commande: l.commandes?.numero_commande || "" })));
+      .map((l) => ({ ...l, prix_unitaire: Number(l.prix_unitaire) || 0, numero_commande: l.commandes?.numero_commande || "", vehicule_label: l.vehicules ? `${l.vehicules.immatriculation} — ${l.vehicules.marque} ${l.vehicules.modele}` : null })));
   };
   useEffect(() => { load(); }, []);
 
@@ -54,7 +54,7 @@ export function PendingDraftReceptions({ onReceived }: { onReceived?: () => void
     <Card className="border-primary/30">
       <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
         <CardTitle className="flex items-center gap-2 text-base">
-          <ClipboardList className="h-5 w-5 text-primary" /> Articles en attente de réception ({lines.length})
+          <ClipboardList className="h-5 w-5 text-primary" /> Commandes en attente de complétion ({lines.length})
         </CardTitle>
         <Button size="sm" onClick={() => setScan(true)}><ScanLine className="h-4 w-4 mr-2" />Scanner</Button>
       </CardHeader>
@@ -70,6 +70,9 @@ export function PendingDraftReceptions({ onReceived }: { onReceived?: () => void
             className="flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left hover:bg-muted/50">
             <span className="min-w-0">
               <span className="block font-medium truncate">{l.designation}</span>
+              {l.categorie && <span className="block text-xs text-muted-foreground">{l.categorie}{l.sous_categorie ? ` › ${l.sous_categorie}` : ""}</span>}
+              {l.vehicule_label && <span className="block text-xs font-medium text-accent">🚗 {l.vehicule_label}</span>}
+              {l.precision_note && <span className="block text-xs italic text-muted-foreground">« {l.precision_note} »</span>}
               <span className="text-xs text-muted-foreground">Commande {l.numero_commande} • {l.quantite_commandee - l.quantite_recue} à recevoir</span>
             </span>
             <Badge variant="outline" className="shrink-0">📋 À créer</Badge>
@@ -100,6 +103,8 @@ export function PendingDraftReceptions({ onReceived }: { onReceived?: () => void
           designation={editing.line.designation}
           estimatedPrice={editing.line.prix_unitaire}
           initialBarcode={editing.barcode}
+          initialCategorie={editing.line.categorie}
+          initialSousCategorie={editing.line.sous_categorie}
           position={`Commande ${editing.line.numero_commande}`}
           onSkip={() => setEditing(null)}
           onSubmit={async (c) => {
