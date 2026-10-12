@@ -138,6 +138,7 @@ export default function Commandes() {
   }>({ isOpen: false });
   const [currentFournisseurId, setCurrentFournisseurId] = useState<string>("");
   const [validateOpen, setValidateOpen] = useState(false);
+  const [missingEmailOpen, setMissingEmailOpen] = useState(false);
   const [vehicMap, setVehicMap] = useState<Record<string, string>>({});
   useEffect(() => {
     supabase.from('vehicules').select('id, immatriculation, marque, modele').then(({ data }) =>
@@ -838,12 +839,18 @@ export default function Commandes() {
 
   const poItems = () => currentItems.map(i => ({ ...i, vehicule_label: i.vehicule_id ? vehicMap[i.vehicule_id] : (i.vehicule_libre || null) }));
 
-  const confirmValidation = async () => {
-    const po = { numero: currentCommande.numero_commande, fournisseur: currentCommande.fournisseur, items: poItems() };
-    if (validateMode === 'pdf') printPurchaseOrder(po);
+  const confirmValidation = async (forceNoEmail = false) => {
+    // Open the tab synchronously (inside the click) so browsers don't block it.
+    const tab = window.open("", "_blank");
     const saved = await saveCommande('confirme');
     setValidateOpen(false);
-    if (saved && validateMode === 'email') {
+    setMissingEmailOpen(false);
+    if (!saved) { tab?.close(); return; }
+    const opened = printPurchaseOrder({ numero: saved.numero_commande, fournisseur: currentCommande.fournisseur, items: poItems(), target: tab });
+    const sendEmail = !forceNoEmail && validateMode === 'email';
+    toast({ title: `✅ Commande ${saved.numero_commande || ''} validée — PDF ${opened ? 'ouvert' : 'téléchargé'}`,
+      description: sendEmail ? `Envoi à ${currentCommande.email_fournisseur}` : undefined });
+    if (sendEmail) {
       setPurchaseOrderDialog({ isOpen: true, commande: saved as any });
     }
   };
@@ -1092,7 +1099,7 @@ export default function Commandes() {
                 onClick={() => printPurchaseOrder({ numero: currentCommande.numero_commande, fournisseur: currentCommande.fournisseur, items: poItems() })}>
                 <Download className="w-4 h-4 mr-2" />Générer PDF
               </Button>
-              <Button disabled={!canValidate} onClick={() => setValidateOpen(true)}>
+              <Button disabled={!canValidate} onClick={() => (currentCommande.email_fournisseur?.trim() ? setValidateOpen(true) : setMissingEmailOpen(true))}>
                 <Mail className="w-4 h-4 mr-2" />Valider et envoyer
               </Button>
             </div>
@@ -1131,7 +1138,23 @@ export default function Commandes() {
               </div>
               <AlertDialogFooter>
                 <AlertDialogCancel>Retour</AlertDialogCancel>
-                <Button onClick={confirmValidation} disabled={validateMode === 'email' && !currentCommande.email_fournisseur?.trim()}>Confirmer</Button>
+                <Button onClick={() => confirmValidation()} disabled={validateMode === 'email' && !currentCommande.email_fournisseur?.trim()}>Confirmer</Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <AlertDialog open={missingEmailOpen} onOpenChange={setMissingEmailOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>⚠️ Email fournisseur manquant</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Le fournisseur « {currentCommande.fournisseur} » n'a pas d'adresse email enregistrée.
+                  Le bon de commande ne pourra pas être envoyé automatiquement.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <Button onClick={() => confirmValidation(true)}>Valider quand même</Button>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
