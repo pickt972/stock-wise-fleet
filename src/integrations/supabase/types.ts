@@ -420,6 +420,7 @@ export type Database = {
       commande_items: {
         Row: {
           article_id: string | null
+          code_barre: string | null
           commande_id: string
           created_at: string
           designation: string
@@ -434,6 +435,7 @@ export type Database = {
         }
         Insert: {
           article_id?: string | null
+          code_barre?: string | null
           commande_id: string
           created_at?: string
           designation: string
@@ -448,6 +450,7 @@ export type Database = {
         }
         Update: {
           article_id?: string | null
+          code_barre?: string | null
           commande_id?: string
           created_at?: string
           designation?: string
