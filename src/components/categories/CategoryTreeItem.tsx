@@ -1,6 +1,6 @@
 import { CategoryIcon } from "./CategoryIcon";
 import { useState } from "react";
-import { ChevronRight, ChevronDown, Edit, Trash2, Tag, GripVertical, Plus, CornerDownRight, ArrowUp, ArrowDown } from "lucide-react";
+import { ChevronRight, ChevronDown, Edit, Trash2, Tag, GripVertical, Plus, CornerDownRight, ArrowUp, ArrowDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -55,6 +55,7 @@ interface CategoryTreeItemProps {
   onMove: (id: string, direction: -1 | 1) => void;
   canMoveUp: boolean;
   canMoveDown: boolean;
+  parentInactive?: boolean;
 }
 
 export function CategoryTreeItem({
@@ -66,7 +67,7 @@ export function CategoryTreeItem({
   onAddChild,
   isDragActive,
   inheritedVehicle = false,
-  activeCategoryId, allCategories, isMobile, flashId, moving, onMove, canMoveUp, canMoveDown,
+  activeCategoryId, allCategories, isMobile, flashId, moving, onMove, canMoveUp, canMoveDown, parentInactive = false,
 }: CategoryTreeItemProps) {
   const { toast } = useToast();
   const [requiresVehicle, setRequiresVehicle] = useState<boolean | null>(category.requires_vehicle ?? null);
@@ -81,6 +82,21 @@ export function CategoryTreeItem({
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Paramètre mis à jour" });
+    }
+  };
+  const [actif, setActif] = useState(category.actif);
+  const [savingActive, setSavingActive] = useState(false);
+  const effectiveInactive = parentInactive || !actif;
+  const toggleActive = async () => {
+    const next = !actif;
+    setSavingActive(true);
+    const { error } = await supabase.from("categories").update({ actif: next }).eq("id", category.id);
+    setSavingActive(false);
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } else {
+      setActif(next);
+      toast({ title: next ? "Catégorie activée" : "Catégorie désactivée", duration: 2000 });
     }
   };
   const [isExpanded, setIsExpanded] = useState(true);
@@ -109,7 +125,7 @@ export function CategoryTreeItem({
         data-category-id={category.id}
         className={`category-drag-row p-2 sm:p-3 relative select-none ${
           depth === 0 ? "border-l-4 border-l-primary bg-card shadow-soft" : "bg-card/60"
-        } ${isDragging ? "opacity-50" : ""} ${isOverNest ? "ring-2 ring-primary bg-primary/10" : ""} ${flashId === category.id ? "category-drop-success" : ""}`}
+        } ${isDragging ? "opacity-50" : effectiveInactive ? "opacity-60 grayscale" : ""} ${isOverNest ? "ring-2 ring-primary bg-primary/10" : ""} ${flashId === category.id ? "category-drop-success" : ""}`}
         style={{ marginLeft: `${indent}px` }}
       >
         <div ref={setBeforeRef} className="absolute inset-x-0 top-0 h-[30%] pointer-events-none" />
@@ -231,12 +247,21 @@ export function CategoryTreeItem({
 
         {/* Ligne 2 : méta-infos */}
         <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-1.5 pl-[60px] sm:pl-[68px] relative">
-          <Badge
-            variant={category.actif ? "default" : "secondary"}
-            className="flex-shrink-0 text-[10px] h-5"
+          <button
+            type="button"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={toggleActive}
+            disabled={savingActive}
+            title={actif ? "Cliquer pour désactiver" : "Cliquer pour activer"}
+            className="rounded-full cursor-pointer transition-all hover:shadow-medium hover:brightness-95 disabled:cursor-wait"
           >
-            {category.actif ? "Active" : "Inactive"}
-          </Badge>
+            <Badge variant={actif ? "default" : "secondary"} className="flex-shrink-0 text-[10px] h-5 min-w-[52px] justify-center pointer-events-none">
+              {savingActive ? <Loader2 className="h-3 w-3 animate-spin" /> : actif ? "Active" : "Inactive"}
+            </Badge>
+          </button>
+          {parentInactive && (
+            <Badge variant="secondary" className="flex-shrink-0 text-[10px] h-5 opacity-70">Inactive · Hérité</Badge>
+          )}
           {inheritedVehicle ? (
             <Badge variant="secondary" className="flex-shrink-0 text-[10px] h-5">🚗 Hérité</Badge>
           ) : (
@@ -279,6 +304,7 @@ export function CategoryTreeItem({
               onAddChild={onAddChild}
               isDragActive={isDragActive}
               inheritedVehicle={effectiveVehicle}
+              parentInactive={effectiveInactive}
               activeCategoryId={activeCategoryId}
               allCategories={allCategories}
               isMobile={isMobile}
