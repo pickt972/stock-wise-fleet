@@ -29,6 +29,7 @@ interface Article {
   reference: string;
   designation: string;
   stock: number;
+  vehicule_required?: boolean;
 }
 
 interface Vehicule {
@@ -80,7 +81,8 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
   const suggestions = plateKey && !selectedVehicule
     ? vehicules.filter((v) => normalizePlate(v.immatriculation).startsWith(plateKey)).slice(0, 8)
     : [];
-  const vehiculeValid = !!plate.trim() && (!!selectedVehicule || (!!marque.trim() && !!modele.trim()));
+  const needsVehicle = !!articles.find((a) => a.id === articleId)?.vehicule_required;
+  const vehiculeValid = !needsVehicle || !!plate.trim() && (!!selectedVehicule || (!!marque.trim() && !!modele.trim()));
 
   const handlePlateChange = (value: string) => {
     setPlate(value);
@@ -103,7 +105,7 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
   const fetchData = async () => {
     try {
       const [articlesRes, vehiculesRes] = await Promise.all([
-        supabase.from("articles").select("id, reference, designation, stock").order("designation"),
+        supabase.from("articles").select("id, reference, designation, stock, vehicule_required").order("designation"),
         supabase.from("vehicules").select("id, immatriculation, marque, modele").order("immatriculation"),
       ]);
       if (articlesRes.error) throw articlesRes.error;
@@ -143,8 +145,8 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
 
     setIsLoading(true);
     try {
-      let finalVehiculeId = selectedVehicule?.id ?? null;
-      if (!finalVehiculeId) {
+      let finalVehiculeId = needsVehicle ? selectedVehicule?.id ?? null : null;
+      if (needsVehicle && !finalVehiculeId) {
         const existing = vehicules.find((v) => normalizePlate(v.immatriculation) === normalizePlate(plate));
         if (existing) {
           finalVehiculeId = existing.id;
@@ -250,7 +252,7 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
             </Select>
           </div>
 
-          <div className="space-y-3">
+          {needsVehicle && (<div className="space-y-3">
             <div className="relative">
               <Label htmlFor="plate">Immatriculation *</Label>
               <Input
@@ -298,7 +300,7 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
             {!selectedVehicule && plate.trim() && marque.trim() && modele.trim() && (
               <p className="text-xs font-medium text-accent">＋ Sera ajouté à la liste Duparc</p>
             )}
-          </div>
+          </div>)}
 
           <div>
             <Label htmlFor="notes">Note (optionnel)</Label>
