@@ -6,7 +6,7 @@ const eur = (n: number) => n.toLocaleString("fr-FR", { style: "currency", curren
 export const purchaseOrderTotal = (items: POItem[]) => items.reduce((s, i) => s + (i.quantite_commandee || 0) * (i.prix_unitaire || 0), 0);
 
 /** Opens a printable purchase order (print → "Enregistrer en PDF" available). */
-export function printPurchaseOrder({ numero, fournisseur, items, date = new Date() }: { numero?: string; fournisseur: string; items: POItem[]; date?: Date }) {
+export function printPurchaseOrder({ numero, fournisseur, items, date = new Date(), target }: { numero?: string; fournisseur: string; items: POItem[]; date?: Date; target?: Window | null }) {
   const priced = items.some((i) => i.prix_unitaire > 0);
   const rows = items.map((i) => `<tr><td>${esc(i.designation)}${i.reference && !i.is_draft ? `<br><small>Réf : ${esc(i.reference)}</small>` : ""}${i.precision_note ? `<br><small>${esc(i.precision_note)}</small>` : ""}${i.vehicule_label ? `<br><small>Véhicule : ${esc(i.vehicule_label)}</small>` : ""}</td><td class="r">${i.quantite_commandee}</td>${priced ? `<td class="r">${i.prix_unitaire ? eur(i.prix_unitaire) : "—"}</td><td class="r">${i.prix_unitaire ? eur(i.prix_unitaire * i.quantite_commandee) : "—"}</td>` : ""}</tr>`).join("");
   const units = items.reduce((n, i) => n + (i.quantite_commandee || 0), 0);
@@ -17,8 +17,13 @@ export function printPurchaseOrder({ numero, fournisseur, items, date = new Date
 <table><thead><tr><th>Article</th><th class="r">Qté</th>${priced ? `<th class="r">P.U. estimé</th><th class="r">Total</th>` : ""}</tr></thead><tbody>${rows}</tbody>
 <tfoot><tr>${priced ? `<td colspan="3" class="r tot">Total estimé HT</td><td class="r tot">${eur(purchaseOrderTotal(items))}</td>` : `<td class="r tot">Total unités</td><td class="r tot">${units}</td>`}</tr></tfoot></table>
 <script>window.onload=()=>{window.print()}</script></body></html>`;
-  const w = window.open("", "_blank");
-  if (!w) return false;
+  const w = target ?? window.open("", "_blank");
+  if (!w || w.closed) {
+    const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+    const a = document.createElement("a"); a.href = url; a.download = `bon-de-commande-${numero || "brouillon"}.html`; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return false;
+  }
   w.document.write(html); w.document.close();
   return true;
 }
