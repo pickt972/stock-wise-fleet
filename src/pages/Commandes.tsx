@@ -68,6 +68,7 @@ interface CommandeItem {
   sous_categorie?: string | null;
   precision_note?: string | null;
   reference_a_confirmer?: boolean;
+  vehicule_libre?: string | null;
 }
 
 interface Commande {
@@ -505,7 +506,7 @@ export default function Commandes() {
     pushLines([...currentItems, {
       designation: label, reference: "", quantite_commandee: l.quantite, prix_unitaire: 0, total_ligne: 0,
       is_draft: true, categorie: l.categorie, sous_categorie: l.sous_categorie,
-      vehicule_id: l.vehicule?.id || null, precision_note: l.precision || null,
+      vehicule_id: l.vehicule?.id || null, vehicule_libre: l.vehicule_libre || null, precision_note: l.precision || null,
     }]);
     if (l.vehicule) setVehicMap(prev => ({ ...prev, [l.vehicule!.id]: vehicleShort(l.vehicule!) }));
   };
@@ -835,7 +836,7 @@ export default function Commandes() {
     setCurrentCommande(prev => ({ ...prev, tva_taux: taux, total_ht: totalHT, total_ttc: totalTTC }));
   };
 
-  const poItems = () => currentItems.map(i => ({ ...i, vehicule_label: i.vehicule_id ? vehicMap[i.vehicule_id] : null }));
+  const poItems = () => currentItems.map(i => ({ ...i, vehicule_label: i.vehicule_id ? vehicMap[i.vehicule_id] : (i.vehicule_libre || null) }));
 
   const confirmValidation = async () => {
     const po = { numero: currentCommande.numero_commande, fournisseur: currentCommande.fournisseur, items: poItems() };
@@ -1047,10 +1048,11 @@ export default function Commandes() {
                         <div className="md:hidden text-xs text-muted-foreground space-y-0.5">
                           {item.precision_note && <p className="italic">« {item.precision_note} »</p>}
                           {item.vehicule_id && <p className="text-accent font-medium">🚗 {vehicMap[item.vehicule_id] || 'Véhicule'}</p>}
+                          {!item.vehicule_id && item.vehicule_libre && <p className="text-muted-foreground"><span className="grayscale opacity-60">🚗</span> {item.vehicule_libre}</p>}
                         </div>
                       </div>
                       <p className="hidden md:block text-sm text-muted-foreground italic truncate">{item.precision_note || '—'}</p>
-                      <p className="hidden md:block text-sm truncate">{item.vehicule_id ? <span className="text-accent font-medium">🚗 {vehicMap[item.vehicule_id] || 'Véhicule'}</span> : <span className="text-muted-foreground">—</span>}</p>
+                      <p className="hidden md:block text-sm truncate">{item.vehicule_id ? <span className="text-accent font-medium">🚗 {vehicMap[item.vehicule_id] || 'Véhicule'}</span> : item.vehicule_libre ? <span className="text-muted-foreground" title="Véhicule hors flotte"><span className="grayscale opacity-60">🚗</span> {item.vehicule_libre}</span> : <span className="text-muted-foreground">—</span>}</p>
                       <Input
                         type="number" inputMode="numeric" min="1" aria-label="Quantité" className="text-right"
                         onFocus={(e) => e.currentTarget.select()}

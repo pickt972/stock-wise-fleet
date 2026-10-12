@@ -18,13 +18,13 @@ export function PendingDraftReceptions({ onReceived }: { onReceived?: () => void
   const load = async () => {
     const { data } = await supabase
       .from("commande_items")
-      .select("id, commande_id, designation, article_id, quantite_commandee, quantite_recue, prix_unitaire, code_barre, categorie, sous_categorie, precision_note, vehicule_id, vehicules(immatriculation, marque, modele), commandes!inner(numero_commande, status)")
+      .select("id, commande_id, designation, article_id, quantite_commandee, quantite_recue, prix_unitaire, code_barre, categorie, sous_categorie, precision_note, vehicule_id, vehicule_libre, vehicules(immatriculation, marque, modele), commandes!inner(numero_commande, status)")
       .in("commandes.status", ["envoye", "confirme", "recu_partiel"]);
     setLines(((data as any[]) || [])
       .filter((l) => l.quantite_recue < l.quantite_commandee)
       .map((l) => ({
         ...l, prix_unitaire: Number(l.prix_unitaire) || 0, numero_commande: l.commandes?.numero_commande || "",
-        vehicule_label: l.vehicules ? `${l.vehicules.immatriculation} ${l.vehicules.marque} ${l.vehicules.modele}` : null,
+        vehicule_label: l.vehicules ? `${l.vehicules.immatriculation} ${l.vehicules.marque} ${l.vehicules.modele}` : (l.vehicule_libre || null),
       })));
   };
   useEffect(() => { load(); }, []);

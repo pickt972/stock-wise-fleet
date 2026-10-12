@@ -1,0 +1,1 @@
+ALTER TABLE public.commande_items ADD COLUMN IF NOT EXISTS vehicule_libre text;
