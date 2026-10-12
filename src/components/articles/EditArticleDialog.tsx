@@ -46,6 +46,7 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { useArticleSuggestions } from "@/hooks/useArticleSuggestions";
 import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
+import { isArticleComplete } from "@/lib/draftReference";
 
 
 interface Article {
@@ -327,6 +328,7 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
         code_barre: formData.code_barre?.trim() ? formData.code_barre.trim() : null,
         vehicule_required: formData.vehicule_required,
       };
+      if (isArticleComplete(updateData)) updateData.is_draft = false;
       // Sync local state for recap rendering after save
       setFormData(prev => ({ ...prev, designation: newDesignation }));
       const { error } = await supabase.from('articles').update(updateData).eq('id', article.id);

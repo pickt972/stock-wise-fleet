@@ -125,6 +125,7 @@ export default function Articles() {
     const channel = supabase
       .channel("categories-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, () => fetchCategories())
+      .on("postgres_changes", { event: "*", schema: "public", table: "articles" }, () => fetchArticles())
       .subscribe();
 
     return () => {
