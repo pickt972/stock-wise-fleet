@@ -144,7 +144,6 @@ export default function Commandes() {
     supabase.from('vehicules').select('id, immatriculation, marque, modele').then(({ data }) =>
       setVehicMap(Object.fromEntries((data || []).map((v: any) => [v.id, vehicleShort(v)]))));
   }, []);
-  const [validateMode, setValidateMode] = useState<'email' | 'pdf'>('email');
   const { toast } = useToast();
   const navigate = useNavigate();
   const { isAdmin, isChefAgence } = useRoleAccess();
@@ -708,7 +707,7 @@ export default function Commandes() {
     }
   };
 
-  const saveCommande = async (finalStatus: 'brouillon' | 'confirme' = 'brouillon', opts: { stay?: boolean } = {}) => {
+  const saveCommande = async (finalStatus: 'brouillon' | 'confirme' = 'brouillon', opts: { stay?: boolean; silent?: boolean } = {}) => {
     if (!currentCommande.fournisseur.trim() || currentItems.length === 0) {
       toast({
         title: "Erreur",
@@ -793,10 +792,12 @@ export default function Commandes() {
 
       if (itemsError) throw itemsError;
 
-      toast({
-        title: "Succès",
-        description: finalStatus === 'confirme' ? "Commande validée" : "Brouillon sauvegardé",
-      });
+      if (!opts.silent) {
+        toast({
+          title: "Succès",
+          description: finalStatus === 'confirme' ? "Commande validée" : "Brouillon sauvegardé",
+        });
+      }
 
       const saved = {
         ...currentCommande, id: commandeId, numero_commande: numero, status: finalStatus,
@@ -840,19 +841,40 @@ export default function Commandes() {
   const poItems = () => currentItems.map(i => ({ ...i, vehicule_label: i.vehicule_id ? vehicMap[i.vehicule_id] : (i.vehicule_libre || null) }));
 
   const confirmValidation = async (forceNoEmail = false) => {
-    // Open the tab synchronously (inside the click) so browsers don't block it.
-    const tab = window.open("", "_blank");
-    const saved = await saveCommande('confirme');
+    const email = currentCommande.email_fournisseur?.trim() || "";
+    const saved = await saveCommande('confirme', { silent: true });
     setValidateOpen(false);
     setMissingEmailOpen(false);
-    if (!saved) { tab?.close(); return; }
-    const opened = printPurchaseOrder({ numero: saved.numero_commande, fournisseur: currentCommande.fournisseur, items: poItems(), target: tab });
-    const sendEmail = !forceNoEmail && validateMode === 'email';
-    toast({ title: `✅ Commande ${saved.numero_commande || ''} validée — PDF ${opened ? 'ouvert' : 'téléchargé'}`,
-      description: sendEmail ? `Envoi à ${currentCommande.email_fournisseur}` : undefined });
-    if (sendEmail) {
-      setPurchaseOrderDialog({ isOpen: true, commande: saved as any });
+    if (!saved) return;
+
+    const numero = saved.numero_commande || "";
+    let sent = false;
+
+    if (!forceNoEmail && email) {
+      try {
+        await autoSendPurchaseOrder(saved as any, (saved.items || []).map((i: any) => ({
+          designation: i.designation,
+          reference: i.reference || undefined,
+          quantite_commandee: i.quantite_commandee || 0,
+          prix_unitaire: i.prix_unitaire || 0,
+          total_ligne: i.total_ligne || 0,
+        })));
+        sent = true;
+      } catch (error: any) {
+        console.error("Envoi automatique du bon de commande impossible:", error);
+      }
     }
+
+    if (sent) {
+      notifySuccess(`✅ Commande ${numero} validée et envoyée à ${email}`);
+    } else if (!forceNoEmail && email) {
+      notifyWarning(`✅ Commande ${numero} validée — envoi automatique impossible, pensez à envoyer le bon de commande`);
+    } else {
+      notifyWarning(`✅ Commande ${numero} validée — pensez à envoyer le bon de commande`);
+    }
+
+    resetForm();
+    fetchCommandes();
   };
 
   const editCommande = (commande: Commande & { items: CommandeItem[] }) => {
