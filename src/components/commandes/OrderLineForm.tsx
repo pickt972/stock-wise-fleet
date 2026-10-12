@@ -91,7 +91,7 @@ export function OrderLineForm({ onAdd }: { onAdd: (l: NewOrderLine) => void }) {
           ) : (
             <>
               <Input value={vq} onChange={(e) => { setVq(e.target.value); setVOpen(true); }} onFocus={() => setVOpen(true)}
-                onBlur={() => setTimeout(() => setVOpen(false), 150)} placeholder="Immat. ou modèle (optionnel)" className="bg-background" />
+                onBlur={() => setTimeout(() => setVOpen(false), 150)} placeholder="Ex : BYD Atto 3, Ford Fiesta, Renault Clio 4…" className="bg-background" />
               {vOpen && (vResults.length > 0 || vq.trim()) && (
                 <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border bg-popover shadow-lg">
                   {vResults.map((v) => (
