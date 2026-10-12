@@ -25,6 +25,7 @@ import Entrees from "./pages/Entrees";
 import Sorties from "./pages/Sorties";
 import Users from "./pages/Users";
 import Categories from "./pages/Categories";
+import ArticlesAClasser from "./pages/ArticlesAClasser";
 import Vehicules from "./pages/Vehicules";
 import Parametres from "./pages/Parametres";
 import Alertes from "./pages/Alertes";
@@ -140,6 +141,11 @@ const App = () => (
               <Route path="/users" element={
                 <ProtectedRoute>
                   <Users />
+                </ProtectedRoute>
+              } />
+              <Route path="/articles-a-classer" element={
+                <ProtectedRoute>
+                  <ArticlesAClasser />
                 </ProtectedRoute>
               } />
               <Route path="/categories" element={
