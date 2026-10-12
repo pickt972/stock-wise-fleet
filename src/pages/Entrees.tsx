@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { EntryList } from "@/components/stock/EntryList";
 import { EntryStats } from "@/components/stock/EntryStats";
+import { PendingDraftReceptions } from "@/components/stock/PendingDraftReceptions";
 import { NewEntryForm } from "@/components/stock/NewEntryForm";
 import DashboardLayout from "./DashboardLayout";
 import { cn } from "@/lib/utils";
@@ -144,6 +145,8 @@ export default function Entrees() {
         <PageHeader title="Entrées de stock" />
 
         <EntryStats {...stats} />
+
+        <PendingDraftReceptions onReceived={fetchEntries} />
 
         {/* Filtres et recherche */}
         <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">

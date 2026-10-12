@@ -115,7 +115,8 @@ export function ReceptionCommandeDialog({
         quantite_a_recevoir: item.quantite_commandee - item.quantite_recue,
         article_id: item.article_id,
         prix_unitaire: Number(item.prix_unitaire) || 0,
-      }));
+        code_barre: (item as any).code_barre,
+      } as any));
 
       setItems(receptionItems);
     } catch (error: any) {

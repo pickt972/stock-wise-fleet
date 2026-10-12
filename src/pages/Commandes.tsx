@@ -480,10 +480,14 @@ export default function Commandes() {
     ]);
   };
 
-  const addFreeLine = (text: string) => {
+  const addFreeLine = (text: string, qty = 1, price = 0) => {
     const designation = text.trim();
     if (!designation) return;
-    setCurrentItems(prev => [...prev, { designation, reference: "", quantite_commandee: 1, prix_unitaire: 0, total_ligne: 0, is_draft: true }]);
+    const newItems = [...currentItems, { designation, reference: "", quantite_commandee: qty, prix_unitaire: price, total_ligne: qty * price, is_draft: true }];
+    setCurrentItems(newItems);
+    const { totalHT, totalTTC } = calculateTotals(newItems, currentCommande.tva_taux);
+    setCurrentCommande(prev => ({ ...prev, total_ht: totalHT, total_ttc: totalTTC }));
+    toast({ title: "Ligne ajoutée", description: `${designation} × ${qty}` });
   };
 
   const updateItem = (index: number, field: keyof CommandeItem, value: any) => {
@@ -840,10 +844,10 @@ export default function Commandes() {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'brouillon': return 'Brouillon';
-      case 'envoye': return 'Envoyée';
-      case 'confirme': return 'Confirmée';
-      case 'recu_partiel': return 'Reçue partiellement';
-      case 'recu_complet': return 'Reçue complètement';
+      case 'envoye': return 'Validée';
+      case 'confirme': return 'Validée';
+      case 'recu_partiel': return 'Partiellement reçue';
+      case 'recu_complet': return 'Reçue';
       case 'annule': return 'Annulée';
       default: return status;
     }
@@ -944,10 +948,9 @@ export default function Commandes() {
                       </SelectTrigger>
                         <SelectContent>
                         <SelectItem value="brouillon">Brouillon</SelectItem>
-                        <SelectItem value="envoye">Envoyée</SelectItem>
-                        <SelectItem value="confirme">Confirmée</SelectItem>
-                        <SelectItem value="recu_partiel">Reçue partiellement</SelectItem>
-                        <SelectItem value="recu_complet">Reçue complètement</SelectItem>
+                        <SelectItem value="envoye">Validée</SelectItem>
+                        <SelectItem value="recu_partiel">Partiellement reçue</SelectItem>
+                        <SelectItem value="recu_complet">Reçue</SelectItem>
                         <SelectItem value="annule">Annulée</SelectItem>
                       </SelectContent>
                     </Select>
@@ -1110,6 +1113,7 @@ export default function Commandes() {
                 </div>
               ) : (
                 <div className="space-y-3">
+                  <p className="text-sm font-semibold">Articles commandés ({currentItems.length})</p>
                   {currentItems.map((item, index) => {
                     const art = item.article_id ? articles.find(x => x.id === item.article_id) : undefined;
                     const existing = !!item.article_id;
