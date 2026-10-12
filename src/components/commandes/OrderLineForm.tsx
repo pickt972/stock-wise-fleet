@@ -101,7 +101,7 @@ export function OrderLineForm({ onAdd }: { onAdd: (l: NewOrderLine) => void }) {
                     </button>
                   ))}
                   {vq.trim() && !vehicles.some((v) => norm(v.immatriculation) === norm(vq) || norm(`${v.marque}${v.modele}`) === norm(vq)) && (
-                    <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { setFreeVehicle(vq.trim()); setVOpen(false); setVq(""); }}
+                    <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { setFreeVehicle(formatFreeVehicle(vq.trim())); setVOpen(false); setVq(""); }}
                       className="block w-full border-t px-3 py-2 text-left text-sm font-medium text-primary hover:bg-muted/60">
                       ➕ Utiliser « {vq.trim()} » comme véhicule libre
                     </button>
