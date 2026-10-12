@@ -24,6 +24,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { OrderLineForm, vehicleShort, type NewOrderLine } from "@/components/commandes/OrderLineForm";
 import { printPurchaseOrder } from "@/lib/printPurchaseOrder";
 import { autoSendPurchaseOrder } from "@/lib/sendPurchaseOrderEmail";
+import { validationMessage, type ValidationOutcome } from "@/lib/orderValidationMessage";
 import { OrderArticleSearch, stockTone, type OrderSearchContext } from "@/components/commandes/OrderArticleSearch";
 import { ReceptionCommandeDialog } from "@/components/commandes/ReceptionCommandeDialog";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
@@ -881,13 +882,10 @@ export default function Commandes() {
       }
     }
 
-    if (sent) {
-      notifySuccess(`✅ Commande ${numero} validée et envoyée à ${email}`);
-    } else if (!forceNoEmail && email) {
-      notifyWarning(`✅ Commande ${numero} validée — envoi automatique impossible, pensez à envoyer le bon de commande`);
-    } else {
-      notifyWarning(`✅ Commande ${numero} validée — pensez à envoyer le bon de commande`);
-    }
+    const outcome: ValidationOutcome = sent ? "sent" : email ? "send-failed" : "no-email";
+    const message = validationMessage(numero, outcome, email);
+    if (outcome === "sent") notifySuccess(message);
+    else notifyWarning(message);
 
     resetForm();
     fetchCommandes();
