@@ -107,6 +107,7 @@ const getSections = (permissions: any, userRole: string | null): NavSection[] =>
     label: "Référentiel",
     items: [
       { name: "Catégories", href: "/categories", icon: Tags, show: permissions.manageCategories },
+      { name: "Articles à classer", href: "/articles-a-classer", icon: Tags, show: permissions.manageCategories },
       { name: "Fournisseurs", href: "/fournisseurs", icon: Building2, show: permissions.manageSuppliers },
       { name: "Véhicules", href: "/vehicules", icon: Truck, show: permissions.manageVehicles },
       { name: "Emplacements", href: "/emplacements", icon: MapPin, show: userRole === "admin" },
