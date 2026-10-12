@@ -61,7 +61,6 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
 
   const moreItems = [
     { name: "Articles", href: "/articles", icon: Package, show: permissions.manageStock },
-    { name: "Accessoires", href: "/accessoires", icon: Baby, show: true },
     { name: "Entrées", href: "/entrees", icon: ArrowDownToLine, show: permissions.manageStock },
     { name: "Sorties", href: "/sorties", icon: ArrowUpFromLine, show: permissions.manageStock },
     { name: "Transferts", href: "/transferts", icon: ArrowLeftRight, show: permissions.manageStock },

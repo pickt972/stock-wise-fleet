@@ -53,7 +53,6 @@ const MAGASINIER_SECTIONS = (permissions: any): NavSection[] => [
     label: "Stock",
     items: [
       { name: "Articles", href: "/articles", icon: Package, show: true },
-      { name: "Accessoires", href: "/accessoires", icon: Baby, show: true },
       { name: "Entrées", href: "/entrees", icon: ArrowDownToLine, show: true },
       { name: "Sorties", href: "/sorties", icon: ArrowUpFromLine, show: true },
       { name: "Révisions", href: "/revisions", icon: Wrench, show: true },
@@ -80,7 +79,6 @@ const getSections = (permissions: any, userRole: string | null): NavSection[] =>
     label: "Stock",
     items: [
       { name: "Articles", href: "/articles", icon: Package, show: permissions.manageStock },
-      { name: "Accessoires", href: "/accessoires", icon: Baby, show: true },
       { name: "Entrées", href: "/entrees", icon: ArrowDownToLine, show: permissions.manageStock },
       { name: "Sorties", href: "/sorties", icon: ArrowUpFromLine, show: permissions.manageStock },
       { name: "Transferts", href: "/transferts", icon: ArrowLeftRight, show: permissions.manageStock },
