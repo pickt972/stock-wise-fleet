@@ -1,3 +1,4 @@
+import { ArticlePickerField } from "@/components/shared/CategoryPicker";
 import { useState, useEffect } from "react";
 import { PackageMinus } from "lucide-react";
 import {
@@ -165,17 +166,7 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
         <div className="space-y-4 py-2">
           <div>
             <Label>Article *</Label>
-            <SearchableSelect
-              options={articles.map((a) => ({
-                value: a.id,
-                label: `${a.reference} - ${a.designation} (stock: ${a.stock})`,
-              }))}
-              value={articleId}
-              onValueChange={setArticleId}
-              placeholder="Sélectionner un article..."
-              searchPlaceholder="Rechercher par référence ou désignation..."
-              emptyMessage="Aucun article trouvé."
-            />
+            <ArticlePickerField value={articleId} onChange={setArticleId} showStock />
           </div>
 
           <div>

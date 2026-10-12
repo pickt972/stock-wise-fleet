@@ -1,3 +1,4 @@
+import { CategoryCardGrid } from "@/components/shared/CategoryPicker";
 import { getCategoryIcon } from "@/components/categories/CategoryIcon";
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
@@ -427,22 +428,11 @@ export function EditArticleDialog({ article, onArticleUpdated }: EditArticleDial
 
             <div className="space-y-2">
               <Label className="text-xs sm:text-sm">Catégorie *</Label>
-              <div className="flex flex-col gap-2">
-                {categories.map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => { setFormData({ ...formData, categorie: cat, sous_categorie: cat !== formData.categorie ? "" : formData.sous_categorie }); }}
-                    className={`w-full text-left px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                      formData.categorie === cat
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
+              <CategoryCardGrid
+                items={categories}
+                selected={formData.categorie}
+                onSelect={(cat) => setFormData({ ...formData, categorie: cat, sous_categorie: cat !== formData.categorie ? "" : formData.sous_categorie })}
+              />
             </div>
 
             {/* Sous-catégorie (optionnelle, dépend de la catégorie) */}
