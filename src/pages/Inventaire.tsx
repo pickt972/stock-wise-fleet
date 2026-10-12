@@ -1,307 +1,173 @@
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { SearchWithScanner } from "@/components/SearchWithScanner";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Package, AlertTriangle, TrendingUp, ShoppingCart, FileText, Plus } from "lucide-react";
+import { Package, AlertTriangle, TrendingUp, Plus, ClipboardCheck, ClipboardList } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "./DashboardLayout";
-import { ArticleListSkeleton } from "@/components/ui/skeletons/ArticleListSkeleton";
-import { useNavigate } from "react-router-dom";
-import { InventaireSession } from "@/components/inventaire/InventaireSession";
-import { InventaireTable } from "@/components/inventaire/InventaireTable";
-import { InventaireActions } from "@/components/inventaire/InventaireActions";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageSkeleton } from "@/components/ui/skeletons/PageSkeleton";
+import { NewInventoryDialog } from "@/components/inventaire/NewInventoryDialog";
+import { InventoryCounting } from "@/components/inventaire/InventoryCounting";
+import { InventoryDetailDialog } from "@/components/inventaire/InventoryDetailDialog";
+import { fetchNames, fmtDateTime, type InventoryRow } from "@/components/inventaire/inventoryData";
+import { statusLabel } from "@/lib/inventory";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Inventaire() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
-  const [activeInventaire, setActiveInventaire] = useState<any>(null);
-  const [showNewSession, setShowNewSession] = useState(false);
-  const [inventaireStats, setInventaireStats] = useState({ total: 0, counted: 0, remaining: 0 });
-  const navigate = useNavigate();
+  const qc = useQueryClient();
   const { toast } = useToast();
+  const [newOpen, setNewOpen] = useState(false);
+  const [detail, setDetail] = useState<InventoryRow | null>(null);
 
-  const handleOrderArticle = (article: any) => {
-    navigate('/commandes', { 
-      state: { 
-        preSelectedArticle: {
-          id: article.id,
-          reference: article.reference,
-          designation: article.designation,
-          prix_achat: article.prix_achat,
-          fournisseur_id: article.fournisseur_id
-        }
-      }
-    });
-  };
-
-  // Vérifier s'il y a un inventaire en cours
-  useEffect(() => {
-    checkActiveInventaire();
-  }, []);
-
-  const checkActiveInventaire = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('inventaires')
-        .select('*')
-        .in('statut', ['en_cours', 'cloture'])
-        .order('date_creation', { ascending: false })
-        .limit(1);
-
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        setActiveInventaire(data[0]);
-        await updateInventaireStats(data[0].id);
-      }
-    } catch (error) {
-      console.error('Erreur lors de la vérification de l\'inventaire actif:', error);
-    }
-  };
-
-  const updateInventaireStats = async (inventaireId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('inventaire_items')
-        .select('stock_compte')
-        .eq('inventaire_id', inventaireId);
-
-      if (error) throw error;
-
-      const total = data.length;
-      const counted = data.filter(item => item.stock_compte !== null).length;
-      const remaining = total - counted;
-
-      setInventaireStats({ total, counted, remaining });
-    } catch (error) {
-      console.error('Erreur lors du calcul des statistiques:', error);
-    }
-  };
-
-  const handleSessionCreated = (inventaireId: string) => {
-    setShowNewSession(false);
-    checkActiveInventaire();
-  };
-
-  const handleItemUpdate = () => {
-    if (activeInventaire) {
-      updateInventaireStats(activeInventaire.id);
-    }
-  };
-
-  const handleStatusChange = () => {
-    checkActiveInventaire();
-  };
-
-  const { data: articles = [], isLoading } = useQuery({
-    queryKey: ['inventory-articles'],
+  const { data: articles = [] } = useQuery({
+    queryKey: ["inventory-articles"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('articles')
-        .select('*')
-        .order('reference');
-      
+      const { data, error } = await supabase.from("articles").select("stock, stock_min, prix_achat").is("archived_at", null);
       if (error) throw error;
       return data;
     },
   });
 
-  const filteredArticles = articles.filter(article =>
-    article.reference.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-    article.designation.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-    article.marque.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-  );
+  const { data, isLoading } = useQuery({
+    queryKey: ["inventories"],
+    queryFn: async () => {
+      const { data: invs, error } = await supabase
+        .from("inventaires").select("*").not("reference", "is", null).order("opened_at", { ascending: false });
+      if (error) throw error;
+      const rows = invs as unknown as InventoryRow[];
+      const ids = rows.map((r) => r.id);
+      const [names, varRes, cats, emps] = await Promise.all([
+        fetchNames(rows.flatMap((r) => [r.created_by, r.closed_by, r.abandoned_by])),
+        ids.length ? supabase.from("inventaire_items").select("inventaire_id").in("inventaire_id", ids).not("ecart", "is", null).neq("ecart", 0) : Promise.resolve({ data: [] as any[] }),
+        supabase.from("categories").select("id, nom"),
+        supabase.from("emplacements").select("id, nom"),
+      ]);
+      const variances: Record<string, number> = {};
+      (varRes.data ?? []).forEach((v: any) => { variances[v.inventaire_id] = (variances[v.inventaire_id] ?? 0) + 1; });
+      const scopeNames: Record<string, string> = {};
+      [...(cats.data ?? []), ...(emps.data ?? [])].forEach((x: any) => { scopeNames[x.id] = x.nom; });
+      return { rows, names, variances, scopeNames };
+    },
+  });
 
-  const totalValue = articles.reduce((sum, article) => sum + (article.stock * article.prix_achat), 0);
-  const totalArticles = articles.length;
-  const lowStockCount = articles.filter(article => article.stock <= article.stock_min).length;
+  const rows = data?.rows ?? [];
+  const names = data?.names ?? {};
+  const active = rows.find((r) => r.statut === "en_cours") ?? null;
+  const lastClosed = rows.find((r) => r.statut === "cloture" || r.statut === "valide");
 
-  const getStockStatus = (stock: number, stockMin: number) => {
-    if (stock === 0) {
-      return { label: "Rupture", variant: "destructive" as const };
-    } else if (stock <= stockMin) {
-      return { label: "Stock faible", variant: "secondary" as const };
-    }
-    return { label: "En stock", variant: "default" as const };
+  const kpi = useMemo(() => ({
+    value: articles.reduce((s, a) => s + a.stock * a.prix_achat, 0),
+    total: articles.length,
+    low: articles.filter((a) => a.stock <= a.stock_min).length,
+  }), [articles]);
+
+  const scopeLabel = (r: InventoryRow) =>
+    r.scope_type === "all" ? "Tous les articles"
+      : `${r.scope_type === "category" ? "Catégorie" : "Emplacement"} : ${data?.scopeNames[r.scope_id ?? ""] ?? "—"}`;
+  const name = (id: string | null) => (id ? names[id] ?? "Utilisateur inconnu" : "—");
+
+  const startNew = () => {
+    if (active) { toast({ title: "Un inventaire est déjà en cours", description: `Clôturez ou abandonnez ${active.reference} d'abord.`, variant: "destructive" }); return; }
+    setNewOpen(true);
   };
+
+  const refresh = () => qc.invalidateQueries({ queryKey: ["inventories"] });
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Inventaire</h1>
-            <p className="text-muted-foreground">
-              Gestion des inventaires et vue d'ensemble du stock
-            </p>
+            <p className="text-muted-foreground">Comptages, écarts et historique des inventaires</p>
           </div>
-          
-          {!activeInventaire && (
-            <Button
-              onClick={() => setShowNewSession(true)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Nouvel inventaire
-            </Button>
-          )}
+          <Button onClick={startNew} disabled={!!active} title={active ? "Un inventaire est déjà en cours" : undefined}>
+            <Plus className="h-4 w-4 mr-2" />Nouvel inventaire
+          </Button>
         </div>
 
-        {/* Session d'inventaire active ou création */}
-        {showNewSession && !activeInventaire && (
-          <InventaireSession onSessionCreated={handleSessionCreated} />
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+          <Kpi title="Valeur totale du stock" icon={TrendingUp} value={`${kpi.value.toFixed(2)} €`} />
+          <Kpi title="Total des articles" icon={Package} value={String(kpi.total)} />
+          <Kpi title="Articles en stock faible" icon={AlertTriangle} value={String(kpi.low)} valueClass="text-destructive" />
+          <Kpi title="Dernier inventaire" icon={ClipboardCheck}
+            value={lastClosed ? new Date(lastClosed.closed_at!).toLocaleDateString("fr-FR") : "—"}
+            sub={lastClosed ? `par ${name(lastClosed.closed_by ?? lastClosed.created_by)}` : "Aucun inventaire clôturé"} />
+        </div>
+
+        {active && (
+          <InventoryCounting inventory={active} openerName={name(active.created_by)} onFinished={refresh} />
         )}
 
-        {activeInventaire && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <InventaireTable 
-                inventaireId={activeInventaire.id}
-                onItemUpdate={handleItemUpdate}
-              />
-            </div>
-            <div>
-              <InventaireActions
-                inventaire={activeInventaire}
-                remainingItems={inventaireStats.remaining}
-                onStatusChange={handleStatusChange}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Statistiques générales - Affichées seulement s'il n'y a pas d'inventaire actif */}
-        {!activeInventaire && !showNewSession && (
-          <>
-            <div className="grid gap-4 md:grid-cols-3">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Valeur totale du stock</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalValue.toFixed(2)} €</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total des articles</CardTitle>
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalArticles}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Articles en stock faible</CardTitle>
-                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-destructive">{lowStockCount}</div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Recherche */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Articles en stock</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-4">
-                  <SearchWithScanner
-                    placeholder="Scanner ou rechercher un article..."
-                    value={searchTerm}
-                    onChange={setSearchTerm}
-                    onArticleNotFound={() => {}}
-                    returnTo="/inventaire"
-                  />
-                </div>
-
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Référence</TableHead>
-                        <TableHead>Désignation</TableHead>
-                        <TableHead>Marque</TableHead>
-                        <TableHead>Emplacement</TableHead>
-                        <TableHead className="text-center">Stock</TableHead>
-                        <TableHead className="text-center">Stock Min</TableHead>
-                        <TableHead className="text-center">Prix unitaire</TableHead>
-                        <TableHead className="text-center">Statut</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {isLoading ? (
-                        <TableRow>
-                          <TableCell colSpan={8}>
-                            <ArticleListSkeleton />
+        <Card>
+          <CardHeader><CardTitle>Inventaires</CardTitle></CardHeader>
+          <CardContent className="p-0 sm:p-6 sm:pt-0">
+            {isLoading ? <PageSkeleton /> : rows.length === 0 ? (
+              <EmptyState icon={<ClipboardList className="h-8 w-8" />} title="Aucun inventaire" description="Ouvrez votre premier inventaire pour compter le stock."
+                action={{ label: "Nouvel inventaire", onClick: startNew }} />
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>N°</TableHead><TableHead>Statut</TableHead><TableHead>Ouvert le</TableHead>
+                      <TableHead>Par</TableHead><TableHead>Clôturé le</TableHead>
+                      <TableHead className="text-center">Articles comptés</TableHead><TableHead className="text-center">Écarts</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.map((r) => {
+                      const st = statusLabel(r.statut);
+                      const n = data?.variances[r.id] ?? 0;
+                      return (
+                        <TableRow key={r.id} className="cursor-pointer" onClick={() => r.statut === "en_cours"
+                          ? window.scrollTo({ top: 0, behavior: "smooth" })
+                          : setDetail(r)}>
+                          <TableCell className="font-medium whitespace-nowrap">
+                            {r.reference}{r.label && <div className="text-xs text-muted-foreground font-normal">{r.label}</div>}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap"><Badge variant="secondary">{st.emoji} {st.label}</Badge></TableCell>
+                          <TableCell className="whitespace-nowrap">{fmtDateTime(r.opened_at)}</TableCell>
+                          <TableCell className="whitespace-nowrap">{name(r.created_by)}</TableCell>
+                          <TableCell className="whitespace-nowrap">{r.statut === "abandonne" ? "—" : fmtDateTime(r.closed_at)}</TableCell>
+                          <TableCell className="text-center">{r.articles_counted}/{r.total_articles}</TableCell>
+                          <TableCell className="text-center whitespace-nowrap">
+                            {r.statut === "en_cours" || r.statut === "abandonne" ? "—" : n === 0 ? "Aucun" : `${n} écart${n > 1 ? "s" : ""}`}
                           </TableCell>
                         </TableRow>
-                      ) : filteredArticles.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={8}>
-                            <div className="flex flex-col items-center justify-center py-12 text-center">
-                              <div className="text-6xl mb-4">🔍</div>
-                              <h3 className="text-lg font-semibold mb-2">Aucun article trouvé</h3>
-                              <p className="text-sm text-muted-foreground">
-                                Vérifiez votre recherche ou ajoutez de nouveaux articles
-                              </p>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredArticles.map((article) => {
-                          const status = getStockStatus(article.stock, article.stock_min);
-                          return (
-                            <TableRow key={article.id}>
-                              <TableCell className="font-medium">{article.reference}</TableCell>
-                              <TableCell>{article.designation}</TableCell>
-                              <TableCell>{article.marque}</TableCell>
-                              <TableCell>
-                                {article.emplacement && (
-                                  <Badge variant="outline">{article.emplacement}</Badge>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-center">{article.stock}</TableCell>
-                              <TableCell className="text-center">{article.stock_min}</TableCell>
-                              <TableCell className="text-center">{article.prix_achat.toFixed(2)} €</TableCell>
-                              <TableCell className="text-center">
-                                {status.label === "Stock faible" ? (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleOrderArticle(article)}
-                                    className="p-0 h-auto"
-                                  >
-                                    <Badge variant={status.variant} className="cursor-pointer">
-                                      {status.label}
-                                    </Badge>
-                                  </Button>
-                                ) : (
-                                  <Badge variant={status.variant}>{status.label}</Badge>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      <NewInventoryDialog open={newOpen} onOpenChange={setNewOpen} onCreated={() => { setNewOpen(false); refresh(); }} />
+      <InventoryDetailDialog inventory={detail} names={names} scopeLabel={detail ? scopeLabel(detail) : ""}
+        onOpenChange={(o) => !o && setDetail(null)} />
     </DashboardLayout>
+  );
+}
+
+function Kpi({ title, icon: Icon, value, sub, valueClass }: {
+  title: string; icon: React.ComponentType<{ className?: string }>; value: string; sub?: string; valueClass?: string;
+}) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <Icon className="h-4 w-4 text-muted-foreground" />
+      </CardHeader>
+      <CardContent>
+        <div className={`text-2xl font-bold ${valueClass ?? ""}`}>{value}</div>
+        {sub && <p className="text-xs text-muted-foreground truncate">{sub}</p>}
+      </CardContent>
+    </Card>
   );
 }

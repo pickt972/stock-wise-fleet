@@ -729,54 +729,90 @@ export type Database = {
       }
       inventaires: {
         Row: {
+          abandon_reason: string | null
+          abandoned_at: string | null
+          abandoned_by: string | null
+          articles_counted: number
           closed_at: string | null
+          closed_by: string | null
           created_at: string
           created_by: string | null
           date_cloture: string | null
           date_creation: string
           date_inventaire: string
           id: string
+          label: string | null
           location: Database["public"]["Enums"]["location_enum"]
           notes: string | null
+          opened_at: string
+          reference: string | null
+          scope_id: string | null
+          scope_type: string
           site_id: string | null
           started_at: string
           started_by: string | null
           status: Database["public"]["Enums"]["inventory_status"]
           statut: string
+          stock_applied: boolean
+          total_articles: number
           updated_at: string
         }
         Insert: {
+          abandon_reason?: string | null
+          abandoned_at?: string | null
+          abandoned_by?: string | null
+          articles_counted?: number
           closed_at?: string | null
-          created_at?: string
-          created_by?: string | null
-          date_cloture?: string | null
-          date_creation?: string
-          date_inventaire: string
-          id?: string
-          location: Database["public"]["Enums"]["location_enum"]
-          notes?: string | null
-          site_id?: string | null
-          started_at?: string
-          started_by?: string | null
-          status?: Database["public"]["Enums"]["inventory_status"]
-          statut?: string
-          updated_at?: string
-        }
-        Update: {
-          closed_at?: string | null
+          closed_by?: string | null
           created_at?: string
           created_by?: string | null
           date_cloture?: string | null
           date_creation?: string
           date_inventaire?: string
           id?: string
+          label?: string | null
           location?: Database["public"]["Enums"]["location_enum"]
           notes?: string | null
+          opened_at?: string
+          reference?: string | null
+          scope_id?: string | null
+          scope_type?: string
           site_id?: string | null
           started_at?: string
           started_by?: string | null
           status?: Database["public"]["Enums"]["inventory_status"]
           statut?: string
+          stock_applied?: boolean
+          total_articles?: number
+          updated_at?: string
+        }
+        Update: {
+          abandon_reason?: string | null
+          abandoned_at?: string | null
+          abandoned_by?: string | null
+          articles_counted?: number
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_cloture?: string | null
+          date_creation?: string
+          date_inventaire?: string
+          id?: string
+          label?: string | null
+          location?: Database["public"]["Enums"]["location_enum"]
+          notes?: string | null
+          opened_at?: string
+          reference?: string | null
+          scope_id?: string | null
+          scope_type?: string
+          site_id?: string | null
+          started_at?: string
+          started_by?: string | null
+          status?: Database["public"]["Enums"]["inventory_status"]
+          statut?: string
+          stock_applied?: boolean
+          total_articles?: number
           updated_at?: string
         }
         Relationships: []
@@ -1446,7 +1482,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      abandon_inventory: {
+        Args: { p_inventaire_id: string; p_reason: string }
+        Returns: undefined
+      }
       close_inventory: { Args: { p_inventaire_id: string }; Returns: undefined }
+      close_inventory_session: {
+        Args: { p_apply_to_stock: boolean; p_inventaire_id: string }
+        Returns: undefined
+      }
       generate_entry_number: { Args: never; Returns: string }
       generate_exit_number: { Args: never; Returns: string }
       get_auth_user_id_by_email: { Args: { _email: string }; Returns: string }
@@ -1522,6 +1566,10 @@ export type Database = {
         Args: { _category_id: string; _new_parent_id: string }
         Returns: undefined
       }
+      open_inventory: {
+        Args: { p_label: string; p_scope_id: string; p_scope_type: string }
+        Returns: string
+      }
       reorder_categories: {
         Args: { _ordered_ids: string[]; _parent_id: string }
         Returns: undefined
@@ -1532,6 +1580,10 @@ export type Database = {
           item_id: string
           qty: number
         }[]
+      }
+      set_inventory_count: {
+        Args: { p_item_id: string; p_qty: number }
+        Returns: undefined
       }
       start_inventory: {
         Args: { loc: Database["public"]["Enums"]["location_enum"] }
