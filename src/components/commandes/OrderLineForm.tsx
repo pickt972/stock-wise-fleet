@@ -11,7 +11,15 @@ export interface NewOrderLine { categorie: string; sous_categorie: string | null
 
 const NONE = "__none__";
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
-export const vehicleShort = (v: OrderVehicle) => `${v.immatriculation} ${v.marque} ${v.modele}`;
+export const vehicleShort = (v: OrderVehicle) => `${v.immatriculation} — ${v.marque} ${v.modele}`;
+
+/** Format d'un véhicule saisi librement : MARQUE en majuscules, modèle en Title Case. */
+export const formatFreeVehicle = (raw: string) => {
+  const words = raw.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return raw.trim();
+  const cap = (w: string) => (w.length ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w);
+  return [words[0].toUpperCase(), ...words.slice(1).map(cap)].join(" ");
+};
 
 /** One order line = catégorie (required) + sous-catégorie + véhicule + quantité (+ précision). */
 export function OrderLineForm({ onAdd }: { onAdd: (l: NewOrderLine) => void }) {
@@ -83,7 +91,7 @@ export function OrderLineForm({ onAdd }: { onAdd: (l: NewOrderLine) => void }) {
           ) : (
             <>
               <Input value={vq} onChange={(e) => { setVq(e.target.value); setVOpen(true); }} onFocus={() => setVOpen(true)}
-                onBlur={() => setTimeout(() => setVOpen(false), 150)} placeholder="Immat. ou modèle (optionnel)" className="bg-background" />
+                onBlur={() => setTimeout(() => setVOpen(false), 150)} placeholder="Ex : BYD Atto 3, Ford Fiesta, Renault Clio 4…" className="bg-background" />
               {vOpen && (vResults.length > 0 || vq.trim()) && (
                 <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border bg-popover shadow-lg">
                   {vResults.map((v) => (
@@ -93,7 +101,7 @@ export function OrderLineForm({ onAdd }: { onAdd: (l: NewOrderLine) => void }) {
                     </button>
                   ))}
                   {vq.trim() && !vehicles.some((v) => norm(v.immatriculation) === norm(vq) || norm(`${v.marque}${v.modele}`) === norm(vq)) && (
-                    <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { setFreeVehicle(vq.trim()); setVOpen(false); setVq(""); }}
+                    <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { setFreeVehicle(formatFreeVehicle(vq.trim())); setVOpen(false); setVq(""); }}
                       className="block w-full border-t px-3 py-2 text-left text-sm font-medium text-primary hover:bg-muted/60">
                       ➕ Utiliser « {vq.trim()} » comme véhicule libre
                     </button>

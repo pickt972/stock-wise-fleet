@@ -1043,23 +1043,23 @@ export default function Commandes() {
                 </div>
               ) : (
                 <div className="rounded-lg border divide-y">
-                  <div className="hidden md:grid grid-cols-[1.4fr_1fr_1.2fr_5.5rem_2.5rem] gap-2 px-3 py-2 text-xs font-semibold uppercase text-muted-foreground bg-muted/40">
+                  <div className="hidden md:grid grid-cols-[1.3fr_1fr_minmax(11.25rem,1.6fr)_5.5rem_2.5rem] gap-2 px-3 py-2 text-xs font-semibold uppercase text-muted-foreground bg-muted/40">
                     <span>Catégorie › Sous-cat.</span><span>Précision</span><span>Véhicule</span><span className="text-right">Qté</span><span />
                   </div>
                   {currentItems.map((item, index) => (
-                    <div key={index} className="grid grid-cols-[1fr_5.5rem_2.5rem] md:grid-cols-[1.4fr_1fr_1.2fr_5.5rem_2.5rem] gap-2 px-3 py-3 items-center">
+                    <div key={index} className="grid grid-cols-[1fr_5.5rem_2.5rem] md:grid-cols-[1.3fr_1fr_minmax(11.25rem,1.6fr)_5.5rem_2.5rem] gap-2 px-3 py-3 items-center">
                       <div className="min-w-0">
                         <p className="font-medium truncate">
                           {item.categorie ? `${item.categorie}${item.sous_categorie ? ` › ${item.sous_categorie}` : ''}` : item.designation}
                         </p>
                         <div className="md:hidden text-xs text-muted-foreground space-y-0.5">
                           {item.precision_note && <p className="italic">« {item.precision_note} »</p>}
-                          {item.vehicule_id && <p className="text-accent font-medium">🚗 {vehicMap[item.vehicule_id] || 'Véhicule'}</p>}
+                          {item.vehicule_id && <p className="text-accent font-medium">🚘 {vehicMap[item.vehicule_id] || 'Véhicule'}</p>}
                           {!item.vehicule_id && item.vehicule_libre && <p className="text-muted-foreground"><span className="grayscale opacity-60">🚗</span> {item.vehicule_libre}</p>}
                         </div>
                       </div>
                       <p className="hidden md:block text-sm text-muted-foreground italic truncate">{item.precision_note || '—'}</p>
-                      <p className="hidden md:block text-sm truncate">{item.vehicule_id ? <span className="text-accent font-medium">🚗 {vehicMap[item.vehicule_id] || 'Véhicule'}</span> : item.vehicule_libre ? <span className="text-muted-foreground" title="Véhicule hors flotte"><span className="grayscale opacity-60">🚗</span> {item.vehicule_libre}</span> : <span className="text-muted-foreground">—</span>}</p>
+                      <p className="hidden md:block text-sm truncate">{item.vehicule_id ? <span className="text-accent font-medium">🚘 {vehicMap[item.vehicule_id] || 'Véhicule'}</span> : item.vehicule_libre ? <span className="text-muted-foreground" title="Véhicule hors flotte"><span className="grayscale opacity-60">🚗</span> {item.vehicule_libre}</span> : <span className="block text-center text-muted-foreground">—</span>}</p>
                       <Input
                         type="number" inputMode="numeric" min="1" aria-label="Quantité" className="text-right"
                         onFocus={(e) => e.currentTarget.select()}
