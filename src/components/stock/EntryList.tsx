@@ -1,4 +1,4 @@
-import { userDisplayName } from "@/lib/userDisplay";
+import { UserAttribution } from "@/components/shared/UserAttribution";
 import { useState } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -147,7 +147,7 @@ export function EntryList({ entries, onRefresh }: EntryListProps) {
                     }).format(entry.total_amount)}
                   </TableCell>
                   <TableCell>
-                    {userDisplayName(entry.profiles as any)}
+                    <UserAttribution profile={entry.profiles} />
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">

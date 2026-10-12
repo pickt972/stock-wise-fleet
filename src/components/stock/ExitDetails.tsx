@@ -19,6 +19,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AccessoryReturnDialog } from "./AccessoryReturnDialog";
+import { UserAttribution } from "@/components/shared/UserAttribution";
+import { userDisplayName } from "@/lib/userDisplay";
 
 interface ExitItem {
   id: string;
@@ -81,9 +83,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export const creatorName = (p?: { first_name?: string; last_name?: string; username?: string | null } | null) => {
-  if (!p) return "";
-  const full = `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim();
-  return full || p.username || "";
+  return userDisplayName(p, "");
 };
 
 const getExitTypeLabel = (type: string) => {
@@ -133,7 +133,7 @@ export function ExitDetails({ exit, open, onOpenChange, onRefresh }: ExitDetails
                 <div>
                   <p className="text-sm text-muted-foreground">Véhicule</p>
                   <p className="font-semibold">
-                    {exit.vehicules.marque} {exit.vehicules.modele} - {exit.vehicules.immatriculation}
+                    {exit.vehicules.marque.toUpperCase()} {exit.vehicules.modele} - {exit.vehicules.immatriculation}
                   </p>
                 </div>
               )}
@@ -208,7 +208,7 @@ export function ExitDetails({ exit, open, onOpenChange, onRefresh }: ExitDetails
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground">Créé par</p>
-                <p>{creatorName(exit.profiles) || "Non renseigné"}</p>
+                <p><UserAttribution profile={exit.profiles} /></p>
               </div>
               <div>
                 <p className="text-muted-foreground">Statut</p>
