@@ -106,7 +106,7 @@ export default function Inventaire() {
           <CardHeader><CardTitle>Inventaires</CardTitle></CardHeader>
           <CardContent className="p-0 sm:p-6 sm:pt-0">
             {isLoading ? <PageSkeleton /> : rows.length === 0 ? (
-              <EmptyState icon={ClipboardList} title="Aucun inventaire" description="Ouvrez votre premier inventaire pour compter le stock."
+              <EmptyState icon={<ClipboardList className="h-8 w-8" />} title="Aucun inventaire" description="Ouvrez votre premier inventaire pour compter le stock."
                 action={{ label: "Nouvel inventaire", onClick: startNew }} />
             ) : (
               <div className="overflow-x-auto">
@@ -124,7 +124,7 @@ export default function Inventaire() {
                       const n = data?.variances[r.id] ?? 0;
                       return (
                         <TableRow key={r.id} className="cursor-pointer" onClick={() => r.statut === "en_cours"
-                          ? document.getElementById("main-content")?.scrollTo?.({ top: 0, behavior: "smooth" }) ?? window.scrollTo({ top: 0, behavior: "smooth" })
+                          ? window.scrollTo({ top: 0, behavior: "smooth" })
                           : setDetail(r)}>
                           <TableCell className="font-medium whitespace-nowrap">
                             {r.reference}{r.label && <div className="text-xs text-muted-foreground font-normal">{r.label}</div>}
