@@ -38,6 +38,7 @@ All colors MUST be HSL.
     --muted-foreground: 220 9% 46%;
 
     /* Accent: turquoise #06B6D4 (badges, graphiques, focus secondaire) */
+    --category-drop: 217 91% 60%;
     --accent: 188 94% 43%;
     --accent-foreground: 0 0% 100%;
 
@@ -365,3 +366,37 @@ All colors MUST be HSL.
     animation: glow-pulse 2.5s ease-in-out infinite;
   }
 }
+
+/* Stable category rows: hit zones never change layout while dragging. */
+.category-drop-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: hsl(var(--category-drop));
+  z-index: 40;
+  pointer-events: none;
+}
+.category-drop-before { top: -3px; }
+.category-drop-after { bottom: -3px; }
+.category-drop-line::before, .category-drop-line::after {
+  content: "";
+  position: absolute;
+  top: -2.5px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: hsl(var(--category-drop));
+}
+.category-drop-line::before { left: -2px; }
+.category-drop-line::after { right: -2px; }
+.category-drag-invalid, .category-drag-invalid * { cursor: not-allowed !important; }
+.category-drop-success { animation: category-drop-flash 300ms ease-out; }
+@keyframes category-drop-flash {
+  0%, 60% { outline: 2px solid hsl(var(--primary)); outline-offset: 1px; }
+  100% { outline: 2px solid transparent; outline-offset: 1px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .category-drop-success { animation: none; outline: 2px solid hsl(var(--primary)); }
+}
+@media (pointer: coarse) { .dnd-handle { touch-action: pan-y; } }
