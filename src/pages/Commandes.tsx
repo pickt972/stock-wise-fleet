@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Trash2, ShoppingCart, Mail, Download, Edit, Brain, Search, Check, ScanBarcode, PackageCheck, FileText, ChevronDown, X } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -22,6 +23,8 @@ import { CreateArticleDialog } from "@/components/articles/CreateArticleDialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { OrderLineForm, vehicleShort, type NewOrderLine } from "@/components/commandes/OrderLineForm";
 import { printPurchaseOrder } from "@/lib/printPurchaseOrder";
+import { autoSendPurchaseOrder } from "@/lib/sendPurchaseOrderEmail";
+import { validationMessage, type ValidationOutcome } from "@/lib/orderValidationMessage";
 import { OrderArticleSearch, stockTone, type OrderSearchContext } from "@/components/commandes/OrderArticleSearch";
 import { ReceptionCommandeDialog } from "@/components/commandes/ReceptionCommandeDialog";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
@@ -96,6 +99,20 @@ interface Fournisseur {
   actif: boolean;
 }
 
+const notifySuccess = (message: string) =>
+  sonnerToast(message, {
+    duration: 4000,
+    position: "bottom-center",
+    className: "!bg-success !text-success-foreground !border-success",
+  });
+
+const notifyWarning = (message: string) =>
+  sonnerToast(message, {
+    duration: 4000,
+    position: "bottom-center",
+    className: "!bg-warning !text-warning-foreground !border-warning",
+  });
+
 export default function Commandes() {
   const location = useLocation();
   const [commandes, setCommandes] = useState<(Commande & { items: CommandeItem[] })[]>([]);
@@ -144,7 +161,6 @@ export default function Commandes() {
     supabase.from('vehicules').select('id, immatriculation, marque, modele').then(({ data }) =>
       setVehicMap(Object.fromEntries((data || []).map((v: any) => [v.id, vehicleShort(v)]))));
   }, []);
-  const [validateMode, setValidateMode] = useState<'email' | 'pdf'>('email');
   const { toast } = useToast();
   const navigate = useNavigate();
   const { isAdmin, isChefAgence } = useRoleAccess();
@@ -708,7 +724,7 @@ export default function Commandes() {
     }
   };
 
-  const saveCommande = async (finalStatus: 'brouillon' | 'confirme' = 'brouillon', opts: { stay?: boolean } = {}) => {
+  const saveCommande = async (finalStatus: 'brouillon' | 'confirme' = 'brouillon', opts: { stay?: boolean; silent?: boolean } = {}) => {
     if (!currentCommande.fournisseur.trim() || currentItems.length === 0) {
       toast({
         title: "Erreur",
@@ -793,10 +809,12 @@ export default function Commandes() {
 
       if (itemsError) throw itemsError;
 
-      toast({
-        title: "Succès",
-        description: finalStatus === 'confirme' ? "Commande validée" : "Brouillon sauvegardé",
-      });
+      if (!opts.silent) {
+        toast({
+          title: "Succès",
+          description: finalStatus === 'confirme' ? "Commande validée" : "Brouillon sauvegardé",
+        });
+      }
 
       const saved = {
         ...currentCommande, id: commandeId, numero_commande: numero, status: finalStatus,
@@ -840,19 +858,37 @@ export default function Commandes() {
   const poItems = () => currentItems.map(i => ({ ...i, vehicule_label: i.vehicule_id ? vehicMap[i.vehicule_id] : (i.vehicule_libre || null) }));
 
   const confirmValidation = async (forceNoEmail = false) => {
-    // Open the tab synchronously (inside the click) so browsers don't block it.
-    const tab = window.open("", "_blank");
-    const saved = await saveCommande('confirme');
+    const email = currentCommande.email_fournisseur?.trim() || "";
+    const saved = await saveCommande('confirme', { silent: true });
     setValidateOpen(false);
     setMissingEmailOpen(false);
-    if (!saved) { tab?.close(); return; }
-    const opened = printPurchaseOrder({ numero: saved.numero_commande, fournisseur: currentCommande.fournisseur, items: poItems(), target: tab });
-    const sendEmail = !forceNoEmail && validateMode === 'email';
-    toast({ title: `✅ Commande ${saved.numero_commande || ''} validée — PDF ${opened ? 'ouvert' : 'téléchargé'}`,
-      description: sendEmail ? `Envoi à ${currentCommande.email_fournisseur}` : undefined });
-    if (sendEmail) {
-      setPurchaseOrderDialog({ isOpen: true, commande: saved as any });
+    if (!saved) return;
+
+    const numero = saved.numero_commande || "";
+    let sent = false;
+
+    if (!forceNoEmail && email) {
+      try {
+        await autoSendPurchaseOrder(saved as any, (saved.items || []).map((i: any) => ({
+          designation: i.designation,
+          reference: i.reference || undefined,
+          quantite_commandee: i.quantite_commandee || 0,
+          prix_unitaire: i.prix_unitaire || 0,
+          total_ligne: i.total_ligne || 0,
+        })));
+        sent = true;
+      } catch (error: any) {
+        console.error("Envoi automatique du bon de commande impossible:", error);
+      }
     }
+
+    const outcome: ValidationOutcome = sent ? "sent" : email ? "send-failed" : "no-email";
+    const message = validationMessage(numero, outcome, email);
+    if (outcome === "sent") notifySuccess(message);
+    else notifyWarning(message);
+
+    resetForm();
+    fetchCommandes();
   };
 
   const editCommande = (commande: Commande & { items: CommandeItem[] }) => {
@@ -1117,28 +1153,17 @@ export default function Commandes() {
                   <div><p className="text-xs text-muted-foreground">Articles</p><p className="font-semibold">{currentItems.length}</p></div>
                   <div><p className="text-xs text-muted-foreground">Unités</p><p className="font-semibold">{nbArticles}</p></div>
                 </div>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="validate-mode" checked={validateMode === 'email'} onChange={() => setValidateMode('email')} className="accent-primary" />
-                    Envoyer par email
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="validate-mode" checked={validateMode === 'pdf'} onChange={() => setValidateMode('pdf')} className="accent-primary" />
-                    Télécharger le PDF uniquement
-                  </label>
+                <div>
+                  <Label htmlFor="email-fournisseur" className="text-xs">Email du fournisseur</Label>
+                  <Input id="email-fournisseur" type="email" placeholder="email@fournisseur.com"
+                    value={currentCommande.email_fournisseur || ''}
+                    onChange={(e) => setCurrentCommande(prev => ({ ...prev, email_fournisseur: e.target.value }))} />
+                  <p className="mt-1 text-xs text-muted-foreground">Le bon de commande est envoyé automatiquement à cette adresse après validation.</p>
                 </div>
-                {validateMode === 'email' && (
-                  <div>
-                    <Label htmlFor="email-fournisseur" className="text-xs">Email du fournisseur</Label>
-                    <Input id="email-fournisseur" type="email" placeholder="email@fournisseur.com"
-                      value={currentCommande.email_fournisseur || ''}
-                      onChange={(e) => setCurrentCommande(prev => ({ ...prev, email_fournisseur: e.target.value }))} />
-                  </div>
-                )}
               </div>
               <AlertDialogFooter>
                 <AlertDialogCancel>Retour</AlertDialogCancel>
-                <Button onClick={() => confirmValidation()} disabled={validateMode === 'email' && !currentCommande.email_fournisseur?.trim()}>Confirmer</Button>
+                <Button onClick={() => confirmValidation()} disabled={!currentCommande.email_fournisseur?.trim()}>Confirmer</Button>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -1261,6 +1286,19 @@ export default function Commandes() {
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
                     )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => printPurchaseOrder({
+                        numero: commande.numero_commande,
+                        fournisseur: commande.fournisseur,
+                        items: (commande.items || []).map(i => ({ ...i, vehicule_label: i.vehicule_id ? vehicMap[i.vehicule_id] : (i.vehicule_libre || null) })),
+                      })}
+                      className="shrink-0"
+                    >
+                      <Download className="w-4 h-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Générer PDF</span>
+                    </Button>
                     {(isAdmin() || isChefAgence()) && (
                       <Button
                         variant="outline"
