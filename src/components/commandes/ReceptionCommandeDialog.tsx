@@ -116,6 +116,8 @@ export function ReceptionCommandeDialog({
         article_id: item.article_id,
         prix_unitaire: Number(item.prix_unitaire) || 0,
         code_barre: (item as any).code_barre,
+        categorie: (item as any).categorie,
+        sous_categorie: (item as any).sous_categorie,
       } as any));
 
       setItems(receptionItems);
@@ -358,6 +360,8 @@ export function ReceptionCommandeDialog({
         designation={draftQueue[draftStep].designation}
         estimatedPrice={draftQueue[draftStep].prix_unitaire}
         initialBarcode={(draftQueue[draftStep] as any).code_barre}
+        initialCategorie={(draftQueue[draftStep] as any).categorie}
+        initialSousCategorie={(draftQueue[draftStep] as any).sous_categorie}
         position={`${draftStep + 1}/${draftQueue.length}`}
         onSubmit={(c) => recordCompletion(c)}
         onSkip={() => recordCompletion(null)}

@@ -19,6 +19,11 @@ export interface PendingDraftLine {
   prix_unitaire: number;
   code_barre: string | null;
   numero_commande: string;
+  categorie?: string | null;
+  sous_categorie?: string | null;
+  precision_note?: string | null;
+  vehicule_id?: string | null;
+  vehicule_label?: string | null;
 }
 
 /** Creates the article from a draft order line, receives the remaining quantity into stock and updates the order status. */
@@ -39,6 +44,9 @@ export async function receiveDraftLine(line: PendingDraftLine, c: DraftCompletio
     user_id: u.user?.id,
   }]).select("id").single();
   if (error) throw error;
+  if (line.vehicule_id) {
+    await supabase.from("article_vehicules").insert([{ article_id: art.id, vehicule_id: line.vehicule_id, user_id: u.user?.id }]);
+  }
 
   const { error: ciErr } = await supabase.from("commande_items").update({
     article_id: art.id, is_draft: false, quantite_recue: line.quantite_commandee,
