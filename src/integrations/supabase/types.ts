@@ -508,6 +508,8 @@ export type Database = {
       commandes: {
         Row: {
           adresse_fournisseur: string | null
+          annule_at: string | null
+          annule_by: string | null
           created_at: string
           date_creation: string
           date_envoi: string | null
@@ -516,6 +518,7 @@ export type Database = {
           email_fournisseur: string | null
           fournisseur: string
           id: string
+          motif_annulation: string | null
           notes: string | null
           numero_commande: string
           status: Database["public"]["Enums"]["commande_status"]
@@ -528,6 +531,8 @@ export type Database = {
         }
         Insert: {
           adresse_fournisseur?: string | null
+          annule_at?: string | null
+          annule_by?: string | null
           created_at?: string
           date_creation?: string
           date_envoi?: string | null
@@ -536,6 +541,7 @@ export type Database = {
           email_fournisseur?: string | null
           fournisseur: string
           id?: string
+          motif_annulation?: string | null
           notes?: string | null
           numero_commande: string
           status?: Database["public"]["Enums"]["commande_status"]
@@ -548,6 +554,8 @@ export type Database = {
         }
         Update: {
           adresse_fournisseur?: string | null
+          annule_at?: string | null
+          annule_by?: string | null
           created_at?: string
           date_creation?: string
           date_envoi?: string | null
@@ -556,6 +564,7 @@ export type Database = {
           email_fournisseur?: string | null
           fournisseur?: string
           id?: string
+          motif_annulation?: string | null
           notes?: string | null
           numero_commande?: string
           status?: Database["public"]["Enums"]["commande_status"]
