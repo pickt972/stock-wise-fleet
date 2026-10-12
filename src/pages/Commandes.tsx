@@ -676,7 +676,7 @@ export default function Commandes() {
       let commandeId: string;
       
       // Déterminer le statut en fonction du paramètre
-      const finalStatus = validate ? 'envoye' : 'brouillon';
+      const finalStatus: 'envoye' | 'brouillon' = validate ? 'envoye' : 'brouillon';
 
       if (editingCommande) {
         const updatePayload = {
@@ -1225,7 +1225,7 @@ export default function Commandes() {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => {
                   printPurchaseOrder({ numero: currentCommande.numero_commande, fournisseur: currentCommande.fournisseur, items: currentItems });
-                  saveCommande(false, true);
+                  saveCommande(false, true);;
                 }}>
                   Générer et valider la commande
                 </DropdownMenuItem>
