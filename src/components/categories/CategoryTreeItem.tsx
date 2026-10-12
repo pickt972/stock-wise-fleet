@@ -1,6 +1,6 @@
 import { CategoryIcon } from "./CategoryIcon";
 import { useState } from "react";
-import { ChevronRight, ChevronDown, Edit, Trash2, Tag, GripVertical, Plus, CornerDownRight } from "lucide-react";
+import { ChevronRight, ChevronDown, Edit, Trash2, Tag, GripVertical, Plus, CornerDownRight, ArrowUp, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -19,9 +19,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useColorPreferences } from "@/hooks/useColorPreferences";
-import { useSortable } from "@dnd-kit/sortable";
-import { useDroppable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
+
+import { useDraggable, useDroppable } from "@dnd-kit/core";
+import { canDropCategory, type HierarchyItem } from "./categoryDropRules";
 
 export interface CategoryNode {
   id: string;
@@ -47,6 +47,14 @@ interface CategoryTreeItemProps {
   onAddChild: (parentId: string) => void;
   isDragActive?: boolean;
   inheritedVehicle?: boolean;
+  activeCategoryId?: string | null;
+  allCategories: HierarchyItem[];
+  isMobile: boolean;
+  flashId: string | null;
+  moving: boolean;
+  onMove: (id: string, direction: -1 | 1) => void;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
 }
 
 export function CategoryTreeItem({
@@ -58,6 +66,7 @@ export function CategoryTreeItem({
   onAddChild,
   isDragActive,
   inheritedVehicle = false,
+  activeCategoryId, allCategories, isMobile, flashId, moving, onMove, canMoveUp, canMoveDown,
 }: CategoryTreeItemProps) {
   const { toast } = useToast();
   const [requiresVehicle, setRequiresVehicle] = useState<boolean | null>(category.requires_vehicle ?? null);
@@ -78,100 +87,64 @@ export function CategoryTreeItem({
   const { getColorForText } = useColorPreferences();
   const hasChildren = category.children.length > 0;
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
-    id: category.id,
-    data: {
-      type: "category",
-      category,
-      depth,
-    },
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: category.id, disabled: isMobile || moving,
+    data: { type: "category", category, depth },
   });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.3 : 1,
-  };
-
-  // Trois zones de drop distinctes pour précision maximale
-  const { setNodeRef: setBeforeRef, isOver: isOverBefore } = useDroppable({
-    id: `before-${category.id}`,
-    data: { type: "before", targetId: category.id },
-  });
-  const { setNodeRef: setNestRef, isOver: isOverNest } = useDroppable({
-    id: `nest-${category.id}`,
-    data: { type: "nest", targetId: category.id },
-  });
-  const { setNodeRef: setAfterRef, isOver: isOverAfter } = useDroppable({
-    id: `after-${category.id}`,
-    data: { type: "after", targetId: category.id },
-  });
+  const valid = (intent: "before" | "nest" | "after") => !!activeCategoryId && canDropCategory(allCategories, activeCategoryId, category.id, intent);
+  const { setNodeRef: setBeforeRef, isOver: overBefore } = useDroppable({ id: `before-${category.id}`, disabled: !isDragActive, data: { intent: "before", targetId: category.id } });
+  const { setNodeRef: setNestRef, isOver: overNest } = useDroppable({ id: `nest-${category.id}`, disabled: !isDragActive, data: { intent: "nest", targetId: category.id } });
+  const { setNodeRef: setAfterRef, isOver: overAfter } = useDroppable({ id: `after-${category.id}`, disabled: !isDragActive, data: { intent: "after", targetId: category.id } });
+  const isOverBefore = overBefore && valid("before");
+  const isOverNest = overNest && valid("nest");
+  const isOverAfter = overAfter && valid("after");
+  const siblings = allCategories.filter((item) => item.parent_id === category.id);
 
   const indent = depth * (typeof window !== "undefined" && window.innerWidth < 640 ? 12 : 24);
 
   return (
-    <div ref={setNodeRef} style={style} className="relative">
-      {/* Zone drop AVANT - fine bande au-dessus, visible seulement en drag */}
-      <div
-        ref={setBeforeRef}
-        className={`relative transition-all ${isDragActive ? "h-3" : "h-0"}`}
+    <div className="relative">
+      <Card
+        ref={setNodeRef}
+        data-category-id={category.id}
+        className={`category-drag-row p-2 sm:p-3 relative select-none ${
+          depth === 0 ? "border-l-4 border-l-primary bg-card shadow-soft" : "bg-card/60"
+        } ${isDragging ? "opacity-50" : ""} ${isOverNest ? "ring-2 ring-primary bg-primary/10" : ""} ${flashId === category.id ? "category-drop-success" : ""}`}
         style={{ marginLeft: `${indent}px` }}
       >
-        {isOverBefore && (
-          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 bg-primary rounded-full shadow-[0_0_8px_hsl(var(--primary))] animate-pulse" />
-        )}
-      </div>
-
-      <Card
-        className={`p-2 sm:p-3 animate-fade-in opacity-0 [animation-fill-mode:forwards] hover:shadow-md transition-all relative select-none ${
-          depth === 0 ? "border-l-4 border-l-primary bg-card shadow-soft" : "bg-card/60"
-        } ${isDragging ? "shadow-lg z-50" : ""} ${
-          isOverNest
-            ? "!bg-primary !border-primary ring-4 ring-primary ring-offset-2 ring-offset-background shadow-[0_0_24px_hsl(var(--primary)/0.6)] scale-[1.02] z-20"
-            : ""
-        }`}
-        style={{
-          marginLeft: `${indent}px`,
-          animationDelay: `${index * 40}ms`,
-        }}
-      >
-        {/* Zone d'imbrication - couvre toute la carte */}
-        <div
-          ref={setNestRef}
-          className={`absolute inset-0 rounded-[inherit] transition-all ${
-            isDragActive ? "pointer-events-auto" : "pointer-events-none"
-          }`}
-        >
-          {isOverNest && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
-              <div className="bg-primary-foreground text-primary px-4 py-2 rounded-full text-sm font-bold shadow-2xl flex items-center gap-2 animate-pulse">
-                <CornerDownRight className="h-4 w-4" />
-                Imbriquer dans « {category.nom} »
-              </div>
+        <div ref={setBeforeRef} className="absolute inset-x-0 top-0 h-[30%] pointer-events-none" />
+        <div ref={setNestRef} className="absolute inset-x-0 top-[30%] h-[40%] pointer-events-none" />
+        <div ref={setAfterRef} className="absolute inset-x-0 bottom-0 h-[30%] pointer-events-none" />
+        {isOverBefore && <div className="category-drop-line category-drop-before" />}
+        {isOverAfter && <div className="category-drop-line category-drop-after" />}
+        {isOverNest && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+            <div className="bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-sm font-semibold shadow-medium flex items-center gap-2 max-w-full">
+              <CornerDownRight className="h-4 w-4 shrink-0" />
+              <span className="truncate">Imbriquer dans « {category.nom} »</span>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Ligne 1 : handle + chevron + icône + nom */}
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 relative">
           {/* Poignée de drag — SEULE zone qui déclenche le déplacement */}
-          <button
+          <Button
             type="button"
             {...attributes}
-            {...listeners}
-            className="dnd-handle flex-shrink-0 flex items-center justify-center h-10 w-9 -my-1 rounded-md bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground cursor-grab border border-border/60 transition-all duration-150 active:bg-primary active:text-primary-foreground active:border-primary active:scale-110 active:shadow-[0_0_0_4px_hsl(var(--primary)/0.25)] active:cursor-grabbing"
-            title="Maintenez puis glissez pour réorganiser ou imbriquer"
-            aria-label="Poignée de déplacement"
+            {...(!isMobile ? listeners : {})}
+            variant="ghost"
+            className={`flex-shrink-0 h-10 w-8 p-0 text-muted-foreground ${isMobile ? "pointer-events-none" : "dnd-handle cursor-grab active:cursor-grabbing"}`}
+            title="Déplacer la catégorie"
+            aria-label={`Déplacer ${category.nom}`}
+            tabIndex={isMobile ? -1 : 0}
           >
             <GripVertical className="h-5 w-5" />
-          </button>
+          </Button>
+          {isMobile && <div className="flex shrink-0">
+            <Button variant="ghost" size="icon" className="h-9 w-7" disabled={moving || !canMoveUp} onClick={() => onMove(category.id, -1)} aria-label={`Monter ${category.nom}`} title="Monter"><ArrowUp className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-9 w-7" disabled={moving || !canMoveDown} onClick={() => onMove(category.id, 1)} aria-label={`Descendre ${category.nom}`} title="Descendre"><ArrowDown className="h-4 w-4" /></Button>
+          </div>}
 
           {/* Expand/collapse */}
           <Button
@@ -292,17 +265,6 @@ export function CategoryTreeItem({
         </div>
       </Card>
 
-      {/* Zone drop APRÈS - fine bande sous la carte, visible en drag */}
-      <div
-        ref={setAfterRef}
-        className={`relative transition-all ${isDragActive ? "h-3" : "h-0"}`}
-        style={{ marginLeft: `${indent}px` }}
-      >
-        {isOverAfter && (
-          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 bg-primary rounded-full shadow-[0_0_8px_hsl(var(--primary))] animate-pulse" />
-        )}
-      </div>
-
       {/* Children */}
       {isExpanded && hasChildren && (
         <div className="mt-1 space-y-1">
@@ -317,6 +279,14 @@ export function CategoryTreeItem({
               onAddChild={onAddChild}
               isDragActive={isDragActive}
               inheritedVehicle={effectiveVehicle}
+              activeCategoryId={activeCategoryId}
+              allCategories={allCategories}
+              isMobile={isMobile}
+              flashId={flashId}
+              moving={moving}
+              onMove={onMove}
+              canMoveUp={childIndex > 0}
+              canMoveDown={childIndex < siblings.length - 1}
             />
           ))}
         </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,21 +27,14 @@ import {
   MeasuringStrategy,
   pointerWithin,
   MouseSensor,
-  TouchSensor,
-  KeyboardSensor,
   useSensor,
   useSensors,
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
 } from "@dnd-kit/core";
-import { snapCenterToCursor } from "@dnd-kit/modifiers";
-
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-} from "@dnd-kit/sortable";
-import { Tag as TagIcon } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { canDropCategory, edgeScrollSpeed } from "./categoryDropRules";
 
 interface RawCategory {
   id: string;
@@ -68,24 +61,43 @@ export function CategoriesManagement() {
 
   const { toast } = useToast();
 
-  // Détection iOS/Safari pour activer le mode "drag doux"
-  const isIOS = useMemo(() => {
-    if (typeof navigator === "undefined") return false;
-    const ua = navigator.userAgent;
-    return /iPad|iPhone|iPod/.test(ua) || (ua.includes("Mac") && "ontouchend" in document);
-  }, []);
+  const isMobile = useIsMobile();
+  const [moving, setMoving] = useState(false);
+  const [flashId, setFlashId] = useState<string | null>(null);
+  const [invalidDrop, setInvalidDrop] = useState(false);
+  const [ghost, setGhost] = useState<{ html: string; width: number; height: number } | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const pointer = useRef<{ x: number; y: number } | null>(null);
+  const flashTimer = useRef<ReturnType<typeof setTimeout>>();
+  const sensors = useSensors(useSensor(MouseSensor, { activationConstraint: { distance: 6 } }));
 
-  const sensors = useSensors(
-    // Souris : démarre vite (8 px) pour fluidité desktop
-    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
-    // Tactile : iOS = délai plus court + tolérance large pour stabiliser le suivi
-    useSensor(TouchSensor, {
-      activationConstraint: isIOS
-        ? { delay: 180, tolerance: 12 }
-        : { delay: 250, tolerance: 5 },
-    }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
+  useEffect(() => {
+    if (!activeId) return;
+    const update = (event: MouseEvent) => { pointer.current = { x: event.clientX, y: event.clientY }; };
+    document.addEventListener("mousemove", update);
+    let frame: number;
+    const scroll = () => {
+      const list = listRef.current;
+      if (list && pointer.current) {
+        let container = list.parentElement;
+        while (container && !(container.scrollHeight > container.clientHeight && /auto|scroll/.test(getComputedStyle(container).overflowY))) container = container.parentElement;
+        const rect = list.getBoundingClientRect();
+        const bounds = container?.getBoundingClientRect();
+        const top = Math.max(rect.top, bounds?.top ?? 0, 0);
+        const bottom = Math.min(rect.bottom, bounds?.bottom ?? window.innerHeight, window.innerHeight);
+        const speed = pointer.current.x >= rect.left && pointer.current.x <= rect.right ? edgeScrollSpeed(pointer.current.y, top, bottom) : 0;
+        if (speed) { if (container) container.scrollTop += speed; else window.scrollBy(0, speed); }
+      }
+      frame = requestAnimationFrame(scroll);
+    };
+    frame = requestAnimationFrame(scroll);
+    return () => { cancelAnimationFrame(frame); document.removeEventListener("mousemove", update); pointer.current = null; };
+  }, [activeId]);
+  useEffect(() => {
+    document.body.classList.toggle("category-drag-invalid", !!activeId && invalidDrop);
+    return () => document.body.classList.remove("category-drag-invalid");
+  }, [activeId, invalidDrop]);
+  useEffect(() => () => clearTimeout(flashTimer.current), []);
 
   const fetchCategories = async () => {
     try {
@@ -140,9 +152,10 @@ export function CategoriesManagement() {
 
       const roots: CategoryNode[] = [];
       items.forEach((c) => {
-        const node = map.get(c.id)!;
+        const node = map.get(c.id);
+        if (!node) return;
         if (c.parent_id && map.has(c.parent_id)) {
-          map.get(c.parent_id)!.children.push(node);
+          map.get(c.parent_id)?.children.push(node);
         } else {
           roots.push(node);
         }
@@ -184,25 +197,54 @@ export function CategoriesManagement() {
     [categories, searchQuery, buildTree]
   );
 
-  // Flatten tree for sortable IDs
-  const flatIds = useMemo(() => {
-    const ids: string[] = [];
-    const walk = (nodes: CategoryNode[]) => {
-      nodes.forEach((n) => {
-        ids.push(n.id);
-        walk(n.children);
-      });
-    };
-    walk(tree);
-    return ids;
-  }, [tree]);
-
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
+    setInvalidDrop(false);
+    const row = document.querySelector<HTMLElement>(`[data-category-id="${event.active.id}"]`);
+    if (row) {
+      const rect = row.getBoundingClientRect();
+      const clone = row.cloneNode(true) as HTMLElement;
+      clone.style.marginLeft = "0";
+      clone.classList.remove("opacity-50", "category-drop-success");
+      setGhost({ html: clone.outerHTML, width: rect.width, height: rect.height });
+    }
+    const mouse = event.activatorEvent as MouseEvent;
+    pointer.current = { x: mouse.clientX, y: mouse.clientY };
+    setActiveId(String(event.active.id));
+  };
+
+  const finishMove = async (id: string) => {
+    await fetchCategories();
+    clearTimeout(flashTimer.current);
+    setFlashId(id);
+    flashTimer.current = setTimeout(() => setFlashId(null), 300);
+    toast({ title: "Ordre mis à jour", duration: 2000 });
+  };
+  const handleArrowMove = async (id: string, direction: -1 | 1) => {
+    if (moving) return;
+    const category = categories.find((item) => item.id === id);
+    if (!category) return;
+    const siblings = categories.filter((item) => item.parent_id === category.parent_id)
+      .sort((a, b) => a.sort_order - b.sort_order || a.nom.localeCompare(b.nom));
+    const index = siblings.findIndex((item) => item.id === id);
+    const target = siblings[index + direction];
+    if (!target) return;
+    siblings.splice(index, 1);
+    siblings.splice(index + direction, 0, category);
+    setMoving(true);
+    try {
+      const { error } = await supabase.rpc("reorder_categories", { _parent_id: category.parent_id, _ordered_ids: siblings.map((item) => item.id) });
+      if (error) throw error;
+      await finishMove(id);
+    } catch (error) {
+      toast({ title: "Erreur", description: error instanceof Error ? error.message : "Impossible de déplacer la catégorie", variant: "destructive" });
+    } finally { setMoving(false); }
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     setActiveId(null);
+    setGhost(null);
+    setInvalidDrop(false);
+    if (moving) return;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
@@ -228,23 +270,8 @@ export function CategoriesManagement() {
     const targetCat = categories.find((c) => c.id === targetId);
     if (!activeCat || !targetCat) return;
 
-    // Garde-fou anti-cycle
-    const isDescendant = (parentId: string, candidateId: string): boolean => {
-      const children = categories.filter((c) => c.parent_id === parentId);
-      for (const ch of children) {
-        if (ch.id === candidateId) return true;
-        if (isDescendant(ch.id, candidateId)) return true;
-      }
-      return false;
-    };
-    if (isDescendant(activeIdStr, targetId)) {
-      toast({
-        title: "Action impossible",
-        description: "Impossible de déplacer une catégorie sous l'un de ses descendants",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!canDropCategory(categories, activeIdStr, targetId, dropType)) return;
+    setMoving(true);
 
     try {
       if (dropType === "nest") {
@@ -255,7 +282,7 @@ export function CategoriesManagement() {
           _new_parent_id: targetCat.id,
         });
         if (error) throw error;
-        toast({ title: "Catégorie imbriquée", description: `Déplacée dans « ${targetCat.nom} »` });
+
       } else {
         // before/after : positionner comme voisin de targetCat (même parent que targetCat)
         const newParentId = targetCat.parent_id;
@@ -284,9 +311,9 @@ export function CategoriesManagement() {
           _ordered_ids: siblings.map((s) => s.id),
         });
         if (error) throw error;
-        toast({ title: "Ordre mis à jour" });
+
       }
-      await fetchCategories();
+      await finishMove(activeIdStr);
     } catch (e: any) {
       toast({
         title: "Erreur",
@@ -294,7 +321,7 @@ export function CategoriesManagement() {
         variant: "destructive",
       });
       fetchCategories();
-    }
+    } finally { setMoving(false); }
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -356,7 +383,8 @@ export function CategoriesManagement() {
         const ids = [rootId];
         const queue = [rootId];
         while (queue.length) {
-          const current = queue.shift()!;
+          const current = queue.shift();
+          if (!current) continue;
           list
             .filter((c) => c.parent_id === current)
             .forEach((c) => {
@@ -468,31 +496,21 @@ export function CategoriesManagement() {
         </Button>
       </div>
 
-      <div className="text-xs text-muted-foreground bg-muted/40 border rounded-lg p-2.5 leading-relaxed">
-        💡 <strong>Maintenez l'icône</strong> ⋮⋮ puis glissez :
-        <ul className="mt-1 ml-5 list-disc space-y-0.5">
-          <li>Sur la <strong>ligne bleue</strong> au-dessus/en-dessous d'une catégorie pour la <strong>réordonner</strong>.</li>
-          <li>Au <strong>centre</strong> d'une catégorie (badge « Imbriquer dans... ») pour en faire une <strong>sous-catégorie</strong>.</li>
-        </ul>
-        <span className="block mt-1 text-[11px]">Sur mobile : utilisez la <strong>poignée ⋮⋮</strong> à gauche de chaque ligne — le scroll reste libre partout ailleurs.</span>
-      </div>
-
       <DndContext
         sensors={sensors}
         collisionDetection={pointerWithin}
         measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
-        autoScroll={
-          isIOS
-            ? { acceleration: 1.5, threshold: { x: 0, y: 0.18 }, interval: 16 }
-            : { acceleration: 3, threshold: { x: 0, y: 0.1 }, interval: 10 }
-        }
+        autoScroll={false}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        onDragCancel={() => setActiveId(null)}
+        onDragOver={({ active, over }) => {
+          const data = over?.data.current;
+          setInvalidDrop(!!data && !canDropCategory(categories, String(active.id), data.targetId, data.intent));
+        }}
+        onDragCancel={() => { setActiveId(null); setGhost(null); setInvalidDrop(false); }}
       >
-        <SortableContext items={flatIds}>
-          <div className="dnd-container space-y-1">
-            {tree.map((category) => (
+          <div ref={listRef} className="dnd-container space-y-1">
+            {tree.map((category, rootIndex) => (
               <CategoryTreeItem
                 key={category.id}
                 category={category}
@@ -502,18 +520,20 @@ export function CategoriesManagement() {
                 onDelete={handleDelete}
                 onAddChild={openAddChild}
                 isDragActive={!!activeId}
+                activeCategoryId={activeId}
+                allCategories={categories}
+                isMobile={isMobile}
+                flashId={flashId}
+                moving={moving}
+                onMove={handleArrowMove}
+                canMoveUp={rootIndex > 0}
+                canMoveDown={rootIndex < tree.length - 1}
               />
             ))}
           </div>
-        </SortableContext>
-        <DragOverlay dropAnimation={null} zIndex={9999} modifiers={[snapCenterToCursor]}>
-          {activeId ? (
-            <div className="dnd-overlay flex h-full w-full items-center justify-center">
-              <div className="bg-primary text-primary-foreground border-2 border-primary-foreground/20 rounded-lg px-3 py-2 shadow-2xl text-sm font-semibold flex items-center gap-2">
-                <TagIcon className="h-3.5 w-3.5" />
-                {categories.find((c) => c.id === activeId)?.nom || "Catégorie"}
-              </div>
-            </div>
+        <DragOverlay dropAnimation={null} zIndex={9999} adjustScale={false}>
+          {activeId && ghost ? (
+            <div aria-hidden="true" className="dnd-overlay shadow-large" style={{ width: ghost.width, height: ghost.height }} dangerouslySetInnerHTML={{ __html: ghost.html }} />
           ) : null}
         </DragOverlay>
       </DndContext>
