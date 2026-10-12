@@ -1129,15 +1129,21 @@ export default function Commandes() {
           <div className="sticky bottom-20 md:bottom-0 z-30 -mx-4 sm:mx-0 rounded-none sm:rounded-xl border-t sm:border bg-background/95 backdrop-blur shadow-lg">
             <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-4 py-3">
               <Button variant="ghost" onClick={resetForm}>Annuler</Button>
-              <Button variant="secondary" onClick={() => saveCommande('brouillon', { stay: true })}>Sauvegarder brouillon</Button>
+              {editingCommande && editingCommande.status !== 'brouillon' ? (
+                <Button variant="secondary" onClick={async () => { const s = await saveCommande(editingCommande.status as any, { silent: true }); if (s) { resetForm(); fetchCommandes(); } }}>Enregistrer les modifications</Button>
+              ) : (
+                <Button variant="secondary" onClick={() => saveCommande('brouillon', { stay: true })}>Sauvegarder brouillon</Button>
+              )}
               <div className="flex-1" />
               <Button variant="outline" disabled={!canValidate}
                 onClick={() => printPurchaseOrder({ numero: currentCommande.numero_commande, fournisseur: currentCommande.fournisseur, items: poItems() })}>
                 <Download className="w-4 h-4 mr-2" />Générer PDF
               </Button>
+              {(isAdmin() || isChefAgence()) && (!editingCommande || editingCommande.status === 'brouillon') && (
               <Button disabled={!canValidate} onClick={() => (currentCommande.email_fournisseur?.trim() ? setValidateOpen(true) : setMissingEmailOpen(true))}>
                 <Mail className="w-4 h-4 mr-2" />Valider et envoyer
               </Button>
+              )}
             </div>
           </div>
 
