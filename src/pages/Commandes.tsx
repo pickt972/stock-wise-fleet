@@ -898,7 +898,7 @@ export default function Commandes() {
     const eur = (n: number) => n.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
     return (
       <DashboardLayout>
-        <div className="space-y-5 pb-40 md:pb-24">
+        <div className="space-y-5 pb-24 md:pb-4">
           <div className="space-y-3">
             <h1 className="text-2xl sm:text-3xl font-bold">
               {editingCommande ? 'Modifier la commande' : 'Nouvelle commande'}
@@ -1063,7 +1063,7 @@ export default function Commandes() {
           </Card>
 
           {/* BLOC 3 — Barre d'actions */}
-          <div className="fixed inset-x-0 bottom-20 md:bottom-0 z-30 border-t bg-background/95 backdrop-blur md:pl-[var(--sidebar-width,0px)]">
+          <div className="sticky bottom-20 md:bottom-0 z-30 -mx-4 sm:mx-0 rounded-none sm:rounded-xl border-t sm:border bg-background/95 backdrop-blur shadow-lg">
             <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-4 py-3">
               <Button variant="ghost" onClick={resetForm}>Annuler</Button>
               <Button variant="secondary" onClick={() => saveCommande('brouillon', { stay: true })}>Sauvegarder brouillon</Button>
