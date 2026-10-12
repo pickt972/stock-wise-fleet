@@ -8,5 +8,8 @@
 - [x] Migration SQL : 'Distribution' (Kit de distribution / Courroie accessoire) -> 0 article concerné, rien à déplacer
 - [x] Migration SQL : regrouper 'Produits de lavage auto' (Consommables) -> 'Produits atelier' / 'Produit de lavage'
 - [x] Migration SQL : 'Siege bébé' (Accessoires / Équipements) -> 'Accessoires' / 'Siège bébé'
-- [ ] Créer dans la liste des catégories : 'Éclairage', 'Distribution', 'Produits atelier', 'Accessoires' (+ leurs sous-catégories), sinon invisibles dans les filtres et formulaires
-- [ ] Catégorie 'Électricité' vidée (plus aucun article) : la désactiver ou la supprimer de la liste
+- [x] Créer les catégories et sous-catégories demandées (réalisé précédemment)
+- [x] Désactiver les catégories remplacées, dont Électricité (réalisé précédemment)
+- [ ] Clarifier les zones 30/40/30, les dépôts interdits et le fantôme à taille réelle
+- [ ] Ajouter les flèches mobiles, le défilement à 80px et la confirmation visuelle
+- [ ] Vérifier les règles de déplacement et l'affichage
