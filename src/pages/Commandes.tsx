@@ -835,8 +835,10 @@ export default function Commandes() {
     setCurrentCommande(prev => ({ ...prev, tva_taux: taux, total_ht: totalHT, total_ttc: totalTTC }));
   };
 
+  const poItems = () => currentItems.map(i => ({ ...i, vehicule_label: i.vehicule_id ? vehicMap[i.vehicule_id] : null }));
+
   const confirmValidation = async () => {
-    const po = { numero: currentCommande.numero_commande, fournisseur: currentCommande.fournisseur, items: currentItems };
+    const po = { numero: currentCommande.numero_commande, fournisseur: currentCommande.fournisseur, items: poItems() };
     if (validateMode === 'pdf') printPurchaseOrder(po);
     const saved = await saveCommande('confirme');
     setValidateOpen(false);
@@ -1085,7 +1087,7 @@ export default function Commandes() {
               <Button variant="secondary" onClick={() => saveCommande('brouillon', { stay: true })}>Sauvegarder brouillon</Button>
               <div className="flex-1" />
               <Button variant="outline" disabled={!canValidate}
-                onClick={() => printPurchaseOrder({ numero: currentCommande.numero_commande, fournisseur: currentCommande.fournisseur, items: currentItems })}>
+                onClick={() => printPurchaseOrder({ numero: currentCommande.numero_commande, fournisseur: currentCommande.fournisseur, items: poItems() })}>
                 <Download className="w-4 h-4 mr-2" />Générer PDF
               </Button>
               <Button disabled={!canValidate} onClick={() => setValidateOpen(true)}>
