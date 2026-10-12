@@ -1441,32 +1441,6 @@ export default function Commandes() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <AlertDialog open={false}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle />
-            <AlertDialogDescription>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteDialog({ isOpen: false })}>
-              Annuler
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (deleteDialog.commande?.id) {
-                  deleteCommande(deleteDialog.commande.id);
-                }
-                setDeleteDialog({ isOpen: false });
-              }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {/* Reception Dialog */}
       <ReceptionCommandeDialog
         isOpen={receptionDialog.isOpen}
