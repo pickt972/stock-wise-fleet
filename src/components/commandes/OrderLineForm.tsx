@@ -11,7 +11,15 @@ export interface NewOrderLine { categorie: string; sous_categorie: string | null
 
 const NONE = "__none__";
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
-export const vehicleShort = (v: OrderVehicle) => `${v.immatriculation} ${v.marque} ${v.modele}`;
+export const vehicleShort = (v: OrderVehicle) => `${v.immatriculation} — ${v.marque} ${v.modele}`;
+
+/** Format d'un véhicule saisi librement : MARQUE en majuscules, modèle en Title Case. */
+export const formatFreeVehicle = (raw: string) => {
+  const words = raw.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return raw.trim();
+  const cap = (w: string) => (w.length ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w);
+  return [words[0].toUpperCase(), ...words.slice(1).map(cap)].join(" ");
+};
 
 /** One order line = catégorie (required) + sous-catégorie + véhicule + quantité (+ précision). */
 export function OrderLineForm({ onAdd }: { onAdd: (l: NewOrderLine) => void }) {
