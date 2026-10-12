@@ -1124,38 +1124,43 @@ export default function Commandes() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {currentItems.filter(item => !item.article_id).map((item, index) => (
-                    <div key={index} className="p-4 border rounded-lg space-y-3 bg-muted/20">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium text-sm">Saisie manuelle #{currentItems.filter((it, idx) => !it.article_id && idx <= index).length}</h4>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeItem(index)}
-                          className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
+                  {currentItems.map((item, index) => {
+                    const art = item.article_id ? articles.find(x => x.id === item.article_id) : undefined;
+                    const existing = !!item.article_id;
+                    const tone = art ? stockTone(art.stock, art.stock_min) : null;
+                    return (
+                    <div key={index} className={`p-4 border rounded-lg space-y-3 ${existing ? 'bg-card' : 'bg-primary/5 border-primary/30'}`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {existing ? (
+                            <>
+                              <h4 className="font-medium text-sm">Article existant</h4>
+                              {art?.categorie && <Badge variant="secondary">{art.categorie}{art.sous_categorie ? ` › ${art.sous_categorie}` : ''}</Badge>}
+                              {tone && <span className={`text-xs ${tone.cls}`}>Stock : {tone.label}</span>}
+                            </>
+                          ) : (
+                            <h4 className="font-semibold text-sm text-primary">Nouvel article</h4>
+                          )}
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => removeItem(index)} className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
+                      {!existing && (
+                        <p className="text-xs text-muted-foreground">📋 Fiche incomplète — à compléter à la réception</p>
+                      )}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <Label htmlFor={`designation-${index}`} className="text-xs">Désignation *</Label>
-                          <Input
-                            id={`designation-${index}`}
-                            value={item.designation}
-                            onChange={(e) => updateItem(index, 'designation', e.target.value)}
-                            placeholder="Nom de l'article"
-                          />
+                          <Input id={`designation-${index}`} value={item.designation} readOnly={existing} disabled={existing}
+                            onChange={(e) => updateItem(index, 'designation', e.target.value)} placeholder="ex : Filtre à huile Peugeot 208" />
                         </div>
-                        <div>
-                          <Label htmlFor={`reference-${index}`} className="text-xs">Référence</Label>
-                          <Input
-                            id={`reference-${index}`}
-                            value={item.reference || ''}
-                            onChange={(e) => updateItem(index, 'reference', e.target.value)}
-                            placeholder="Référence"
-                          />
-                        </div>
+                        {existing && (
+                          <div>
+                            <Label htmlFor={`reference-${index}`} className="text-xs">Référence</Label>
+                            <Input id={`reference-${index}`} value={item.reference || ''} readOnly disabled />
+                          </div>
+                        )}
                         <div>
                           <Label htmlFor={`quantite-${index}`} className="text-xs">Quantité *</Label>
                           <Input
@@ -1163,27 +1168,21 @@ export default function Commandes() {
                             type="number"
                             inputMode="numeric"
                             min="1"
+                            autoFocus={index === currentItems.length - 1}
+                            onFocus={(e) => e.currentTarget.select()}
                             value={qtyDrafts[index] ?? String(item.quantite_commandee)}
                             onChange={(e) => {
                               const raw = e.target.value;
                               setQtyDrafts((prev) => ({ ...prev, [index]: raw }));
                               if (raw === '') return;
                               const num = parseInt(raw, 10);
-                              if (!isNaN(num) && num > 0) {
-                                updateItem(index, 'quantite_commandee', num);
-                              }
+                              if (!isNaN(num) && num > 0) updateItem(index, 'quantite_commandee', num);
                             }}
-                            onBlur={() => {
-                              setQtyDrafts((prev) => {
-                                const next = { ...prev };
-                                delete next[index];
-                                return next;
-                              });
-                            }}
+                            onBlur={() => setQtyDrafts((prev) => { const next = { ...prev }; delete next[index]; return next; })}
                           />
                         </div>
                         <div>
-                          <Label htmlFor={`prix-${index}`} className="text-xs">Prix unitaire (€) *</Label>
+                          <Label htmlFor={`prix-${index}`} className="text-xs">{existing ? 'Prix unitaire (€)' : 'Prix unitaire estimé (€)'}</Label>
                           <Input
                             id={`prix-${index}`}
                             type="number"
@@ -1191,27 +1190,18 @@ export default function Commandes() {
                             step="0.01"
                             value={item.prix_unitaire}
                             onChange={(e) => {
-                              const value = e.target.value === '' ? '' : e.target.value;
-                              if (value === '') {
-                                updateItem(index, 'prix_unitaire', 0);
-                              } else {
-                                const numValue = parseFloat(value);
-                                if (!isNaN(numValue) && numValue >= 0) {
-                                  updateItem(index, 'prix_unitaire', numValue);
-                                }
-                              }
+                              const n = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                              if (!isNaN(n) && n >= 0) updateItem(index, 'prix_unitaire', n);
                             }}
                           />
                         </div>
                       </div>
-                      <div className="flex justify-end pt-2">
-                        <div className="text-sm">
-                          <span className="text-muted-foreground">Total ligne: </span>
-                          <span className="font-medium">{item.total_ligne.toFixed(2)} €</span>
-                        </div>
+                      <div className="flex justify-end text-sm">
+                        <span className="text-muted-foreground">Total ligne :&nbsp;</span>
+                        <span className="font-medium">{item.total_ligne.toFixed(2)} €</span>
                       </div>
                     </div>
-                  ))}
+                  );})}
                 </div>
               )}
             </CardContent>
