@@ -1245,6 +1245,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "stock_exits_created_by_profiles_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "stock_exits_vehicule_id_fkey"
             columns: ["vehicule_id"]
             isOneToOne: false

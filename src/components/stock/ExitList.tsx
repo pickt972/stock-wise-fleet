@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
-import { ExitDetails } from "./ExitDetails";
+import { ExitDetails, creatorName } from "./ExitDetails";
 import { ExitDeleteDialog } from "./ExitDeleteDialog";
 
 interface ExitItem {
@@ -166,9 +166,7 @@ export function ExitList({ exits, onRefresh }: ExitListProps) {
                     {getReturnStatusBadge(exit.return_status)}
                   </TableCell>
                   <TableCell>
-                    {exit.profiles?.first_name && exit.profiles?.last_name
-                      ? `${exit.profiles.first_name} ${exit.profiles.last_name}`
-                      : "-"}
+                    {creatorName(exit.profiles) || "-"}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">

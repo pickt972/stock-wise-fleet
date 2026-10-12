@@ -62,6 +62,7 @@ interface StockExit {
   profiles?: {
     first_name: string;
     last_name: string;
+    username?: string | null;
   } | null;
   stock_exit_items: ExitItem[];
 }
@@ -72,6 +73,18 @@ interface ExitDetailsProps {
   onOpenChange: (open: boolean) => void;
   onRefresh: () => void;
 }
+
+const STATUS_LABELS: Record<string, string> = {
+  active: "Confirmée",
+  pending: "En attente",
+  deleted: "Supprimée",
+};
+
+export const creatorName = (p?: { first_name?: string; last_name?: string; username?: string | null } | null) => {
+  if (!p) return "";
+  const full = `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim();
+  return full || p.username || "";
+};
 
 const getExitTypeLabel = (type: string) => {
   const labels: Record<string, string> = {
@@ -179,11 +192,11 @@ export function ExitDetails({ exit, open, onOpenChange, onRefresh }: ExitDetails
               </div>
             </div>
 
-            {exit.notes && (
+            {exit.notes?.trim() && (
               <>
                 <Separator />
                 <div>
-                  <p className="text-sm text-muted-foreground mb-2">Notes</p>
+                  <p className="text-sm text-muted-foreground mb-2">Note</p>
                   <p className="text-sm whitespace-pre-wrap">{exit.notes}</p>
                 </div>
               </>
@@ -195,11 +208,11 @@ export function ExitDetails({ exit, open, onOpenChange, onRefresh }: ExitDetails
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground">Créé par</p>
-                <p>
-                  {exit.profiles?.first_name && exit.profiles?.last_name
-                    ? `${exit.profiles.first_name} ${exit.profiles.last_name}`
-                    : "Non renseigné"}
-                </p>
+                <p>{creatorName(exit.profiles) || "Non renseigné"}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Statut</p>
+                <p>{STATUS_LABELS[exit.status] || exit.status || "-"}</p>
               </div>
               <div>
                 <p className="text-muted-foreground">Créé le</p>
