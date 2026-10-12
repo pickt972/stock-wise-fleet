@@ -28,6 +28,9 @@ import { validationMessage, type ValidationOutcome } from "@/lib/orderValidation
 import { OrderArticleSearch, stockTone, type OrderSearchContext } from "@/components/commandes/OrderArticleSearch";
 import { ReceptionCommandeDialog } from "@/components/commandes/ReceptionCommandeDialog";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
+import { useAuth } from "@/hooks/useAuth";
+import { orderPermissions } from "@/lib/orderPermissions";
+import { XCircle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -163,7 +166,10 @@ export default function Commandes() {
   }, []);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { isAdmin, isChefAgence } = useRoleAccess();
+  const { isAdmin, isChefAgence, userRole } = useRoleAccess();
+  const { user } = useAuth();
+  const [cancelDialog, setCancelDialog] = useState<{ isOpen: boolean; commande?: Commande & { items: CommandeItem[] } }>({ isOpen: false });
+  const [cancelMotif, setCancelMotif] = useState("");
 
   useEffect(() => {
     const loadData = async () => {
@@ -914,6 +920,23 @@ export default function Commandes() {
     }
   };
 
+  const cancelCommande = async () => {
+    const c = cancelDialog.commande;
+    const motif = cancelMotif.trim();
+    if (!c?.id || !motif) return;
+    const { error } = await supabase.from('commandes')
+      .update({ status: 'annule', motif_annulation: motif } as any)
+      .eq('id', c.id);
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      return;
+    }
+    setCancelDialog({ isOpen: false });
+    setCancelMotif("");
+    toast({ title: "Commande annulée", description: `${c.numero_commande} est maintenant « Annulée ».` });
+    fetchCommandes();
+  };
+
   const deleteCommande = async (commandeId: string) => {
     try {
       // Supprimer d'abord les items de la commande
@@ -1129,15 +1152,21 @@ export default function Commandes() {
           <div className="sticky bottom-20 md:bottom-0 z-30 -mx-4 sm:mx-0 rounded-none sm:rounded-xl border-t sm:border bg-background/95 backdrop-blur shadow-lg">
             <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-4 py-3">
               <Button variant="ghost" onClick={resetForm}>Annuler</Button>
-              <Button variant="secondary" onClick={() => saveCommande('brouillon', { stay: true })}>Sauvegarder brouillon</Button>
+              {editingCommande && editingCommande.status !== 'brouillon' ? (
+                <Button variant="secondary" onClick={async () => { const s = await saveCommande(editingCommande.status as any, { silent: true }); if (s) { resetForm(); fetchCommandes(); } }}>Enregistrer les modifications</Button>
+              ) : (
+                <Button variant="secondary" onClick={() => saveCommande('brouillon', { stay: true })}>Sauvegarder brouillon</Button>
+              )}
               <div className="flex-1" />
               <Button variant="outline" disabled={!canValidate}
                 onClick={() => printPurchaseOrder({ numero: currentCommande.numero_commande, fournisseur: currentCommande.fournisseur, items: poItems() })}>
                 <Download className="w-4 h-4 mr-2" />Générer PDF
               </Button>
+              {(isAdmin() || isChefAgence()) && (!editingCommande || editingCommande.status === 'brouillon') && (
               <Button disabled={!canValidate} onClick={() => (currentCommande.email_fournisseur?.trim() ? setValidateOpen(true) : setMissingEmailOpen(true))}>
                 <Mail className="w-4 h-4 mr-2" />Valider et envoyer
               </Button>
+              )}
             </div>
           </div>
 
@@ -1246,20 +1275,24 @@ export default function Commandes() {
                     <p className="text-sm text-muted-foreground mt-1 break-words">
                       {commande?.fournisseur || 'Fournisseur non renseigné'} • {commande?.items?.length || 0} article(s)
                     </p>
+                    {commande?.status === 'annule' && (commande as any).motif_annulation && (
+                      <p className="text-sm text-destructive mt-1 break-words">Motif d'annulation : {(commande as any).motif_annulation}</p>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2 self-start sm:self-auto">
-                    {commande?.status === 'brouillon' && (
+                  {(() => { const perm = orderPermissions(userRole, commande.status, commande.user_id === user?.id); return (
+                  <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                    {perm.canEdit && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => editCommande(commande)}
                       className="shrink-0"
-                      aria-label="Modifier le brouillon"
+                      aria-label="Modifier la commande"
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
                     )}
-                    {(commande?.status === 'envoye' || commande?.status === 'confirme' || commande?.status === 'recu_partiel') && (
+                    {perm.canReceive && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -1273,7 +1306,14 @@ export default function Commandes() {
                         <span className="hidden sm:inline">Réceptionner</span>
                       </Button>
                     )}
-                    {commande?.status === 'brouillon' && (isAdmin() || isChefAgence()) && (
+                    {perm.canCancel && (
+                      <Button variant="outline" size="sm" className="shrink-0 text-destructive"
+                        onClick={() => { setCancelMotif(""); setCancelDialog({ isOpen: true, commande }); }}>
+                        <XCircle className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Annuler la commande</span>
+                      </Button>
+                    )}
+                    {perm.canDelete && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -1282,6 +1322,7 @@ export default function Commandes() {
                           commande: commande
                         })}
                         className="shrink-0"
+                        aria-label="Supprimer"
                       >
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
@@ -1299,7 +1340,7 @@ export default function Commandes() {
                       <Download className="w-4 h-4 sm:mr-2" />
                       <span className="hidden sm:inline">Générer PDF</span>
                     </Button>
-                    {(isAdmin() || isChefAgence()) && (
+                    {(isAdmin() || isChefAgence()) && commande.status !== 'annule' && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -1314,6 +1355,7 @@ export default function Commandes() {
                       </Button>
                     )}
                   </div>
+                  ); })()}
                 </div>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
@@ -1387,18 +1429,45 @@ export default function Commandes() {
       />
 
       {/* Delete Confirmation Dialog */}
+      <AlertDialog open={cancelDialog.isOpen} onOpenChange={(open) => !open && setCancelDialog({ isOpen: false })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>⚠️ Annuler la commande {cancelDialog.commande?.numero_commande} ?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="motif-annulation">Motif d'annulation *</Label>
+            <Textarea id="motif-annulation" value={cancelMotif} onChange={(e) => setCancelMotif(e.target.value)} />
+            <p className="text-sm text-muted-foreground">
+              Cette action est irréversible. La commande restera visible dans l'historique avec le statut « Annulée ».
+            </p>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Retour</AlertDialogCancel>
+            <Button variant="destructive" disabled={!cancelMotif.trim()} onClick={cancelCommande}>
+              Confirmer l'annulation
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={deleteDialog.isOpen} onOpenChange={(open) => !open && setDeleteDialog({ isOpen: false })}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
             <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer la commande {deleteDialog.commande?.numero_commande} ?
-              Cette action est irréversible.
+              {deleteDialog.commande?.status && deleteDialog.commande.status !== 'brouillon'
+                ? "⚠️ Cette suppression est définitive et irréversible. Préférez l'annulation pour conserver la traçabilité."
+                : `Êtes-vous sûr de vouloir supprimer la commande ${deleteDialog.commande?.numero_commande} ? Cette action est irréversible.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
+            {deleteDialog.commande?.status && deleteDialog.commande.status !== 'brouillon' && orderPermissions(userRole, deleteDialog.commande.status, false).canCancel && (
+              <Button variant="outline" onClick={() => { const c = deleteDialog.commande; setDeleteDialog({ isOpen: false }); setCancelMotif(""); setCancelDialog({ isOpen: true, commande: c }); }}>
+                Annuler plutôt
+              </Button>
+            )}
             <AlertDialogCancel onClick={() => setDeleteDialog({ isOpen: false })}>
-              Annuler
+              Retour
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
@@ -1409,12 +1478,11 @@ export default function Commandes() {
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Supprimer
+              {deleteDialog.commande?.status !== 'brouillon' ? 'Supprimer définitivement' : 'Supprimer'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
       {/* Reception Dialog */}
       <ReceptionCommandeDialog
         isOpen={receptionDialog.isOpen}
