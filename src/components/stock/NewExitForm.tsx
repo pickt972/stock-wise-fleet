@@ -76,7 +76,15 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
     }
   }, [open]);
 
-  const normalizePlate = (s: string) => s.replace(/[\s-]/g, "").toUpperCase();
+  const normalizePlate = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  // Format SIV AA-000-AA ; sinon (anciens formats / DOM) : majuscules telles quelles
+  const formatPlate = (input: string) => {
+    const raw = normalizePlate(input);
+    const m = raw.match(/^([A-Z]{0,2})(\d{0,3})([A-Z]{0,2})$/);
+    const isSiv = m && (raw.length <= 2 ? /^[A-Z]*$/.test(raw) : /^[A-Z]{2}/.test(raw)) && (!m[3] || m[2].length === 3);
+    if (!isSiv) return input.toUpperCase().replace(/[^A-Z0-9 ]/g, "").replace(/\s+/g, " ");
+    return [m![1], m![2], m![3]].filter(Boolean).join("-");
+  };
   const plateKey = normalizePlate(plate);
   const suggestions = plateKey && !selectedVehicule
     ? vehicules.filter((v) => normalizePlate(v.immatriculation).startsWith(plateKey)).slice(0, 8)
@@ -85,7 +93,7 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
   const vehiculeValid = !needsVehicle || !!plate.trim() && (!!selectedVehicule || (!!marque.trim() && !!modele.trim()));
 
   const handlePlateChange = (value: string) => {
-    setPlate(value);
+    setPlate(formatPlate(value));
     setShowSuggestions(true);
     if (selectedVehicule) {
       setSelectedVehicule(null);
