@@ -21,7 +21,7 @@ import { SmartOrderDialog } from "@/components/commandes/SmartOrderDialog";
 import { CreateArticleDialog } from "@/components/articles/CreateArticleDialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { printPurchaseOrder } from "@/lib/printPurchaseOrder";
-import { OrderArticleSearch, stockTone } from "@/components/commandes/OrderArticleSearch";
+import { OrderArticleSearch, stockTone, type OrderSearchContext } from "@/components/commandes/OrderArticleSearch";
 import { ReceptionCommandeDialog } from "@/components/commandes/ReceptionCommandeDialog";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import {
@@ -62,6 +62,11 @@ interface CommandeItem {
   total_ligne: number;
   is_draft?: boolean;
   code_barre?: string;
+  vehicule_id?: string | null;
+  categorie?: string | null;
+  sous_categorie?: string | null;
+  precision_note?: string | null;
+  reference_a_confirmer?: boolean;
 }
 
 interface Commande {
@@ -131,6 +136,11 @@ export default function Commandes() {
   }>({ isOpen: false });
   const [currentFournisseurId, setCurrentFournisseurId] = useState<string>("");
   const [validateOpen, setValidateOpen] = useState(false);
+  const [vehicMap, setVehicMap] = useState<Record<string, string>>({});
+  useEffect(() => {
+    supabase.from('vehicules').select('id, immatriculation').then(({ data }) =>
+      setVehicMap(Object.fromEntries((data || []).map((v: any) => [v.id, v.immatriculation]))));
+  }, []);
   const [validateMode, setValidateMode] = useState<'email' | 'pdf'>('email');
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -483,10 +493,28 @@ export default function Commandes() {
     ]);
   };
 
-  const addFreeLine = (text: string, qty = 1, price = 0) => {
+  const pushLines = (newItems: CommandeItem[]) => {
+    setCurrentItems(newItems);
+    const { totalHT, totalTTC } = calculateTotals(newItems, currentCommande.tva_taux);
+    setCurrentCommande(prev => ({ ...prev, total_ht: totalHT, total_ttc: totalTTC }));
+  };
+
+  const addUnsureLine = (ctx: OrderSearchContext) => {
+    const label = ctx.sous_categorie || ctx.categorie || 'Article';
+    pushLines([...currentItems, {
+      designation: `${label}${ctx.vehicule ? ` — ${ctx.vehicule.marque} ${ctx.vehicule.modele}` : ''}`,
+      reference: "", quantite_commandee: 1, prix_unitaire: 0, total_ligne: 0, is_draft: true,
+      reference_a_confirmer: true, precision_note: "",
+      categorie: ctx.categorie, sous_categorie: ctx.sous_categorie, vehicule_id: ctx.vehicule?.id || null,
+    }]);
+    toast({ title: "Ligne ajoutée", description: "Référence à confirmer — ajoutez une précision" });
+  };
+
+  const addFreeLine = (text: string, qty = 1, price = 0, ctx?: OrderSearchContext) => {
     const designation = text.trim();
     if (!designation) return;
-    const newItems = [...currentItems, { designation, reference: "", quantite_commandee: qty, prix_unitaire: price, total_ligne: qty * price, is_draft: true }];
+    const newItems: CommandeItem[] = [...currentItems, { designation, reference: "", quantite_commandee: qty, prix_unitaire: price, total_ligne: qty * price, is_draft: true,
+      categorie: ctx?.categorie || null, sous_categorie: ctx?.sous_categorie || null, vehicule_id: ctx?.vehicule?.id || null }];
     setCurrentItems(newItems);
     const { totalHT, totalTTC } = calculateTotals(newItems, currentCommande.tva_taux);
     setCurrentCommande(prev => ({ ...prev, total_ht: totalHT, total_ttc: totalTTC }));
@@ -546,7 +574,7 @@ export default function Commandes() {
     }
   };
 
-  const addArticleDirectly = (articleId: string) => {
+  const addArticleDirectly = (articleId: string, ctx?: OrderSearchContext) => {
     const article = filteredArticles.find(a => a.id === articleId);
     if (!article) return;
 
@@ -576,6 +604,9 @@ export default function Commandes() {
         article_id: articleId,
         designation: article.designation,
         reference: article.reference,
+        categorie: article.categorie || null,
+        sous_categorie: article.sous_categorie || null,
+        vehicule_id: ctx?.vehicule?.id || null,
         quantite_commandee: 1,
         prix_unitaire: article.prix_achat,
         total_ligne: article.prix_achat
@@ -736,7 +767,7 @@ export default function Commandes() {
       }
 
       // Insérer les nouveaux items
-      const itemsToInsert = currentItems.map(({ id, ...rest }) => ({
+      const itemsToInsert = currentItems.map(({ id, ...rest }: any) => ({
         ...rest,
         is_draft: !rest.article_id,
         quantite_recue: 0,
@@ -978,7 +1009,8 @@ export default function Commandes() {
               {hasSupplier ? (
                 <OrderArticleSearch
                   articles={filteredArticles}
-                  onSelect={(a) => addArticleDirectly(a.id)}
+                  onSelect={(a, ctx) => addArticleDirectly(a.id, ctx)}
+                  onUnsure={addUnsureLine}
                   onScanClick={() => setShowScanner(true)}
                   onFreeText={addFreeLine}
                 />
@@ -1003,15 +1035,28 @@ export default function Commandes() {
                     return (
                       <div key={index} className="grid grid-cols-2 md:grid-cols-[1fr_9rem_6rem_7rem_7rem_2.5rem] gap-2 px-3 py-3 items-center">
                         <div className="col-span-2 md:col-span-1 space-y-1 min-w-0">
-                          <Badge variant="outline" className={existing ? 'bg-success/15 text-success border-success/30' : 'bg-warning/15 text-warning border-warning/30'}>
-                            {existing ? 'Article existant' : 'À créer à la réception'}
-                          </Badge>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <Badge variant="outline" className={existing ? 'bg-success/15 text-success border-success/30' : 'bg-warning/15 text-warning border-warning/30'}>
+                              {existing ? 'Article existant' : item.reference_a_confirmer ? 'Référence à confirmer' : 'À créer à la réception'}
+                            </Badge>
+                            {item.vehicule_id && (
+                              <Badge variant="outline" className="bg-accent/10 text-accent border-accent/30">🚗 {existing ? 'Lié à ' : ''}{vehicMap[item.vehicule_id] || 'Véhicule'}</Badge>
+                            )}
+                            {item.categorie && (
+                              <span className="text-xs text-muted-foreground">{item.categorie}{item.sous_categorie ? ` › ${item.sous_categorie}` : ''}</span>
+                            )}
+                          </div>
                           {existing ? (
                             <p className="font-medium truncate">{item.designation}</p>
                           ) : (
                             <Input value={item.designation} aria-label="Désignation"
                               className={!item.designation.trim() ? 'border-destructive' : ''}
                               onChange={(e) => updateItem(index, 'designation', e.target.value)} placeholder="Désignation *" />
+                          )}
+                          {item.reference_a_confirmer && (
+                            <Input value={item.precision_note || ''} aria-label="Précision"
+                              onChange={(e) => updateItem(index, 'precision_note', e.target.value)}
+                              placeholder="Précision (ex : pour Clio 4 phase 2 — côté avant)" />
                           )}
                         </div>
                         <div className="col-span-2 md:col-span-1">
