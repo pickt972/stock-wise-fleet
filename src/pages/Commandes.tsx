@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Trash2, ShoppingCart, Mail, Download, Edit, Brain, Search, Check, ScanBarcode, PackageCheck, FileText } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, Mail, Download, Edit, Brain, Search, Check, ScanBarcode, PackageCheck, FileText, ChevronDown } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ import { SearchWithScanner } from "@/components/SearchWithScanner";
 import { PurchaseOrderDialog } from "@/components/commandes/PurchaseOrderDialog";
 import { SmartOrderDialog } from "@/components/commandes/SmartOrderDialog";
 import { CreateArticleDialog } from "@/components/articles/CreateArticleDialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { printPurchaseOrder } from "@/lib/printPurchaseOrder";
 import { OrderArticleSearch, stockTone } from "@/components/commandes/OrderArticleSearch";
 import { ReceptionCommandeDialog } from "@/components/commandes/ReceptionCommandeDialog";
@@ -661,7 +662,7 @@ export default function Commandes() {
     }
   };
 
-  const saveCommande = async (saveAsDraft: boolean = false) => {
+  const saveCommande = async (saveAsDraft: boolean = true, validate: boolean = false) => {
     if (!currentCommande.fournisseur || currentItems.length === 0) {
       toast({
         title: "Erreur",
@@ -675,7 +676,7 @@ export default function Commandes() {
       let commandeId: string;
       
       // Déterminer le statut en fonction du paramètre
-      const finalStatus = saveAsDraft ? 'brouillon' : currentCommande.status;
+      const finalStatus = validate ? 'envoye' : 'brouillon';
 
       if (editingCommande) {
         const updatePayload = {
@@ -744,9 +745,9 @@ export default function Commandes() {
 
       toast({
         title: "Succès",
-        description: saveAsDraft 
-          ? "Commande sauvegardée en brouillon" 
-          : (editingCommande ? "Commande modifiée" : "Commande créée"),
+        description: validate
+          ? "Bon de commande généré et commande validée"
+          : "Commande sauvegardée en brouillon",
       });
 
       // Reset
@@ -831,13 +832,14 @@ export default function Commandes() {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusClass = (status: string) => {
     switch (status) {
-      case 'brouillon': return 'default';
-      case 'envoyee': return 'secondary';
-      case 'recue': return 'success';
-      case 'annulee': return 'destructive';
-      default: return 'default';
+      case 'envoye':
+      case 'confirme': return 'bg-accent/15 text-accent border-accent/30';
+      case 'recu_partiel': return 'bg-warning/15 text-warning border-warning/30';
+      case 'recu_complet': return 'bg-success/15 text-success border-success/30';
+      case 'annule': return 'bg-destructive/15 text-destructive border-destructive/30';
+      default: return 'bg-muted text-muted-foreground border-border';
     }
   };
 
@@ -936,24 +938,6 @@ export default function Commandes() {
                       onChange={(e) => setCurrentCommande(prev => ({ ...prev, telephone_fournisseur: e.target.value }))}
                       placeholder="01 23 45 67 89"
                     />
-                  </div>
-                  <div>
-                    <Label htmlFor="status">Statut</Label>
-                    <Select
-                      value={currentCommande.status}
-                      onValueChange={(value: any) => setCurrentCommande(prev => ({ ...prev, status: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                        <SelectContent>
-                        <SelectItem value="brouillon">Brouillon</SelectItem>
-                        <SelectItem value="envoye">Validée</SelectItem>
-                        <SelectItem value="recu_partiel">Partiellement reçue</SelectItem>
-                        <SelectItem value="recu_complet">Reçue</SelectItem>
-                        <SelectItem value="annule">Annulée</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
                 </div>
                 <div>
@@ -1224,23 +1208,33 @@ export default function Commandes() {
             }}>
               Annuler
             </Button>
-            {currentItems.length > 0 && currentCommande.fournisseur.trim() && (
-              <Button variant="outline" onClick={() => printPurchaseOrder({
-                numero: currentCommande.numero_commande,
-                fournisseur: currentCommande.fournisseur,
-                items: currentItems,
-              })}>
-                <FileText className="w-4 h-4 mr-2" />
-                Générer le bon de commande
-              </Button>
-            )}
             <Button variant="secondary" onClick={() => saveCommande(true)}>
               Sauvegarder en brouillon
             </Button>
-            <Button onClick={() => saveCommande(false)}>
-              {editingCommande ? 'Valider' : 'Créer'} la commande
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button disabled={currentItems.length === 0 || !currentCommande.fournisseur.trim()}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Générer le bon de commande
+                  <ChevronDown className="w-4 h-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => printPurchaseOrder({ numero: currentCommande.numero_commande, fournisseur: currentCommande.fournisseur, items: currentItems })}>
+                  Générer sans valider
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  printPurchaseOrder({ numero: currentCommande.numero_commande, fournisseur: currentCommande.fournisseur, items: currentItems });
+                  saveCommande(false, true);
+                }}>
+                  Générer et valider la commande
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
+          <p className="text-xs text-muted-foreground text-right">
+            Sauvegardez en brouillon pour continuer plus tard. Générez le bon de commande pour l'envoyer à votre fournisseur. La validation confirme que la commande a bien été passée.
+          </p>
 
           {/* Overlays for creation flow */}
           <BarcodeScanner
@@ -1297,7 +1291,7 @@ export default function Commandes() {
                   <div className="flex-1 min-w-0">
                     <CardTitle className="flex flex-wrap items-center gap-2 text-lg sm:text-xl">
                       <span className="break-words">{commande?.numero_commande || 'N/A'}</span>
-                      <Badge variant={getStatusColor(commande?.status || 'brouillon') as any} className="shrink-0">
+                      <Badge variant="outline" className={`shrink-0 ${getStatusClass(commande?.status || 'brouillon')}`}>
                         {getStatusLabel(commande?.status || 'brouillon')}
                       </Badge>
                     </CardTitle>
@@ -1306,14 +1300,17 @@ export default function Commandes() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2 self-start sm:self-auto">
+                    {commande?.status === 'brouillon' && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => editCommande(commande)}
                       className="shrink-0"
+                      aria-label="Modifier le brouillon"
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
+                    )}
                     {(commande?.status === 'envoye' || commande?.status === 'confirme' || commande?.status === 'recu_partiel') && (
                       <Button
                         variant="outline"
