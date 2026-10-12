@@ -228,6 +228,7 @@ export type Database = {
           emplacement_id: string | null
           fournisseur_id: string | null
           id: string
+          is_draft: boolean
           marque: string
           prix_achat: number
           reference: string
@@ -249,6 +250,7 @@ export type Database = {
           emplacement_id?: string | null
           fournisseur_id?: string | null
           id?: string
+          is_draft?: boolean
           marque: string
           prix_achat?: number
           reference: string
@@ -270,6 +272,7 @@ export type Database = {
           emplacement_id?: string | null
           fournisseur_id?: string | null
           id?: string
+          is_draft?: boolean
           marque?: string
           prix_achat?: number
           reference?: string
@@ -421,6 +424,7 @@ export type Database = {
           created_at: string
           designation: string
           id: string
+          is_draft: boolean
           prix_unitaire: number
           quantite_commandee: number
           quantite_recue: number
@@ -434,6 +438,7 @@ export type Database = {
           created_at?: string
           designation: string
           id?: string
+          is_draft?: boolean
           prix_unitaire: number
           quantite_commandee: number
           quantite_recue?: number
@@ -447,6 +452,7 @@ export type Database = {
           created_at?: string
           designation?: string
           id?: string
+          is_draft?: boolean
           prix_unitaire?: number
           quantite_commandee?: number
           quantite_recue?: number
