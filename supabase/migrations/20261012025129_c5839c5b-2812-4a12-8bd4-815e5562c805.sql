@@ -1,0 +1,1 @@
+ALTER TABLE public.stock_entries ADD CONSTRAINT stock_entries_created_by_profiles_fkey FOREIGN KEY (created_by) REFERENCES public.profiles(id) ON DELETE SET NULL NOT VALID;
