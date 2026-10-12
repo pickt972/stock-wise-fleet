@@ -1311,7 +1311,7 @@ export default function Commandes() {
                       <Download className="w-4 h-4 sm:mr-2" />
                       <span className="hidden sm:inline">Générer PDF</span>
                     </Button>
-                    {(isAdmin() || isChefAgence()) && (
+                    {(isAdmin() || isChefAgence()) && commande.status !== 'annule' && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -1326,6 +1326,7 @@ export default function Commandes() {
                       </Button>
                     )}
                   </div>
+                  ); })()}
                 </div>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
