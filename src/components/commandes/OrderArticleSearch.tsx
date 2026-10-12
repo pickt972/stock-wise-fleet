@@ -42,13 +42,7 @@ export function OrderArticleSearch({
   const [sub, setSub] = useState(ALL);
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
-  const [free, setFree] = useState<{ d: string; q: string; p: string } | null>(null);
-  const submitFree = () => {
-    if (!free || !onFreeText || !free.d.trim()) return;
-    const qty = Math.max(1, parseInt(free.q, 10) || 1);
-    onFreeText(free.d.trim(), qty, Math.max(0, parseFloat(free.p.replace(",", ".")) || 0));
-    setFree(null);
-  };
+
 
   useEffect(() => {
     supabase
@@ -116,7 +110,7 @@ export function OrderArticleSearch({
             e.preventDefault();
             const flat = results.flatMap(([, it]) => it);
             if (flat.length === 1) { onSelect(flat[0]); setQ(""); setOpen(false); }
-            else if (q.trim().length >= 2 && flat.length === 0) { setFree({ d: q.trim(), q: "1", p: "" }); setQ(""); setOpen(false); }
+            else if (q.trim()) { onFreeText(q.trim(), 1, 0); setQ(""); }
           }}
           placeholder="Désignation, référence, marque, catégorie…"
           className={onScanClick ? "pl-9 pr-11" : "pl-9"}
@@ -157,27 +151,13 @@ export function OrderArticleSearch({
             ))}
           </div>
         )}
-        {onFreeText && q.trim().length >= 2 && (
-          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { setFree({ d: q.trim(), q: "1", p: "" }); setQ(""); setOpen(false); }}
+        {onFreeText && q.trim().length >= 1 && (
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { onFreeText(q.trim(), 1, 0); setQ(""); setOpen(false); }}
             className="mt-1 w-full rounded-lg border border-dashed border-primary/40 px-3 py-2 text-left text-sm text-primary hover:bg-primary/5">
-            + Ajouter « {q.trim()} » comme article libre
+            + Ajouter « {q.trim()} » comme article inconnu
           </button>
         )}
       </div>
-      {free && (
-        <form onSubmit={(e) => { e.preventDefault(); submitFree(); }} className="space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-3">
-          <p className="text-xs font-semibold text-primary">Article libre — 📋 À créer à la réception</p>
-          <Input autoFocus value={free.d} onChange={(e) => setFree({ ...free, d: e.target.value })} placeholder="Désignation" aria-label="Désignation" />
-          <div className="grid grid-cols-2 gap-2">
-            <Input type="number" inputMode="numeric" min="1" value={free.q} onFocus={(e) => e.currentTarget.select()} onChange={(e) => setFree({ ...free, q: e.target.value })} aria-label="Quantité" placeholder="Quantité" />
-            <Input type="number" inputMode="decimal" min="0" step="0.01" value={free.p} onChange={(e) => setFree({ ...free, p: e.target.value })} aria-label="Prix estimé" placeholder="Prix estimé € (optionnel)" />
-          </div>
-          <div className="flex gap-2">
-            <Button type="submit" size="sm" className="flex-1" disabled={!free.d.trim()}>+ Ajouter à la commande</Button>
-            <Button type="button" size="sm" variant="ghost" onClick={() => setFree(null)}>Annuler</Button>
-          </div>
-        </form>
-      )}
     </div>
   );
 }

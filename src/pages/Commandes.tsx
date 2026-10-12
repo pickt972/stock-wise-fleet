@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Trash2, ShoppingCart, Mail, Download, Edit, Brain, Search, Check, ScanBarcode, PackageCheck, FileText, ChevronDown } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, Mail, Download, Edit, Brain, Search, Check, ScanBarcode, PackageCheck, FileText, ChevronDown, X } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -130,6 +130,8 @@ export default function Commandes() {
     commande?: Commande & { items: CommandeItem[] };
   }>({ isOpen: false });
   const [currentFournisseurId, setCurrentFournisseurId] = useState<string>("");
+  const [validateOpen, setValidateOpen] = useState(false);
+  const [validateMode, setValidateMode] = useState<'email' | 'pdf'>('email');
   const { toast } = useToast();
   const navigate = useNavigate();
   const { isAdmin, isChefAgence } = useRoleAccess();
@@ -662,21 +664,24 @@ export default function Commandes() {
     }
   };
 
-  const saveCommande = async (saveAsDraft: boolean = true, validate: boolean = false) => {
-    if (!currentCommande.fournisseur || currentItems.length === 0) {
+  const saveCommande = async (finalStatus: 'brouillon' | 'confirme' = 'brouillon', opts: { stay?: boolean } = {}) => {
+    if (!currentCommande.fournisseur.trim() || currentItems.length === 0) {
       toast({
         title: "Erreur",
         description: "Veuillez renseigner le fournisseur et ajouter au moins un article",
         variant: "destructive",
       });
-      return;
+      return null;
+    }
+    if (currentItems.some(i => !i.designation.trim() || i.quantite_commandee < 1)) {
+      toast({ title: "Ligne incomplète", description: "Chaque ligne doit avoir une désignation et une quantité d'au moins 1.", variant: "destructive" });
+      return null;
     }
 
     try {
       let commandeId: string;
       
-      // Déterminer le statut en fonction du paramètre
-      const finalStatus: 'envoye' | 'brouillon' = validate ? 'envoye' : 'brouillon';
+      let numero = editingCommande?.numero_commande || "";
 
       if (editingCommande) {
         const updatePayload = {
@@ -727,6 +732,7 @@ export default function Commandes() {
 
         if (commandeError) throw commandeError;
         commandeId = commandeData.id;
+        numero = commandeData.numero_commande;
       }
 
       // Insérer les nouveaux items
@@ -745,34 +751,55 @@ export default function Commandes() {
 
       toast({
         title: "Succès",
-        description: validate
-          ? "Bon de commande généré et commande validée"
-          : "Commande sauvegardée en brouillon",
+        description: finalStatus === 'confirme' ? "Commande validée" : "Brouillon sauvegardé",
       });
 
-      // Reset
-      setIsCreating(false);
-      setEditingCommande(null);
-      setCurrentCommande({
-        fournisseur: "",
-        email_fournisseur: "",
-        telephone_fournisseur: "",
-        adresse_fournisseur: "",
-        notes: "",
-        status: "brouillon",
-        total_ht: 0,
-        total_ttc: 0,
-        tva_taux: 8.5,
-        user_id: undefined,
-      });
-      setCurrentItems([]);
+      const saved = {
+        ...currentCommande, id: commandeId, numero_commande: numero, status: finalStatus,
+        date_creation: editingCommande?.date_creation || new Date().toISOString(),
+        items: itemsToInsert as any,
+      };
+      if (opts.stay) {
+        setEditingCommande(saved as any);
+        setCurrentCommande(prev => ({ ...prev, numero_commande: numero, status: finalStatus }));
+      } else {
+        resetForm();
+      }
       fetchCommandes();
+      return saved;
     } catch (error: any) {
       toast({
         title: "Erreur",
         description: error.message,
         variant: "destructive",
       });
+      return null;
+    }
+  };
+
+  const resetForm = () => {
+    setIsCreating(false);
+    setEditingCommande(null);
+    setCurrentCommande({
+      fournisseur: "", email_fournisseur: "", telephone_fournisseur: "", adresse_fournisseur: "",
+      notes: "", status: "brouillon", total_ht: 0, total_ttc: 0, tva_taux: 8.5, user_id: undefined,
+    });
+    setCurrentItems([]);
+    setQtyDrafts({});
+  };
+
+  const changeTva = (taux: number) => {
+    const { totalHT, totalTTC } = calculateTotals(currentItems, taux);
+    setCurrentCommande(prev => ({ ...prev, tva_taux: taux, total_ht: totalHT, total_ttc: totalTTC }));
+  };
+
+  const confirmValidation = async () => {
+    const po = { numero: currentCommande.numero_commande, fournisseur: currentCommande.fournisseur, items: currentItems };
+    if (validateMode === 'pdf') printPurchaseOrder(po);
+    const saved = await saveCommande('confirme');
+    setValidateOpen(false);
+    if (saved && validateMode === 'email') {
+      setPurchaseOrderDialog({ isOpen: true, commande: saved as any });
     }
   };
 
@@ -834,8 +861,8 @@ export default function Commandes() {
 
   const getStatusClass = (status: string) => {
     switch (status) {
-      case 'envoye':
       case 'confirme': return 'bg-accent/15 text-accent border-accent/30';
+      case 'envoye': return 'bg-primary/15 text-primary border-primary/30';
       case 'recu_partiel': return 'bg-warning/15 text-warning border-warning/30';
       case 'recu_complet': return 'bg-success/15 text-success border-success/30';
       case 'annule': return 'bg-destructive/15 text-destructive border-destructive/30';
@@ -846,7 +873,7 @@ export default function Commandes() {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'brouillon': return 'Brouillon';
-      case 'envoye': return 'Validée';
+      case 'envoye': return 'Envoyée';
       case 'confirme': return 'Validée';
       case 'recu_partiel': return 'Partiellement reçue';
       case 'recu_complet': return 'Reçue';
@@ -856,385 +883,238 @@ export default function Commandes() {
   };
 
   if (isCreating) {
+    const status = editingCommande?.status || 'brouillon';
+    const steps = [
+      { key: 'brouillon', label: 'Brouillon' },
+      { key: 'confirme', label: 'Validée' },
+      { key: 'envoye', label: 'Envoyée' },
+      { key: 'recu_complet', label: 'Reçue' },
+    ];
+    const stepIndex = { brouillon: 0, confirme: 1, envoye: 2, recu_partiel: 2, recu_complet: 3 }[status as string] ?? 0;
+    const hasSupplier = !!currentCommande.fournisseur.trim();
+    const tvaAmount = currentCommande.total_ttc - currentCommande.total_ht;
+    const nbArticles = currentItems.reduce((n, i) => n + (i.quantite_commandee || 0), 0);
+    const canValidate = hasSupplier && currentItems.length > 0;
+    const eur = (n: number) => n.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
     return (
       <DashboardLayout>
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold">
+        <div className="space-y-5 pb-40 md:pb-24">
+          <div className="space-y-3">
+            <h1 className="text-2xl sm:text-3xl font-bold">
               {editingCommande ? 'Modifier la commande' : 'Nouvelle commande'}
             </h1>
-            <Button variant="outline" onClick={() => {
-              setIsCreating(false);
-              setEditingCommande(null);
-              setCurrentCommande({
-                fournisseur: "",
-                email_fournisseur: "",
-                telephone_fournisseur: "",
-                adresse_fournisseur: "",
-                notes: "",
-                status: "brouillon",
-                total_ht: 0,
-                total_ttc: 0,
-                tva_taux: 8.5,
-                user_id: undefined,
-              });
-              setCurrentItems([]);
-            }}>
-              Annuler
-            </Button>
+            <ol className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm" aria-label="Progression de la commande">
+              {steps.map((st, i) => (
+                <li key={st.key} className="flex items-center gap-1 sm:gap-2">
+                  <span className={`flex items-center gap-1.5 ${i <= stepIndex ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>
+                    <span className={`h-3 w-3 rounded-full border-2 ${i <= stepIndex ? 'bg-primary border-primary' : 'border-muted-foreground/50'}`} />
+                    {st.label}
+                  </span>
+                  {i < steps.length - 1 && <span className={`h-px w-4 sm:w-10 ${i < stepIndex ? 'bg-primary' : 'bg-border'}`} />}
+                </li>
+              ))}
+            </ol>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Informations fournisseur */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>1. Fournisseur</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="fournisseur">Fournisseur *</Label>
-                    <Input
-                      id="fournisseur"
-                      list="fournisseurs-list"
-                      autoFocus={!currentCommande.fournisseur}
-                      placeholder="Choisir ou saisir un fournisseur"
-                      value={currentCommande.fournisseur}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        const f = fournisseurs.find(x => x.nom.toLowerCase() === value.trim().toLowerCase());
-                        setCurrentCommande(prev => ({
-                          ...prev,
-                          fournisseur: value,
-                          ...(f ? { email_fournisseur: f.email || "", telephone_fournisseur: f.telephone || "", adresse_fournisseur: f.adresse || "" } : {}),
-                        }));
-                        if (f) filterArticlesByFournisseur(f.nom); else setFilteredArticles(articles);
-                      }}
-                    />
-                    <datalist id="fournisseurs-list">
-                      {fournisseurs.map((f) => <option key={f.id} value={f.nom} />)}
-                    </datalist>
-                    <p className="text-xs text-muted-foreground mt-1">Fournisseur hors liste : tapez simplement son nom.</p>
-                  </div>
-                </div>
-                <details className="rounded-lg border px-3 py-2">
-                  <summary className="cursor-pointer text-sm text-muted-foreground">Coordonnées, statut et notes (optionnel)</summary>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={currentCommande.email_fournisseur || ""}
-                      onChange={(e) => setCurrentCommande(prev => ({ ...prev, email_fournisseur: e.target.value }))}
-                      placeholder="email@fournisseur.com"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="telephone">Téléphone</Label>
-                    <Input
-                      id="telephone"
-                      value={currentCommande.telephone_fournisseur || ""}
-                      onChange={(e) => setCurrentCommande(prev => ({ ...prev, telephone_fournisseur: e.target.value }))}
-                      placeholder="01 23 45 67 89"
-                    />
-                  </div>
-                </div>
+          {/* BLOC 1 — En-tête */}
+          <Card className="bg-primary/5 border-primary/20">
+            <CardContent className="p-4 sm:p-5 grid grid-cols-2 lg:grid-cols-5 gap-4 items-start">
+              <div>
+                <p className="text-xs text-muted-foreground">N° de commande</p>
+                <p className="font-mono font-semibold">{currentCommande.numero_commande || editingCommande?.numero_commande || 'Attribué à l\u2019enregistrement'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Date de création</p>
+                <p className="font-semibold">{new Date(editingCommande?.date_creation || Date.now()).toLocaleDateString('fr-FR')}</p>
+              </div>
+              <div className="col-span-2">
+                <Label htmlFor="fournisseur" className="text-xs">Fournisseur *</Label>
+                <Input
+                  id="fournisseur"
+                  list="fournisseurs-list"
+                  autoFocus={!hasSupplier}
+                  placeholder="Choisir ou saisir un fournisseur"
+                  value={currentCommande.fournisseur}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const f = fournisseurs.find(x => x.nom.toLowerCase() === value.trim().toLowerCase());
+                    setCurrentCommande(prev => ({
+                      ...prev,
+                      fournisseur: value,
+                      ...(f ? { email_fournisseur: f.email || "", telephone_fournisseur: f.telephone || "", adresse_fournisseur: f.adresse || "" } : {}),
+                    }));
+                    if (f) filterArticlesByFournisseur(f.nom); else setFilteredArticles(articles);
+                  }}
+                  className="bg-background"
+                />
+                <datalist id="fournisseurs-list">
+                  {fournisseurs.map((f) => <option key={f.id} value={f.nom} />)}
+                </datalist>
+              </div>
+              <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 col-span-2 lg:col-span-1">
                 <div>
-                  <Label htmlFor="adresse">Adresse</Label>
-                  <Textarea
-                    id="adresse"
-                    value={currentCommande.adresse_fournisseur || ""}
-                    onChange={(e) => setCurrentCommande(prev => ({ ...prev, adresse_fournisseur: e.target.value }))}
-                    placeholder="Adresse complète du fournisseur"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="notes">Notes</Label>
-                  <Textarea
-                    id="notes"
-                    value={currentCommande.notes || ""}
-                    onChange={(e) => setCurrentCommande(prev => ({ ...prev, notes: e.target.value }))}
-                    placeholder="Notes et commentaires"
-                  />
-                </div>
-                </details>
-              </CardContent>
-            </Card>
-
-            {/* Résumé */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Résumé</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="tva">Taux TVA (%)</Label>
-                  <Select
-                    value={currentCommande.tva_taux.toString()}
-                    onValueChange={(value) => {
-                      const newTva = parseFloat(value);
-                      const { totalHT, totalTTC } = calculateTotals(currentItems, newTva);
-                      setCurrentCommande(prev => ({
-                        ...prev,
-                        tva_taux: newTva,
-                        total_ht: totalHT,
-                        total_ttc: totalTTC
-                      }));
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+                  <Label className="text-xs">TVA</Label>
+                  <Select value={String(currentCommande.tva_taux)} onValueChange={(v) => changeTva(parseFloat(v))}>
+                    <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="0">0%</SelectItem>
-                      <SelectItem value="8.5">8,5%</SelectItem>
-                      <SelectItem value="20">20%</SelectItem>
+                      {[0, 2.1, 8.5, 20].map(t => <SelectItem key={t} value={String(t)}>{String(t).replace('.', ',')} %</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
-                <Separator />
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Total HT:</span>
-                    <span className="font-medium">{currentCommande.total_ht.toFixed(2)} €</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>TVA ({currentCommande.tva_taux}%):</span>
-                    <span className="font-medium">{(currentCommande.total_ttc - currentCommande.total_ht).toFixed(2)} €</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between text-lg font-bold">
-                    <span>Total TTC:</span>
-                    <span>{currentCommande.total_ttc.toFixed(2)} €</span>
-                  </div>
-                </div>
-
-                {/* Liste des articles ajoutés */}
-                {currentItems.length > 0 && (
-                  <>
-                    <Separator />
-                    <div>
-                      <h4 className="font-medium mb-3">Articles ajoutés</h4>
-                      <div className="space-y-2 max-h-64 overflow-y-auto">
-                        {currentItems.map((item, index) => (
-                          <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-md text-sm">
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium truncate">{item.designation}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {item.reference} • {item.prix_unitaire.toFixed(2)} € × {item.quantite_commandee}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0">
-                              <Input
-                                type="number"
-                                inputMode="numeric"
-                                min="1"
-                                value={qtyDrafts[index] ?? String(item.quantite_commandee)}
-                                onChange={(e) => {
-                                  const raw = e.target.value;
-                                  setQtyDrafts((prev) => ({ ...prev, [index]: raw }));
-                                  if (raw === '') return; // allow empty while typing
-                                  const num = parseInt(raw, 10);
-                                  if (!isNaN(num) && num > 0) {
-                                    updateItem(index, 'quantite_commandee', num);
-                                  }
-                                }}
-                                onBlur={() => {
-                                  setQtyDrafts((prev) => {
-                                    const next = { ...prev };
-                                    delete next[index];
-                                    return next;
-                                  });
-                                }}
-                                onFocus={(e) => e.currentTarget.select()}
-                                className="w-16 h-8 text-center"
-                              />
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                onClick={() => removeItem(index)}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                            <div className="font-medium shrink-0">
-                              {item.total_ligne.toFixed(2)} €
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Articles - Section compacte */}
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col lg:flex-row items-start justify-between gap-3">
-                <CardTitle>2. Articles à commander</CardTitle>
-                <div className="flex flex-col sm:flex-row sm:items-end gap-2 w-full lg:w-auto">
-                  <div className="w-full sm:w-[28rem]">
-                    {currentCommande.fournisseur.trim() ? (
-                      <OrderArticleSearch articles={filteredArticles} onSelect={(a) => addArticleDirectly(a.id)} onScanClick={() => setShowScanner(true)} onFreeText={addFreeLine} />
-                    ) : (
-                      <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">Choisissez d'abord un fournisseur pour ajouter des lignes.</p>
-                    )}
-                  </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Statut</p>
+                  <Badge variant="outline" className={getStatusClass(status)}>{getStatusLabel(status)}</Badge>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* BLOC 2 — Articles */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle>Articles à commander</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              {hasSupplier ? (
+                <OrderArticleSearch
+                  articles={filteredArticles}
+                  onSelect={(a) => addArticleDirectly(a.id)}
+                  onScanClick={() => setShowScanner(true)}
+                  onFreeText={addFreeLine}
+                />
+              ) : (
+                <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground text-center">
+                  Renseignez d'abord le fournisseur ci-dessus pour ajouter des articles.
+                </p>
+              )}
+
               {currentItems.length === 0 ? (
                 <div className="text-center py-8 text-sm text-muted-foreground">
                   <Search className="w-10 h-10 mx-auto mb-3 opacity-50" />
                   <p>Aucun article ajouté</p>
-                  <p className="text-xs mt-1">Tapez un article existant ou une désignation libre puis Entrée</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold">Articles commandés ({currentItems.length})</p>
+                <div className="rounded-lg border divide-y">
+                  <div className="hidden md:grid grid-cols-[1fr_9rem_6rem_7rem_7rem_2.5rem] gap-2 px-3 py-2 text-xs font-semibold uppercase text-muted-foreground bg-muted/40">
+                    <span>Désignation</span><span>Référence</span><span className="text-right">Qté</span><span className="text-right">P.U. HT</span><span className="text-right">Total</span><span />
+                  </div>
                   {currentItems.map((item, index) => {
-                    const art = item.article_id ? articles.find(x => x.id === item.article_id) : undefined;
                     const existing = !!item.article_id;
-                    const tone = art ? stockTone(art.stock, art.stock_min) : null;
                     return (
-                    <div key={index} className={`p-4 border rounded-lg space-y-3 ${existing ? 'bg-card' : 'bg-primary/5 border-primary/30'}`}>
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex flex-wrap items-center gap-2">
+                      <div key={index} className="grid grid-cols-2 md:grid-cols-[1fr_9rem_6rem_7rem_7rem_2.5rem] gap-2 px-3 py-3 items-center">
+                        <div className="col-span-2 md:col-span-1 space-y-1 min-w-0">
+                          <Badge variant="outline" className={existing ? 'bg-success/15 text-success border-success/30' : 'bg-warning/15 text-warning border-warning/30'}>
+                            {existing ? 'Article existant' : 'À créer à la réception'}
+                          </Badge>
                           {existing ? (
-                            <>
-                              <h4 className="font-medium text-sm">Article existant</h4>
-                              {art?.categorie && <Badge variant="secondary">{art.categorie}{art.sous_categorie ? ` › ${art.sous_categorie}` : ''}</Badge>}
-                              {tone && <span className={`text-xs ${tone.cls}`}>Stock : {tone.label}</span>}
-                            </>
+                            <p className="font-medium truncate">{item.designation}</p>
                           ) : (
-                            <h4 className="font-semibold text-sm text-primary">Nouvel article</h4>
+                            <Input value={item.designation} aria-label="Désignation"
+                              className={!item.designation.trim() ? 'border-destructive' : ''}
+                              onChange={(e) => updateItem(index, 'designation', e.target.value)} placeholder="Désignation *" />
                           )}
                         </div>
-                        <Button variant="ghost" size="sm" onClick={() => removeItem(index)} className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10">
-                          <Trash2 className="w-4 h-4" />
+                        <div className="col-span-2 md:col-span-1">
+                          {existing ? (
+                            <p className="text-sm text-muted-foreground truncate">{item.reference || '—'}</p>
+                          ) : (
+                            <Input value={item.code_barre || ''} aria-label="Code-barres" placeholder="Code-barres"
+                              onChange={(e) => updateItem(index, 'code_barre', e.target.value)} />
+                          )}
+                        </div>
+                        <Input
+                          type="number" inputMode="numeric" min="1" aria-label="Quantité" className="text-right"
+                          onFocus={(e) => e.currentTarget.select()}
+                          value={qtyDrafts[index] ?? String(item.quantite_commandee)}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            setQtyDrafts((prev) => ({ ...prev, [index]: raw }));
+                            const num = parseInt(raw, 10);
+                            if (!isNaN(num) && num >= 1) updateItem(index, 'quantite_commandee', num);
+                          }}
+                          onBlur={() => setQtyDrafts((prev) => { const next = { ...prev }; delete next[index]; return next; })}
+                        />
+                        <Input
+                          type="number" min="0" step="0.01" aria-label="Prix unitaire" className="text-right"
+                          value={item.prix_unitaire}
+                          onChange={(e) => {
+                            const n = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                            if (!isNaN(n) && n >= 0) updateItem(index, 'prix_unitaire', n);
+                          }}
+                        />
+                        <p className="text-right font-semibold">{eur(item.total_ligne)}</p>
+                        <Button variant="ghost" size="icon" onClick={() => removeItem(index)} aria-label="Supprimer la ligne"
+                          className="h-8 w-8 justify-self-end text-destructive hover:text-destructive hover:bg-destructive/10">
+                          <X className="w-4 h-4" />
                         </Button>
                       </div>
-                      {!existing && (
-                        <p className="text-xs text-muted-foreground">📋 À créer à la réception</p>
-                      )}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                          <Label htmlFor={`designation-${index}`} className="text-xs">Désignation *</Label>
-                          <Input id={`designation-${index}`} value={item.designation} readOnly={existing} disabled={existing}
-                            onChange={(e) => updateItem(index, 'designation', e.target.value)} placeholder="ex : Filtre à huile Peugeot 208" />
-                        </div>
-                        {!existing && (
-                          <div>
-                            <Label htmlFor={`barcode-${index}`} className="text-xs">Code-barres</Label>
-                            <Input id={`barcode-${index}`} value={item.code_barre || ''} onChange={(e) => updateItem(index, 'code_barre', e.target.value)} placeholder="Optionnel" />
-                          </div>
-                        )}
-                        {existing && (
-                          <div>
-                            <Label htmlFor={`reference-${index}`} className="text-xs">Référence</Label>
-                            <Input id={`reference-${index}`} value={item.reference || ''} readOnly disabled />
-                          </div>
-                        )}
-                        <div>
-                          <Label htmlFor={`quantite-${index}`} className="text-xs">Quantité *</Label>
-                          <Input
-                            id={`quantite-${index}`}
-                            type="number"
-                            inputMode="numeric"
-                            min="1"
-                            autoFocus={index === currentItems.length - 1}
-                            onFocus={(e) => e.currentTarget.select()}
-                            value={qtyDrafts[index] ?? String(item.quantite_commandee)}
-                            onChange={(e) => {
-                              const raw = e.target.value;
-                              setQtyDrafts((prev) => ({ ...prev, [index]: raw }));
-                              if (raw === '') return;
-                              const num = parseInt(raw, 10);
-                              if (!isNaN(num) && num > 0) updateItem(index, 'quantite_commandee', num);
-                            }}
-                            onBlur={() => setQtyDrafts((prev) => { const next = { ...prev }; delete next[index]; return next; })}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor={`prix-${index}`} className="text-xs">{existing ? 'Prix unitaire (€)' : 'Prix unitaire estimé (€)'}</Label>
-                          <Input
-                            id={`prix-${index}`}
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={item.prix_unitaire}
-                            onChange={(e) => {
-                              const n = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                              if (!isNaN(n) && n >= 0) updateItem(index, 'prix_unitaire', n);
-                            }}
-                          />
-                        </div>
-                      </div>
-                      <div className="flex justify-end text-sm">
-                        <span className="text-muted-foreground">Total ligne :&nbsp;</span>
-                        <span className="font-medium">{item.total_ligne.toFixed(2)} €</span>
-                      </div>
-                    </div>
-                  );})}
+                    );
+                  })}
                 </div>
               )}
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-lg bg-muted/40 p-3 text-sm">
+                <div><p className="text-xs text-muted-foreground">Articles</p><p className="font-semibold">{currentItems.length} ligne(s) • {nbArticles} u.</p></div>
+                <div><p className="text-xs text-muted-foreground">Total HT</p><p className="font-semibold">{eur(currentCommande.total_ht)}</p></div>
+                <div><p className="text-xs text-muted-foreground">TVA {String(currentCommande.tva_taux).replace('.', ',')} %</p><p className="font-semibold">{eur(tvaAmount)}</p></div>
+                <div><p className="text-xs text-muted-foreground">Total TTC</p><p className="text-lg font-bold text-primary">{eur(currentCommande.total_ttc)}</p></div>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Actions */}
-          <div className="flex flex-wrap justify-end gap-2 sm:gap-4">
-            <Button variant="outline" onClick={() => {
-              setIsCreating(false);
-              setEditingCommande(null);
-              setCurrentCommande({
-                fournisseur: "",
-                email_fournisseur: "",
-                telephone_fournisseur: "",
-                adresse_fournisseur: "",
-                notes: "",
-                status: "brouillon",
-                total_ht: 0,
-                total_ttc: 0,
-                tva_taux: 20,
-                user_id: undefined,
-              });
-              setCurrentItems([]);
-            }}>
-              Annuler
-            </Button>
-            <Button variant="secondary" onClick={() => saveCommande(true)}>
-              Sauvegarder en brouillon
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button disabled={currentItems.length === 0 || !currentCommande.fournisseur.trim()}>
-                  <FileText className="w-4 h-4 mr-2" />
-                  Générer le bon de commande
-                  <ChevronDown className="w-4 h-4 ml-2" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => printPurchaseOrder({ numero: currentCommande.numero_commande, fournisseur: currentCommande.fournisseur, items: currentItems })}>
-                  Générer sans valider
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {
-                  printPurchaseOrder({ numero: currentCommande.numero_commande, fournisseur: currentCommande.fournisseur, items: currentItems });
-                  saveCommande(false, true);;
-                }}>
-                  Générer et valider la commande
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          {/* BLOC 3 — Barre d'actions */}
+          <div className="fixed inset-x-0 bottom-20 md:bottom-0 z-30 border-t bg-background/95 backdrop-blur md:pl-[var(--sidebar-width,0px)]">
+            <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-4 py-3">
+              <Button variant="ghost" onClick={resetForm}>Annuler</Button>
+              <Button variant="secondary" onClick={() => saveCommande('brouillon', { stay: true })}>Sauvegarder brouillon</Button>
+              <div className="flex-1" />
+              <Button variant="outline" disabled={!canValidate}
+                onClick={() => printPurchaseOrder({ numero: currentCommande.numero_commande, fournisseur: currentCommande.fournisseur, items: currentItems })}>
+                <Download className="w-4 h-4 mr-2" />Générer PDF
+              </Button>
+              <Button disabled={!canValidate} onClick={() => setValidateOpen(true)}>
+                <Mail className="w-4 h-4 mr-2" />Valider et envoyer
+              </Button>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground text-right">
-            Sauvegardez en brouillon pour continuer plus tard. Générez le bon de commande pour l'envoyer à votre fournisseur. La validation confirme que la commande a bien été passée.
-          </p>
+
+          <AlertDialog open={validateOpen} onOpenChange={setValidateOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Valider la commande</AlertDialogTitle>
+                <AlertDialogDescription>Vérifiez le récapitulatif avant de confirmer.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="space-y-4 text-sm">
+                <div className="grid grid-cols-3 gap-2 rounded-lg bg-muted/40 p-3">
+                  <div><p className="text-xs text-muted-foreground">Fournisseur</p><p className="font-semibold break-words">{currentCommande.fournisseur}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Articles</p><p className="font-semibold">{currentItems.length}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Total TTC</p><p className="font-semibold">{eur(currentCommande.total_ttc)}</p></div>
+                </div>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="validate-mode" checked={validateMode === 'email'} onChange={() => setValidateMode('email')} className="accent-primary" />
+                    Envoyer par email
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="validate-mode" checked={validateMode === 'pdf'} onChange={() => setValidateMode('pdf')} className="accent-primary" />
+                    Télécharger le PDF uniquement
+                  </label>
+                </div>
+                {validateMode === 'email' && (
+                  <div>
+                    <Label htmlFor="email-fournisseur" className="text-xs">Email du fournisseur</Label>
+                    <Input id="email-fournisseur" type="email" placeholder="email@fournisseur.com"
+                      value={currentCommande.email_fournisseur || ''}
+                      onChange={(e) => setCurrentCommande(prev => ({ ...prev, email_fournisseur: e.target.value }))} />
+                  </div>
+                )}
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Retour</AlertDialogCancel>
+                <Button onClick={confirmValidation} disabled={validateMode === 'email' && !currentCommande.email_fournisseur?.trim()}>Confirmer</Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {/* Overlays for creation flow */}
           <BarcodeScanner
