@@ -1043,7 +1043,7 @@ export default function Commandes() {
                 </div>
               ) : (
                 <div className="rounded-lg border divide-y">
-                  <div className="hidden md:grid grid-cols-[1.4fr_1fr_1.2fr_5.5rem_2.5rem] gap-2 px-3 py-2 text-xs font-semibold uppercase text-muted-foreground bg-muted/40">
+                  <div className="hidden md:grid grid-cols-[1.3fr_1fr_minmax(11.25rem,1.6fr)_5.5rem_2.5rem] gap-2 px-3 py-2 text-xs font-semibold uppercase text-muted-foreground bg-muted/40">
                     <span>Catégorie › Sous-cat.</span><span>Précision</span><span>Véhicule</span><span className="text-right">Qté</span><span />
                   </div>
                   {currentItems.map((item, index) => (
