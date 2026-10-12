@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { draftDatePrefix, nextDraftReference } from "@/lib/draftReference";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,16 +62,19 @@ export function ReceptionCommandeDialog({
   const createDraftArticles = async (done: Record<string, DraftCompletion | null>) => {
     const { data: u } = await supabase.auth.getUser();
     const map: Record<string, string> = {};
+    const { data: used } = await supabase.from('articles').select('reference').like('reference', `${draftDatePrefix()}%`);
+    const usedRefs = (used || []).map((r: any) => r.reference as string);
     for (const item of items.filter((i) => i.quantite_a_recevoir > 0 && !i.article_id)) {
       const c = done[item.id];
-      const ref = c?.reference?.trim() || `A-COMPLETER-${item.id.slice(0, 6).toUpperCase()}`;
+      let ref = c?.reference?.trim();
+      if (!ref) { ref = nextDraftReference(usedRefs); usedRefs.push(ref); }
       const { data: art, error } = await supabase.from('articles').insert([{
         designation: c?.designation?.trim() || item.designation,
         reference: ref,
         marque: c?.marque?.trim() || '',
         categorie: c?.categorie || 'À classer',
         sous_categorie: c?.sous_categorie || null,
-        code_barre: c?.code_barre?.trim() || null,
+        code_barre: c?.code_barre?.trim() || (item as any).code_barre || null,
         prix_achat: c ? c.prix_achat : item.prix_unitaire,
         emplacement_id: c?.emplacement_id || null,
         stock: 0, stock_min: 0, stock_max: 0,
@@ -352,6 +356,7 @@ export function ReceptionCommandeDialog({
         open
         designation={draftQueue[draftStep].designation}
         estimatedPrice={draftQueue[draftStep].prix_unitaire}
+        initialBarcode={(draftQueue[draftStep] as any).code_barre}
         position={`${draftStep + 1}/${draftQueue.length}`}
         onSubmit={(c) => recordCompletion(c)}
         onSkip={() => recordCompletion(null)}

@@ -24,6 +24,7 @@ export function DraftArticleCompletionDialog({
   open,
   designation,
   estimatedPrice,
+  initialBarcode,
   position,
   onSubmit,
   onSkip,
@@ -31,12 +32,13 @@ export function DraftArticleCompletionDialog({
   open: boolean;
   designation: string;
   estimatedPrice: number;
+  initialBarcode?: string | null;
   position: string;
   onSubmit: (c: DraftCompletion) => void;
   onSkip: () => void;
 }) {
   const empty: DraftCompletion = {
-    designation, reference: "", code_barre: "", marque: "", categorie: "", sous_categorie: "",
+    designation, reference: "", code_barre: initialBarcode || "", marque: "", categorie: "", sous_categorie: "",
     prix_achat: estimatedPrice, emplacement_id: "",
   };
   const [f, setF] = useState<DraftCompletion>(empty);

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Search, Camera } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,9 +28,11 @@ export function stockTone(stock = 0, min = 0) {
 export function OrderArticleSearch({
   articles,
   onSelect,
+  onScanClick,
 }: {
   articles: OrderSearchArticle[];
   onSelect: (a: OrderSearchArticle) => void;
+  onScanClick?: () => void;
 }) {
   const [cats, setCats] = useState<{ id: string; nom: string; parent_id: string | null }[]>([]);
   const [cat, setCat] = useState(ALL);
@@ -100,8 +102,14 @@ export function OrderArticleSearch({
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           placeholder="Désignation, référence, marque, catégorie…"
-          className="pl-9"
+          className={onScanClick ? "pl-9 pr-11" : "pl-9"}
         />
+        {onScanClick && (
+          <button type="button" onClick={onScanClick} aria-label="Scanner un code-barres" title="Scanner un code-barres"
+            className="absolute right-1 top-1/2 -translate-y-1/2 rounded-md p-2 text-primary hover:bg-muted">
+            <Camera className="h-4 w-4" />
+          </button>
+        )}
         {show && (
           <div className="absolute z-50 mt-1 w-full max-h-80 overflow-y-auto rounded-lg border bg-popover shadow-lg">
             {results.map(([group, items]) => (

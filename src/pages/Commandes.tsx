@@ -59,6 +59,7 @@ interface CommandeItem {
   prix_unitaire: number;
   total_ligne: number;
   is_draft?: boolean;
+  code_barre?: string;
 }
 
 interface Commande {
@@ -589,13 +590,14 @@ export default function Commandes() {
     setShowScanner(false);
     
     // Chercher l'article par code-barres
-    const article = filteredArticles.find(a => a.code_barre === barcode);
+    const code = barcode.trim();
+    const article = articles.find(a => (a.code_barre || "").trim() === code);
     
     if (!article) {
+      setCurrentItems(prev => [...prev, { designation: "", reference: "", quantite_commandee: 1, prix_unitaire: 0, total_ligne: 0, is_draft: true, code_barre: code }]);
       toast({
-        title: "Article non trouvé",
-        description: `Aucun article avec le code-barres ${barcode}`,
-        variant: "destructive",
+        title: "Nouvel article",
+        description: `Code-barres ${code} inconnu : complétez la désignation`,
       });
       return;
     }
@@ -1106,7 +1108,7 @@ export default function Commandes() {
                 <CardTitle>Ajouter des articles</CardTitle>
                 <div className="flex flex-col sm:flex-row sm:items-end gap-2 w-full lg:w-auto">
                   <div className="w-full sm:w-[28rem]">
-                    <OrderArticleSearch articles={filteredArticles} onSelect={(a) => addArticleDirectly(a.id)} />
+                    <OrderArticleSearch articles={filteredArticles} onSelect={(a) => addArticleDirectly(a.id)} onScanClick={() => setShowScanner(true)} />
                   </div>
                   <Button onClick={addItem} size="sm" variant="outline" className="w-full sm:w-auto border-primary/40 text-primary">
                     <Plus className="w-4 h-4 mr-2" />
@@ -1155,6 +1157,12 @@ export default function Commandes() {
                           <Input id={`designation-${index}`} value={item.designation} readOnly={existing} disabled={existing}
                             onChange={(e) => updateItem(index, 'designation', e.target.value)} placeholder="ex : Filtre à huile Peugeot 208" />
                         </div>
+                        {!existing && (
+                          <div>
+                            <Label htmlFor={`barcode-${index}`} className="text-xs">Code-barres</Label>
+                            <Input id={`barcode-${index}`} value={item.code_barre || ''} onChange={(e) => updateItem(index, 'code_barre', e.target.value)} placeholder="Optionnel" />
+                          </div>
+                        )}
                         {existing && (
                           <div>
                             <Label htmlFor={`reference-${index}`} className="text-xs">Référence</Label>
