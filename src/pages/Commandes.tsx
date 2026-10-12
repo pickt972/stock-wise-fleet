@@ -20,6 +20,7 @@ import { PurchaseOrderDialog } from "@/components/commandes/PurchaseOrderDialog"
 import { SmartOrderDialog } from "@/components/commandes/SmartOrderDialog";
 import { CreateArticleDialog } from "@/components/articles/CreateArticleDialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { OrderLineForm, vehicleShort, type NewOrderLine } from "@/components/commandes/OrderLineForm";
 import { printPurchaseOrder } from "@/lib/printPurchaseOrder";
 import { OrderArticleSearch, stockTone, type OrderSearchContext } from "@/components/commandes/OrderArticleSearch";
 import { ReceptionCommandeDialog } from "@/components/commandes/ReceptionCommandeDialog";
@@ -138,8 +139,8 @@ export default function Commandes() {
   const [validateOpen, setValidateOpen] = useState(false);
   const [vehicMap, setVehicMap] = useState<Record<string, string>>({});
   useEffect(() => {
-    supabase.from('vehicules').select('id, immatriculation').then(({ data }) =>
-      setVehicMap(Object.fromEntries((data || []).map((v: any) => [v.id, v.immatriculation]))));
+    supabase.from('vehicules').select('id, immatriculation, marque, modele').then(({ data }) =>
+      setVehicMap(Object.fromEntries((data || []).map((v: any) => [v.id, vehicleShort(v)]))));
   }, []);
   const [validateMode, setValidateMode] = useState<'email' | 'pdf'>('email');
   const { toast } = useToast();
@@ -497,6 +498,16 @@ export default function Commandes() {
     setCurrentItems(newItems);
     const { totalHT, totalTTC } = calculateTotals(newItems, currentCommande.tva_taux);
     setCurrentCommande(prev => ({ ...prev, total_ht: totalHT, total_ttc: totalTTC }));
+  };
+
+  const addCategoryLine = (l: NewOrderLine) => {
+    const label = `${l.categorie}${l.sous_categorie ? ` > ${l.sous_categorie}` : ''}`;
+    pushLines([...currentItems, {
+      designation: label, reference: "", quantite_commandee: l.quantite, prix_unitaire: 0, total_ligne: 0,
+      is_draft: true, categorie: l.categorie, sous_categorie: l.sous_categorie,
+      vehicule_id: l.vehicule?.id || null, precision_note: l.precision || null,
+    }]);
+    if (l.vehicule) setVehicMap(prev => ({ ...prev, [l.vehicule!.id]: vehicleShort(l.vehicule!) }));
   };
 
   const addUnsureLine = (ctx: OrderSearchContext) => {
@@ -1007,13 +1018,7 @@ export default function Commandes() {
             </CardHeader>
             <CardContent className="space-y-4">
               {hasSupplier ? (
-                <OrderArticleSearch
-                  articles={filteredArticles}
-                  onSelect={(a, ctx) => addArticleDirectly(a.id, ctx)}
-                  onUnsure={addUnsureLine}
-                  onScanClick={() => setShowScanner(true)}
-                  onFreeText={addFreeLine}
-                />
+                <OrderLineForm onAdd={addCategoryLine} />
               ) : (
                 <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground text-center">
                   Renseignez d'abord le fournisseur ci-dessus pour ajouter des articles.
@@ -1023,86 +1028,52 @@ export default function Commandes() {
               {currentItems.length === 0 ? (
                 <div className="text-center py-8 text-sm text-muted-foreground">
                   <Search className="w-10 h-10 mx-auto mb-3 opacity-50" />
-                  <p>Aucun article ajouté</p>
+                  <p>Aucune ligne ajoutée</p>
+                  <p className="text-xs mt-1">Choisissez une catégorie et une quantité. La référence exacte sera saisie à la réception.</p>
                 </div>
               ) : (
                 <div className="rounded-lg border divide-y">
-                  <div className="hidden md:grid grid-cols-[1fr_9rem_6rem_7rem_7rem_2.5rem] gap-2 px-3 py-2 text-xs font-semibold uppercase text-muted-foreground bg-muted/40">
-                    <span>Désignation</span><span>Référence</span><span className="text-right">Qté</span><span className="text-right">P.U. HT</span><span className="text-right">Total</span><span />
+                  <div className="hidden md:grid grid-cols-[1.4fr_1fr_1.2fr_5.5rem_2.5rem] gap-2 px-3 py-2 text-xs font-semibold uppercase text-muted-foreground bg-muted/40">
+                    <span>Catégorie › Sous-cat.</span><span>Précision</span><span>Véhicule</span><span className="text-right">Qté</span><span />
                   </div>
-                  {currentItems.map((item, index) => {
-                    const existing = !!item.article_id;
-                    return (
-                      <div key={index} className="grid grid-cols-2 md:grid-cols-[1fr_9rem_6rem_7rem_7rem_2.5rem] gap-2 px-3 py-3 items-center">
-                        <div className="col-span-2 md:col-span-1 space-y-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <Badge variant="outline" className={existing ? 'bg-success/15 text-success border-success/30' : 'bg-warning/15 text-warning border-warning/30'}>
-                              {existing ? 'Article existant' : item.reference_a_confirmer ? 'Référence à confirmer' : 'À créer à la réception'}
-                            </Badge>
-                            {item.vehicule_id && (
-                              <Badge variant="outline" className="bg-accent/10 text-accent border-accent/30">🚗 {existing ? 'Lié à ' : ''}{vehicMap[item.vehicule_id] || 'Véhicule'}</Badge>
-                            )}
-                            {item.categorie && (
-                              <span className="text-xs text-muted-foreground">{item.categorie}{item.sous_categorie ? ` › ${item.sous_categorie}` : ''}</span>
-                            )}
-                          </div>
-                          {existing ? (
-                            <p className="font-medium truncate">{item.designation}</p>
-                          ) : (
-                            <Input value={item.designation} aria-label="Désignation"
-                              className={!item.designation.trim() ? 'border-destructive' : ''}
-                              onChange={(e) => updateItem(index, 'designation', e.target.value)} placeholder="Désignation *" />
-                          )}
-                          {item.reference_a_confirmer && (
-                            <Input value={item.precision_note || ''} aria-label="Précision"
-                              onChange={(e) => updateItem(index, 'precision_note', e.target.value)}
-                              placeholder="Précision (ex : pour Clio 4 phase 2 — côté avant)" />
-                          )}
+                  {currentItems.map((item, index) => (
+                    <div key={index} className="grid grid-cols-[1fr_5.5rem_2.5rem] md:grid-cols-[1.4fr_1fr_1.2fr_5.5rem_2.5rem] gap-2 px-3 py-3 items-center">
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">
+                          {item.categorie ? `${item.categorie}${item.sous_categorie ? ` › ${item.sous_categorie}` : ''}` : item.designation}
+                        </p>
+                        <div className="md:hidden text-xs text-muted-foreground space-y-0.5">
+                          {item.precision_note && <p className="italic">« {item.precision_note} »</p>}
+                          {item.vehicule_id && <p className="text-accent font-medium">🚗 {vehicMap[item.vehicule_id] || 'Véhicule'}</p>}
                         </div>
-                        <div className="col-span-2 md:col-span-1">
-                          {existing ? (
-                            <p className="text-sm text-muted-foreground truncate">{item.reference || '—'}</p>
-                          ) : (
-                            <Input value={item.code_barre || ''} aria-label="Code-barres" placeholder="Code-barres"
-                              onChange={(e) => updateItem(index, 'code_barre', e.target.value)} />
-                          )}
-                        </div>
-                        <Input
-                          type="number" inputMode="numeric" min="1" aria-label="Quantité" className="text-right"
-                          onFocus={(e) => e.currentTarget.select()}
-                          value={qtyDrafts[index] ?? String(item.quantite_commandee)}
-                          onChange={(e) => {
-                            const raw = e.target.value;
-                            setQtyDrafts((prev) => ({ ...prev, [index]: raw }));
-                            const num = parseInt(raw, 10);
-                            if (!isNaN(num) && num >= 1) updateItem(index, 'quantite_commandee', num);
-                          }}
-                          onBlur={() => setQtyDrafts((prev) => { const next = { ...prev }; delete next[index]; return next; })}
-                        />
-                        <Input
-                          type="number" min="0" step="0.01" aria-label="Prix unitaire" className="text-right"
-                          value={item.prix_unitaire}
-                          onChange={(e) => {
-                            const n = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                            if (!isNaN(n) && n >= 0) updateItem(index, 'prix_unitaire', n);
-                          }}
-                        />
-                        <p className="text-right font-semibold">{eur(item.total_ligne)}</p>
-                        <Button variant="ghost" size="icon" onClick={() => removeItem(index)} aria-label="Supprimer la ligne"
-                          className="h-8 w-8 justify-self-end text-destructive hover:text-destructive hover:bg-destructive/10">
-                          <X className="w-4 h-4" />
-                        </Button>
                       </div>
-                    );
-                  })}
+                      <p className="hidden md:block text-sm text-muted-foreground italic truncate">{item.precision_note || '—'}</p>
+                      <p className="hidden md:block text-sm truncate">{item.vehicule_id ? <span className="text-accent font-medium">🚗 {vehicMap[item.vehicule_id] || 'Véhicule'}</span> : <span className="text-muted-foreground">—</span>}</p>
+                      <Input
+                        type="number" inputMode="numeric" min="1" aria-label="Quantité" className="text-right"
+                        onFocus={(e) => e.currentTarget.select()}
+                        value={qtyDrafts[index] ?? String(item.quantite_commandee)}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          setQtyDrafts((prev) => ({ ...prev, [index]: raw }));
+                          const num = parseInt(raw, 10);
+                          if (!isNaN(num) && num >= 1) updateItem(index, 'quantite_commandee', num);
+                        }}
+                        onBlur={() => setQtyDrafts((prev) => { const next = { ...prev }; delete next[index]; return next; })}
+                      />
+                      <Button variant="ghost" size="icon" onClick={() => removeItem(index)} aria-label="Supprimer la ligne"
+                        className="h-8 w-8 justify-self-end text-destructive hover:text-destructive hover:bg-destructive/10">
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
                 </div>
               )}
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-lg bg-muted/40 p-3 text-sm">
-                <div><p className="text-xs text-muted-foreground">Articles</p><p className="font-semibold">{currentItems.length} ligne(s) • {nbArticles} u.</p></div>
-                <div><p className="text-xs text-muted-foreground">Total HT</p><p className="font-semibold">{eur(currentCommande.total_ht)}</p></div>
-                <div><p className="text-xs text-muted-foreground">TVA {String(currentCommande.tva_taux).replace('.', ',')} %</p><p className="font-semibold">{eur(tvaAmount)}</p></div>
-                <div><p className="text-xs text-muted-foreground">Total TTC</p><p className="text-lg font-bold text-primary">{eur(currentCommande.total_ttc)}</p></div>
+              <div className="flex flex-wrap gap-6 rounded-lg bg-muted/40 p-3 text-sm">
+                <div><p className="text-xs text-muted-foreground">Lignes</p><p className="font-semibold">{currentItems.length}</p></div>
+                <div><p className="text-xs text-muted-foreground">Unités commandées</p><p className="font-semibold">{nbArticles}</p></div>
+                <p className="text-xs text-muted-foreground self-center">Références et prix réels sont saisis à la réception.</p>
               </div>
             </CardContent>
           </Card>
@@ -1133,7 +1104,7 @@ export default function Commandes() {
                 <div className="grid grid-cols-3 gap-2 rounded-lg bg-muted/40 p-3">
                   <div><p className="text-xs text-muted-foreground">Fournisseur</p><p className="font-semibold break-words">{currentCommande.fournisseur}</p></div>
                   <div><p className="text-xs text-muted-foreground">Articles</p><p className="font-semibold">{currentItems.length}</p></div>
-                  <div><p className="text-xs text-muted-foreground">Total TTC</p><p className="font-semibold">{eur(currentCommande.total_ttc)}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Unités</p><p className="font-semibold">{nbArticles}</p></div>
                 </div>
                 <div className="space-y-2">
                   <label className="flex items-center gap-2 cursor-pointer">
