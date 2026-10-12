@@ -1476,6 +1476,7 @@ export type Database = {
       }
       is_admin: { Args: { uid?: string }; Returns: boolean }
       is_maintenance: { Args: never; Returns: boolean }
+      is_staff: { Args: { _uid?: string }; Returns: boolean }
       log_audit: {
         Args: {
           p_action: string
