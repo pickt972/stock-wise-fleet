@@ -187,10 +187,7 @@ export function EntryDetails({ entry, open, onOpenChange }: EntryDetailsProps) {
             <div>
               <p className="text-muted-foreground">Créé par</p>
               <p>
-                {entry.profiles 
-                  ? `${entry.profiles.first_name} ${entry.profiles.last_name}`
-                  : "—"
-                }
+                {userDisplayName(entry.profiles as any)}
               </p>
             </div>
             <div>

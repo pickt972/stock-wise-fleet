@@ -1,3 +1,4 @@
+import { userDisplayName } from "@/lib/userDisplay";
 import { useState, useEffect, useMemo } from "react";
 import { ArrowLeftRight, Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
