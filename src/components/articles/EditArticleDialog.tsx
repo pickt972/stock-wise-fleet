@@ -1,3 +1,4 @@
+import { CategoryCardGrid } from "@/components/shared/CategoryPicker";
 import { getCategoryIcon } from "@/components/categories/CategoryIcon";
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";

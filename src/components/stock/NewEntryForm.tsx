@@ -1,3 +1,4 @@
+import { ArticlePickerField } from "@/components/shared/CategoryPicker";
 import { useState, useEffect, useMemo } from "react";
 import { Plus, Trash2, ChevronLeft, ChevronRight, Check, Package, FileText, ClipboardList } from "lucide-react";
 import {
