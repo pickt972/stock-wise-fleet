@@ -12,7 +12,6 @@ import {
   ShoppingCart,
   History,
   ScanLine,
-  Baby,
   Wrench,
   ShieldCheck,
   FileSearch,

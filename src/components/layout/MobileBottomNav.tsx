@@ -27,7 +27,6 @@ import {
   ShoppingCart,
   History,
   Wrench,
-  Baby,
   Settings,
   AlertTriangle,
   Users,
