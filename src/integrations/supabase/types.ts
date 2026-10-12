@@ -1054,6 +1054,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "stock_entries_created_by_profiles_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "stock_entries_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
