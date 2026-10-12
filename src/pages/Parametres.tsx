@@ -306,13 +306,6 @@ export default function Parametres() {
               description="Zones de stockage"
               onClick={() => navigate('/emplacements')}
             />
-            <SettingsCard
-              index={7}
-              icon={<Baby className="h-5 w-5" />}
-              title="Accessoires"
-              description="Sièges bébé, rehausseurs..."
-              onClick={() => navigate('/accessoires')}
-            />
           </div>
         </section>
 

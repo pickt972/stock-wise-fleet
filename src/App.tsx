@@ -37,7 +37,6 @@ import Emplacements from "./pages/Emplacements";
 import JournalAudit from "./pages/JournalAudit";
 import ArticleHistory from "./pages/ArticleHistory";
 import ResetPassword from "./pages/ResetPassword";
-import Accessoires from "./pages/Accessoires";
 import Transferts from "./pages/Transferts";
 import SeuilsStock from "./pages/SeuilsStock";
 import NotFound from "./pages/NotFound";
@@ -205,11 +204,7 @@ const App = () => (
                   <ArticleHistory />
                 </ProtectedRoute>
               } />
-              <Route path="/accessoires" element={
-                <ProtectedRoute>
-                  <Accessoires />
-                </ProtectedRoute>
-              } />
+              <Route path="/accessoires" element={<Navigate to="/articles" replace />} />
               <Route path="/transferts" element={
                 <ProtectedRoute>
                   <Transferts />
