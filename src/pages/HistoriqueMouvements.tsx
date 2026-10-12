@@ -42,8 +42,15 @@ interface Movement {
   articles: {
     designation: string;
     reference: string;
+    vehicule_required?: boolean;
   };
+  vehicules?: { immatriculation: string; marque: string | null; modele: string | null } | null;
+  creator?: { first_name: string; last_name: string; username: string | null } | null;
+  owner?: { first_name: string; last_name: string; username: string | null } | null;
 }
+
+const personName = (p?: Movement["creator"]) =>
+  p ? (`${p.first_name ?? ""} ${(p.last_name ?? "").toUpperCase()}`.trim() || p.username || null) : null;
 
 export default function HistoriqueMouvements() {
   const navigate = useNavigate();
@@ -72,15 +79,19 @@ export default function HistoriqueMouvements() {
           article_id,
           articles (
             designation,
-            reference
-          )
+            reference,
+            vehicule_required
+          ),
+          vehicules ( immatriculation, marque, modele ),
+          creator:profiles!stock_movements_created_by_profile_fkey ( first_name, last_name, username ),
+          owner:profiles!stock_movements_user_id_profile_fkey ( first_name, last_name, username )
         `)
         .order('created_at', { ascending: false })
         .limit(50);
 
       if (error) throw error;
-      setMovements(data || []);
-      setFilteredMovements(data || []);
+      setMovements((data as any) || []);
+      setFilteredMovements((data as any) || []);
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -330,6 +341,16 @@ export default function HistoriqueMouvements() {
                       <p className="text-sm text-muted-foreground mb-2">
                         {movement.motif} • Quantité: {movement.quantity}
                       </p>
+                      {movement.type === "sortie" && (movement.vehicules || movement.articles?.vehicule_required) && (
+                        <p className={`text-sm mb-1 ${movement.vehicules ? "" : "text-muted-foreground"}`}>
+                          🚗 {movement.vehicules
+                            ? <><span className="font-mono font-semibold">{movement.vehicules.immatriculation}</span>{(movement.vehicules.marque || movement.vehicules.modele) && ` • ${movement.vehicules.marque ?? ""} ${movement.vehicules.modele ?? ""}`.trimEnd()}</>
+                            : "Véhicule non renseigné"}
+                        </p>
+                      )}
+                      {personName(movement.creator || movement.owner) && (
+                        <p className="text-sm text-muted-foreground mb-1">👤 par {personName(movement.creator || movement.owner)}</p>
+                      )}
                       <p className="text-xs text-muted-foreground">
                         {format(new Date(movement.created_at), "dd/MM/yyyy 'à' HH:mm", { locale: fr })}
                       </p>
