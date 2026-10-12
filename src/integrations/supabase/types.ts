@@ -420,48 +420,63 @@ export type Database = {
       commande_items: {
         Row: {
           article_id: string | null
+          categorie: string | null
           code_barre: string | null
           commande_id: string
           created_at: string
           designation: string
           id: string
           is_draft: boolean
+          precision_note: string | null
           prix_unitaire: number
           quantite_commandee: number
           quantite_recue: number
           reference: string | null
+          reference_a_confirmer: boolean
+          sous_categorie: string | null
           total_ligne: number
           updated_at: string
+          vehicule_id: string | null
         }
         Insert: {
           article_id?: string | null
+          categorie?: string | null
           code_barre?: string | null
           commande_id: string
           created_at?: string
           designation: string
           id?: string
           is_draft?: boolean
+          precision_note?: string | null
           prix_unitaire: number
           quantite_commandee: number
           quantite_recue?: number
           reference?: string | null
+          reference_a_confirmer?: boolean
+          sous_categorie?: string | null
           total_ligne: number
           updated_at?: string
+          vehicule_id?: string | null
         }
         Update: {
           article_id?: string | null
+          categorie?: string | null
           code_barre?: string | null
           commande_id?: string
           created_at?: string
           designation?: string
           id?: string
           is_draft?: boolean
+          precision_note?: string | null
           prix_unitaire?: number
           quantite_commandee?: number
           quantite_recue?: number
           reference?: string | null
+          reference_a_confirmer?: boolean
+          sous_categorie?: string | null
           total_ligne?: number
           updated_at?: string
+          vehicule_id?: string | null
         }
         Relationships: [
           {
@@ -476,6 +491,13 @@ export type Database = {
             columns: ["commande_id"]
             isOneToOne: false
             referencedRelation: "commandes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commande_items_vehicule_id_fkey"
+            columns: ["vehicule_id"]
+            isOneToOne: false
+            referencedRelation: "vehicules"
             referencedColumns: ["id"]
           },
         ]
