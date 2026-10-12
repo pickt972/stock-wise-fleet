@@ -516,12 +516,13 @@ export function ArticleCreationWizard({
                   key={cat}
                   type="button"
                   onClick={() => { setCategorie(cat); setStep(2); }}
-                  className={`w-full text-left px-4 py-3.5 rounded-lg border-2 text-base font-medium transition-all ${
+                  className={`w-full text-left px-4 py-3.5 rounded-lg border-2 text-base font-medium transition-all flex items-center gap-3 ${
                     categorie === cat
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted/50"
                   }`}
                 >
+                  <span className="text-primary shrink-0">{getCategoryIcon(cat)}</span>
                   {cat}
                 </button>
               ))}
