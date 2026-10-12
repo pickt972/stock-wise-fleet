@@ -4,6 +4,9 @@ import { ChevronRight, ChevronDown, Edit, Trash2, Tag, GripVertical, Plus, Corne
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +35,7 @@ export interface CategoryNode {
   children: CategoryNode[];
   articleCount: number;
   totalArticleCount: number;
+  requires_vehicle?: boolean | null;
 }
 
 interface CategoryTreeItemProps {
@@ -42,6 +46,7 @@ interface CategoryTreeItemProps {
   onDelete: (categoryId: string) => void;
   onAddChild: (parentId: string) => void;
   isDragActive?: boolean;
+  inheritedVehicle?: boolean;
 }
 
 export function CategoryTreeItem({
@@ -52,7 +57,23 @@ export function CategoryTreeItem({
   onDelete,
   onAddChild,
   isDragActive,
+  inheritedVehicle = false,
 }: CategoryTreeItemProps) {
+  const { toast } = useToast();
+  const [requiresVehicle, setRequiresVehicle] = useState<boolean | null>(category.requires_vehicle ?? null);
+  const effectiveVehicle = inheritedVehicle || !!requiresVehicle;
+  const toggleVehicle = async (checked: boolean) => {
+    const prev = requiresVehicle;
+    const next = depth === 0 ? checked : checked ? true : null;
+    setRequiresVehicle(next);
+    const { error } = await supabase.from("categories").update({ requires_vehicle: next } as any).eq("id", category.id);
+    if (error) {
+      setRequiresVehicle(prev);
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Paramètre mis à jour" });
+    }
+  };
   const [isExpanded, setIsExpanded] = useState(true);
   const { getColorForText } = useColorPreferences();
   const hasChildren = category.children.length > 0;
@@ -243,6 +264,18 @@ export function CategoryTreeItem({
           >
             {category.actif ? "Active" : "Inactive"}
           </Badge>
+          {inheritedVehicle ? (
+            <Badge variant="secondary" className="flex-shrink-0 text-[10px] h-5">🚗 Hérité</Badge>
+          ) : (
+            <label
+              className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
+              🚗 Véhicule requis
+              <Switch checked={!!requiresVehicle} onCheckedChange={toggleVehicle} className="scale-75" />
+            </label>
+          )}
           <span className="text-xs text-muted-foreground whitespace-nowrap">
             {category.totalArticleCount > 0
               ? `${category.totalArticleCount} article${category.totalArticleCount !== 1 ? "s" : ""}`
@@ -283,6 +316,7 @@ export function CategoryTreeItem({
               onDelete={onDelete}
               onAddChild={onAddChild}
               isDragActive={isDragActive}
+              inheritedVehicle={effectiveVehicle}
             />
           ))}
         </div>
