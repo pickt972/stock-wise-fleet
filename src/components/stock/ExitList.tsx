@@ -157,7 +157,9 @@ export function ExitList({ exits, onRefresh }: ExitListProps) {
                   </TableCell>
                   <TableCell>{getExitTypeBadge(exit.exit_type)}</TableCell>
                   <TableCell>
-                    {exit.vehicules?.immatriculation || "-"}
+                    {exit.vehicules
+                      ? `${(exit.vehicules.marque || "").toUpperCase()} ${exit.vehicules.modele || ""} - ${exit.vehicules.immatriculation}`.trim()
+                      : "-"}
                   </TableCell>
                   <TableCell>
                     {exit.stock_exit_items.length} article{exit.stock_exit_items.length > 1 ? "s" : ""}
