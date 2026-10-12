@@ -1387,13 +1387,65 @@ export default function Commandes() {
       />
 
       {/* Delete Confirmation Dialog */}
+      <AlertDialog open={cancelDialog.isOpen} onOpenChange={(open) => !open && setCancelDialog({ isOpen: false })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>⚠️ Annuler la commande {cancelDialog.commande?.numero_commande} ?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="motif-annulation">Motif d'annulation *</Label>
+            <Textarea id="motif-annulation" value={cancelMotif} onChange={(e) => setCancelMotif(e.target.value)} />
+            <p className="text-sm text-muted-foreground">
+              Cette action est irréversible. La commande restera visible dans l'historique avec le statut « Annulée ».
+            </p>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Retour</AlertDialogCancel>
+            <Button variant="destructive" disabled={!cancelMotif.trim()} onClick={cancelCommande}>
+              Confirmer l'annulation
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={deleteDialog.isOpen} onOpenChange={(open) => !open && setDeleteDialog({ isOpen: false })}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
             <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer la commande {deleteDialog.commande?.numero_commande} ?
-              Cette action est irréversible.
+              {deleteDialog.commande?.status && deleteDialog.commande.status !== 'brouillon'
+                ? "⚠️ Cette suppression est définitive et irréversible. Préférez l'annulation pour conserver la traçabilité."
+                : `Êtes-vous sûr de vouloir supprimer la commande ${deleteDialog.commande?.numero_commande} ? Cette action est irréversible.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {deleteDialog.commande?.status && deleteDialog.commande.status !== 'brouillon' && orderPermissions(userRole, deleteDialog.commande.status, false).canCancel && (
+              <Button variant="outline" onClick={() => { const c = deleteDialog.commande; setDeleteDialog({ isOpen: false }); setCancelMotif(""); setCancelDialog({ isOpen: true, commande: c }); }}>
+                Annuler plutôt
+              </Button>
+            )}
+            <AlertDialogCancel onClick={() => setDeleteDialog({ isOpen: false })}>
+              Retour
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteDialog.commande?.id) {
+                  deleteCommande(deleteDialog.commande.id);
+                }
+                setDeleteDialog({ isOpen: false });
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteDialog.commande?.status !== 'brouillon' ? 'Supprimer définitivement' : 'Supprimer'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={false}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle />
+            <AlertDialogDescription>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
