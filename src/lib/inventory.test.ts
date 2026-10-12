@@ -1,3 +1,4 @@
+/// <reference path="../bun-test.d.ts" />
 import { describe, expect, test } from "bun:test";
 import { variance, varianceTone, sortForCounting, countingProgress, itemsWithVariance, formatDuration } from "./inventory";
 
