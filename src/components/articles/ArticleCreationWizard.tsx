@@ -1,3 +1,4 @@
+import { getCategoryIcon } from "@/components/categories/CategoryIcon";
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -30,22 +31,6 @@ interface ArticleCreationWizardProps {
   returnTo?: string;
 }
 
-// Map category names to icons
-const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  "Batteries": <Battery className="h-6 w-6" />,
-  "Freinage": <Disc className="h-6 w-6" />,
-  "Filtration": <Droplets className="h-6 w-6" />,
-  "Électrique": <Zap className="h-6 w-6" />,
-  "Moteur": <Cog className="h-6 w-6" />,
-  "Transmission": <CircleDot className="h-6 w-6" />,
-  "Pneumatiques": <Car className="h-6 w-6" />,
-  "Carrosserie": <Wrench className="h-6 w-6" />,
-  "Consommables": <Boxes className="h-6 w-6" />,
-};
-
-function getCategoryIcon(name: string) {
-  return CATEGORY_ICONS[name] || <Tag className="h-6 w-6" />;
-}
 
 export function ArticleCreationWizard({
   defaultCodeBarre = "",

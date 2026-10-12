@@ -1,0 +1,36 @@
+import { Tag } from "lucide-react";
+
+export const CATEGORY_ICONS: Record<string, string> = {
+  "Filtres": `<svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="24" height="28" rx="4"/><circle cx="18" cy="18" r="6"/><circle cx="18" cy="18" r="2.5" fill="currentColor" stroke="none"/><line x1="18" y1="4" x2="18" y2="12"/><line x1="18" y1="24" x2="18" y2="32"/></svg>`,
+  "Freinage": `<svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="15" cy="18" r="13" stroke-width="2"/><circle cx="15" cy="18" r="7" stroke-width="1.6"/><circle cx="15" cy="18" r="2.5" stroke-width="1.6"/><rect x="13.7" y="11.2" width="2.6" height="2.6" rx=".4" fill="currentColor" stroke="none"/><rect x="13.7" y="22.2" width="2.6" height="2.6" rx=".4" fill="currentColor" stroke="none"/><rect x="8.2" y="16.7" width="2.6" height="2.6" rx=".4" fill="currentColor" stroke="none"/><rect x="19.2" y="16.7" width="2.6" height="2.6" rx=".4" fill="currentColor" stroke="none"/><path d="M24.5 11 C27 11 29 11.5 30 13 L32 13 L32 16 L29 16" stroke-width="2"/><path d="M24.5 25 C27 25 29 24.5 30 23 L32 23 L32 20 L29 20" stroke-width="2"/><path d="M29 16 L29 20" stroke-width="2"/><path d="M24.5 11 L24.5 14" stroke-width="2.5"/><path d="M24.5 22 L24.5 25" stroke-width="2.5"/><path d="M24.5 14 L26 15.5 L24.5 17" stroke-width="1.8"/><path d="M24.5 19 L26 20.5 L24.5 22" stroke-width="1.8"/></svg>`,
+  "Batteries": `<svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="26" height="18" rx="2.5"/><rect x="3" y="11" width="26" height="4" rx="1" fill="currentColor" opacity=".12"/><rect x="7" y="7" width="5" height="5" rx="1"/><rect x="24" y="7" width="5" height="5" rx="1"/><line x1="9.5" y1="17" x2="9.5" y2="23" stroke-width="2.5"/><line x1="7" y1="20" x2="12" y2="20" stroke-width="2.5"/><line x1="22" y1="20" x2="27" y2="20" stroke-width="2.5"/><rect x="15" y="16" width="6" height="9" rx="1" opacity=".2" fill="currentColor"/></svg>`,
+  "Pneumatiques": `<svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="18" r="14" stroke-width="4.5" opacity=".18" fill="none"/><circle cx="18" cy="18" r="14"/><circle cx="18" cy="18" r="8.5"/><circle cx="18" cy="18" r="2.5" fill="currentColor" opacity=".3"/><line x1="18" y1="15.5" x2="18" y2="10"/><line x1="18" y1="20.5" x2="18" y2="26"/><line x1="14" y1="18" x2="9.5" y2="18"/><line x1="22" y1="18" x2="26.5" y2="18"/><line x1="15.1" y1="15.1" x2="11.7" y2="11.7"/><line x1="20.9" y1="20.9" x2="24.3" y2="24.3"/><line x1="20.9" y1="15.1" x2="24.3" y2="11.7"/><line x1="15.1" y1="20.9" x2="11.7" y2="24.3"/><path d="M18 4 L18 5.5" stroke-width="2.8" opacity=".5"/><path d="M27.8 8.5 L26.7 9.7" stroke-width="2.8" opacity=".5"/><path d="M32 18 L30.5 18" stroke-width="2.8" opacity=".5"/><path d="M27.8 27.5 L26.7 26.3" stroke-width="2.8" opacity=".5"/><path d="M18 32 L18 30.5" stroke-width="2.8" opacity=".5"/><path d="M8.2 27.5 L9.3 26.3" stroke-width="2.8" opacity=".5"/><path d="M4 18 L5.5 18" stroke-width="2.8" opacity=".5"/><path d="M8.2 8.5 L9.3 9.7" stroke-width="2.8" opacity=".5"/></svg>`,
+  "Éclairage": `<svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 4 C11 4 7 9 7 14 C7 19 11 22 13 24 L13 27 L23 27 L23 24 C25 22 29 19 29 14 C29 9 25 4 18 4Z"/><line x1="13" y1="30" x2="23" y2="30"/><line x1="15" y1="33" x2="21" y2="33"/></svg>`,
+  "Essuie-glaces": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 18m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M3 9l5.5 5.5a5 5 0 0 1 7 0l5.5 -5.5a12 12 0 0 0 -18 0" /><path d="M12 18l-2.2 -12.8" /></svg>`,
+  "Huiles & Liquides": `<svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="13" cy="6" rx="9" ry="3"/><line x1="4" y1="6" x2="4" y2="28"/><line x1="22" y1="6" x2="22" y2="20"/><path d="M4 28 Q4 31 13 31 Q18 31 20 29"/><path d="M4 14 Q4 17 13 17 Q22 17 22 14"/><path d="M13 20 Q10 24 10 26 Q10 29 13 29 Q16 29 16 26 Q16 24 13 20Z" fill="currentColor" stroke="none" opacity=".7"/><rect x="20" y="18" width="14" height="16" rx="3" fill="currentColor" opacity=".08"/><rect x="20" y="18" width="14" height="16" rx="3"/><path d="M24 18 L24 15 Q24 13 27 13 Q30 13 30 15 L30 18" stroke-width="2"/><rect x="22.5" y="21.5" width="9" height="9" rx="1.5"/><path d="M27 23.5 Q25 26 25 27.5 Q25 29.5 27 29.5 Q29 29.5 29 27.5 Q29 26 27 23.5Z" fill="currentColor" stroke="none" opacity=".7"/></svg>`,
+  "Distribution": `<svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="5"/><circle cx="26" cy="10" r="5"/><circle cx="26" cy="26" r="5"/><path d="M10 15 L10 22 Q10 26 14 26 L21 26"/><line x1="15" y1="10" x2="21" y2="10"/></svg>`,
+  "Accessoires": `<svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 32 L10 14 Q10 9 15 9 L22 9 Q27 9 27 14 L27 22 Q27 27 22 27 L10 27"/><path d="M14 9 L14 5 Q14 3 18 3 Q22 3 22 5 L22 9"/><path d="M8 27 L29 27 L29 32 L8 32Z" fill="currentColor" opacity=".12"/><line x1="8" y1="32" x2="29" y2="32"/><line x1="18" y1="9" x2="18" y2="20"/><path d="M14 10 L16 20" stroke-width="1.4" opacity=".6"/><path d="M22 10 L20 20" stroke-width="1.4" opacity=".6"/><path d="M11 22 L16 20" stroke-width="1.4" opacity=".6"/><path d="M25 22 L20 20" stroke-width="1.4" opacity=".6"/><circle cx="18" cy="20" r="2" fill="currentColor" opacity=".3"/></svg>`,
+  "Produits atelier": `<svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="4" width="10" height="6" rx="1.5"/><path d="M10 7 L4 7 L4 32 L32 32 L32 7 L26 7"/><line x1="4" y1="14" x2="32" y2="14"/><line x1="15" y1="14" x2="15" y2="32"/></svg>`,
+  "Mobilier": `<svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="12" width="28" height="10" rx="2"/><line x1="8" y1="22" x2="8" y2="32"/><line x1="28" y1="22" x2="28" y2="32"/><rect x="4" y="8" width="28" height="5" rx="1.5"/></svg>`,
+};
+const ALIASES: Record<string, string> = {
+  "Pneus": "Pneumatiques",
+  "Accessoires / Équipements": "Accessoires",
+};
+
+// Static, trusted SVG strings only (no user input) — safe to inject.
+export function CategoryIcon({ name, className = "h-6 w-6" }: { name: string; className?: string }) {
+  const svg = CATEGORY_ICONS[name] ?? CATEGORY_ICONS[ALIASES[name] ?? ""];
+  if (!svg) return <Tag className={className} />;
+  return (
+    <span
+      className={`inline-flex [&>svg]:h-full [&>svg]:w-full ${className}`}
+      aria-hidden
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
+  );
+}
+
+export function getCategoryIcon(name: string) {
+  return <CategoryIcon name={name} />;
+}
