@@ -19,6 +19,7 @@ import { SearchWithScanner } from "@/components/SearchWithScanner";
 import { PurchaseOrderDialog } from "@/components/commandes/PurchaseOrderDialog";
 import { SmartOrderDialog } from "@/components/commandes/SmartOrderDialog";
 import { CreateArticleDialog } from "@/components/articles/CreateArticleDialog";
+import { printPurchaseOrder } from "@/lib/printPurchaseOrder";
 import { OrderArticleSearch, stockTone } from "@/components/commandes/OrderArticleSearch";
 import { ReceptionCommandeDialog } from "@/components/commandes/ReceptionCommandeDialog";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
@@ -479,6 +480,12 @@ export default function Commandes() {
     ]);
   };
 
+  const addFreeLine = (text: string) => {
+    const designation = text.trim();
+    if (!designation) return;
+    setCurrentItems(prev => [...prev, { designation, reference: "", quantite_commandee: 1, prix_unitaire: 0, total_ligne: 0, is_draft: true }]);
+  };
+
   const updateItem = (index: number, field: keyof CommandeItem, value: any) => {
     const newItems = [...currentItems];
     newItems[index] = { ...newItems[index], [field]: value };
@@ -875,62 +882,38 @@ export default function Commandes() {
             {/* Informations fournisseur */}
             <Card className="lg:col-span-2">
               <CardHeader>
-                <CardTitle>Informations fournisseur</CardTitle>
+                <CardTitle>1. Fournisseur</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="fournisseur">Fournisseur *</Label>
-                    {fournisseurs.length > 0 ? (
-                      <>
-                        <Select
-                          value={currentCommande.fournisseur}
-                          onValueChange={(value) => {
-                            const selectedFournisseur = fournisseurs.find(f => f.nom === value);
-                            if (selectedFournisseur) {
-                              setCurrentCommande(prev => ({
-                                ...prev,
-                                fournisseur: selectedFournisseur.nom,
-                                email_fournisseur: selectedFournisseur.email || "",
-                                telephone_fournisseur: selectedFournisseur.telephone || "",
-                                adresse_fournisseur: selectedFournisseur.adresse || ""
-                              }));
-                              filterArticlesByFournisseur(selectedFournisseur.nom);
-                            } else if (value === "MANUAL_INPUT") {
-                              // Ne rien faire, l'utilisateur va saisir manuellement
-                              setFilteredArticles(articles);
-                            }
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner un fournisseur" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {fournisseurs.map((fournisseur) => (
-                              <SelectItem key={fournisseur.id} value={fournisseur.nom}>
-                                {fournisseur.nom}
-                              </SelectItem>
-                            ))}
-                            <SelectItem value="MANUAL_INPUT" className="text-muted-foreground italic">
-                              + Saisir manuellement
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Input
-                          className="mt-2"
-                          placeholder="Ou saisir le nom manuellement"
-                          value={currentCommande.fournisseur}
-                          onChange={(e) => setCurrentCommande(prev => ({ ...prev, fournisseur: e.target.value }))}
-                        />
-                      </>
-                    ) : (
-                      <Input
-                        placeholder="Nom du fournisseur"
-                        value={currentCommande.fournisseur}
-                        onChange={(e) => setCurrentCommande(prev => ({ ...prev, fournisseur: e.target.value }))}
-                      />
-                    )}
+                    <Input
+                      id="fournisseur"
+                      list="fournisseurs-list"
+                      autoFocus={!currentCommande.fournisseur}
+                      placeholder="Choisir ou saisir un fournisseur"
+                      value={currentCommande.fournisseur}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        const f = fournisseurs.find(x => x.nom.toLowerCase() === value.trim().toLowerCase());
+                        setCurrentCommande(prev => ({
+                          ...prev,
+                          fournisseur: value,
+                          ...(f ? { email_fournisseur: f.email || "", telephone_fournisseur: f.telephone || "", adresse_fournisseur: f.adresse || "" } : {}),
+                        }));
+                        if (f) filterArticlesByFournisseur(f.nom); else setFilteredArticles(articles);
+                      }}
+                    />
+                    <datalist id="fournisseurs-list">
+                      {fournisseurs.map((f) => <option key={f.id} value={f.nom} />)}
+                    </datalist>
+                    <p className="text-xs text-muted-foreground mt-1">Fournisseur hors liste : tapez simplement son nom.</p>
                   </div>
+                </div>
+                <details className="rounded-lg border px-3 py-2">
+                  <summary className="cursor-pointer text-sm text-muted-foreground">Coordonnées, statut et notes (optionnel)</summary>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
                   <div>
                     <Label htmlFor="email">Email</Label>
                     <Input
@@ -988,6 +971,7 @@ export default function Commandes() {
                     placeholder="Notes et commentaires"
                   />
                 </div>
+                </details>
               </CardContent>
             </Card>
 
@@ -1105,15 +1089,15 @@ export default function Commandes() {
           <Card>
             <CardHeader>
               <div className="flex flex-col lg:flex-row items-start justify-between gap-3">
-                <CardTitle>Ajouter des articles</CardTitle>
+                <CardTitle>2. Articles à commander</CardTitle>
                 <div className="flex flex-col sm:flex-row sm:items-end gap-2 w-full lg:w-auto">
                   <div className="w-full sm:w-[28rem]">
-                    <OrderArticleSearch articles={filteredArticles} onSelect={(a) => addArticleDirectly(a.id)} onScanClick={() => setShowScanner(true)} />
+                    {currentCommande.fournisseur.trim() ? (
+                      <OrderArticleSearch articles={filteredArticles} onSelect={(a) => addArticleDirectly(a.id)} onScanClick={() => setShowScanner(true)} onFreeText={addFreeLine} />
+                    ) : (
+                      <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">Choisissez d'abord un fournisseur pour ajouter des lignes.</p>
+                    )}
                   </div>
-                  <Button onClick={addItem} size="sm" variant="outline" className="w-full sm:w-auto border-primary/40 text-primary">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Nouvel article
-                  </Button>
                 </div>
               </div>
             </CardHeader>
@@ -1122,7 +1106,7 @@ export default function Commandes() {
                 <div className="text-center py-8 text-sm text-muted-foreground">
                   <Search className="w-10 h-10 mx-auto mb-3 opacity-50" />
                   <p>Aucun article ajouté</p>
-                  <p className="text-xs mt-1">Utilisez les boutons ci-dessus pour ajouter des articles</p>
+                  <p className="text-xs mt-1">Tapez un article existant ou une désignation libre puis Entrée</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -1149,7 +1133,7 @@ export default function Commandes() {
                         </Button>
                       </div>
                       {!existing && (
-                        <p className="text-xs text-muted-foreground">📋 Fiche incomplète — à compléter à la réception</p>
+                        <p className="text-xs text-muted-foreground">📋 À créer à la réception</p>
                       )}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
@@ -1236,6 +1220,16 @@ export default function Commandes() {
             }}>
               Annuler
             </Button>
+            {currentItems.length > 0 && currentCommande.fournisseur.trim() && (
+              <Button variant="outline" onClick={() => printPurchaseOrder({
+                numero: currentCommande.numero_commande,
+                fournisseur: currentCommande.fournisseur,
+                items: currentItems,
+              })}>
+                <FileText className="w-4 h-4 mr-2" />
+                Générer le bon de commande
+              </Button>
+            )}
             <Button variant="secondary" onClick={() => saveCommande(true)}>
               Sauvegarder en brouillon
             </Button>
