@@ -54,7 +54,11 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
   const [articleId, setArticleId] = useState("");
   const [quantity, setQuantity] = useState("");
   const [exitType, setExitType] = useState("consommation");
-  const [vehiculeId, setVehiculeId] = useState("");
+  const [plate, setPlate] = useState("");
+  const [marque, setMarque] = useState("");
+  const [modele, setModele] = useState("");
+  const [selectedVehicule, setSelectedVehicule] = useState<Vehicule | null>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
@@ -63,10 +67,38 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
       setArticleId("");
       setQuantity("");
       setExitType("consommation");
-      setVehiculeId("");
+      setPlate("");
+      setMarque("");
+      setModele("");
+      setSelectedVehicule(null);
       setNotes("");
     }
   }, [open]);
+
+  const normalizePlate = (s: string) => s.replace(/[\s-]/g, "").toUpperCase();
+  const plateKey = normalizePlate(plate);
+  const suggestions = plateKey && !selectedVehicule
+    ? vehicules.filter((v) => normalizePlate(v.immatriculation).startsWith(plateKey)).slice(0, 8)
+    : [];
+  const vehiculeValid = !!plate.trim() && (!!selectedVehicule || (!!marque.trim() && !!modele.trim()));
+
+  const handlePlateChange = (value: string) => {
+    setPlate(value);
+    setShowSuggestions(true);
+    if (selectedVehicule) {
+      setSelectedVehicule(null);
+      setMarque("");
+      setModele("");
+    }
+  };
+
+  const selectVehicule = (v: Vehicule) => {
+    setSelectedVehicule(v);
+    setPlate(v.immatriculation);
+    setMarque(v.marque || "");
+    setModele(v.modele || "");
+    setShowSuggestions(false);
+  };
 
   const fetchData = async () => {
     try {
@@ -104,8 +136,29 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
       return;
     }
 
+    if (!vehiculeValid) {
+      toast({ title: "Erreur", description: "Complétez le véhicule", variant: "destructive" });
+      return;
+    }
+
     setIsLoading(true);
     try {
+      let finalVehiculeId = selectedVehicule?.id ?? null;
+      if (!finalVehiculeId) {
+        const existing = vehicules.find((v) => normalizePlate(v.immatriculation) === normalizePlate(plate));
+        if (existing) {
+          finalVehiculeId = existing.id;
+        } else {
+          const { data: created, error: vErr } = await supabase
+            .from("vehicules")
+            .insert([{ immatriculation: plate.trim().toUpperCase(), marque: marque.trim(), modele: modele.trim(), user_id: user?.id }])
+            .select("id")
+            .single();
+          if (vErr) throw vErr;
+          finalVehiculeId = created.id;
+        }
+      }
+
       // exit_number laissé vide → le trigger Supabase (trigger_set_exit_number)
       // génère automatiquement le numéro séquentiel SOR-YYYY-XXXXXX avant l'INSERT.
       // Le décrément de articles.stock est aussi géré côté Supabase par le trigger
@@ -115,7 +168,7 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
         .insert([{
           exit_number: "",        // sera remplacé par le trigger BEFORE INSERT
           exit_type: exitType,
-          vehicule_id: vehiculeId || null,
+          vehicule_id: finalVehiculeId,
           notes: notes || null,
           created_by: user?.id,
         }])
@@ -197,22 +250,54 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
             </Select>
           </div>
 
-          <div>
-            <Label>Véhicule (optionnel)</Label>
-            <SearchableSelect
-              options={[
-                { value: "", label: "— Aucun —" },
-                ...vehicules.map((v) => ({
-                  value: v.id,
-                  label: `${v.immatriculation}${v.marque ? ` - ${v.marque}` : ""}${v.modele ? ` ${v.modele}` : ""}`,
-                })),
-              ]}
-              value={vehiculeId}
-              onValueChange={setVehiculeId}
-              placeholder="Sélectionner un véhicule..."
-              searchPlaceholder="Rechercher un véhicule..."
-              emptyMessage="Aucun véhicule trouvé."
-            />
+          <div className="space-y-3">
+            <div className="relative">
+              <Label htmlFor="plate">Immatriculation *</Label>
+              <Input
+                id="plate"
+                value={plate}
+                autoComplete="off"
+                onChange={(e) => handlePlateChange(e.target.value)}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                placeholder="AB-123-CD"
+                className="uppercase"
+              />
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md max-h-56 overflow-y-auto">
+                  {suggestions.map((v) => (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => selectVehicule(v)}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-muted"
+                    >
+                      <span className="font-mono font-semibold">{v.immatriculation}</span>
+                      <span className="text-muted-foreground"> — {v.marque} {v.modele}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="marque">Marque{selectedVehicule ? "" : " *"}</Label>
+                <Input id="marque" value={marque} readOnly={!!selectedVehicule}
+                  disabled={!!selectedVehicule} onChange={(e) => setMarque(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="modele">Modèle{selectedVehicule ? "" : " *"}</Label>
+                <Input id="modele" value={modele} readOnly={!!selectedVehicule}
+                  disabled={!!selectedVehicule} onChange={(e) => setModele(e.target.value)} />
+              </div>
+            </div>
+            {selectedVehicule && (
+              <p className="text-xs font-medium text-success">✓ Véhicule existant</p>
+            )}
+            {!selectedVehicule && plate.trim() && marque.trim() && modele.trim() && (
+              <p className="text-xs font-medium text-accent">＋ Sera ajouté à la liste Duparc</p>
+            )}
           </div>
 
           <div>
@@ -231,7 +316,7 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
             Annuler
           </Button>
-          <Button onClick={handleSubmit} disabled={isLoading}>
+          <Button onClick={handleSubmit} disabled={isLoading || !vehiculeValid}>
             <PackageMinus className="mr-2 h-4 w-4" />
             {isLoading ? "Enregistrement..." : "Confirmer la sortie"}
           </Button>
