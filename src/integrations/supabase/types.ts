@@ -437,6 +437,7 @@ export type Database = {
           total_ligne: number
           updated_at: string
           vehicule_id: string | null
+          vehicule_libre: string | null
         }
         Insert: {
           article_id?: string | null
@@ -457,6 +458,7 @@ export type Database = {
           total_ligne: number
           updated_at?: string
           vehicule_id?: string | null
+          vehicule_libre?: string | null
         }
         Update: {
           article_id?: string | null
@@ -477,6 +479,7 @@ export type Database = {
           total_ligne?: number
           updated_at?: string
           vehicule_id?: string | null
+          vehicule_libre?: string | null
         }
         Relationships: [
           {
