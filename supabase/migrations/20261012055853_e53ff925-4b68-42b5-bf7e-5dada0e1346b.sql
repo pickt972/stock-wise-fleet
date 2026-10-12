@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.enforce_commande_rules() FROM PUBLIC, anon, authenticated;
