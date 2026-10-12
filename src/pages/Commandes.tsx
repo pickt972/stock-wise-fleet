@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Trash2, ShoppingCart, Mail, Download, Edit, Brain, Search, Check, ScanBarcode, PackageCheck, FileText, ChevronDown, X } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -22,6 +23,7 @@ import { CreateArticleDialog } from "@/components/articles/CreateArticleDialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { OrderLineForm, vehicleShort, type NewOrderLine } from "@/components/commandes/OrderLineForm";
 import { printPurchaseOrder } from "@/lib/printPurchaseOrder";
+import { autoSendPurchaseOrder } from "@/lib/sendPurchaseOrderEmail";
 import { OrderArticleSearch, stockTone, type OrderSearchContext } from "@/components/commandes/OrderArticleSearch";
 import { ReceptionCommandeDialog } from "@/components/commandes/ReceptionCommandeDialog";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
@@ -95,6 +97,20 @@ interface Fournisseur {
   adresse?: string;
   actif: boolean;
 }
+
+const notifySuccess = (message: string) =>
+  sonnerToast(message, {
+    duration: 4000,
+    position: "bottom-center",
+    className: "!bg-success !text-success-foreground !border-success",
+  });
+
+const notifyWarning = (message: string) =>
+  sonnerToast(message, {
+    duration: 4000,
+    position: "bottom-center",
+    className: "!bg-warning !text-warning-foreground !border-warning",
+  });
 
 export default function Commandes() {
   const location = useLocation();
