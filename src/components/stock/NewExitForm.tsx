@@ -30,6 +30,8 @@ interface Article {
   designation: string;
   stock: number;
   vehicule_required?: boolean;
+  categorie?: string | null;
+  sous_categorie?: string | null;
 }
 
 interface Vehicule {
@@ -62,6 +64,7 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [openField, setOpenField] = useState<"marque" | "modele" | null>(null);
   const [notes, setNotes] = useState("");
+  const [cats, setCats] = useState<{ id: string; nom: string; parent_id: string | null; requires_vehicle: boolean | null }[]>([]);
 
   useEffect(() => {
     if (open) {
@@ -90,7 +93,22 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
   const suggestions = plateKey && !selectedVehicule
     ? vehicules.filter((v) => normalizePlate(v.immatriculation).startsWith(plateKey)).slice(0, 8)
     : [];
-  const needsVehicle = !!articles.find((a) => a.id === articleId)?.vehicule_required;
+  const selectedArt = articles.find((a) => a.id === articleId);
+  const categoryRequiresVehicle = (() => {
+    if (!selectedArt) return false;
+    const byName = (n?: string | null) => n ? cats.find((c) => c.nom.trim().toLowerCase() === n.trim().toLowerCase()) : undefined;
+    // Sous-catégorie : surcharge si non null, sinon on remonte les parents
+    let node = byName(selectedArt.sous_categorie) ?? byName(selectedArt.categorie);
+    let guard = 0;
+    while (node && guard++ < 10) {
+      if (node.requires_vehicle === true) return true;
+      if (node.requires_vehicle === false && node.parent_id) return false;
+      node = node.parent_id ? cats.find((c) => c.id === node!.parent_id) : undefined;
+    }
+    // Catégorie de l'article si la sous-catégorie n'est pas rattachée
+    return !!byName(selectedArt.categorie)?.requires_vehicle;
+  })();
+  const needsVehicle = !!selectedArt?.vehicule_required || categoryRequiresVehicle;
   const vehiculeValid = !needsVehicle || !!plate.trim() && (!!selectedVehicule || (!!marque.trim() && !!modele.trim()));
 
   const titleCase = (v: string) => v.toLowerCase().replace(/(^|[\s-])(\S)/g, (_m, a, b) => a + b.toUpperCase());
@@ -130,10 +148,12 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
 
   const fetchData = async () => {
     try {
-      const [articlesRes, vehiculesRes] = await Promise.all([
-        supabase.from("articles").select("id, reference, designation, stock, vehicule_required").order("designation"),
+      const [articlesRes, vehiculesRes, catsRes] = await Promise.all([
+        supabase.from("articles").select("id, reference, designation, stock, vehicule_required, categorie, sous_categorie").order("designation"),
         supabase.from("vehicules").select("id, immatriculation, marque, modele").order("immatriculation"),
+        supabase.from("categories").select("id, nom, parent_id, requires_vehicle"),
       ]);
+      setCats((catsRes.data as any) || []);
       if (articlesRes.error) throw articlesRes.error;
       if (vehiculesRes.error) throw vehiculesRes.error;
       setArticles(articlesRes.data || []);
