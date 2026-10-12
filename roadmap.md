@@ -1,7 +1,7 @@
 # Roadmap
 
 - [ ] Vérifier visuellement les auteurs sur Entrées, Sorties, Transferts et Historique — accès connecté externe indisponible
-- [ ] Uniformiser les auteurs inconnus et vérifier l’attribution des nouvelles opérations
+- [x] Uniformiser les auteurs inconnus et vérifier l’attribution des nouvelles opérations (formulaires audités et défaut auth.uid() vérifié en migration)
 
 - [x] Migration SQL : articles categorie 'battery' -> 'Batteries'
 - [x] Migration SQL : regrouper 'Huile moteur' (Consommables & Entretien) -> 'Huiles & Liquides'
