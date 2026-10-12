@@ -68,7 +68,8 @@ export default function Transferts() {
         .from("stock_movements")
         .select(`
           id, article_id, type, motif, quantity, created_at, created_by,
-          articles(reference, designation, marque)
+          articles(reference, designation, marque),
+          profiles:profiles!stock_movements_created_by_profile_fkey(first_name, last_name, username)
         `)
         .like("motif", "Transfert%")
         .order("created_at", { ascending: false })
@@ -224,8 +225,9 @@ export default function Transferts() {
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0">
                       <Badge>{transfert.quantity} unité(s)</Badge>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      <span className="text-xs text-muted-foreground whitespace-nowrap text-right">
                         {format(new Date(transfert.created_at), "dd/MM/yyyy HH:mm", { locale: fr })}
+                        <br />👤 par {userDisplayName(transfert.profiles)}
                       </span>
                     </div>
                   </div>

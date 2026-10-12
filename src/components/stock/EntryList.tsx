@@ -146,10 +146,7 @@ export function EntryList({ entries, onRefresh }: EntryListProps) {
                     }).format(entry.total_amount)}
                   </TableCell>
                   <TableCell>
-                    {entry.profiles 
-                      ? `${entry.profiles.first_name} ${entry.profiles.last_name}`
-                      : "—"
-                    }
+                    {userDisplayName(entry.profiles as any)}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
