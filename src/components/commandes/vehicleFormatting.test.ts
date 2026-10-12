@@ -19,3 +19,7 @@ describe("formatFreeVehicle", () => {
     expect(formatFreeVehicle("  byd   atto  3 ")).toBe("BYD Atto 3");
   });
 });
+
+import { formatBrand, formatModel } from "./OrderLineForm";
+test("marque en majuscules", () => { expect(formatBrand(" renault ")).toBe("RENAULT"); });
+test("modèle en Title Case", () => { expect(formatModel("clio 4")).toBe("Clio 4"); expect(formatModel("ATTO 3")).toBe("Atto 3"); });
