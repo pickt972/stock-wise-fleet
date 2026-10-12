@@ -1,6 +1,6 @@
 import { CategoryIcon } from "./CategoryIcon";
 import { useState } from "react";
-import { ChevronRight, ChevronDown, Edit, Trash2, Tag, GripVertical, Plus, CornerDownRight, ArrowUp, ArrowDown } from "lucide-react";
+import { ChevronRight, ChevronDown, Edit, Trash2, Tag, GripVertical, Plus, CornerDownRight, ArrowUp, ArrowDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -55,6 +55,7 @@ interface CategoryTreeItemProps {
   onMove: (id: string, direction: -1 | 1) => void;
   canMoveUp: boolean;
   canMoveDown: boolean;
+  parentInactive?: boolean;
 }
 
 export function CategoryTreeItem({
@@ -66,7 +67,7 @@ export function CategoryTreeItem({
   onAddChild,
   isDragActive,
   inheritedVehicle = false,
-  activeCategoryId, allCategories, isMobile, flashId, moving, onMove, canMoveUp, canMoveDown,
+  activeCategoryId, allCategories, isMobile, flashId, moving, onMove, canMoveUp, canMoveDown, parentInactive = false,
 }: CategoryTreeItemProps) {
   const { toast } = useToast();
   const [requiresVehicle, setRequiresVehicle] = useState<boolean | null>(category.requires_vehicle ?? null);
@@ -124,7 +125,7 @@ export function CategoryTreeItem({
         data-category-id={category.id}
         className={`category-drag-row p-2 sm:p-3 relative select-none ${
           depth === 0 ? "border-l-4 border-l-primary bg-card shadow-soft" : "bg-card/60"
-        } ${isDragging ? "opacity-50" : ""} ${isOverNest ? "ring-2 ring-primary bg-primary/10" : ""} ${flashId === category.id ? "category-drop-success" : ""}`}
+        } ${isDragging ? "opacity-50" : effectiveInactive ? "opacity-60 grayscale" : ""} ${isOverNest ? "ring-2 ring-primary bg-primary/10" : ""} ${flashId === category.id ? "category-drop-success" : ""}`}
         style={{ marginLeft: `${indent}px` }}
       >
         <div ref={setBeforeRef} className="absolute inset-x-0 top-0 h-[30%] pointer-events-none" />
@@ -303,6 +304,7 @@ export function CategoryTreeItem({
               onAddChild={onAddChild}
               isDragActive={isDragActive}
               inheritedVehicle={effectiveVehicle}
+              parentInactive={effectiveInactive}
               activeCategoryId={activeCategoryId}
               allCategories={allCategories}
               isMobile={isMobile}
