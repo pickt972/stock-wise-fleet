@@ -28,6 +28,9 @@ import { validationMessage, type ValidationOutcome } from "@/lib/orderValidation
 import { OrderArticleSearch, stockTone, type OrderSearchContext } from "@/components/commandes/OrderArticleSearch";
 import { ReceptionCommandeDialog } from "@/components/commandes/ReceptionCommandeDialog";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
+import { useAuth } from "@/hooks/useAuth";
+import { orderPermissions } from "@/lib/orderPermissions";
+import { XCircle } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -163,7 +166,10 @@ export default function Commandes() {
   }, []);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { isAdmin, isChefAgence } = useRoleAccess();
+  const { isAdmin, isChefAgence, userRole } = useRoleAccess();
+  const { user } = useAuth();
+  const [cancelDialog, setCancelDialog] = useState<{ isOpen: boolean; commande?: Commande & { items: CommandeItem[] } }>({ isOpen: false });
+  const [cancelMotif, setCancelMotif] = useState("");
 
   useEffect(() => {
     const loadData = async () => {
@@ -912,6 +918,23 @@ export default function Commandes() {
     if (commande.fournisseur) {
       filterArticlesByFournisseur(commande.fournisseur);
     }
+  };
+
+  const cancelCommande = async () => {
+    const c = cancelDialog.commande;
+    const motif = cancelMotif.trim();
+    if (!c?.id || !motif) return;
+    const { error } = await supabase.from('commandes')
+      .update({ status: 'annule', motif_annulation: motif } as any)
+      .eq('id', c.id);
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      return;
+    }
+    setCancelDialog({ isOpen: false });
+    setCancelMotif("");
+    toast({ title: "Commande annulée", description: `${c.numero_commande} est maintenant « Annulée ».` });
+    fetchCommandes();
   };
 
   const deleteCommande = async (commandeId: string) => {
