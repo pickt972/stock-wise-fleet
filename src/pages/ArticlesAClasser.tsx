@@ -90,7 +90,7 @@ export default function ArticlesAClasser() {
         {isLoading ? (
           <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
         ) : groups.length === 0 ? (
-          <EmptyState icon={Tags} title="Tout est classé" description="Aucun article sans sous-catégorie." />
+          <EmptyState icon={<Tags className="h-8 w-8" />} title="Tout est classé" description="Aucun article sans sous-catégorie." />
         ) : groups.map(([catName, list]) => {
           const leave = LEAVE_EMPTY.includes(catName);
           const reclass = RECLASSIFY.includes(catName);
