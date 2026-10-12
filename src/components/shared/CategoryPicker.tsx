@@ -77,10 +77,18 @@ export function ArticlePickerField({
     (async () => {
       const [a, c] = await Promise.all([
         supabase.from("articles").select("id, reference, designation, marque, categorie, sous_categorie, stock").order("reference"),
-        supabase.from("categories").select("nom, parent_id, sort_order").eq("actif", true).is("parent_id", null).order("sort_order").order("nom"),
+        supabase.from("categories").select("id, nom, parent_id, sort_order, actif").order("sort_order").order("nom"),
       ]);
-      setArticles((a.data as PickerArticle[]) || []);
-      setCategoryOrder((c.data || []).map((x: any) => x.nom));
+      const all = (c.data || []) as any[];
+      const byId = new Map(all.map((x) => [x.id, x]));
+      const hiddenRoots = new Set(all.filter((x) => !x.parent_id && !x.actif).map((x) => x.nom));
+      const hiddenSubs = new Set(
+        all.filter((x) => x.parent_id && (!x.actif || byId.get(x.parent_id)?.actif === false)).map((x) => x.nom)
+      );
+      setArticles(((a.data as PickerArticle[]) || []).filter(
+        (x) => !hiddenRoots.has(x.categorie) && !(x.sous_categorie && hiddenSubs.has(x.sous_categorie.trim()))
+      ));
+      setCategoryOrder(all.filter((x) => !x.parent_id && x.actif).map((x) => x.nom));
     })();
   }, []);
 

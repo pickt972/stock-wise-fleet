@@ -83,6 +83,21 @@ export function CategoryTreeItem({
       toast({ title: "Paramètre mis à jour" });
     }
   };
+  const [actif, setActif] = useState(category.actif);
+  const [savingActive, setSavingActive] = useState(false);
+  const effectiveInactive = parentInactive || !actif;
+  const toggleActive = async () => {
+    const next = !actif;
+    setSavingActive(true);
+    const { error } = await supabase.from("categories").update({ actif: next }).eq("id", category.id);
+    setSavingActive(false);
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } else {
+      setActif(next);
+      toast({ title: next ? "Catégorie activée" : "Catégorie désactivée", duration: 2000 });
+    }
+  };
   const [isExpanded, setIsExpanded] = useState(true);
   const { getColorForText } = useColorPreferences();
   const hasChildren = category.children.length > 0;
@@ -231,12 +246,21 @@ export function CategoryTreeItem({
 
         {/* Ligne 2 : méta-infos */}
         <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-1.5 pl-[60px] sm:pl-[68px] relative">
-          <Badge
-            variant={category.actif ? "default" : "secondary"}
-            className="flex-shrink-0 text-[10px] h-5"
+          <button
+            type="button"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={toggleActive}
+            disabled={savingActive}
+            title={actif ? "Cliquer pour désactiver" : "Cliquer pour activer"}
+            className="rounded-full cursor-pointer transition-all hover:shadow-medium hover:brightness-95 disabled:cursor-wait"
           >
-            {category.actif ? "Active" : "Inactive"}
-          </Badge>
+            <Badge variant={actif ? "default" : "secondary"} className="flex-shrink-0 text-[10px] h-5 min-w-[52px] justify-center pointer-events-none">
+              {savingActive ? <Loader2 className="h-3 w-3 animate-spin" /> : actif ? "Active" : "Inactive"}
+            </Badge>
+          </button>
+          {parentInactive && (
+            <Badge variant="secondary" className="flex-shrink-0 text-[10px] h-5 opacity-70">Inactive · Hérité</Badge>
+          )}
           {inheritedVehicle ? (
             <Badge variant="secondary" className="flex-shrink-0 text-[10px] h-5">🚗 Hérité</Badge>
           ) : (
