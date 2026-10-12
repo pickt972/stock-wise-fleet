@@ -590,13 +590,14 @@ export default function Commandes() {
     setShowScanner(false);
     
     // Chercher l'article par code-barres
-    const article = filteredArticles.find(a => a.code_barre === barcode);
+    const code = barcode.trim();
+    const article = articles.find(a => (a.code_barre || "").trim() === code);
     
     if (!article) {
+      setCurrentItems(prev => [...prev, { designation: "", reference: "", quantite_commandee: 1, prix_unitaire: 0, total_ligne: 0, is_draft: true, code_barre: code }]);
       toast({
-        title: "Article non trouvé",
-        description: `Aucun article avec le code-barres ${barcode}`,
-        variant: "destructive",
+        title: "Nouvel article",
+        description: `Code-barres ${code} inconnu : complétez la désignation`,
       });
       return;
     }
@@ -1156,6 +1157,12 @@ export default function Commandes() {
                           <Input id={`designation-${index}`} value={item.designation} readOnly={existing} disabled={existing}
                             onChange={(e) => updateItem(index, 'designation', e.target.value)} placeholder="ex : Filtre à huile Peugeot 208" />
                         </div>
+                        {!existing && (
+                          <div>
+                            <Label htmlFor={`barcode-${index}`} className="text-xs">Code-barres</Label>
+                            <Input id={`barcode-${index}`} value={item.code_barre || ''} onChange={(e) => updateItem(index, 'code_barre', e.target.value)} placeholder="Optionnel" />
+                          </div>
+                        )}
                         {existing && (
                           <div>
                             <Label htmlFor={`reference-${index}`} className="text-xs">Référence</Label>
