@@ -23,6 +23,7 @@ import { fr } from "date-fns/locale";
 import { FileText, Download, History } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
+import { UserAttribution } from "@/components/shared/UserAttribution";
 
 const PERIODS = [
   { value: "today", label: "Aujourd'hui" },
@@ -48,9 +49,6 @@ interface Movement {
   creator?: { first_name: string; last_name: string; username: string | null } | null;
   owner?: { first_name: string; last_name: string; username: string | null } | null;
 }
-
-const personName = (p?: Movement["creator"]) =>
-  p ? (`${p.first_name ?? ""} ${(p.last_name ?? "").toUpperCase()}`.trim() || p.username || null) : null;
 
 export default function HistoriqueMouvements() {
   const navigate = useNavigate();
@@ -348,12 +346,10 @@ export default function HistoriqueMouvements() {
                             : "Véhicule non renseigné"}
                         </p>
                       )}
-                      {personName(movement.creator || movement.owner) && (
-                        <p className="text-sm text-muted-foreground mb-1">👤 par {personName(movement.creator || movement.owner)}</p>
-                      )}
                       <p className="text-xs text-muted-foreground">
                         {format(new Date(movement.created_at), "dd/MM/yyyy 'à' HH:mm", { locale: fr })}
                       </p>
+                      <p className="text-sm text-muted-foreground mt-1">👤 par <UserAttribution profile={movement.creator} alternate={movement.owner} /></p>
                       
                       {/* Boutons d'action */}
                       <div className="flex gap-2 mt-3">

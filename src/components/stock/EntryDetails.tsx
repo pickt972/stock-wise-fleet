@@ -1,4 +1,4 @@
-import { userDisplayName } from "@/lib/userDisplay";
+import { UserAttribution } from "@/components/shared/UserAttribution";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
@@ -188,7 +188,7 @@ export function EntryDetails({ entry, open, onOpenChange }: EntryDetailsProps) {
             <div>
               <p className="text-muted-foreground">Créé par</p>
               <p>
-                {userDisplayName(entry.profiles as any)}
+                <UserAttribution profile={entry.profiles} />
               </p>
             </div>
             <div>

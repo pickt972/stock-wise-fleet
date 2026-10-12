@@ -1,4 +1,4 @@
-import { userDisplayName } from "@/lib/userDisplay";
+import { UserAttribution } from "@/components/shared/UserAttribution";
 import { useState, useEffect, useMemo } from "react";
 import { ArrowLeftRight, Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
@@ -32,6 +32,7 @@ interface TransfertMovement {
     first_name: string;
     last_name: string;
   };
+  owner?: { first_name: string; last_name: string; username: string | null } | null;
 }
 
 const ITEMS_PER_PAGE = 15;
@@ -70,7 +71,8 @@ export default function Transferts() {
         .select(`
           id, article_id, type, motif, quantity, created_at, created_by,
           articles(reference, designation, marque),
-          profiles:profiles!stock_movements_created_by_profile_fkey(first_name, last_name, username)
+          profiles:profiles!stock_movements_created_by_profile_fkey(first_name, last_name, username),
+          owner:profiles!stock_movements_user_id_profile_fkey(first_name, last_name, username)
         `)
         .like("motif", "Transfert%")
         .order("created_at", { ascending: false })
@@ -116,8 +118,8 @@ export default function Transferts() {
       );
       return {
         ...sortie,
-        destination: matchingEntree?.motif?.replace("Transfert depuis ", "") || "",
-        source: sortie.motif?.replace("Transfert vers ", "") || "",
+        source: matchingEntree?.motif?.replace("Transfert depuis ", "") || "Agence source inconnue",
+        destination: sortie.motif?.replace("Transfert vers ", "") || "Agence destination inconnue",
       };
     });
   }, [filteredMovements]);
@@ -228,7 +230,7 @@ export default function Transferts() {
                       <Badge>{transfert.quantity} unité(s)</Badge>
                       <span className="text-xs text-muted-foreground whitespace-nowrap text-right">
                         {format(new Date(transfert.created_at), "dd/MM/yyyy HH:mm", { locale: fr })}
-                        <br />👤 par {userDisplayName(transfert.profiles)}
+                        <br />👤 par <UserAttribution profile={transfert.profiles} alternate={transfert.owner} />
                       </span>
                     </div>
                   </div>
