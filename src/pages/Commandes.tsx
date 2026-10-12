@@ -19,6 +19,7 @@ import { SearchWithScanner } from "@/components/SearchWithScanner";
 import { PurchaseOrderDialog } from "@/components/commandes/PurchaseOrderDialog";
 import { SmartOrderDialog } from "@/components/commandes/SmartOrderDialog";
 import { CreateArticleDialog } from "@/components/articles/CreateArticleDialog";
+import { OrderArticleSearch, stockTone } from "@/components/commandes/OrderArticleSearch";
 import { ReceptionCommandeDialog } from "@/components/commandes/ReceptionCommandeDialog";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import {
@@ -42,6 +43,11 @@ interface Article {
   prix_achat: number;
   fournisseur_id?: string;
   code_barre?: string;
+  marque?: string | null;
+  categorie?: string | null;
+  sous_categorie?: string | null;
+  stock?: number;
+  stock_min?: number;
 }
 
 interface CommandeItem {
@@ -52,6 +58,7 @@ interface CommandeItem {
   quantite_commandee: number;
   prix_unitaire: number;
   total_ligne: number;
+  is_draft?: boolean;
 }
 
 interface Commande {
@@ -371,7 +378,7 @@ export default function Commandes() {
     try {
       const { data, error } = await supabase
         .from('articles')
-        .select('id, designation, reference, prix_achat, fournisseur_id, code_barre')
+        .select('id, designation, reference, prix_achat, fournisseur_id, code_barre, marque, categorie, sous_categorie, stock, stock_min')
         .order('designation');
 
       if (error) throw error;
@@ -466,6 +473,7 @@ export default function Commandes() {
         quantite_commandee: 1,
         prix_unitaire: 0,
         total_ligne: 0,
+        is_draft: true,
       }
     ]);
   };
@@ -710,6 +718,7 @@ export default function Commandes() {
       // Insérer les nouveaux items
       const itemsToInsert = currentItems.map(({ id, ...rest }) => ({
         ...rest,
+        is_draft: !rest.article_id,
         quantite_recue: 0,
         commande_id: commandeId
       }));
@@ -1093,24 +1102,13 @@ export default function Commandes() {
           {/* Articles - Section compacte */}
           <Card>
             <CardHeader>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex flex-col lg:flex-row items-start justify-between gap-3">
                 <CardTitle>Ajouter des articles</CardTitle>
-                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                  <SearchWithScanner
-                    placeholder="Chercher ou scanner article..."
-                    value={articleSearchQuery}
-                    onChange={(value) => {
-                      setArticleSearchQuery(value);
-                      // Si c'est un ID d'article (UUID), l'ajouter directement
-                      if (value.length === 36 && value.includes('-')) {
-                        addArticleDirectly(value);
-                        setArticleSearchQuery("");
-                      }
-                    }}
-                    onArticleNotFound={() => {}}
-                    returnTo="/commandes"
-                  />
-                  <Button onClick={() => setShowCreateArticleDialog(true)} size="sm" variant="outline" className="w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row sm:items-end gap-2 w-full lg:w-auto">
+                  <div className="w-full sm:w-[28rem]">
+                    <OrderArticleSearch articles={filteredArticles} onSelect={(a) => addArticleDirectly(a.id)} />
+                  </div>
+                  <Button onClick={addItem} size="sm" variant="outline" className="w-full sm:w-auto border-primary/40 text-primary">
                     <Plus className="w-4 h-4 mr-2" />
                     Nouvel article
                   </Button>
