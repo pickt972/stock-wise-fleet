@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { isArticleComplete } from "@/lib/draftReference";
+import { validateReceptionQuantity } from "@/lib/stockEntryValidation";
 
 export type CommandeStatus = "brouillon" | "envoye" | "confirme" | "recu_partiel" | "recu_complet" | "annule";
 
@@ -51,54 +51,27 @@ export interface NewArticleInput {
 export async function receiveOrderLine(line: OrderLine, opts: {
   qty: number; prix: number; articleId?: string | null; newArticle?: NewArticleInput | null;
 }) {
-  if (opts.qty < 1) throw new Error("Quantité reçue minimum : 1");
-  const { data: u } = await supabase.auth.getUser();
-  let articleId = opts.articleId || null;
-
-  if (!articleId && opts.newArticle) {
-    const n = opts.newArticle;
-    if (!n.categorie) throw new Error("La catégorie est obligatoire");
-    const fiche = {
-      designation: n.designation.trim() || line.designation,
-      reference: n.reference.trim() || n.code_barre.trim() || n.designation.trim() || line.designation,
-      marque: n.marque.trim(), categorie: n.categorie, sous_categorie: n.sous_categorie || null,
-      code_barre: n.code_barre.trim() || null,
-    };
-    const { data: art, error } = await supabase.from("articles").insert([{
-      ...fiche, prix_achat: opts.prix, stock: 0, stock_min: 0, stock_max: 0,
-      is_draft: !isArticleComplete({ ...fiche, reference: n.reference.trim() }), user_id: u.user?.id,
-    }]).select("id").single();
-    if (error) throw error;
-    articleId = art.id;
-  }
-  if (!articleId) throw new Error("Choisissez un article existant ou créez une fiche");
-
-  if (line.vehicule_id) {
-    const { data: link } = await supabase.from("article_vehicules").select("id")
-      .eq("article_id", articleId).eq("vehicule_id", line.vehicule_id).maybeSingle();
-    if (!link) await supabase.from("article_vehicules").insert([{ article_id: articleId, vehicule_id: line.vehicule_id, user_id: u.user?.id }]);
-  }
-
-  const { error: ciErr } = await supabase.from("commande_items").update({
-    article_id: articleId, is_draft: false, prix_unitaire: opts.prix,
-    quantite_recue: line.quantite_recue + opts.qty,
-  }).eq("id", line.id);
-  if (ciErr) throw ciErr;
-
-  const { data: entry, error: eErr } = await supabase.from("stock_entries").insert([{
-    entry_number: "", entry_type: "commande", notes: `Réception commande ${line.numero_commande}`, created_by: u.user?.id,
-  }]).select("id").single();
-  if (eErr) throw eErr;
-  const { error: iErr } = await supabase.from("stock_entry_items").insert([{
-    entry_id: entry.id, article_id: articleId, quantity: opts.qty, unit_price: opts.prix,
+  validateReceptionQuantity(opts.qty, line.quantite_commandee - line.quantite_recue);
+  const result = await receiveOrderLines(line.commande_id, [{
+    id: line.id, quantity: opts.qty, unit_price: opts.prix,
+    article_id: opts.articleId || null, new_article: opts.newArticle || null,
   }]);
-  if (iErr) throw iErr;
+  return result.status;
+}
 
-  const { data: lines } = await supabase.from("commande_items")
-    .select("quantite_commandee, quantite_recue").eq("commande_id", line.commande_id);
-  const status = receptionStatus(lines || []);
-  await supabase.from("commandes").update({
-    status, ...(status === "recu_complet" ? { date_reception_reelle: new Date().toISOString() } : {}),
-  }).eq("id", line.commande_id);
-  return status;
+export interface ReceptionInput {
+  id: string; quantity: number; unit_price: number;
+  article_id?: string | null;
+  new_article?: (NewArticleInput & { emplacement_id?: string }) | null;
+}
+
+export async function receiveOrderLines(commandeId: string, lines: ReceptionInput[]) {
+  const { data, error } = await supabase.rpc("receive_stock_order", {
+    p_commande_id: commandeId, p_lines: lines as unknown as import("@/integrations/supabase/types").Json,
+  });
+  if (error) throw error;
+  if (!data || typeof data !== "object" || Array.isArray(data) || !data.status) {
+    throw new Error("La réception n’a pas été confirmée");
+  }
+  return { status: data.status as CommandeStatus };
 }

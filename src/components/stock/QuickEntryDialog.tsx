@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { createStockEntry } from "@/lib/stockEntries";
 
 interface QuickEntryArticle {
   id: string;
@@ -46,31 +47,9 @@ export function QuickEntryDialog({ article, open, onOpenChange, onDone }: QuickE
 
     setSubmitting(true);
     try {
-      // Insérer dans stock_entries — le trigger increase_stock_on_entry
-      // incrémente automatiquement articles.stock et crée le mouvement historique.
-      const { data: entry, error: entryError } = await supabase
-        .from("stock_entries")
-        .insert([{
-          entry_number: "",          // trigger génère ENT-YYYY-XXXXXX
-          entry_type: "achat",
-          notes: "Entrée rapide (scan)",
-          created_by: user?.id,
-        }])
-        .select()
-        .single();
-
-      if (entryError) throw entryError;
-
-      const { error: itemError } = await supabase
-        .from("stock_entry_items")
-        .insert([{
-          entry_id: entry.id,
-          article_id: article.id,
-          quantity,
-          unit_price: 0,             // prix non renseigné en mode rapide
-        }]);
-
-      if (itemError) throw itemError;
+      const entry = await createStockEntry({ entry_type: "autre", notes: "Entrée rapide (scan)" }, [{
+        article_id: article.id, quantity, unit_price: 0,
+      }]);
 
       toast({
         title: "✅ Entrée enregistrée",
@@ -79,34 +58,7 @@ export function QuickEntryDialog({ article, open, onOpenChange, onDone }: QuickE
       onOpenChange(false);
       onDone?.();
     } catch (e: any) {
-      // Si le trigger n'existe pas encore, fallback sur update_article_stock RPC
-      if (e.message?.includes("entry_number") || e.message?.includes("column")) {
-        try {
-          const { error: rpcError } = await supabase.rpc("update_article_stock", {
-            article_id: article.id,
-            quantity_change: quantity,
-          });
-          if (rpcError) throw rpcError;
-          toast({
-            title: "✅ Stock mis à jour",
-            description: `+${quantity} × ${article.designation}`,
-          });
-          onOpenChange(false);
-          onDone?.();
-        } catch (rpcErr: any) {
-          toast({
-            title: "Erreur",
-            description: rpcErr.message || "Impossible d'enregistrer l'entrée",
-            variant: "destructive",
-          });
-        }
-      } else {
-        toast({
-          title: "Erreur",
-          description: e.message || "Impossible d'enregistrer l'entrée",
-          variant: "destructive",
-        });
-      }
+      toast({ title: "Erreur", description: e.message, variant: "destructive" });
     } finally {
       setSubmitting(false);
     }

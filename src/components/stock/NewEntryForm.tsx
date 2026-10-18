@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { createStockEntry } from "@/lib/stockEntries";
 
 interface Article {
   id: string;
@@ -107,7 +108,7 @@ export function NewEntryForm({ open, onOpenChange, onSuccess }: NewEntryFormProp
     } catch (error: any) {
       toast({
         title: "Erreur",
-        description: "Impossible de charger les données",
+        description: error.message,
         variant: "destructive",
       });
     }
@@ -180,37 +181,16 @@ export function NewEntryForm({ open, onOpenChange, onSuccess }: NewEntryFormProp
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
-      const { data: entry, error: entryError } = await supabase
-        .from("stock_entries")
-        .insert([{
-          entry_number: "",
-          entry_type: formData.entryType,
-          supplier_id: formData.supplierId || null,
-          invoice_number: formData.invoiceNumber || null,
-          location: formData.location || null,
-          notes: formData.notes || null,
-          created_by: user?.id,
-        }])
-        .select()
-        .single();
-
-      if (entryError) throw entryError;
-
-      const itemsToInsert = items.map((item) => ({
-        entry_id: entry.id,
-        article_id: item.articleId,
-        quantity: parseInt(item.quantity),
-        unit_price: parseFloat(item.unitPrice),
-      }));
-
-      const { error: itemsError } = await supabase
-        .from("stock_entry_items")
-        .insert(itemsToInsert);
-
-      if (itemsError) throw itemsError;
+      if (!validateStep1() || !validateStep2()) return;
+      await createStockEntry({
+        entry_type: formData.entryType, entry_date: new Date(`${formData.entryDate}T12:00:00`).toISOString(),
+        supplier_id: formData.supplierId || null, invoice_number: formData.invoiceNumber || null,
+        location: formData.location || null, notes: formData.notes || null,
+      }, items.map(item => ({ article_id: item.articleId, quantity: Number(item.quantity), unit_price: Number(item.unitPrice) })));
 
       toast({
         title: "✅ Entrée enregistrée",
+        className: "bg-success text-success-foreground border-success",
         description: `${items.length} article(s) ajouté(s) au stock`,
       });
 
