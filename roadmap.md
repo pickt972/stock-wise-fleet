@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Sécuriser le formulaire d’entrée simple pour un test avec la base externe, sans modifier les autres modules.
+
 - [x] Corriger les sauvegardes manuelles et réceptions, erreurs exactes et statistiques ; droits existants vérifiés et 24 tests réussis.
 - [ ] Vérifier une réception et une entrée manuelle de bout en bout — connexion Supabase externe indisponible dans les essais.
 
