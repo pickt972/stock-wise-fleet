@@ -53,7 +53,13 @@ interface NewEntryFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  prefilledArticleId?: string;
 }
+
+const localToday = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
 
 const STEPS = [
   { id: 1, label: "Informations", icon: FileText },
@@ -61,7 +67,7 @@ const STEPS = [
   { id: 3, label: "Récapitulatif", icon: ClipboardList },
 ];
 
-export function NewEntryForm({ open, onOpenChange, onSuccess }: NewEntryFormProps) {
+export function NewEntryForm({ open, onOpenChange, onSuccess, prefilledArticleId }: NewEntryFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const [articles, setArticles] = useState<Article[]>([]);
@@ -71,7 +77,7 @@ export function NewEntryForm({ open, onOpenChange, onSuccess }: NewEntryFormProp
   const [currentStep, setCurrentStep] = useState(1);
 
   const [formData, setFormData] = useState({
-    entryDate: new Date().toISOString().split("T")[0],
+    entryDate: localToday(),
     entryType: "achat",
     supplierId: "",
     invoiceNumber: "",
@@ -87,8 +93,10 @@ export function NewEntryForm({ open, onOpenChange, onSuccess }: NewEntryFormProp
     if (open) {
       fetchData();
       setCurrentStep(1);
+      setFormData((f) => ({ ...f, entryDate: localToday() }));
+      if (prefilledArticleId) setItems([{ articleId: prefilledArticleId, quantity: "", unitPrice: "" }]);
     }
-  }, [open]);
+  }, [open, prefilledArticleId]);
 
   const fetchData = async () => {
     try {
@@ -198,7 +206,7 @@ export function NewEntryForm({ open, onOpenChange, onSuccess }: NewEntryFormProp
       onSuccess();
 
       setFormData({
-        entryDate: new Date().toISOString().split("T")[0],
+        entryDate: localToday(),
         entryType: "achat",
         supplierId: "",
         invoiceNumber: "",
