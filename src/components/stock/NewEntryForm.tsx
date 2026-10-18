@@ -191,7 +191,7 @@ export function NewEntryForm({ open, onOpenChange, onSuccess, prefilledArticleId
     try {
       if (!validateStep1() || !validateStep2()) return;
       await createStockEntry({
-        entry_type: formData.entryType, entry_date: new Date(`${formData.entryDate}T12:00:00`).toISOString(),
+        entry_type: formData.entryType, entry_date: (formData.entryDate === localToday() ? new Date() : new Date(`${formData.entryDate}T12:00:00`)).toISOString(),
         supplier_id: formData.supplierId || null, invoice_number: formData.invoiceNumber || null,
         location: formData.location || null, notes: formData.notes || null,
       }, items.map(item => ({ article_id: item.articleId, quantity: Number(item.quantity), unit_price: Number(item.unitPrice) })));

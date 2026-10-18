@@ -116,19 +116,22 @@ export default function ArticleDetail() {
     }
   };
 
+  const isCritical = !!article && article.stock_min > 0 && article.stock < article.stock_min && article.stock === 0;
+  const isLow = !!article && article.stock_min > 0 && article.stock <= article.stock_min;
+
   const getStockBadge = () => {
     if (!article) return null;
     
-    if (article.stock === 0) {
+    if (isCritical) {
       return <Badge variant="destructive" className="text-sm">🔴 STOCK CRITIQUE</Badge>;
     }
-    if (article.stock <= article.stock_min) {
+    if (article.stock_min > 0 && article.stock <= article.stock_min) {
       return <Badge className="bg-warning text-warning-foreground text-sm">🟠 STOCK BAS</Badge>;
     }
     return <Badge className="bg-success text-success-foreground text-sm">✅ Stock OK</Badge>;
   };
 
-  const showAlert = article && (article.stock === 0 || article.stock <= article.stock_min);
+  const showAlert = isLow;
 
   if (isLoading) {
     return (
@@ -156,12 +159,12 @@ export default function ArticleDetail() {
         <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
           {/* Badge alerte si stock critique/bas */}
           {showAlert && (
-            <Card className={`p-4 ${article.stock === 0 ? 'bg-destructive/10 border-destructive' : 'bg-warning/10 border-warning'}`}>
+            <Card className={`p-4 ${isCritical ? 'bg-destructive/10 border-destructive' : 'bg-warning/10 border-warning'}`}>
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className={`h-5 w-5 ${article.stock === 0 ? 'text-destructive' : 'text-warning'}`} />
+                  <AlertTriangle className={`h-5 w-5 ${isCritical ? 'text-destructive' : 'text-warning'}`} />
                   <span className="font-semibold">
-                    {article.stock === 0 ? '🔴 STOCK CRITIQUE' : '🟠 STOCK BAS'}
+                    {isCritical ? '🔴 STOCK CRITIQUE' : '🟠 STOCK BAS'}
                   </span>
                 </div>
                 <div className="text-sm text-muted-foreground">
