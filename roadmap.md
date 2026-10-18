@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Corriger les sauvegardes manuelles et réceptions, erreurs exactes et statistiques ; vérifier les droits existants et tester.
+
 - [ ] Vérifier visuellement les auteurs sur Entrées, Sorties, Transferts et Historique — accès connecté externe indisponible
 - [x] Uniformiser les auteurs inconnus et vérifier l’attribution des nouvelles opérations (formulaires audités et défaut auth.uid() vérifié en migration)
 
