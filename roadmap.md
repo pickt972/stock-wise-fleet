@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Sécuriser le formulaire d’entrée simple pour un test avec la base externe, sans modifier les autres modules.
+- [x] Sécuriser le formulaire d’entrée simple : erreurs de chargement visibles, prix validé, double soumission bloquée ; 5 tests réussis et affichage sans erreur. Test connecté externe restant à faire par l’utilisateur.
 
 - [x] Corriger les sauvegardes manuelles et réceptions, erreurs exactes et statistiques ; droits existants vérifiés et 24 tests réussis.
 - [ ] Vérifier une réception et une entrée manuelle de bout en bout — connexion Supabase externe indisponible dans les essais.
