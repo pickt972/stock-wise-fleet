@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { PackagePlus } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton } from "@/components/ui/skeletons/PageSkeleton";
@@ -37,6 +38,18 @@ export default function Entrees() {
   const [searchTerm, setSearchTerm] = useState("");
   const [entryTypeFilter, setEntryTypeFilter] = useState("all");
   const [dateRange, setDateRange] = useState("today");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [prefilledArticleId, setPrefilledArticleId] = useState<string | undefined>(
+    (location.state as any)?.prefilledArticleId,
+  );
+
+  useEffect(() => {
+    if (prefilledArticleId) {
+      setShowNewEntryForm(true);
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, []);
 
   useEffect(() => {
     fetchEntries();
@@ -187,8 +200,9 @@ export default function Entrees() {
 
         <NewEntryForm
           open={showNewEntryForm}
-          onOpenChange={setShowNewEntryForm}
+          onOpenChange={(o) => { setShowNewEntryForm(o); if (!o) setPrefilledArticleId(undefined); }}
           onSuccess={fetchEntries}
+          prefilledArticleId={prefilledArticleId}
         />
       </div>
     </DashboardLayout>
