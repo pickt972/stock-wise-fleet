@@ -1,6 +1,7 @@
 # Roadmap
 
-- [ ] Corriger les sauvegardes manuelles et réceptions, erreurs exactes et statistiques ; vérifier les droits existants et tester.
+- [x] Corriger les sauvegardes manuelles et réceptions, erreurs exactes et statistiques ; droits existants vérifiés et 24 tests réussis.
+- [ ] Vérifier une réception et une entrée manuelle de bout en bout — connexion Supabase externe indisponible dans les essais.
 
 - [ ] Vérifier visuellement les auteurs sur Entrées, Sorties, Transferts et Historique — accès connecté externe indisponible
 - [x] Uniformiser les auteurs inconnus et vérifier l’attribution des nouvelles opérations (formulaires audités et défaut auth.uid() vérifié en migration)
