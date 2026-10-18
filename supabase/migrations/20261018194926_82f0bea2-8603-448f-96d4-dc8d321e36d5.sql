@@ -1,0 +1,1 @@
+DO $$ DECLARE v_definition text; BEGIN SELECT pg_get_functiondef('stock_internal.receive_stock_order(uuid,jsonb)'::regprocedure) INTO v_definition; v_definition := replace(v_definition, 'v_article_id:=COALESCE(NULLIF(v_input->>''article_id'','''')::uuid,v_line.article_id);', 'v_article_id:=NULLIF(v_input->>''article_id'','''')::uuid;'); EXECUTE v_definition; END $$;
