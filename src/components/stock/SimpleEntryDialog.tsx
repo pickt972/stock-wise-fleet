@@ -10,6 +10,7 @@ import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { createStockEntry } from "@/lib/stockEntries";
+import { parseSimpleEntryPrice } from "@/lib/simpleEntryInput";
 
 interface Article {
   id: string;
@@ -44,7 +45,9 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
   const [notes, setNotes] = useState("");
   const [scannerOpen, setScannerOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
   const qtyRef = useRef<HTMLInputElement>(null);
+  const savingRef = useRef(false);
 
   const pick = (a: Article) => {
     setSelected(a);
@@ -55,24 +58,40 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
 
   useEffect(() => {
     if (!open) return;
+    let cancelled = false;
+    setLoading(true);
+    setArticles([]); setFournisseurs([]); setScannerOpen(false);
     setSearch(""); setSelected(null); setQuantity(1); setPrice(""); setSupplierId(NONE); setNotes("");
     (async () => {
-      const [a, f] = await Promise.all([
+      try {
+        const [a, f] = await Promise.all([
         supabase.from("articles")
           .select("id, reference, designation, categorie, sous_categorie, code_barre, stock, prix_achat, fournisseur_id")
           .is("archived_at", null).order("designation"),
         supabase.from("fournisseurs").select("id, nom").eq("actif", true).order("nom"),
       ]);
-      if (a.error) toast({ title: "Erreur", description: a.error.message, variant: "destructive" });
+      if (cancelled) return;
+      if (a.error) throw a.error;
+      if (f.error) toast({ title: "Erreur", description: f.error.message, variant: "destructive" });
       const list = (a.data || []) as Article[];
       setArticles(list);
       setFournisseurs(f.data || []);
       if (prefilledArticleId) {
         const p = list.find((x) => x.id === prefilledArticleId);
-        if (p) pick(p);
+        if (p) {
+          pick(p);
+          if (!(f.data || []).some((supplier) => supplier.id === p.fournisseur_id)) setSupplierId(NONE);
+        }
+        else toast({ title: "Erreur", description: "Article introuvable ou inaccessible", variant: "destructive" });
+      }
+      } catch (error: unknown) {
+        if (!cancelled) toast({ title: "Erreur", description: error && typeof error === "object" && "message" in error ? String(error.message) : "Impossible de charger les articles", variant: "destructive" });
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     })();
-  }, [open, prefilledArticleId]);
+    return () => { cancelled = true; };
+  }, [open, prefilledArticleId, toast]);
 
   const results = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -91,7 +110,8 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
   };
 
   const submit = async () => {
-    if (!selected || quantity < 1) return;
+    if (!selected || loading || savingRef.current) return;
+    savingRef.current = true;
     setSubmitting(true);
     try {
       await createStockEntry(
@@ -101,21 +121,22 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
           supplier_id: supplierId !== NONE ? supplierId : null,
           notes: notes.trim() || null,
         },
-        [{ article_id: selected.id, quantity, unit_price: parseFloat(price.replace(",", ".")) || 0 }],
+        [{ article_id: selected.id, quantity, unit_price: parseSimpleEntryPrice(price) }],
       );
-      toast({ title: `✅ Entrée enregistrée : +${quantity} ${selected.designation}` });
+      toast({ title: `✅ Entrée enregistrée : +${quantity} ${selected.designation}`, className: "bg-success text-success-foreground border-success", duration: 4000 });
       onOpenChange(false);
       onSuccess();
-    } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    } catch (error: unknown) {
+      toast({ title: "Erreur", description: error && typeof error === "object" && "message" in error ? String(error.message) : "Impossible d’enregistrer l’entrée", variant: "destructive" });
     } finally {
+      savingRef.current = false;
       setSubmitting(false);
     }
   };
 
   return (
     <>
-      <Dialog open={open && !scannerOpen} onOpenChange={onOpenChange}>
+      <Dialog open={open && !scannerOpen} onOpenChange={(nextOpen) => { if (!savingRef.current) onOpenChange(nextOpen); }}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -129,25 +150,26 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    autoFocus value={search} onChange={(e) => setSearch(e.target.value)}
+                    autoFocus disabled={loading} aria-label="Rechercher un article" value={search} onChange={(e) => setSearch(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter" && results.length === 1) pick(results[0]); }}
                     placeholder="Référence, nom, catégorie ou code-barres"
                     className="pl-9 h-12"
                   />
                 </div>
-                <Button type="button" variant="outline" className="h-12 w-12 p-0" onClick={() => setScannerOpen(true)} aria-label="Scanner">
+                <Button type="button" variant="outline" disabled={loading} className="h-12 w-12 p-0" onClick={() => setScannerOpen(true)} aria-label="Scanner">
                   <Camera className="h-5 w-5" />
                 </Button>
               </div>
               <div className="space-y-1">
+                {loading && <p role="status" className="text-sm text-muted-foreground text-center py-4">Chargement des articles…</p>}
                 {results.map((a) => (
-                  <button key={a.id} type="button" onClick={() => pick(a)}
-                    className="w-full text-left rounded-md border p-3 hover:bg-muted transition-colors">
+                  <Button key={a.id} type="button" variant="outline" onClick={() => { pick(a); if (!fournisseurs.some((f) => f.id === a.fournisseur_id)) setSupplierId(NONE); }}
+                    className="w-full h-auto flex-col items-start text-left p-3">
                     <div className="font-medium text-sm truncate">{a.designation}</div>
                     <div className="text-xs text-muted-foreground font-mono truncate">
                       {a.reference} · {a.categorie} · stock {a.stock}
                     </div>
-                  </button>
+                  </Button>
                 ))}
                 {search.trim() && results.length === 0 && (
                   <p className="text-sm text-muted-foreground text-center py-4">Aucun article trouvé</p>
@@ -155,7 +177,7 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
+            <fieldset disabled={submitting} className="space-y-4 min-w-0">
               <div className="flex items-start justify-between gap-2 rounded-md border bg-muted/30 p-3">
                 <div className="min-w-0">
                   <div className="font-medium text-sm truncate">{selected.designation}</div>
@@ -169,12 +191,12 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
               </div>
 
               <div className="space-y-2">
-                <Label>Quantité entrante</Label>
+                <Label htmlFor="simple-entry-quantity">Quantité entrante</Label>
                 <div className="flex items-center gap-2">
                   <Button type="button" variant="outline" size="icon" className="h-12 w-12" onClick={() => setQuantity((q) => Math.max(1, q - 1))}>
                     <Minus className="h-4 w-4" />
                   </Button>
-                  <Input ref={qtyRef} type="number" min={1} value={quantity}
+                  <Input id="simple-entry-quantity" ref={qtyRef} type="number" min={1} value={quantity}
                     onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
                     onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
                     className="h-12 text-center text-xl font-bold" />
@@ -187,8 +209,8 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs">Prix unitaire (optionnel)</Label>
-                  <Input inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0,00" />
+                  <Label htmlFor="simple-entry-price" className="text-xs">Prix unitaire (optionnel)</Label>
+                  <Input id="simple-entry-price" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0,00" />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Fournisseur (optionnel)</Label>
@@ -211,7 +233,7 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
                 className="w-full h-12 text-base font-semibold bg-success hover:bg-success/90 text-success-foreground">
                 {submitting ? "Enregistrement..." : `Valider l'entrée (+${quantity})`}
               </Button>
-            </div>
+            </fieldset>
           )}
         </DialogContent>
       </Dialog>
