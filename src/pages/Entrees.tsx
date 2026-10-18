@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { EntryList } from "@/components/stock/EntryList";
 import { EntryStats } from "@/components/stock/EntryStats";
 import { PendingDraftReceptions } from "@/components/stock/PendingDraftReceptions";
-import { NewEntryForm } from "@/components/stock/NewEntryForm";
+import { SimpleEntryDialog } from "@/components/stock/SimpleEntryDialog";
 import DashboardLayout from "./DashboardLayout";
 import { cn } from "@/lib/utils";
 
@@ -198,7 +198,7 @@ export default function Entrees() {
 
         <EntryList entries={entries} onRefresh={fetchEntries} />
 
-        <NewEntryForm
+        <SimpleEntryDialog
           open={showNewEntryForm}
           onOpenChange={(o) => { setShowNewEntryForm(o); if (!o) setPrefilledArticleId(undefined); }}
           onSuccess={fetchEntries}
