@@ -1534,6 +1534,10 @@ export type Database = {
         Args: { p_apply_to_stock: boolean; p_inventaire_id: string }
         Returns: undefined
       }
+      create_stock_entry: {
+        Args: { p_header: Json; p_items: Json }
+        Returns: Json
+      }
       generate_entry_number: { Args: never; Returns: string }
       generate_exit_number: { Args: never; Returns: string }
       get_auth_user_id_by_email: { Args: { _email: string }; Returns: string }
@@ -1557,6 +1561,7 @@ export type Database = {
           rupture: number
         }[]
       }
+      get_stock_entry_stats: { Args: never; Returns: Json }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -1612,6 +1617,10 @@ export type Database = {
       open_inventory: {
         Args: { p_label: string; p_scope_id: string; p_scope_type: string }
         Returns: string
+      }
+      receive_stock_order: {
+        Args: { p_commande_id: string; p_lines: Json }
+        Returns: Json
       }
       reorder_categories: {
         Args: { _ordered_ids: string[]; _parent_id: string }
