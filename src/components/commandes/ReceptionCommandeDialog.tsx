@@ -19,6 +19,7 @@ interface ReceptionItem {
   quantite_a_recevoir: number;
   article_id?: string | null;
   prix_unitaire: number;
+  is_draft?: boolean;
 }
 
 interface ReceptionCommandeDialogProps {
@@ -44,7 +45,7 @@ export function ReceptionCommandeDialog({
   const [completions, setCompletions] = useState<Record<string, DraftCompletion | null>>({});
 
   const startValidation = () => {
-    const drafts = items.filter((i) => i.quantite_a_recevoir > 0 && !i.article_id);
+    const drafts = items.filter((i) => i.quantite_a_recevoir > 0 && (!i.article_id || i.is_draft));
     if (drafts.length === 0) return handleReceptionPartielle({});
     setCompletions({});
     setDraftStep(0);
@@ -83,6 +84,7 @@ export function ReceptionCommandeDialog({
         quantite_a_recevoir: item.quantite_commandee - item.quantite_recue,
         article_id: item.article_id,
         prix_unitaire: Number(item.prix_unitaire) || 0,
+        is_draft: item.is_draft,
         code_barre: (item as any).code_barre,
         categorie: (item as any).categorie,
         sous_categorie: (item as any).sous_categorie,

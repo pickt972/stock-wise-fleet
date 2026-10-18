@@ -30,6 +30,7 @@ const PERIODS = [
 export default function Entrees() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [stats, setStats] = useState({ todayCount: 0, monthCount: 0, totalValue: 0 });
   const [entries, setEntries] = useState<any[]>([]);
   const [showNewEntryForm, setShowNewEntryForm] = useState(false);
@@ -106,10 +107,11 @@ export default function Entrees() {
       });
     } finally {
       setIsLoading(false);
+      setHasLoaded(true);
     }
   };
 
-  if (isLoading && entries.length === 0 && !showNewEntryForm) {
+  if (isLoading && !hasLoaded) {
     return (
       <DashboardLayout>
         <PageHeader title="Entrées de stock" />
