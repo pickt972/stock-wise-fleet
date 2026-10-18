@@ -116,7 +116,7 @@ export default function ArticleDetail() {
     }
   };
 
-  const isCritical = !!article && article.stock_min > 0 && article.stock < article.stock_min && article.stock === 0;
+  const isCritical = !!article && article.stock_min > 0 && article.stock < article.stock_min;
   const isLow = !!article && article.stock_min > 0 && article.stock <= article.stock_min;
 
   const getStockBadge = () => {
