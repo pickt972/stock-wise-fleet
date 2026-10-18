@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { CategoryCardGrid } from "@/components/shared/CategoryPicker";
 import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
+import { useToast } from "@/hooks/use-toast";
 
 export interface DraftCompletion {
   designation: string;
@@ -41,6 +42,7 @@ export function DraftArticleCompletionDialog({
   onSubmit: (c: DraftCompletion) => void;
   onSkip: () => void;
 }) {
+  const { toast } = useToast();
   const empty: DraftCompletion = {
     designation, reference: "", code_barre: initialBarcode || "", marque: "", categorie: initialCategorie || "", sous_categorie: initialSousCategorie || "",
     prix_achat: estimatedPrice, emplacement_id: "",
@@ -53,9 +55,9 @@ export function DraftArticleCompletionDialog({
   useEffect(() => { if (open) setF(empty); /* eslint-disable-next-line */ }, [open, designation]);
   useEffect(() => {
     supabase.from("categories").select("id, nom, parent_id").eq("actif", true).order("sort_order").order("nom")
-      .then(({ data }) => setCats((data as any) || []));
+      .then(({ data, error }) => { if (error) toast({ title: "Erreur", description: error.message, variant: "destructive" }); else setCats((data as any) || []); });
     supabase.from("emplacements").select("id, nom").eq("actif", true).order("nom")
-      .then(({ data }) => setEmps((data as any) || []));
+      .then(({ data, error }) => { if (error) toast({ title: "Erreur", description: error.message, variant: "destructive" }); else setEmps((data as any) || []); });
   }, []);
 
   const roots = cats.filter((c) => !c.parent_id);
