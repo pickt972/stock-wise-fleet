@@ -6,20 +6,23 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
 import { ReceiveLineDialog } from "./ReceiveLineDialog";
+import { useToast } from "@/hooks/use-toast";
 import { lineStatus, LINE_STATUS_LABEL, type OrderLine } from "@/lib/receiveDraftLine";
 
 /** Validated orders awaiting reception; each line is received independently. */
 export function PendingDraftReceptions({ onReceived }: { onReceived?: () => void }) {
+  const { toast } = useToast();
   const [lines, setLines] = useState<OrderLine[]>([]);
   const [scan, setScan] = useState(false);
   const [scanned, setScanned] = useState<string | null>(null);
   const [editing, setEditing] = useState<OrderLine | null>(null);
 
   const load = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("commande_items")
       .select("id, commande_id, designation, article_id, quantite_commandee, quantite_recue, prix_unitaire, code_barre, categorie, sous_categorie, precision_note, vehicule_id, vehicule_libre, vehicules(immatriculation, marque, modele), commandes!inner(numero_commande, status)")
       .in("commandes.status", ["envoye", "confirme", "recu_partiel"]);
+    if (error) { toast({ title: "Erreur", description: error.message, variant: "destructive" }); return; }
     setLines(((data as any[]) || [])
       .filter((l) => l.quantite_recue < l.quantite_commandee)
       .map((l) => ({

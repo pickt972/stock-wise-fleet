@@ -82,14 +82,9 @@ export function EntryDeleteDialog({
     } catch (error: any) {
       console.error("Erreur suppression:", error);
       
-      let errorMessage = "Impossible de supprimer l'entrée";
-      if (error.message?.includes("Stock insuffisant")) {
-        errorMessage = "Stock insuffisant pour supprimer cette entrée. Un ou plusieurs articles auraient un stock négatif.";
-      }
-      
       toast({
         title: "Erreur",
-        description: errorMessage,
+        description: error.message,
         variant: "destructive",
       });
     } finally {

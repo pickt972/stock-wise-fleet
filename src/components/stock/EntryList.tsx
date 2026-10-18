@@ -56,6 +56,8 @@ interface EntryListProps {
 
 const getEntryTypeBadge = (type: string) => {
   const badges: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
+    reception: { label: "Réception commande", variant: "default" },
+    commande: { label: "Réception commande", variant: "default" },
     achat: { label: "Achat", variant: "default" },
     retour: { label: "Retour client", variant: "secondary" },
     transfert: { label: "Transfert", variant: "outline" },

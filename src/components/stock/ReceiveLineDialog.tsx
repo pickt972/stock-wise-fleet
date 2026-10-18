@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
 import { receiveOrderLine, type OrderLine } from "@/lib/receiveDraftLine";
 
-interface Art { id: string; designation: string; reference: string; marque: string | null; categorie: string | null; sous_categorie: string | null; code_barre: string | null; prix_achat: number }
+interface Art { id: string; designation: string; reference: string; marque: string | null; categorie: string | null; sous_categorie: string | null; code_barre: string | null; prix_achat: number; is_draft: boolean }
 
 export function ReceiveLineDialog({ line, initialBarcode, onClose, onDone }: {
   line: OrderLine; initialBarcode?: string | null; onClose: () => void; onDone: () => void;
@@ -33,10 +33,10 @@ export function ReceiveLineDialog({ line, initialBarcode, onClose, onDone }: {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    supabase.from("articles").select("id, designation, reference, marque, categorie, sous_categorie, code_barre, prix_achat").is("archived_at", null)
-      .then(({ data }) => setArticles((data as any) || []));
+    supabase.from("articles").select("id, designation, reference, marque, categorie, sous_categorie, code_barre, prix_achat, is_draft").is("archived_at", null)
+      .then(({ data, error }) => { if (error) toast({ title: "Erreur", description: error.message, variant: "destructive" }); else setArticles((data as any) || []); });
     supabase.from("categories").select("id, nom, parent_id").eq("actif", true).order("sort_order").order("nom")
-      .then(({ data }) => setCats((data as any) || []));
+      .then(({ data, error }) => { if (error) toast({ title: "Erreur", description: error.message, variant: "destructive" }); else setCats((data as any) || []); });
   }, []);
 
   // Barcode → existing article
@@ -48,6 +48,13 @@ export function ReceiveLineDialog({ line, initialBarcode, onClose, onDone }: {
   }, [barcode, articles]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selected = articles.find((a) => a.id === articleId) || null;
+  useEffect(() => {
+    if (selected?.is_draft) {
+      setN({ designation: selected.designation, reference: /^(DRAFT-|A-COMPLETER-)/.test(selected.reference) ? "" : selected.reference,
+        marque: selected.marque || "", categorie: selected.categorie || "", sous_categorie: selected.sous_categorie || "" });
+      setBarcode(selected.code_barre || initialBarcode || line.code_barre || "");
+    }
+  }, [selected?.id]);
   const candidates = useMemo(() => {
     const t = search.trim().toLowerCase();
     return articles.filter((a) => {
@@ -60,17 +67,18 @@ export function ReceiveLineDialog({ line, initialBarcode, onClose, onDone }: {
   const roots = cats.filter((c) => !c.parent_id);
   const subs = cats.filter((c) => c.parent_id === roots.find((r) => r.nom === n.categorie)?.id);
   const q = parseInt(qty, 10);
-  const valid = q >= 1 && (mode === "existing" ? !!articleId : !!n.categorie && !!n.designation.trim());
+  const valid = Number.isInteger(q) && q >= 1 && q <= remaining && (mode === "existing" ? !!articleId : !!n.categorie && !!n.designation.trim());
 
   const submit = async () => {
+    if (!valid || saving) return;
     setSaving(true);
     try {
       const status = await receiveOrderLine(line, {
         qty: q, prix: Math.max(0, parseFloat(prix.replace(",", ".")) || 0),
         articleId: mode === "existing" ? articleId : null,
-        newArticle: mode === "new" ? { ...n, code_barre: barcode } : null,
+        newArticle: mode === "new" || selected?.is_draft ? { ...n, code_barre: barcode } : null,
       });
-      toast({ title: "Réception enregistrée", description: status === "recu_complet" ? "Commande entièrement reçue" : "Stock mis à jour" });
+      toast({ className: "bg-success text-success-foreground border-success", title: "Réception enregistrée", description: status === "recu_complet" ? "Commande entièrement reçue" : "Stock mis à jour" });
       onDone();
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
@@ -92,7 +100,7 @@ export function ReceiveLineDialog({ line, initialBarcode, onClose, onDone }: {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Quantité reçue * <span className="text-muted-foreground">(reste {remaining})</span></Label>
-              <Input type="number" inputMode="numeric" min="1" value={qty} onFocus={(e) => e.currentTarget.select()} onChange={(e) => setQty(e.target.value)} />
+              <Input type="number" inputMode="numeric" min="1" max={remaining} value={qty} onFocus={(e) => e.currentTarget.select()} onChange={(e) => setQty(e.target.value)} />
             </div>
             <div>
               <Label className="text-xs">Prix réel unitaire (€)</Label>
@@ -134,7 +142,8 @@ export function ReceiveLineDialog({ line, initialBarcode, onClose, onDone }: {
                 ))}
               </div>
             </div>
-          ) : (
+          ) : null}
+          {(mode === "new" || selected?.is_draft) && (
             <div className="space-y-3">
               <div>
                 <Label className="text-xs">Désignation *</Label>

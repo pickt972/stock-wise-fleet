@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { draftDatePrefix, nextDraftReference } from "@/lib/draftReference";
+import { receiveOrderLines } from "@/lib/receiveDraftLine";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,40 +59,6 @@ export function ReceptionCommandeDialog({
     else { setDraftQueue([]); handleReceptionPartielle(next); }
   };
 
-  const createDraftArticles = async (done: Record<string, DraftCompletion | null>) => {
-    const { data: u } = await supabase.auth.getUser();
-    const map: Record<string, string> = {};
-    const { data: used } = await supabase.from('articles').select('reference').like('reference', `${draftDatePrefix()}%`);
-    const usedRefs = (used || []).map((r: any) => r.reference as string);
-    for (const item of items.filter((i) => i.quantite_a_recevoir > 0 && !i.article_id)) {
-      const c = done[item.id];
-      let ref = c?.reference?.trim();
-      if (!ref) { ref = nextDraftReference(usedRefs); usedRefs.push(ref); }
-      const { data: art, error } = await supabase.from('articles').insert([{
-        designation: c?.designation?.trim() || item.designation,
-        reference: ref,
-        marque: c?.marque?.trim() || '',
-        categorie: c?.categorie || 'À classer',
-        sous_categorie: c?.sous_categorie || null,
-        code_barre: c?.code_barre?.trim() || (item as any).code_barre || null,
-        prix_achat: c ? c.prix_achat : item.prix_unitaire,
-        emplacement_id: c?.emplacement_id || null,
-        stock: 0, stock_min: 0, stock_max: 0,
-        is_draft: !c,
-        user_id: u.user?.id,
-      }]).select('id').single();
-      if (error) throw error;
-      map[item.id] = art.id;
-      const vid = (item as any).vehicule_id;
-      if (vid) await supabase.from('article_vehicules').insert([{ article_id: art.id, vehicule_id: vid, user_id: u.user?.id }]);
-      const { error: ciErr } = await supabase.from('commande_items')
-        .update({ article_id: art.id, is_draft: !c, reference: ref, ...(c ? { designation: c.designation.trim(), prix_unitaire: c.prix_achat } : {}) })
-        .eq('id', item.id);
-      if (ciErr) throw ciErr;
-    }
-    return map;
-  };
-
   useEffect(() => {
     if (isOpen && commandeId) {
       fetchCommandeItems();
@@ -144,103 +110,25 @@ export function ReceptionCommandeDialog({
   const handleReceptionPartielle = async (done: Record<string, DraftCompletion | null>) => {
     setIsLoading(true);
     try {
-      const createdIds = await createDraftArticles(done);
-      // Récupérer les article_id de tous les items d'un coup
-      const { data: commandeItemsData } = await supabase
-        .from('commande_items')
-        .select('id, article_id')
-        .eq('commande_id', commandeId);
-
-      const articleIdByItemId: Record<string, string | null> = {};
-      (commandeItemsData || []).forEach((ci: any) => {
-        articleIdByItemId[ci.id] = ci.article_id;
-      });
-      Object.assign(articleIdByItemId, createdIds);
-
-      // Créer une entrée stock globale pour cette réception
-      const itemsARecevoir = items.filter(i => i.quantite_a_recevoir > 0);
-
-      const { data: stockEntry, error: entryError } = await supabase
-        .from('stock_entries')
-        .insert([{
-          entry_number: '',           // trigger génère ENT-YYYY-XXXXXX
-          entry_type: 'commande',
-          notes: `Réception commande ${commandeNumero}`,
-          created_by: (await supabase.auth.getUser()).data.user?.id,
-        }])
-        .select()
-        .single();
-
-      if (entryError) throw entryError;
-
-      // Insérer les items de l'entrée pour chaque article reçu
-      // Le trigger trigger_update_stock_on_entry incrémente automatiquement articles.stock
-      for (const item of itemsARecevoir) {
-        const articleId = articleIdByItemId[item.id];
-
-        // Mettre à jour quantite_recue dans commande_items
-        const nouvelleQuantiteRecue = item.quantite_recue + item.quantite_a_recevoir;
-        const { error: ciError } = await supabase
-          .from('commande_items')
-          .update({ quantite_recue: nouvelleQuantiteRecue })
-          .eq('id', item.id);
-        if (ciError) throw ciError;
-
-        // Créer le stock_entry_item seulement si l'article est lié
-        if (articleId) {
-          const { error: itemError } = await supabase
-            .from('stock_entry_items')
-            .insert([{
-              entry_id: stockEntry.id,
-              article_id: articleId,
-              quantity: item.quantite_a_recevoir,
-              unit_price: 0,
-            }]);
-          if (itemError) throw itemError;
-          // Le trigger update_stock_on_entry incrémente articles.stock
-          // et crée le mouvement dans stock_movements automatiquement
-        }
-      }
-
-      // Vérifier si tous les items sont complètement reçus
-      const { data: updatedItems } = await supabase
-        .from('commande_items')
-        .select('quantite_commandee, quantite_recue')
-        .eq('commande_id', commandeId);
-
-      const allReceived = updatedItems?.every(
-        item => item.quantite_recue >= item.quantite_commandee
-      );
-
-      const hasPartialReception = updatedItems?.some(
-        item => item.quantite_recue > 0 && item.quantite_recue < item.quantite_commandee
-      );
-
-      // Mettre à jour le statut de la commande
-      let newStatus: 'brouillon' | 'envoye' | 'confirme' | 'recu_partiel' | 'recu_complet' | 'annule';
-      let dateReceptionReelle = null;
-
-      if (allReceived) {
-        newStatus = 'recu_complet';
-        dateReceptionReelle = new Date().toISOString();
-      } else if (hasPartialReception || updatedItems?.some(item => item.quantite_recue > 0)) {
-        newStatus = 'recu_partiel';
-      } else {
-        newStatus = 'confirme';
-      }
-
-      const { error: commandeError } = await supabase
-        .from('commandes')
-        .update({ 
-          status: newStatus,
-          date_reception_reelle: dateReceptionReelle
-        })
-        .eq('id', commandeId);
-
-      if (commandeError) throw commandeError;
+      const result = await receiveOrderLines(commandeId, items.filter(i => i.quantite_a_recevoir > 0).map(item => {
+        const c = done[item.id];
+        return {
+          id: item.id, quantity: item.quantite_a_recevoir,
+          unit_price: c ? c.prix_achat : item.prix_unitaire,
+          article_id: item.article_id || null,
+          new_article: c ? { ...c } : !item.article_id ? {
+            designation: item.designation, reference: "", marque: "",
+            categorie: (item as any).categorie || "À classer",
+            sous_categorie: (item as any).sous_categorie || "",
+            code_barre: (item as any).code_barre || "",
+          } : null,
+        };
+      }));
+      const allReceived = result.status === "recu_complet";
 
       toast({
         title: "Réception enregistrée",
+        className: "bg-success text-success-foreground border-success",
         description: allReceived 
           ? "Commande complètement reçue" 
           : "Réception partielle enregistrée",

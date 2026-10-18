@@ -30,6 +30,7 @@ const PERIODS = [
 export default function Entrees() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState({ todayCount: 0, monthCount: 0, totalValue: 0 });
   const [entries, setEntries] = useState<any[]>([]);
   const [showNewEntryForm, setShowNewEntryForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -75,7 +76,12 @@ export default function Entrees() {
         query = query.gte("entry_date", monthAgo.toISOString());
       }
 
-      const { data, error } = await query;
+      const [{ data, error }, statsResult] = await Promise.all([
+        query, supabase.rpc("get_stock_entry_stats"),
+      ]);
+      if (statsResult.error) throw statsResult.error;
+      const values = statsResult.data as { todayCount: number; monthCount: number; totalValue: number } | null;
+      if (values) setStats(values);
 
       if (error) throw error;
 
@@ -95,7 +101,7 @@ export default function Entrees() {
       console.error("Erreur chargement entrées:", error);
       toast({
         title: "Erreur",
-        description: "Impossible de charger les entrées",
+        description: error.message,
         variant: "destructive",
       });
     } finally {
@@ -103,32 +109,7 @@ export default function Entrees() {
     }
   };
 
-  const calculateStats = () => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    const activeEntries = entries.filter((e) => e.status === "active");
-
-    const todayCount = activeEntries.filter(
-      (e) => new Date(e.entry_date) >= today
-    ).length;
-
-    const monthCount = activeEntries.filter(
-      (e) => new Date(e.entry_date) >= firstDayOfMonth
-    ).length;
-
-    const totalValue = activeEntries.reduce(
-      (sum, e) => sum + (e.total_amount || 0),
-      0
-    );
-
-    return { todayCount, monthCount, totalValue };
-  };
-
-  const stats = calculateStats();
-
-  if (isLoading) {
+  if (isLoading && entries.length === 0 && !showNewEntryForm) {
     return (
       <DashboardLayout>
         <PageHeader title="Entrées de stock" />
@@ -165,6 +146,7 @@ export default function Entrees() {
                 <SelectContent>
                   <SelectItem value="all">Tous les types</SelectItem>
                   <SelectItem value="achat">Achat</SelectItem>
+                  <SelectItem value="reception">Réception commande</SelectItem>
                   <SelectItem value="retour">Retour</SelectItem>
                   <SelectItem value="transfert">Transfert</SelectItem>
                   <SelectItem value="ajustement">Ajustement</SelectItem>

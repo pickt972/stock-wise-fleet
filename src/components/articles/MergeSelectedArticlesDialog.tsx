@@ -114,9 +114,11 @@ export function MergeSelectedArticlesDialog({ open, onOpenChange, articles, allC
       const loserIds = losers.map((l) => l.id);
 
       await supabase.from("stock_movements").update({ article_id: winner.id }).in("article_id", loserIds);
-      await supabase.from("stock_entry_items").update({ article_id: winner.id }).in("article_id", loserIds);
+      const { error: entryItemsError } = await supabase.from("stock_entry_items").update({ article_id: winner.id }).in("article_id", loserIds);
+      if (entryItemsError) throw entryItemsError;
       await supabase.from("stock_exit_items").update({ article_id: winner.id }).in("article_id", loserIds);
-      await supabase.from("commande_items").update({ article_id: winner.id }).in("article_id", loserIds);
+      const { error: orderItemsError } = await supabase.from("commande_items").update({ article_id: winner.id }).in("article_id", loserIds);
+      if (orderItemsError) throw orderItemsError;
       await supabase.from("inventaire_items").update({ article_id: winner.id }).in("article_id", loserIds);
 
       // article_fournisseurs : déduplication

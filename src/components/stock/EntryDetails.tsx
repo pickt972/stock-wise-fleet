@@ -59,6 +59,8 @@ interface EntryDetailsProps {
 
 const getEntryTypeLabel = (type: string) => {
   const labels: Record<string, string> = {
+    reception: "Réception commande",
+    commande: "Réception commande",
     achat: "Achat fournisseur",
     retour: "Retour client",
     transfert: "Transfert entre sites",
