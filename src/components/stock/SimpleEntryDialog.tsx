@@ -35,6 +35,18 @@ interface Props {
 
 const NONE = "__none__";
 
+async function loadEntryArticles(): Promise<Article[]> {
+  const all: Article[] = [];
+  for (let offset = 0; ; offset += 1000) {
+    const { data, error } = await supabase.from("articles")
+      .select("id, reference, designation, categorie, sous_categorie, code_barre, stock, prix_achat, fournisseur_id, is_draft")
+      .is("archived_at", null).order("designation").order("id").range(offset, offset + 999);
+    if (error) throw error;
+    all.push(...(data || []));
+    if ((data || []).length < 1000) return all;
+  }
+}
+
 export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArticleId }: Props) {
   const { toast } = useToast();
   const [articles, setArticles] = useState<Article[]>([]);
@@ -83,18 +95,15 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
     (async () => {
       try {
         const [a, f, c] = await Promise.all([
-        supabase.from("articles")
-          .select("id, reference, designation, categorie, sous_categorie, code_barre, stock, prix_achat, fournisseur_id, is_draft")
-          .is("archived_at", null).order("designation"),
+        loadEntryArticles(),
         supabase.from("fournisseurs").select("id, nom").eq("actif", true).order("nom"),
         supabase.from("categories").select("id, nom, parent_id").eq("actif", true).order("sort_order").order("nom"),
       ]);
       if (cancelled) return;
-      if (a.error) throw a.error;
       if (c.error) throw c.error;
       setCategories(c.data || []);
       if (f.error) toast({ title: "Erreur", description: f.error.message, variant: "destructive" });
-      const list = (a.data || []) as Article[];
+      const list = a;
       setArticles(list);
       setFournisseurs(f.data || []);
       if (prefilledArticleId) {
@@ -118,11 +127,12 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
   const results = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return [];
+    if (scannedCode) return articles.filter((a) => a.reference === scannedCode || a.code_barre === scannedCode);
     return articles.filter((a) =>
       [a.reference, a.designation, a.categorie, a.sous_categorie, a.code_barre]
         .some((v) => v?.toLowerCase().includes(q)),
     ).slice(0, 8);
-  }, [search, articles]);
+  }, [search, articles, scannedCode]);
 
   const handleScan = (code: string) => {
     setScannerOpen(false);
