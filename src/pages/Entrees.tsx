@@ -43,9 +43,12 @@ export default function Entrees() {
   const [prefilledArticleId, setPrefilledArticleId] = useState<string | undefined>(
     (location.state as any)?.prefilledArticleId,
   );
+  const [scanCode, setScanCode] = useState<string | undefined>(
+    (location.state as any)?.entryScanCode,
+  );
 
   useEffect(() => {
-    if (prefilledArticleId) {
+    if (prefilledArticleId || scanCode) {
       setShowNewEntryForm(true);
       navigate(location.pathname, { replace: true, state: null });
     }
