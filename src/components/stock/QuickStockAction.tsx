@@ -35,11 +35,18 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
   const [quantity, setQuantity] = useState(1);
   const [motif, setMotif] = useState("");
   const [vehiculeId, setVehiculeId] = useState<string>("");
+  const [vehiculeLibre, setVehiculeLibre] = useState("");
   const [vehicules, setVehicules] = useState<Array<{ id: string; label: string }>>([]);
+  const [cats, setCats] = useState<VehicleCategoryNode[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  // Charger les véhicules au montage
+  // Véhicule obligatoire si l'article ou sa catégorie l'exige
+  const vehicleRequired = needsVehicleForExit(article, cats);
+  const vehicleFilled = !!vehiculeId || !!vehiculeLibre.trim();
+  const vehicleValid = !vehicleRequired || vehicleFilled;
+
+  // Charger les véhicules et les réglages de catégories au montage
   useEffect(() => {
     supabase
       .from("vehicules")
@@ -53,6 +60,10 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
           }))
         );
       });
+    supabase
+      .from("categories")
+      .select("id, nom, parent_id, requires_vehicle")
+      .then(({ data }) => setCats((data as VehicleCategoryNode[]) || []));
   }, []);
 
   const getStockBadge = () => {
