@@ -92,7 +92,8 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
     setLoading(true);
     setLoadFailed(false); setEditingArticle(false); setDraftPrompt(false); setScannedCode(null);
     setArticles([]); setFournisseurs([]); setScannerOpen(false);
-    setSearch(""); setSelected(null); setQuantity(1); setPrice(""); setSupplierId(NONE); setNotes("");
+    setSearch(prefilledArticleId ? "" : (initialSearch || "")); setScannedCode(!prefilledArticleId && initialSearch ? initialSearch : null);
+    setSelected(null); setQuantity(1); setPrice(""); setSupplierId(NONE); setNotes("");
     (async () => {
       try {
         const [a, f, c] = await Promise.all([
@@ -123,7 +124,7 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
       }
     })();
     return () => { cancelled = true; };
-  }, [open, prefilledArticleId, toast]);
+  }, [open, prefilledArticleId, initialSearch, toast]);
 
   const results = useMemo(() => {
     const q = search.trim().toLowerCase();
