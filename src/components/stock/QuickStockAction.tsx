@@ -327,7 +327,7 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
 
             <Button
               onClick={handleSubmit}
-              disabled={isSubmitting || quantity <= 0}
+              disabled={isSubmitting || quantity <= 0 || (mode === "remove" && !vehicleValid)}
               className={`w-full h-14 text-lg font-semibold ${
                 mode === "add"
                   ? "bg-success hover:bg-success/90 text-success-foreground"
