@@ -108,19 +108,23 @@ export function MobileBottomNav({ className }: MobileBottomNavProps) {
         if (partials && partials.length > 0) found = partials[0];
       }
 
+      const onEntrees = location.pathname.startsWith("/entrees");
       if (found) {
-        if (wasExitMode) {
-          if (wasExitMode) {
-            setQuickExitArticle(found);
-          } else if (currentScanMode === "entry") {
-            setQuickEntryArticle(found);
-          } else {
-            navigate(`/articles/${found.id}`);
-          }
+        if (onEntrees && !wasExitMode) {
+          // Dans le module Entrées : ouvrir le formulaire d'entrée pré-rempli
+          toast({ title: "✅ Article trouvé", description: found.designation });
+          navigate("/entrees", { state: { prefilledArticleId: found.id } });
+        } else if (wasExitMode) {
+          setQuickExitArticle(found);
+        } else if (currentScanMode === "entry") {
+          setQuickEntryArticle(found);
         } else {
           toast({ title: "✅ Article trouvé", description: found.designation });
           navigate(`/articles/${found.id}`);
         }
+      } else if (onEntrees && !wasExitMode) {
+        // Code inconnu dans le module Entrées : proposer la création depuis le formulaire d'entrée
+        navigate("/entrees", { state: { entryScanCode: q } });
       } else {
         toast({
           title: "📦 Article introuvable",

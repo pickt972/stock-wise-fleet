@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { lineStatus, LINE_STATUS_LABEL, type OrderLine } from "@/lib/receiveDraftLine";
 
 /** Validated orders awaiting reception; each line is received independently. */
-export function PendingDraftReceptions({ onReceived }: { onReceived?: () => void }) {
+export function PendingDraftReceptions({ onReceived, onUnknownScan }: { onReceived?: () => void; onUnknownScan?: (code: string) => void }) {
   const { toast } = useToast();
   const [lines, setLines] = useState<OrderLine[]>([]);
   const [scan, setScan] = useState(false);
@@ -85,7 +85,9 @@ export function PendingDraftReceptions({ onReceived }: { onReceived?: () => void
         setScan(false);
         const code = c.trim();
         const match = lines.find((l) => (l.code_barre || "").trim() === code);
-        if (match) setEditing(match); else setScanned(code);
+        if (match) { setEditing(match); }
+        else if (onUnknownScan) onUnknownScan(code);
+        else setScanned(code);
       }} />
 
       {editing && (
