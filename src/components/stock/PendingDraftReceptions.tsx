@@ -85,7 +85,9 @@ export function PendingDraftReceptions({ onReceived, onUnknownScan }: { onReceiv
         setScan(false);
         const code = c.trim();
         const match = lines.find((l) => (l.code_barre || "").trim() === code);
-        if (match) setEditing(match); else setScanned(code);
+        if (match) { setEditing(match); }
+        else if (onUnknownScan) onUnknownScan(code);
+        else setScanned(code);
       }} />
 
       {editing && (

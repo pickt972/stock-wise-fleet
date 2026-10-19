@@ -145,7 +145,10 @@ export default function Entrees() {
 
         <EntryStats {...stats} />
 
-        <PendingDraftReceptions onReceived={fetchEntries} />
+        <PendingDraftReceptions
+          onReceived={fetchEntries}
+          onUnknownScan={(code) => { setPrefilledArticleId(undefined); setScanCode(code); setShowNewEntryForm(true); }}
+        />
 
         {/* Filtres et recherche */}
         <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
@@ -203,9 +206,10 @@ export default function Entrees() {
 
         <SimpleEntryDialog
           open={showNewEntryForm}
-          onOpenChange={(o) => { setShowNewEntryForm(o); if (!o) setPrefilledArticleId(undefined); }}
+          onOpenChange={(o) => { setShowNewEntryForm(o); if (!o) { setPrefilledArticleId(undefined); setScanCode(undefined); } }}
           onSuccess={fetchEntries}
           prefilledArticleId={prefilledArticleId}
+          initialSearch={scanCode}
         />
       </div>
     </DashboardLayout>
