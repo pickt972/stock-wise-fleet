@@ -185,7 +185,7 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
     }
 
     if (!vehiculeValid) {
-      toast({ title: "Erreur", description: "Complétez le véhicule", variant: "destructive" });
+      toast({ title: "Véhicule obligatoire pour cette catégorie d'article", description: "Sélectionnez un véhicule de la flotte ou saisissez-en un.", variant: "destructive" });
       return;
     }
 
