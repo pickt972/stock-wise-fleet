@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Nouvelle entrée : création d’article inconnu et complétion d’un brouillon avec entrée atomique et erreurs exactes.
+
 - [x] Sécuriser le formulaire d’entrée simple : erreurs de chargement visibles, prix validé, double soumission bloquée ; 5 tests réussis et affichage sans erreur. Test connecté externe restant à faire par l’utilisateur.
 
 - [x] Corriger les sauvegardes manuelles et réceptions, erreurs exactes et statistiques ; droits existants vérifiés et 24 tests réussis.
