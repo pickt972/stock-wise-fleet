@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { needsVehicleForExit, type VehicleCategoryNode } from "@/lib/vehicleRequirement";
 
 interface Article {
   id: string;
@@ -15,6 +16,7 @@ interface Article {
   designation: string;
   marque: string;
   categorie: string;
+  sous_categorie?: string | null;
   stock: number;
   stock_min: number;
   prix_achat: number;
@@ -33,11 +35,18 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
   const [quantity, setQuantity] = useState(1);
   const [motif, setMotif] = useState("");
   const [vehiculeId, setVehiculeId] = useState<string>("");
+  const [vehiculeLibre, setVehiculeLibre] = useState("");
   const [vehicules, setVehicules] = useState<Array<{ id: string; label: string }>>([]);
+  const [cats, setCats] = useState<VehicleCategoryNode[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  // Charger les véhicules au montage
+  // Véhicule obligatoire si l'article ou sa catégorie l'exige
+  const vehicleRequired = needsVehicleForExit(article, cats);
+  const vehicleFilled = !!vehiculeId || !!vehiculeLibre.trim();
+  const vehicleValid = !vehicleRequired || vehicleFilled;
+
+  // Charger les véhicules et les réglages de catégories au montage
   useEffect(() => {
     supabase
       .from("vehicules")
@@ -51,6 +60,10 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
           }))
         );
       });
+    supabase
+      .from("categories")
+      .select("id, nom, parent_id, requires_vehicle")
+      .then(({ data }) => setCats((data as VehicleCategoryNode[]) || []));
   }, []);
 
   const getStockBadge = () => {
@@ -67,10 +80,10 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
       toast({ title: "Quantité insuffisante", description: `Stock disponible : ${article.stock}`, variant: "destructive" });
       return;
     }
-    // Véhicule obligatoire pour certains articles
-    if (mode === "remove" && article.vehicule_required && !vehiculeId) {
+    // Véhicule obligatoire pour certains articles / catégories
+    if (mode === "remove" && !vehicleValid) {
       toast({
-        title: "Véhicule requis",
+        title: "Véhicule obligatoire pour cette catégorie d'article",
         description: `Cet article (${article.designation}) doit être associé à un véhicule lors de la sortie.`,
         variant: "destructive",
       });
@@ -80,7 +93,10 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
     setIsSubmitting(true);
     try {
       const movementType = mode === "add" ? "entree" : "sortie";
-      const motifFinal = motif.trim() || (mode === "add" ? "Ajout rapide via scan" : "Sortie rapide via scan");
+      let motifFinal = motif.trim() || (mode === "add" ? "Ajout rapide via scan" : "Sortie rapide via scan");
+      if (mode === "remove" && vehiculeLibre.trim() && !vehiculeId) {
+        motifFinal = `${motifFinal} — Véhicule : ${vehiculeLibre.trim()}`;
+      }
 
       // RPC SECURITY DEFINER — bypass les conflits RLS, fait mouvement + update stock en une transaction
       const { error } = await supabase.rpc("insert_stock_movement", {
@@ -181,17 +197,17 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
             {/* Véhicule — mis en avant en premier pour les sorties */}
             {mode === "remove" && (
               <div className={`rounded-xl border-2 p-3 space-y-2 transition-colors ${
-                vehiculeId
+                vehicleFilled
                   ? "border-primary/40 bg-primary/5"
-                  : article.vehicule_required
+                  : vehicleRequired
                   ? "border-destructive/50 bg-destructive/5"
                   : "border-dashed border-muted-foreground/30 bg-muted/30"
               }`}>
                 <div className="flex items-center gap-2">
                   <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    vehiculeId
+                    vehicleFilled
                       ? "bg-primary/10 text-primary"
-                      : article.vehicule_required
+                      : vehicleRequired
                       ? "bg-destructive/10 text-destructive"
                       : "bg-muted text-muted-foreground"
                   }`}>
@@ -200,29 +216,28 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
                   <div>
                     <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
                       Véhicule concerné
-                      {article.vehicule_required && !vehiculeId && (
+                      {vehicleRequired && !vehicleFilled && (
                         <span className="text-[10px] font-bold bg-destructive text-destructive-foreground px-1.5 py-0.5 rounded-full">
                           REQUIS
                         </span>
                       )}
                     </p>
                     <p className="text-[11px] text-muted-foreground">
-                      {vehiculeId
-                        ? "✓ Véhicule sélectionné"
-                        : article.vehicule_required
-                        ? "⚠️ Obligatoire pour cet article"
+                      {vehicleFilled
+                        ? "✓ Véhicule renseigné"
+                        : vehicleRequired
+                        ? "⚠️ Obligatoire pour cette catégorie d'article"
                         : "Non renseigné — optionnel mais recommandé"}
                     </p>
                   </div>
                 </div>
-                <Select value={vehiculeId} onValueChange={setVehiculeId}>
+                <Select value={vehiculeId} onValueChange={(v) => { setVehiculeId(v); if (v) setVehiculeLibre(""); }}>
                   <SelectTrigger className={`h-10 bg-background ${
-                    article.vehicule_required && !vehiculeId ? "border-destructive" : ""
+                    vehicleRequired && !vehicleFilled ? "border-destructive" : ""
                   }`}>
-                    <SelectValue placeholder="🚗  Immatriculation / Véhicule…" />
+                    <SelectValue placeholder="🚘  Véhicule de la flotte…" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">— Aucun véhicule —</SelectItem>
                     {vehicules.map((v) => (
                       <SelectItem key={v.id} value={v.id}>
                         {v.label}
@@ -230,6 +245,19 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
                     ))}
                   </SelectContent>
                 </Select>
+                {!vehiculeId && (
+                  <Input
+                    value={vehiculeLibre}
+                    onChange={(e) => setVehiculeLibre(e.target.value)}
+                    placeholder="ou véhicule hors flotte (ex: BYD Atto 3)"
+                    className="h-10 bg-background"
+                  />
+                )}
+                {vehicleRequired && !vehicleFilled && (
+                  <p className="text-xs text-destructive font-medium">
+                    Véhicule obligatoire pour cette catégorie d'article
+                  </p>
+                )}
               </div>
             )}
 
@@ -299,7 +327,7 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
 
             <Button
               onClick={handleSubmit}
-              disabled={isSubmitting || quantity <= 0}
+              disabled={isSubmitting || quantity <= 0 || (mode === "remove" && !vehicleValid)}
               className={`w-full h-14 text-lg font-semibold ${
                 mode === "add"
                   ? "bg-success hover:bg-success/90 text-success-foreground"
