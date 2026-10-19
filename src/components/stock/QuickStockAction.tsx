@@ -197,17 +197,17 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
             {/* Véhicule — mis en avant en premier pour les sorties */}
             {mode === "remove" && (
               <div className={`rounded-xl border-2 p-3 space-y-2 transition-colors ${
-                vehiculeId
+                vehicleFilled
                   ? "border-primary/40 bg-primary/5"
-                  : article.vehicule_required
+                  : vehicleRequired
                   ? "border-destructive/50 bg-destructive/5"
                   : "border-dashed border-muted-foreground/30 bg-muted/30"
               }`}>
                 <div className="flex items-center gap-2">
                   <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    vehiculeId
+                    vehicleFilled
                       ? "bg-primary/10 text-primary"
-                      : article.vehicule_required
+                      : vehicleRequired
                       ? "bg-destructive/10 text-destructive"
                       : "bg-muted text-muted-foreground"
                   }`}>
@@ -216,29 +216,28 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
                   <div>
                     <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
                       Véhicule concerné
-                      {article.vehicule_required && !vehiculeId && (
+                      {vehicleRequired && !vehicleFilled && (
                         <span className="text-[10px] font-bold bg-destructive text-destructive-foreground px-1.5 py-0.5 rounded-full">
                           REQUIS
                         </span>
                       )}
                     </p>
                     <p className="text-[11px] text-muted-foreground">
-                      {vehiculeId
-                        ? "✓ Véhicule sélectionné"
-                        : article.vehicule_required
-                        ? "⚠️ Obligatoire pour cet article"
+                      {vehicleFilled
+                        ? "✓ Véhicule renseigné"
+                        : vehicleRequired
+                        ? "⚠️ Obligatoire pour cette catégorie d'article"
                         : "Non renseigné — optionnel mais recommandé"}
                     </p>
                   </div>
                 </div>
-                <Select value={vehiculeId} onValueChange={setVehiculeId}>
+                <Select value={vehiculeId} onValueChange={(v) => { setVehiculeId(v); if (v) setVehiculeLibre(""); }}>
                   <SelectTrigger className={`h-10 bg-background ${
-                    article.vehicule_required && !vehiculeId ? "border-destructive" : ""
+                    vehicleRequired && !vehicleFilled ? "border-destructive" : ""
                   }`}>
-                    <SelectValue placeholder="🚗  Immatriculation / Véhicule…" />
+                    <SelectValue placeholder="🚘  Véhicule de la flotte…" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">— Aucun véhicule —</SelectItem>
                     {vehicules.map((v) => (
                       <SelectItem key={v.id} value={v.id}>
                         {v.label}
@@ -246,6 +245,19 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
                     ))}
                   </SelectContent>
                 </Select>
+                {!vehiculeId && (
+                  <Input
+                    value={vehiculeLibre}
+                    onChange={(e) => setVehiculeLibre(e.target.value)}
+                    placeholder="ou véhicule hors flotte (ex: BYD Atto 3)"
+                    className="h-10 bg-background"
+                  />
+                )}
+                {vehicleRequired && !vehicleFilled && (
+                  <p className="text-xs text-destructive font-medium">
+                    Véhicule obligatoire pour cette catégorie d'article
+                  </p>
+                )}
               </div>
             )}
 
