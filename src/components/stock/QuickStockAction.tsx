@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { needsVehicleForExit, type VehicleCategoryNode } from "@/lib/vehicleRequirement";
 
 interface Article {
   id: string;
@@ -15,6 +16,7 @@ interface Article {
   designation: string;
   marque: string;
   categorie: string;
+  sous_categorie?: string | null;
   stock: number;
   stock_min: number;
   prix_achat: number;
