@@ -80,10 +80,10 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
       toast({ title: "Quantité insuffisante", description: `Stock disponible : ${article.stock}`, variant: "destructive" });
       return;
     }
-    // Véhicule obligatoire pour certains articles
-    if (mode === "remove" && article.vehicule_required && !vehiculeId) {
+    // Véhicule obligatoire pour certains articles / catégories
+    if (mode === "remove" && !vehicleValid) {
       toast({
-        title: "Véhicule requis",
+        title: "Véhicule obligatoire pour cette catégorie d'article",
         description: `Cet article (${article.designation}) doit être associé à un véhicule lors de la sortie.`,
         variant: "destructive",
       });
@@ -93,7 +93,10 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
     setIsSubmitting(true);
     try {
       const movementType = mode === "add" ? "entree" : "sortie";
-      const motifFinal = motif.trim() || (mode === "add" ? "Ajout rapide via scan" : "Sortie rapide via scan");
+      let motifFinal = motif.trim() || (mode === "add" ? "Ajout rapide via scan" : "Sortie rapide via scan");
+      if (mode === "remove" && vehiculeLibre.trim() && !vehiculeId) {
+        motifFinal = `${motifFinal} — Véhicule : ${vehiculeLibre.trim()}`;
+      }
 
       // RPC SECURITY DEFINER — bypass les conflits RLS, fait mouvement + update stock en une transaction
       const { error } = await supabase.rpc("insert_stock_movement", {
