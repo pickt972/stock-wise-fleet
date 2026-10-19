@@ -1534,6 +1534,10 @@ export type Database = {
         Args: { p_apply_to_stock: boolean; p_inventaire_id: string }
         Returns: undefined
       }
+      create_simple_entry_article: {
+        Args: { p_article: Json; p_header: Json; p_quantity: number }
+        Returns: Json
+      }
       create_stock_entry: {
         Args: { p_header: Json; p_items: Json }
         Returns: Json
