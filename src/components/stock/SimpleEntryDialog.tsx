@@ -31,6 +31,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
   prefilledArticleId?: string;
+  initialSearch?: string;
 }
 
 const NONE = "__none__";
@@ -47,7 +48,7 @@ async function loadEntryArticles(): Promise<Article[]> {
   }
 }
 
-export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArticleId }: Props) {
+export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArticleId, initialSearch }: Props) {
   const { toast } = useToast();
   const [articles, setArticles] = useState<Article[]>([]);
   const [fournisseurs, setFournisseurs] = useState<{ id: string; nom: string }[]>([]);
