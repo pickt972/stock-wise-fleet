@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Edit, Plus, AlertCircle, ChevronDown, Merge, X, LayoutList, LayoutGrid, Minus, ChevronRight } from "lucide-react";
+import { Edit, Plus, AlertCircle, Merge, X, LayoutList, LayoutGrid, Minus } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/ui/page-header";
@@ -36,6 +36,8 @@ import { MergeSelectedArticlesDialog } from "@/components/articles/MergeSelected
 import { QuickMovementDialog } from "@/components/articles/QuickMovementDialog";
 import DashboardLayout from "./DashboardLayout";
 import { cn } from "@/lib/utils";
+import { ArticlesTable } from "@/components/articles/ArticlesTable";
+import { nextArticleSort, sortArticles, type ArticleSort, type ArticleSortColumn } from "@/components/articles/articleTableSort";
 
 interface Article {
   id: string;
@@ -59,7 +61,6 @@ interface Category {
   parent_id: string | null;
 }
 
-type SortOption = "designation" | "categorie" | "stock" | "prix_achat";
 type ViewMode = "dense" | "comfort";
 
 const VIEW_MODE_KEY = "articles-view-mode";
@@ -73,7 +74,7 @@ export default function Articles() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<string>("tous");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<SortOption>("designation");
+  const [sort, setSort] = useState<ArticleSort>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [mergeDuplicatesOpen, setMergeDuplicatesOpen] = useState(false);
@@ -84,7 +85,6 @@ export default function Articles() {
     if (typeof window === "undefined") return "comfort";
     return (localStorage.getItem(VIEW_MODE_KEY) as ViewMode) || "comfort";
   });
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [quickAction, setQuickAction] = useState<{ article: Article; mode: "add" | "remove" } | null>(null);
   const [mobileActionArticle, setMobileActionArticle] = useState<Article | null>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -190,18 +190,8 @@ export default function Articles() {
       return matchesSearch && matchesStockFilter && matchesCategoryFilter;
     });
 
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case "designation": return a.designation.localeCompare(b.designation);
-        case "categorie": return a.categorie.localeCompare(b.categorie);
-        case "stock": return b.stock - a.stock;
-        case "prix_achat": return b.prix_achat - a.prix_achat;
-        default: return 0;
-      }
-    });
-
-    return filtered;
-  }, [articles, debouncedSearchTerm, activeFilter, categoryFilter, sortBy]);
+    return sortArticles(filtered, sort);
+  }, [articles, debouncedSearchTerm, activeFilter, categoryFilter, sort]);
 
   const groupedByCategory = useMemo(() => {
     const parentCategories = allCategories.filter((c) => !c.parent_id);
@@ -248,18 +238,6 @@ export default function Articles() {
     { id: "rupture", label: "Rupture" },
   ];
 
-  const toggleGroup = (name: string) => {
-    setCollapsedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
-      return next;
-    });
-  };
-  const collapseAll = () => setCollapsedGroups(new Set(groupedByCategory.map((g) => g.parentName)));
-  const expandAll = () => setCollapsedGroups(new Set());
-  const allCollapsed = groupedByCategory.length > 0 && collapsedGroups.size >= groupedByCategory.length;
-
   // Mobile long-press handlers
   const handleTouchStart = (article: Article) => {
     if (!isMobile) return;
@@ -287,147 +265,6 @@ export default function Articles() {
     );
   }
 
-  // ---------- Dense row ----------
-  const renderDenseRow = (article: Article) => {
-    const status = getStockStatus(article.stock, article.stock_min);
-    const stockColor =
-      status.filter === "rupture"
-        ? "bg-destructive text-destructive-foreground"
-        : status.filter === "stock-bas"
-        ? "bg-warning text-warning-foreground"
-        : "bg-success text-success-foreground";
-
-    return (
-      <div
-        key={article.id}
-        className={cn(
-          "group flex items-center gap-3 px-3 h-[52px] border-b border-border/40 hover:bg-accent/40 transition-colors cursor-pointer",
-          selectedIds.has(article.id) && "bg-primary/5"
-        )}
-        onClick={() => {
-          if (longPressTriggeredRef.current) {
-            longPressTriggeredRef.current = false;
-            return;
-          }
-          navigate(`/articles/${article.id}`);
-        }}
-        onTouchStart={() => handleTouchStart(article)}
-        onTouchEnd={handleTouchEnd}
-        onTouchMove={handleTouchEnd}
-        onContextMenu={(e) => {
-          if (isMobile) {
-            e.preventDefault();
-            setMobileActionArticle(article);
-          }
-        }}
-      >
-        {isAdmin() && (
-          <div
-            role="button"
-            tabIndex={-1}
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              toggleSelect(article.id);
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-            className="flex items-center -ml-1 px-1 py-2 cursor-pointer"
-          >
-            <Checkbox
-              checked={selectedIds.has(article.id)}
-              tabIndex={-1}
-              className="pointer-events-none"
-              aria-label="Sélectionner cet article"
-            />
-          </div>
-        )}
-
-        {/* Stock badge pill */}
-        <div
-          className={cn(
-            "flex items-center justify-center h-7 min-w-[36px] px-2 rounded-full text-xs font-bold tabular-nums flex-shrink-0",
-            stockColor
-          )}
-          title={`Stock: ${article.stock} (min ${article.stock_min})`}
-        >
-          {article.stock}
-        </div>
-
-        {/* Référence (mono, fixed) */}
-        <div className="w-[90px] font-mono text-xs text-muted-foreground truncate flex-shrink-0 hidden sm:block">
-          {article.reference}
-        </div>
-
-        {/* Désignation */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-sm font-medium truncate">{article.designation}</span>
-            {article.is_draft && (
-              <Badge className="shrink-0 bg-warning/15 text-warning border-warning/40 text-[10px]" variant="outline">⚠️ Fiche incomplète</Badge>
-            )}
-          </div>
-          <div className="sm:hidden text-[11px] font-mono text-muted-foreground truncate">{article.reference}</div>
-        </div>
-
-        {/* Catégorie badge - hidden under md */}
-        <Badge variant="secondary" className="hidden md:inline-flex text-[10px] font-normal max-w-[140px] truncate flex-shrink-0">
-          {article.sous_categorie || article.categorie}
-        </Badge>
-
-        {/* Prix achat */}
-        <div className="hidden sm:block w-[70px] text-right text-xs text-muted-foreground tabular-nums flex-shrink-0">
-          {article.prix_achat.toFixed(2)}€
-        </div>
-
-        {/* Quick actions - inline on hover (desktop) */}
-        {isAdmin() && (
-          <div
-            className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 text-success hover:bg-success/10"
-              onClick={() => setQuickAction({ article, mode: "add" })}
-              title="Entrée stock"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
-              onClick={() => setQuickAction({ article, mode: "remove" })}
-              title="Sortie stock"
-              disabled={article.stock === 0}
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={() => setEditingArticle(article)}
-              title="Éditer"
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-
-        {/* Always-visible edit on mobile/comfort */}
-        {isAdmin() && (
-          <div className="md:hidden flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setEditingArticle(article)}>
-              <Edit className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   // ---------- Comfort row (existing card-ish look) ----------
   const renderComfortRow = (article: Article) => {
     const status = getStockStatus(article.stock, article.stock_min);
@@ -438,7 +275,13 @@ export default function Articles() {
           "flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-accent/40 transition-colors cursor-pointer group",
           selectedIds.has(article.id) && "bg-primary/5"
         )}
-        onClick={() => navigate(`/articles/${article.id}`)}
+        onClick={() => {
+          if (longPressTriggeredRef.current) { longPressTriggeredRef.current = false; return; }
+          navigate(`/articles/${article.id}`);
+        }}
+        onTouchStart={() => handleTouchStart(article)}
+        onTouchEnd={handleTouchEnd}
+        onTouchMove={handleTouchEnd}
       >
         {isAdmin() && (
           <div
@@ -530,7 +373,9 @@ export default function Articles() {
                 variant={viewMode === "dense" ? "default" : "ghost"}
                 onClick={() => setViewMode("dense")}
                 className="h-9 w-9 p-0 rounded-r-none"
-                title="Vue dense"
+                title="Vue tableau"
+                aria-label="Vue tableau"
+                aria-pressed={viewMode === "dense"}
               >
                 <LayoutList className="h-4 w-4" />
               </Button>
@@ -539,7 +384,9 @@ export default function Articles() {
                 variant={viewMode === "comfort" ? "default" : "ghost"}
                 onClick={() => setViewMode("comfort")}
                 className="h-9 w-9 p-0 rounded-l-none"
-                title="Vue confort"
+                title="Vue grille"
+                aria-label="Vue grille"
+                aria-pressed={viewMode === "comfort"}
               >
                 <LayoutGrid className="h-4 w-4" />
               </Button>
@@ -600,23 +447,20 @@ export default function Articles() {
               triggerClassName="w-full sm:w-[200px]"
             />
 
-            <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+            {(isMobile || viewMode === "comfort") && <Select value={sort?.column || "default"} onValueChange={(value) => setSort(value === "default" ? null : { column: value as ArticleSortColumn, direction: "asc" })}>
               <SelectTrigger className="w-full sm:w-[200px]">
                 <SelectValue placeholder="Trier par" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="default">Ordre par défaut</SelectItem>
                 <SelectItem value="designation">Nom</SelectItem>
+                <SelectItem value="reference">Référence</SelectItem>
+                <SelectItem value="marque">Marque</SelectItem>
                 <SelectItem value="categorie">Catégorie</SelectItem>
                 <SelectItem value="stock">Stock</SelectItem>
                 <SelectItem value="prix_achat">Prix</SelectItem>
               </SelectContent>
-            </Select>
-
-            {viewMode === "dense" && groupedByCategory.length > 0 && (
-              <Button variant="outline" size="sm" onClick={allCollapsed ? expandAll : collapseAll} className="flex-shrink-0">
-                {allCollapsed ? "Tout déplier" : "Tout replier"}
-              </Button>
-            )}
+            </Select>}
           </div>
         </div>
 
@@ -626,59 +470,16 @@ export default function Articles() {
             <Card className="p-8 text-center">
               <p className="text-muted-foreground">Aucun article trouvé</p>
             </Card>
-          ) : viewMode === "dense" ? (
-            <div className="space-y-3">
-              {groupedByCategory.map((group) => {
-                const totalArticles = group.subcategories.reduce((sum, s) => sum + s.articles.length, 0);
-                const alertCount = group.subcategories.reduce(
-                  (sum, s) => sum + s.articles.filter((a) => a.stock === 0 || a.stock <= a.stock_min).length,
-                  0
-                );
-                const isCollapsed = collapsedGroups.has(group.parentName);
-
-                return (
-                  <div key={group.parentName} className="border border-border rounded-lg overflow-hidden bg-card">
-                    <button
-                      onClick={() => toggleGroup(group.parentName)}
-                      className="sticky top-[120px] z-10 w-full flex items-center justify-between gap-2 px-4 py-2.5 bg-card hover:bg-accent/30 border-b border-border/60 text-left"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        {isCollapsed ? (
-                          <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        )}
-                        <h3 className="font-semibold text-sm truncate">{group.parentName}</h3>
-                        <Badge variant="secondary" className="text-[10px] flex-shrink-0">{totalArticles}</Badge>
-                        {alertCount > 0 && (
-                          <Badge variant="destructive" className="text-[10px] flex-shrink-0">
-                            {alertCount} en alerte
-                          </Badge>
-                        )}
-                      </div>
-                    </button>
-
-                    {!isCollapsed && (
-                      <div>
-                        {group.subcategories.map((sub) => (
-                          <div key={sub.subName || "__root__"}>
-                            {sub.subName && (
-                              <div className="flex items-center gap-2 px-4 py-1.5 bg-muted/30 border-b border-border/40">
-                                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-                                  {sub.subName}
-                                </span>
-                                <Badge variant="outline" className="text-[10px]">{sub.articles.length}</Badge>
-                              </div>
-                            )}
-                            {sub.articles.map((a) => renderDenseRow(a))}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+          ) : viewMode === "dense" && !isMobile ? (
+            <ArticlesTable
+              articles={filteredArticles}
+              sort={sort}
+              onSort={(column) => setSort(current => nextArticleSort(current, column))}
+              onOpen={(id) => navigate(`/articles/${id}`)}
+              selectable={isAdmin()}
+              selectedIds={selectedIds}
+              onSelect={toggleSelect}
+            />
           ) : (
             <Accordion type="multiple" defaultValue={groupedByCategory.map((g) => g.parentName)} className="space-y-2">
               {groupedByCategory.map((group) => (
