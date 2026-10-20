@@ -1,6 +1,7 @@
 # Roadmap
 
-- [ ] Nouvelle sortie : partager la recherche en entonnoir et la création rapide avec les entrées, conserver véhicule obligatoire et vérifier les parcours.
+- [x] Nouvelle sortie : recherche et champs de création partagés avec les entrées, filtres en cascade, création toujours visible et véhicule obligatoire ; 19 tests réussis et parcours visuel sur données de test vérifié sans erreur.
+- [ ] Vérifier Nouvelle sortie et création rapide sur données réelles — session Supabase externe indisponible pour l’essai connecté automatique.
 
 - [x] Nouvelle entrée : filtres progressifs, badges de stock, création rapide avec marque puis sélection immédiate ; 12 tests réussis et parcours visuel sur données de test vérifié. L’enregistrement réel reste à vérifier sur Supabase externe.
 
