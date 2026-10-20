@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Nouvelle sortie : partager la recherche en entonnoir et la création rapide avec les entrées, conserver véhicule obligatoire et vérifier les parcours.
+
 - [x] Nouvelle entrée : filtres progressifs, badges de stock, création rapide avec marque puis sélection immédiate ; 12 tests réussis et parcours visuel sur données de test vérifié. L’enregistrement réel reste à vérifier sur Supabase externe.
 
 - [x] Noms de tables Realtime vérifiés contre le schéma Supabase ; collisions de canaux corrigées, erreur reproduite puis testée, 61 tests réussis et compilation OK.
