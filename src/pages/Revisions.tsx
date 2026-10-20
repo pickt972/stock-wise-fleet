@@ -1,3 +1,4 @@
+import { vehicleBrand, vehicleModel } from "@/lib/vehicleFormatting";
 import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -434,7 +435,7 @@ export default function Revisions() {
                 </div>
                 <div className="min-w-0">
                   <div className="font-semibold truncate">
-                    {selectedGroup.marque} {selectedGroup.modele}
+                    {vehicleBrand(selectedGroup.marque)} {vehicleModel(selectedGroup.modele)}
                     {selectedGroup.motorisation && <span className="text-muted-foreground font-normal"> · {selectedGroup.motorisation}</span>}
                   </div>
                   <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
@@ -708,7 +709,7 @@ export default function Revisions() {
             <div className="space-y-4">
               <div className="p-4 bg-primary/10 rounded-lg">
                 <h3 className="font-medium">
-                  {selectedGroup?.marque} {selectedGroup?.modele}
+                  {vehicleBrand(selectedGroup?.marque)} {vehicleModel(selectedGroup?.modele)}
                   {selectedGroup?.motorisation && ` (${selectedGroup.motorisation})`}
                 </h3>
                 <p className="text-sm text-muted-foreground">
@@ -833,7 +834,7 @@ export default function Revisions() {
                         <Car className="h-5 w-5 text-primary" />
                         <Badge variant="outline" className="ml-auto text-[10px]">{count}</Badge>
                       </div>
-                      <div className="font-semibold">{marque}</div>
+                      <div className="font-semibold">{vehicleBrand(marque)}</div>
                       <div className="text-xs text-muted-foreground mt-0.5">
                         {count} véhicule{count > 1 ? "s" : ""}
                       </div>
@@ -870,17 +871,17 @@ export default function Revisions() {
               <ArrowLeft className="h-4 w-4 mr-1" /> Retour aux marques
             </Button>
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-              Modèles {stepMarque} ({modeles.length})
+              Modèles {vehicleBrand(stepMarque)} ({modeles.length})
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {modeles.map(([modele, count]) => (
                 <button key={modele} onClick={() => setStepModele(modele)}
                   className="group p-4 rounded-xl border bg-card hover:border-primary hover:shadow-medium transition-all text-left">
                   <div className="flex items-center justify-between mb-1">
-                    <div className="text-xs text-muted-foreground">{stepMarque}</div>
+                    <div className="text-xs text-muted-foreground">{vehicleBrand(stepMarque)}</div>
                     <Badge variant="outline" className="text-[10px]">{count}</Badge>
                   </div>
-                  <div className="font-semibold">{modele}</div>
+                  <div className="font-semibold">{vehicleModel(modele)}</div>
                   <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                     Voir motorisations <ChevronRight className="h-3 w-3" />
                   </div>
@@ -897,7 +898,7 @@ export default function Revisions() {
               <ArrowLeft className="h-4 w-4 mr-1" /> Retour aux modèles
             </Button>
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-              Motorisations {stepMarque} {stepModele}
+              Motorisations {vehicleBrand(stepMarque)} {vehicleModel(stepModele)}
             </h2>
             <div className="space-y-2">
               {motorisations.map((group, idx) => (
@@ -912,7 +913,7 @@ export default function Revisions() {
                         {group.motorisation || "Motorisation non précisée"}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {group.marque} {group.modele} · {group.count} véhicule{group.count > 1 ? "s" : ""}
+                        {vehicleBrand(group.marque)} {vehicleModel(group.modele)} · {group.count} véhicule{group.count > 1 ? "s" : ""}
                       </div>
                     </div>
                   </div>

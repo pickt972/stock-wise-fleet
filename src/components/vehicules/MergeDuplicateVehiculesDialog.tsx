@@ -1,3 +1,4 @@
+import { vehicleLabel, vehicleModel, displayPlate } from "@/lib/vehicleFormatting";
 import { useEffect, useMemo, useState } from "react";
 import { Merge, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -258,7 +259,7 @@ export function MergeDuplicateVehiculesDialog({ open, onOpenChange }: Props) {
                         />
                         <div className="flex-1 min-w-0">
                           <div className="font-semibold text-sm">
-                            {g.marque} {g.modele}
+                            {g.marque} {vehicleModel(g.modele)}
                             {g.motorisation && (
                               <span className="text-muted-foreground font-normal"> · {g.motorisation}</span>
                             )}
@@ -272,10 +273,10 @@ export function MergeDuplicateVehiculesDialog({ open, onOpenChange }: Props) {
                         {g.list.map((v, idx) => (
                           <div key={v.id} className="flex items-center justify-between gap-2 text-xs">
                             <div className="truncate">
-                              <span className="font-mono">{v.immatriculation || "—"}</span>
+                              <span className="font-mono">{vehicleLabel(v)}</span>
                               <span className="text-muted-foreground">
                                 {" · "}
-                                {v.marque} {v.modele}
+                                
                                 {v.motorisation ? ` · ${v.motorisation}` : ""}
                                 {v.annee ? ` · ${v.annee}` : ""}
                               </span>
@@ -310,13 +311,13 @@ export function MergeDuplicateVehiculesDialog({ open, onOpenChange }: Props) {
                       <span className="font-mono font-semibold">{g.marque}</span>
 
                       <span className="text-muted-foreground">Modèle</span>
-                      <span className="font-mono font-semibold">{g.modele}</span>
+                      <span className="font-mono font-semibold">{vehicleModel(g.modele)}</span>
 
                       <span className="text-muted-foreground">Motorisation</span>
                       <span className="font-mono">{g.motorisation || <span className="text-muted-foreground italic">(aucune)</span>}</span>
 
                       <span className="text-muted-foreground">Immat. conservée</span>
-                      <span className="font-mono">{winner.immatriculation || "—"}</span>
+                      <span className="font-mono">{displayPlate(winner.immatriculation)}</span>
                     </div>
 
                     <div className="border-t pt-2">
@@ -325,9 +326,9 @@ export function MergeDuplicateVehiculesDialog({ open, onOpenChange }: Props) {
                         {g.list.map((v, idx) => (
                           <div key={v.id} className="flex items-center justify-between gap-2 text-xs">
                             <span className="truncate">
-                              <span className="font-mono">{v.immatriculation || "—"}</span>
+                              <span className="font-mono">{vehicleLabel(v)}</span>
                               <span className="text-muted-foreground">
-                                {" · "}{v.marque} {v.modele}
+                                {" · "}
                                 {v.motorisation ? ` · ${v.motorisation}` : ""}
                               </span>
                             </span>

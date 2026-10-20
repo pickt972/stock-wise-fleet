@@ -1,3 +1,4 @@
+import { maskSivPlate, isValidSivPlate } from "@/lib/vehicleFormatting";
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,30 +34,6 @@ export function CreateVehiculeDialog({ open, onOpenChange, onVehiculeCreated, on
   const { user } = useAuth();
   const { data: suggestions } = useVehiculeSuggestions();
 
-  const formatImmatriculation = (value: string) => {
-    // Supprimer tous les caractères non alphanumériques et convertir en majuscules
-    const cleaned = value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-    
-    // Format français standard: AA-000-AA (2 lettres, 3 chiffres, 2 lettres)
-    let formatted = '';
-    
-    for (let i = 0; i < cleaned.length && i < 7; i++) {
-      // Ajouter les tirets aux bonnes positions
-      if (i === 2 || i === 5) {
-        formatted += '-';
-      }
-      formatted += cleaned[i];
-    }
-    
-    return formatted;
-  };
-
-  const validateImmatriculation = (value: string) => {
-    // Regex pour valider le format français AA-000-AA
-    const regex = /^[A-Z]{2}-[0-9]{3}-[A-Z]{2}$/;
-    return regex.test(value);
-  };
-
   const createVehicule = async () => {
     if (!formData.immatriculation || !formData.marque || !formData.modele) {
       toast({
@@ -68,7 +45,7 @@ export function CreateVehiculeDialog({ open, onOpenChange, onVehiculeCreated, on
     }
 
     // Vérifier le format de l'immatriculation
-    if (!validateImmatriculation(formData.immatriculation)) {
+    if (!isValidSivPlate(formData.immatriculation)) {
       toast({
         title: "Erreur",
         description: "Le format de l'immatriculation doit être AA-000-AA",
@@ -143,20 +120,22 @@ export function CreateVehiculeDialog({ open, onOpenChange, onVehiculeCreated, on
                 id="immatriculation"
                 value={formData.immatriculation}
                 onChange={(e) => {
-                  const formatted = formatImmatriculation(e.target.value);
+                  const formatted = maskSivPlate(e.target.value);
                   setFormData(prev => ({ ...prev, immatriculation: formatted }));
                 }}
                 placeholder="AB-123-CD"
                 maxLength={9}
+                pattern="[A-Z]{2}-[0-9]{3}-[A-Z]{2}"
+                aria-invalid={Boolean(formData.immatriculation && !isValidSivPlate(formData.immatriculation))}
                 required
-                className={`flex-1 ${formData.immatriculation && !validateImmatriculation(formData.immatriculation) 
+                className={`flex-1 ${formData.immatriculation && !isValidSivPlate(formData.immatriculation) 
                   ? "border-destructive focus:border-destructive" 
                   : ""
                 }`}
               />
               <LicensePlateScanner
                 onPlateDetected={(plate) => {
-                  const formatted = formatImmatriculation(plate);
+                  const formatted = maskSivPlate(plate);
                   setFormData(prev => ({ ...prev, immatriculation: formatted }));
                 }}
               />
@@ -164,7 +143,7 @@ export function CreateVehiculeDialog({ open, onOpenChange, onVehiculeCreated, on
             <p className="text-xs text-muted-foreground">
               Format: AA-000-AA (2 lettres, 3 chiffres, 2 lettres)
             </p>
-            {formData.immatriculation && !validateImmatriculation(formData.immatriculation) && (
+            {formData.immatriculation && !isValidSivPlate(formData.immatriculation) && (
               <p className="text-xs text-destructive">
                 Format d'immatriculation invalide
               </p>
@@ -242,7 +221,7 @@ export function CreateVehiculeDialog({ open, onOpenChange, onVehiculeCreated, on
             </Button>
             <Button
               onClick={createVehicule}
-              disabled={isCreating}
+              disabled={isCreating || !isValidSivPlate(formData.immatriculation)}
               className="w-full sm:w-auto"
             >
               {isCreating ? "Création..." : "Créer"}

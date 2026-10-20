@@ -1,3 +1,4 @@
+import { vehicleLabel } from "@/lib/vehicleFormatting";
 import { useState, useEffect } from "react";
 import { Plus, Minus, ArrowLeft, Package, MapPin, Tag, Car, StickyNote } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -56,7 +57,7 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
         setVehicules(
           (data || []).map((v) => ({
             id: v.id,
-            label: `${v.immatriculation || "—"} · ${v.marque} ${v.modele}`,
+            label: vehicleLabel(v),
           }))
         );
       });

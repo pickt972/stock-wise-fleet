@@ -1,3 +1,4 @@
+import { vehicleLabel } from "@/lib/vehicleFormatting";
 import { StockArticleSearch } from "./shared/StockArticleSearch";
 import { QuickArticleFields } from "./shared/QuickArticleFields";
 import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
@@ -327,7 +328,7 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
 
           <div className="space-y-3">
             <Label htmlFor="exit-fleet">Véhicule concerné{needsVehicle ? " *" : " (optionnel)"}</Label>
-            <SearchableSelect id="exit-fleet" value={selectedVehicule?.id || ""} options={vehicules.map((v) => ({ value: v.id, label: `${v.marque || ""} ${v.modele || ""} — ${v.immatriculation || "—"}` }))}
+            <SearchableSelect id="exit-fleet" value={selectedVehicule?.id || ""} options={vehicules.map((v) => ({ value: v.id, label: vehicleLabel(v) }))}
               placeholder="Véhicule de la flotte" onValueChange={(id) => { setSelectedVehicule(vehicules.find((v) => v.id === id) || null); setMarque(""); setModele(""); }} />
             {!selectedVehicule && <div className="grid grid-cols-2 gap-3">
               <div><Label htmlFor="exit-free-brand">Marque libre</Label><AutocompleteInput id="exit-free-brand" value={marque} onValueChange={(v) => setMarque(v.toUpperCase())} suggestions={marqueSuggestions} placeholder="Ex: BYD" /></div>

@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Véhicules : masque et validation SIV partagés, affichage uniforme sans migration des données ; 72 tests réussis, libellé Sorties et saisie de création vérifiés sur données de test.
+- [ ] Vérifier création/modification de véhicule sur la base réelle — session Supabase externe indisponible pour l’essai connecté automatique.
+
 - [x] Nouvelle sortie : recherche et champs de création partagés avec les entrées, filtres en cascade, création toujours visible et véhicule obligatoire ; 19 tests réussis et parcours visuel sur données de test vérifié sans erreur.
 - [ ] Vérifier Nouvelle sortie et création rapide sur données réelles — session Supabase externe indisponible pour l’essai connecté automatique.
 

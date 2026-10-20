@@ -1,3 +1,4 @@
+import { vehicleBrand, vehicleModel, displayPlate } from "@/lib/vehicleFormatting";
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +16,7 @@ const groupKey = (v: { marque: string; modele: string; motorisation?: string | n
   `${v.marque.trim().toLowerCase()}|${v.modele.trim().toLowerCase()}|${(v.motorisation ?? "").trim().toLowerCase()}`;
 
 const groupLabel = (v: { marque: string; modele: string; motorisation?: string | null }) =>
-  `${v.marque} ${v.modele}${v.motorisation ? ` (${v.motorisation})` : ""}`;
+  `${vehicleBrand(v.marque)} ${vehicleModel(v.modele)}${v.motorisation ? ` (${v.motorisation})` : ""}`;
 
 export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicleCompatibilityProps) {
   const { user } = useAuth();
@@ -67,9 +68,9 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
       const existing = map.get(k);
       if (existing) {
         existing.vehiculeIds.push(v.id);
-        existing.immatriculations.push(v.immatriculation);
+        existing.immatriculations.push(displayPlate(v.immatriculation));
       } else {
-        map.set(k, { key: k, label: groupLabel(v), vehiculeIds: [v.id], immatriculations: [v.immatriculation] });
+        map.set(k, { key: k, label: groupLabel(v), vehiculeIds: [v.id], immatriculations: [displayPlate(v.immatriculation)] });
       }
     });
     return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label));
@@ -84,9 +85,9 @@ export default function ArticleVehicleCompatibility({ articleId }: ArticleVehicl
       const existing = map.get(k);
       if (existing) {
         existing.ids.push(c.id);
-        existing.immatriculations.push(c.vehicules.immatriculation);
+        existing.immatriculations.push(displayPlate(c.vehicules.immatriculation));
       } else {
-        map.set(k, { ids: [c.id], immatriculations: [c.vehicules.immatriculation] });
+        map.set(k, { ids: [c.id], immatriculations: [displayPlate(c.vehicules.immatriculation)] });
       }
     });
     return map;

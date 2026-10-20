@@ -1,3 +1,4 @@
+import { vehicleBrand, vehicleModel } from "@/lib/vehicleFormatting";
 import { getCategoryIcon } from "@/components/categories/CategoryIcon";
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
@@ -824,7 +825,7 @@ export function ArticleCreationWizard({
         const groupKey = (v: any) =>
           `${v.marque.trim().toLowerCase()}|${v.modele.trim().toLowerCase()}|${(v.motorisation ?? "").trim().toLowerCase()}`;
         const groupLabel = (v: any) =>
-          `${v.marque} ${v.modele}${v.motorisation ? ` (${v.motorisation})` : ""}`;
+          `${vehicleBrand(v.marque)} ${vehicleModel(v.modele)}${v.motorisation ? ` (${v.motorisation})` : ""}`;
         const groupsMap = new Map<string, { key: string; label: string; count: number }>();
         vehiculesList.forEach((v) => {
           const k = groupKey(v);

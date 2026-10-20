@@ -1,3 +1,4 @@
+import { vehicleLabel } from "@/lib/vehicleFormatting";
 import { useState, useEffect, memo } from "react";
 import { ArrowDownToLine, ArrowUpFromLine, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +23,8 @@ interface Movement {
   };
   vehicule?: {
     immatriculation: string;
+    marque?: string;
+    modele?: string;
   };
 }
 
@@ -67,7 +70,7 @@ export const RecentMovements = memo(function RecentMovements() {
           supabase.from('articles').select('id, reference, designation').in('id', articleIds),
           supabase.from('profiles').select('id, first_name, last_name').in('id', userIds),
           vehiculeIds.length > 0 
-            ? supabase.from('vehicules').select('id, immatriculation').in('id', vehiculeIds)
+            ? supabase.from('vehicules').select('id, immatriculation, marque, modele').in('id', vehiculeIds)
             : Promise.resolve({ data: [] })
         ]);
 
@@ -146,7 +149,7 @@ export const RecentMovements = memo(function RecentMovements() {
                     {movement.vehicule && (
                       <>
                         <span>•</span>
-                        <span className="font-medium">{movement.vehicule.immatriculation}</span>
+                        <span className="font-medium">{vehicleLabel(movement.vehicule)}</span>
                       </>
                     )}
                   </div>

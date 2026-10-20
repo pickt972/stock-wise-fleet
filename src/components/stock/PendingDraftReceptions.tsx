@@ -1,3 +1,4 @@
+import { vehicleLabel } from "@/lib/vehicleFormatting";
 import { useEffect, useMemo, useState } from "react";
 import { ScanLine, ClipboardList } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,7 +28,7 @@ export function PendingDraftReceptions({ onReceived, onUnknownScan }: { onReceiv
       .filter((l) => l.quantite_recue < l.quantite_commandee)
       .map((l) => ({
         ...l, prix_unitaire: Number(l.prix_unitaire) || 0, numero_commande: l.commandes?.numero_commande || "",
-        vehicule_label: l.vehicules ? `${l.vehicules.immatriculation} ${l.vehicules.marque} ${l.vehicules.modele}` : (l.vehicule_libre || null),
+        vehicule_label: l.vehicules ? vehicleLabel(l.vehicules) : (l.vehicule_libre || null),
       })));
   };
   useEffect(() => { load(); }, []);

@@ -1,3 +1,4 @@
+import { vehicleLabel } from "@/lib/vehicleFormatting";
 import { useState } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -133,7 +134,7 @@ export function ExitDetails({ exit, open, onOpenChange, onRefresh }: ExitDetails
                 <div>
                   <p className="text-sm text-muted-foreground">Véhicule</p>
                   <p className="font-semibold">
-                    {exit.vehicules.marque.toUpperCase()} {exit.vehicules.modele} - {exit.vehicules.immatriculation}
+                    {vehicleLabel(exit.vehicules)}
                   </p>
                 </div>
               )}

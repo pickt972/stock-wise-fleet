@@ -1,3 +1,4 @@
+import { vehicleLabel } from "@/lib/vehicleFormatting";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageSkeleton } from "@/components/ui/skeletons/PageSkeleton";
@@ -128,7 +129,7 @@ export default function SeuilsStock() {
   const vehiculeLabel = (id: string | null) => {
     if (!id) return "Tous véhicules (global)";
     const v = vehicules.find((x) => x.id === id);
-    return v ? `${v.marque} ${v.modele} (${v.immatriculation})` : "Véhicule inconnu";
+    return v ? vehicleLabel(v) : "Véhicule inconnu";
   };
 
   return (
@@ -183,7 +184,7 @@ export default function SeuilsStock() {
                     <SelectItem value="__all__">Tous (global)</SelectItem>
                     {vehicules.map((v) => (
                       <SelectItem key={v.id} value={v.id}>
-                        {v.marque} {v.modele} ({v.immatriculation})
+                        {vehicleLabel(v)}
                       </SelectItem>
                     ))}
                   </SelectContent>

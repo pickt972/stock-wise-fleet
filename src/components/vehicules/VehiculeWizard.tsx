@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { maskSivPlate, isValidSivPlate, displayPlate } from "@/lib/vehicleFormatting";
+import { useState, useMemo, useEffect } from "react";
 import { ArrowLeft, ArrowRight, Check, ScanLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,17 +41,6 @@ interface Props {
   onSaved?: (id: string) => void;
 }
 
-const formatPlate = (v: string) => {
-  const c = v.replace(/[^A-Z0-9]/gi, "").toUpperCase();
-  let out = "";
-  for (let i = 0; i < c.length && i < 7; i++) {
-    if (i === 2 || i === 5) out += "-";
-    out += c[i];
-  }
-  return out;
-};
-const validPlate = (v: string) => /^[A-Z]{2}-[0-9]{3}-[A-Z]{2}$/.test(v);
-
 /**
  * Assistant en entonnoir : Marque → Modèle → Motorisation → Immat → Détails.
  * Optimisé mobile : grandes cibles tactiles, sélections rapides depuis l'existant.
@@ -59,8 +49,14 @@ export function VehiculeWizard({ open, onOpenChange, initial, onSaved }: Props) 
   const { user } = useAuth();
   const { data: sug } = useVehiculeSuggestions();
   const [step, setStep] = useState(0);
-  const [data, setData] = useState<FormData>({ ...EMPTY, ...(initial as any) });
+  const [data, setData] = useState<FormData>({ ...EMPTY, ...initial, immatriculation: displayPlate(initial?.immatriculation) === "—" ? "" : displayPlate(initial?.immatriculation) });
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setStep(0);
+    setData({ ...EMPTY, ...initial, immatriculation: initial?.immatriculation ? displayPlate(initial.immatriculation) : "" });
+  }, [open, initial]);
 
   const editingId = initial?.id;
 
@@ -70,7 +66,7 @@ export function VehiculeWizard({ open, onOpenChange, initial, onSaved }: Props) 
 
   const reset = () => {
     setStep(0);
-    setData({ ...EMPTY, ...(initial as any) });
+    setData({ ...EMPTY, ...initial, immatriculation: displayPlate(initial?.immatriculation) === "—" ? "" : displayPlate(initial?.immatriculation) });
   };
 
   const close = (v: boolean) => {
@@ -82,12 +78,12 @@ export function VehiculeWizard({ open, onOpenChange, initial, onSaved }: Props) 
     if (step === 0) return data.marque.trim().length > 0;
     if (step === 1) return data.modele.trim().length > 0;
     if (step === 2) return true;
-    if (step === 3) return validPlate(data.immatriculation);
+    if (step === 3) return isValidSivPlate(data.immatriculation);
     return true;
   };
 
   const save = async () => {
-    if (!validPlate(data.immatriculation)) {
+    if (!isValidSivPlate(data.immatriculation)) {
       toast.error("Immatriculation invalide (AA-000-AA)");
       setStep(3);
       return;
@@ -241,18 +237,20 @@ export function VehiculeWizard({ open, onOpenChange, initial, onSaved }: Props) 
                   autoFocus
                   value={data.immatriculation}
                   onChange={(e) =>
-                    setData((p) => ({ ...p, immatriculation: formatPlate(e.target.value) }))
+                    setData((p) => ({ ...p, immatriculation: maskSivPlate(e.target.value) }))
                   }
                   placeholder="AB-123-CD"
                   maxLength={9}
+                  pattern="[A-Z]{2}-[0-9]{3}-[A-Z]{2}"
+                  aria-invalid={Boolean(data.immatriculation && !isValidSivPlate(data.immatriculation))}
                   className={cn(
                     "h-12 text-base flex-1 tracking-wider",
-                    data.immatriculation && !validPlate(data.immatriculation) && "border-destructive"
+                    data.immatriculation && !isValidSivPlate(data.immatriculation) && "border-destructive"
                   )}
                 />
                 <LicensePlateScanner
                   onPlateDetected={(plate) =>
-                    setData((p) => ({ ...p, immatriculation: formatPlate(plate) }))
+                    setData((p) => ({ ...p, immatriculation: maskSivPlate(plate) }))
                   }
                 />
               </div>

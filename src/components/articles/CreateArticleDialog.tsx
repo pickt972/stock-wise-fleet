@@ -1,3 +1,4 @@
+import { vehicleLabel } from "@/lib/vehicleFormatting";
 import { useState, useEffect } from "react";
 import { Plus, QrCode, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -604,7 +605,7 @@ const articleSchema = z.object({
                 <SelectContent className="bg-popover border border-border shadow-medium z-[60] max-h-[200px] overflow-y-auto">
                   {vehicules.filter(v => !selectedVehicules.includes(v.id)).map((vehicule) => (
                     <SelectItem key={vehicule.id} value={vehicule.id}>
-                      {vehicule.marque} {vehicule.modele} - {vehicule.immatriculation}
+                      {vehicleLabel(vehicule)}
                     </SelectItem>
                   ))}
                   {vehicules.filter(v => !selectedVehicules.includes(v.id)).length === 0 && (

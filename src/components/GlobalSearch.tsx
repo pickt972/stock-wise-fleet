@@ -1,3 +1,4 @@
+import { vehicleLabel } from "@/lib/vehicleFormatting";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Package, ShoppingCart, Truck, FileText, MapPin } from "lucide-react";
@@ -123,8 +124,8 @@ export function GlobalSearch() {
             ...vehicules.map((v) => ({
               type: "vehicule" as const,
               id: v.id,
-              title: `${v.marque} ${v.modele}`,
-              subtitle: v.immatriculation,
+              title: vehicleLabel(v),
+              subtitle: "Véhicule",
               route: `/vehicules?search=${v.immatriculation}`,
             }))
           );
