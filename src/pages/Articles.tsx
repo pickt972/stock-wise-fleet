@@ -487,7 +487,7 @@ export default function Articles() {
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-foreground">{group.parentName}</span>
                       <Badge variant="secondary" className="text-xs">
-                        {group.subcategories.reduce((sum, s) => sum + s.articles.length, 0)}
+                        {group.subcategories.reduce((sum, s) => sum + s.articles.reduce((t, a) => t + Math.max(0, a.stock ?? 0), 0), 0)}
                       </Badge>
                     </div>
                   </AccordionTrigger>
@@ -497,7 +497,7 @@ export default function Articles() {
                         {sub.subName && (
                           <div className="flex items-center gap-2 px-3 py-1.5 mb-1">
                             <span className="text-sm font-medium text-muted-foreground">{sub.subName}</span>
-                            <Badge variant="outline" className="text-xs">{sub.articles.length}</Badge>
+                            <Badge variant="outline" className="text-xs">{sub.articles.reduce((t, a) => t + Math.max(0, a.stock ?? 0), 0)}</Badge>
                           </div>
                         )}
                         <div className="divide-y divide-border ml-2 rounded-md border border-border overflow-hidden bg-card">
