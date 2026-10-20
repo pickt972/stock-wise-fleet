@@ -116,7 +116,7 @@ export function GlobalSearch() {
         const { data: vehicules } = await supabase
           .from("vehicules")
           .select("id, marque, modele, immatriculation")
-          .or(`marque.ilike.${searchTerm},modele.ilike.${searchTerm},immatriculation.ilike.${searchTerm}`)
+          .or(`marque.ilike.${searchTerm},modele.ilike.${searchTerm},immatriculation.ilike.${searchTerm},immatriculation.ilike.%${query.toUpperCase().replace(/[^A-Z0-9]/g, "").split("").join("%")}%`)
           .limit(5);
 
         if (vehicules) {
