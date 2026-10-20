@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Articles : tableau triable, filtres conservés et cartes sous 768px ; vérifier les tris et l’affichage accessible.
+
 - [x] Nouvelle entrée : création d’article inconnu et complétion d’un brouillon avec entrée atomique et erreurs exactes ; 8 tests réussis, affichage compilé sans erreur.
 - [ ] Vérifier création rapide et complétion en session réelle — Supabase externe ne permet pas d’essai connecté automatique.
 
