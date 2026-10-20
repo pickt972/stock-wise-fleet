@@ -151,8 +151,34 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
     setEditingArticle(true); setPrice("");
   };
 
+  const createAndSelect = async () => {
+    if (savingRef.current || loading) return;
+    savingRef.current = true;
+    setSubmitting(true);
+    try {
+      const article = quickEntryArticle({ reference, designation, categorie: category, sous_categorie: subcategory, marque: brand, code_barre: scannedCode, price });
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!authData.user) throw new Error("Veuillez vous connecter pour créer un article");
+      const { data, error } = await supabase.from("articles").insert({
+        ...article, user_id: authData.user.id, fournisseur_id: supplierId === NONE ? null : supplierId,
+      }).select("id, reference, designation, categorie, sous_categorie, marque, code_barre, stock, stock_min, prix_achat, fournisseur_id, is_draft").single();
+      if (error) throw error;
+      if (!data) throw new Error("La création de l’article n’a pas été confirmée");
+      setArticles((current) => [...current, data]);
+      pick(data);
+      toast({ title: "Article créé", className: "bg-success text-success-foreground border-success", duration: 4000 });
+    } catch (error: unknown) {
+      toast({ title: "Erreur", description: error && typeof error === "object" && "message" in error ? String(error.message) : "Impossible de créer l’article", variant: "destructive" });
+    } finally {
+      savingRef.current = false;
+      setSubmitting(false);
+    }
+  };
+
   const submit = async () => {
     if ((!selected && !editingArticle) || draftPrompt || loading || savingRef.current) return;
+    if (editingArticle && !selected) { await createAndSelect(); return; }
     savingRef.current = true;
     setSubmitting(true);
     try {
@@ -283,7 +309,7 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
                       </Select>
                     </div>
                   </div>
-                  <div className="space-y-1"><Label htmlFor="quick-entry-brand">Marque</Label><AutocompleteInput id="quick-entry-brand" value={brand} onValueChange={setBrand} suggestions={entryFilterOptions(articles, category, subcategory).brands} placeholder="Marque de l’article" /></div>
+                  {!selected && <div className="space-y-1"><Label htmlFor="quick-entry-brand">Marque</Label><AutocompleteInput id="quick-entry-brand" value={brand} onValueChange={setBrand} suggestions={entryFilterOptions(articles, category, subcategory).brands} placeholder="Marque de l’article" /></div>}
                 </div>
               ) : selected && (
               <div className="flex items-start justify-between gap-2 rounded-md border bg-muted/30 p-3">
@@ -340,7 +366,7 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
 
               <Button onClick={submit} disabled={submitting}
                 className="w-full h-12 text-base font-semibold bg-success hover:bg-success/90 text-success-foreground">
-                {submitting ? "Enregistrement..." : `Valider l'entrée (+${quantity})`}
+                {submitting ? "Enregistrement..." : editingArticle && !selected ? "Créer l’article et continuer" : `Valider l'entrée (+${quantity})`}
               </Button>
               {editingArticle && <Button variant="outline" className="w-full" onClick={() => { setEditingArticle(false); setSelected(null); }}>Annuler</Button>}
             </fieldset>
