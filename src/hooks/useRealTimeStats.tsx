@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAggregatedStockGroups } from "@/hooks/useAggregatedStock";
-import { useRealtimeChannel, RealtimeStatus } from "@/hooks/useRealtimeChannel";
+import { useRealtimeChannel } from "@/hooks/useRealtimeChannel";
 
 export interface RealTimeStats {
   totalArticles: number;
