@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Minus, PackagePlus, Plus, X } from "lucide-react";
+import { PackagePlus, X } from "lucide-react";
+import { StockQuantitySelector } from "./shared/StockQuantitySelector";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -250,18 +251,7 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
 
               <div className="space-y-2">
                 <Label htmlFor="simple-entry-quantity">{editingArticle && !selected ? "Quantité initiale" : "Quantité entrante"}</Label>
-                <div className="flex items-center gap-2">
-                  <Button type="button" variant="outline" size="icon" className="h-12 w-12" onClick={() => setQuantity((q) => Math.max(1, q - 1))}>
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <Input id="simple-entry-quantity" ref={qtyRef} type="number" min={1} value={quantity}
-                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                    onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
-                    className="h-12 text-center text-xl font-bold" />
-                  <Button type="button" variant="outline" size="icon" className="h-12 w-12" onClick={() => setQuantity((q) => q + 1)}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
+                <StockQuantitySelector id="simple-entry-quantity" ref={qtyRef} value={quantity} onChange={setQuantity} disabled={submitting} onEnter={submit} />
                 <p className="text-xs text-muted-foreground text-center">Stock après entrée : {(selected?.stock || 0) + quantity}</p>
               </div>
 

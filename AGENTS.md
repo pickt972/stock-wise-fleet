@@ -9,7 +9,8 @@
 - Simple entry price parsing stays in a pure helper with Bun tests so optional prices and invalid input are handled before any stock write.
 - Quick creation in simple entries inserts an authenticated, RLS-protected zero-stock article and selects its returned row before the user validates the entry; draft completion stays in the existing private checked transaction. Only entry triggers add stock, preventing duplicate quantities.
 - Entries and exits share StockArticleSearch and QuickArticleFields, with pure Bun-tested funnel and stock-state helpers, so filtering, creation fields and result rendering stay consistent.
-- Manual exits use the shared vehicle requirement helper and accept a fleet ID or free brand/model stored in exit notes without creating a fleet vehicle; this preserves optional vehicle selection and traceability.
+- Manual exits use a pure tested payload helper to store plate/brand/model in the existing exit notes column and force a null fleet ID without fleet lookup; this preserves traceability without adding external-schema columns.
+- Simple entries and new exits share StockQuantitySelector with pure tested quantity rules; step controls respect availability while direct overstock input only warns, leaving database stock safeguards unchanged.
 
 - Operation lists and details share UserAttribution and userDisplayName so missing creators and alternate user relationships resolve consistently without extra requests.
 
