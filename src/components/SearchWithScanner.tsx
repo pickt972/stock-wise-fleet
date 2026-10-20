@@ -26,6 +26,8 @@ interface SearchWithScannerProps {
   returnTo?: string;
   disabled?: boolean;
   className?: string;
+  /** Pass the raw scanned code to onScan without the global article lookup. */
+  rawScan?: boolean;
 }
 
 export const SearchWithScanner = ({
@@ -36,7 +38,8 @@ export const SearchWithScanner = ({
   onArticleNotFound,
   returnTo,
   disabled = false,
-  className = ""
+  className = "",
+  rawScan = false,
 }: SearchWithScannerProps) => {
   const [showScanner, setShowScanner] = useState(false);
   const [showNotFoundDialog, setShowNotFoundDialog] = useState(false);
@@ -46,6 +49,8 @@ export const SearchWithScanner = ({
   
   const handleScanSuccess = async (scannedCode: string) => {
     setShowScanner(false);
+    if (rawScan) { onScan?.(scannedCode); return; }
+    
     
     // Rechercher l'article dans la base de données
     try {
