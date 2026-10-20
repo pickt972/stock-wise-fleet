@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { Package, AlertTriangle, ScanLine, Search, PlusCircle, PackageX, ArrowLeftRight, Wrench, ArrowUpFromLine, ArrowDownToLine, PackageCheck } from "lucide-react";
+import { Package, AlertTriangle, ScanLine, Search, PlusCircle, PackageX, ScrollText, Wrench, ArrowUpFromLine, ArrowDownToLine, PackageCheck } from "lucide-react";
 import { KPICard } from "@/components/ui/kpi-card";
 import { useRealTimeStats } from "@/hooks/useRealTimeStats";
 import { useAlerts } from "@/hooks/useAlerts";
@@ -371,7 +371,7 @@ export default function Dashboard() {
           </div>
           <div onClick={() => navigate("/historique")} className="cursor-pointer">
             <KPICard
-              icon={<ArrowLeftRight className="h-4 w-4" />}
+              icon={<ScrollText className="h-4 w-4" />}
               value={isLoading ? "—" : stats.todayMovements}
               label="Aujourd'hui"
               tone="accent"
