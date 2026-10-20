@@ -50,6 +50,13 @@ export default function Transferts() {
     fetchTransferts();
   }, [currentPage]);
 
+  // Temps réel : tout mouvement (transfert) rafraîchit la liste
+  useRealtimeChannel(
+    "transferts-realtime",
+    ["stock_movements"],
+    () => fetchTransferts(),
+  );
+
   const fetchTransferts = async () => {
     setIsLoading(true);
     try {

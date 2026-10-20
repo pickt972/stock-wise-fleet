@@ -17,6 +17,7 @@ import { ExitStats } from "@/components/stock/ExitStats";
 import { ActiveRentals } from "@/components/stock/ActiveRentals";
 import { NewExitForm } from "@/components/stock/NewExitForm";
 import DashboardLayout from "./DashboardLayout";
+import { useRealtimeChannel } from "@/hooks/useRealtimeChannel";
 import { PageSkeleton } from "@/components/ui/skeletons/PageSkeleton";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +40,13 @@ export default function Sorties() {
   useEffect(() => {
     fetchExits();
   }, [searchTerm, exitTypeFilter, dateRange]);
+
+  // Temps réel : nouvelle sortie ou ligne de sortie → liste et compteurs à jour
+  useRealtimeChannel(
+    "sorties-realtime",
+    ["stock_exits", "stock_exit_items"],
+    () => fetchExits(),
+  );
 
   const fetchExits = async () => {
     setIsLoading(true);
