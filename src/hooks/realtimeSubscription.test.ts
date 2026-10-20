@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { describe, expect, test } from "bun:test";
 import { RealtimeClient } from "@supabase/supabase-js";
 import { readFileSync, readdirSync } from "node:fs";
@@ -7,7 +8,7 @@ import { createPostgresChannel } from "./realtimeSubscription";
 
 describe("Realtime subscription isolation", () => {
   test("a second alerts listener cannot reuse an already subscribed channel", () => {
-    const client = new RealtimeClient("ws://localhost:54321/realtime/v1");
+    const client = new RealtimeClient("ws://localhost:54321/realtime/v1", { params: { apikey: "test-only-not-a-real-key" } });
     const first = createPostgresChannel(client, "alerts-realtime", ["articles"], () => {});
     first.state = "joining";
     // Reproduces the SDK error with the old shared topic.
@@ -18,7 +19,7 @@ describe("Realtime subscription isolation", () => {
   });
 
   test("maintenance subscriptions are independent too", () => {
-    const client = new RealtimeClient("ws://localhost:54321/realtime/v1");
+    const client = new RealtimeClient("ws://localhost:54321/realtime/v1", { params: { apikey: "test-only-not-a-real-key" } });
     const first = createPostgresChannel(client, "maintenance", ["app_settings"], () => {});
     first.state = "joining";
     const second = createPostgresChannel(client, "maintenance", ["app_settings"], () => {});
