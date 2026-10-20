@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Véhicules : format SIV et masque à la saisie, validation stricte, affichage uniforme dans toute l’app sans modification des données existantes.
+
 - [x] Nouvelle sortie : recherche et champs de création partagés avec les entrées, filtres en cascade, création toujours visible et véhicule obligatoire ; 19 tests réussis et parcours visuel sur données de test vérifié sans erreur.
 - [ ] Vérifier Nouvelle sortie et création rapide sur données réelles — session Supabase externe indisponible pour l’essai connecté automatique.
 
