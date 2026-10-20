@@ -1,6 +1,7 @@
 # Roadmap
 
-- [ ] Nouvelle sortie : véhicule manuel enregistré en texte sans résolution flotte ; sélecteur −/+ partagé avec Nouvelle entrée et avertissement de dépassement.
+- [x] Nouvelle sortie : véhicule manuel forcé en texte dans notes avec identifiant flotte null, sans recherche ; sélecteur −/+ partagé avec Nouvelle entrée et avertissement de dépassement ; 25 tests réussis et parcours vérifié sur données de test.
+- [ ] Confirmer la disparition de « TypeError: Load failed » et la sauvegarde réelle du véhicule manuel — session Supabase externe indisponible, erreur réseau non reproduite sur données de test.
 
 - [x] Véhicules : masque et validation SIV partagés, affichage uniforme sans migration des données ; 72 tests réussis, libellé Sorties et saisie de création vérifiés sur données de test.
 - [ ] Vérifier création/modification de véhicule sur la base réelle — session Supabase externe indisponible pour l’essai connecté automatique.
