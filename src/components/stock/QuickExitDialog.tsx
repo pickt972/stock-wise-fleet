@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { vehicleLabel } from "@/lib/vehicleFormatting";
 import { useState, useEffect } from "react";
 import { Minus, Plus, PackageMinus, Car } from "lucide-react";
@@ -216,18 +217,9 @@ export function QuickExitDialog({ article, open, onOpenChange, onDone }: QuickEx
                   )}
                 </p>
               </div>
-              <Select value={vehiculeId} onValueChange={(v) => { setVehiculeId(v); if (v) setVehiculeLibre(""); }}>
-                <SelectTrigger className={`h-11 bg-background ${needsVehicle && !vehicleFilled ? "border-destructive" : ""}`}>
-                  <SelectValue placeholder="🚘 Véhicule de la flotte…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {vehicules.map((v) => (
-                    <SelectItem key={v.id} value={v.id}>
-                      {v.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect value={vehiculeId} onValueChange={(v) => { setVehiculeId(v); if (v) setVehiculeLibre(""); }}
+                  options={vehicules.map((v) => ({ value: v.id, label: v.label }))} placeholder="🚘 Véhicule de la flotte…"
+                  searchPlaceholder="Immatriculation, marque ou modèle…" triggerClassName={`h-11 bg-background ${(needsVehicle) && !vehicleFilled ? "border-destructive" : ""}`} />
               {!vehiculeId && (
                 <div>
                   <Label htmlFor="vehicule-libre" className="text-xs text-muted-foreground">

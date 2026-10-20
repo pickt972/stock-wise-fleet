@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { vehicleLabel } from "@/lib/vehicleFormatting";
 import { useState, useEffect } from "react";
 import { Plus, Minus, ArrowLeft, Package, MapPin, Tag, Car, StickyNote } from "lucide-react";
@@ -232,20 +233,9 @@ export function QuickStockAction({ article, onBack, onComplete }: QuickStockActi
                     </p>
                   </div>
                 </div>
-                <Select value={vehiculeId} onValueChange={(v) => { setVehiculeId(v); if (v) setVehiculeLibre(""); }}>
-                  <SelectTrigger className={`h-10 bg-background ${
-                    vehicleRequired && !vehicleFilled ? "border-destructive" : ""
-                  }`}>
-                    <SelectValue placeholder="🚘  Véhicule de la flotte…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {vehicules.map((v) => (
-                      <SelectItem key={v.id} value={v.id}>
-                        {v.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect value={vehiculeId} onValueChange={(v) => { setVehiculeId(v); if (v) setVehiculeLibre(""); }}
+                  options={vehicules.map((v) => ({ value: v.id, label: v.label }))} placeholder="🚘 Véhicule de la flotte…"
+                  searchPlaceholder="Immatriculation, marque ou modèle…" triggerClassName={`h-10 bg-background ${(vehicleRequired) && !vehicleFilled ? "border-destructive" : ""}`} />
                 {!vehiculeId && (
                   <Input
                     value={vehiculeLibre}
