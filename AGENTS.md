@@ -18,3 +18,5 @@
 - Category movement rules are tested with Bun's test runner next to their implementation so hierarchy and hit-zone constraints can be checked without altering live inventory.- Inventory workflow writes (open, count, close, abandon) go through SECURITY DEFINER RPCs that check staff role and maintenance mode, so stock adjustments and audit entries stay atomic and consistent.
 
 - Realtime listeners use createPostgresChannel with schema-typed table names and a unique channel per subscription, registering callbacks before subscribe to avoid collisions between hook instances; useRealtimeChannel handles debounced refetch/status/cleanup, while maintenance keeps its payload handler. Tables must be in the supabase_realtime publication to receive events.
+
+- Inventory scans pass raw codes (SearchWithScanner rawScan); unknown or out-of-scope articles join the open session via the add_inventory_article invoker wrapper around a private staff/maintenance-checked function, keeping counts and totals atomic.

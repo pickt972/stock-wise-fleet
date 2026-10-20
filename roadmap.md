@@ -42,3 +42,5 @@
 - [x] Ajouter les flèches mobiles, le défilement à 80px et la confirmation visuelle
 - [x] Vérifier les règles et l'affichage avec des catégories de test (10 tests réussis, essais ordinateur/téléphone)
 - [ ] Vérifier l'enregistrement avec un compte connecté — accès Supabase externe indisponible dans les essais
+- [x] Inventaire : création d'un article inconnu scanné (« Créer et compter ») et nom du lieu au lieu de l'identifiant brut
+- [ ] Vérifier la création + comptage sur la base externe (session connectée indisponible)
