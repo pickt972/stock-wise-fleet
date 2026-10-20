@@ -16,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { countingProgress, itemsWithVariance, sortForCounting, variance, varianceTone } from "@/lib/inventory";
 import { fetchItems, fmtDateTime, type InventoryRow } from "./inventoryData";
 import { cn } from "@/lib/utils";
+import { NewInventoryArticleDialog } from "./NewInventoryArticleDialog";
+import { isUuidLike } from "./newInventoryArticle";
 
 const toneClass = {
   negative: "text-destructive",
@@ -24,8 +26,8 @@ const toneClass = {
   none: "text-muted-foreground",
 } as const;
 
-export function InventoryCounting({ inventory, openerName, onFinished }: {
-  inventory: InventoryRow; openerName: string; onFinished: () => void;
+export function InventoryCounting({ inventory, openerName, placeLabel, onFinished }: {
+  inventory: InventoryRow; openerName: string; placeLabel: string; onFinished: () => void;
 }) {
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -41,6 +43,7 @@ export function InventoryCounting({ inventory, openerName, onFinished }: {
   const [abandonOpen, setAbandonOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [newCode, setNewCode] = useState<string | null>(null);
 
   const save = async (itemId: string, raw: string) => {
     const qty = raw.trim() === "" ? null : Number(raw);
@@ -64,14 +67,33 @@ export function InventoryCounting({ inventory, openerName, onFinished }: {
     timers.current[itemId] = setTimeout(() => save(itemId, raw), 700);
   };
 
-  const onScan = (code: string) => {
-    const c = code.trim().toLowerCase();
-    const it = items.find((i) => i.articles?.code_barre?.toLowerCase() === c || i.reference?.toLowerCase() === c);
-    if (!it) { toast({ title: "Article hors périmètre", description: code, variant: "destructive" }); return; }
-    const next = (it.stock_compte ?? 0) + 1;
-    save(it.id, String(next));
-    toast({ title: `${it.reference} : ${next}` });
+  const onScan = async (code: string) => {
+    const raw = code.trim();
+    const c = raw.toLowerCase();
     setSearch("");
+    const it = items.find((i) => i.articles?.code_barre?.toLowerCase() === c || i.reference?.toLowerCase() === c);
+    if (it) {
+      const next = (it.stock_compte ?? 0) + 1;
+      save(it.id, String(next));
+      toast({ title: `${it.reference} : ${next}` });
+      return;
+    }
+    const { data: found, error } = await supabase.from("articles").select("id, reference")
+      .is("archived_at", null).or(`code_barre.eq.${raw},reference.eq.${raw}`).limit(1);
+    if (error) { toast({ title: "Recherche impossible", description: error.message, variant: "destructive" }); return; }
+    if (found && found.length > 0) {
+      const { error: e2 } = await supabase.rpc("add_inventory_article" as any, { p_inventaire_id: inventory.id, p_article_id: found[0].id, p_qty: 1 });
+      if (e2) { toast({ title: "Comptage non enregistré", description: e2.message, variant: "destructive" }); return; }
+      toast({ title: `${found[0].reference} : 1`, description: "Article hors périmètre ajouté au comptage" });
+      afterAdd();
+      return;
+    }
+    setNewCode(raw);
+  };
+
+  const afterAdd = () => {
+    qc.invalidateQueries({ queryKey: key });
+    qc.invalidateQueries({ queryKey: ["inventories"] });
   };
 
   const progress = countingProgress(items);
@@ -114,7 +136,7 @@ export function InventoryCounting({ inventory, openerName, onFinished }: {
               {inventory.reference} <Badge variant="secondary">🟡 En cours</Badge>
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              {inventory.label ? `${inventory.label} · ` : ""}Ouvert le {fmtDateTime(inventory.opened_at)} par {openerName}
+              {placeLabel}{inventory.label && !isUuidLike(inventory.label) ? ` · ${inventory.label}` : ""} · Ouvert le {fmtDateTime(inventory.opened_at)} par {openerName}
             </p>
           </div>
           <div className="flex gap-2">
@@ -128,7 +150,9 @@ export function InventoryCounting({ inventory, openerName, onFinished }: {
           </div>
           <Progress value={progress.percent} />
         </div>
-        <SearchWithScanner placeholder="Scanner ou rechercher un article…" value={search} onChange={setSearch} onScan={onScan} returnTo="/inventaire" />
+        <SearchWithScanner placeholder="Scanner ou rechercher un article…" value={search} onChange={setSearch} onScan={onScan} rawScan returnTo="/inventaire" />
+        <NewInventoryArticleDialog code={newCode} inventoryId={inventory.id} onClose={() => setNewCode(null)}
+          onCounted={() => { setNewCode(null); afterAdd(); }} />
       </CardHeader>
       <CardContent className="p-0">
         {isLoading ? (
