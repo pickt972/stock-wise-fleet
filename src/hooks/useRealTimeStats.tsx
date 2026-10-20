@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAggregatedStockGroups } from "@/hooks/useAggregatedStock";
+import { useRealtimeChannel, RealtimeStatus } from "@/hooks/useRealtimeChannel";
 
 export interface RealTimeStats {
   totalArticles: number;
@@ -125,13 +126,20 @@ export function useRealTimeStats() {
   useEffect(() => {
     fetchStats();
 
-    // Polling toutes les 30 secondes au lieu de temps réel
-    const interval = setInterval(fetchStats, 30000);
+    // Filet de sécurité : rafraîchissement lent si le realtime est coupé
+    const interval = setInterval(fetchStats, 120000);
 
     return () => {
       clearInterval(interval);
     };
   }, []);
 
-  return { stats, isLoading, refresh: fetchStats };
+  // Temps réel : toute écriture sur articles ou mouvements rafraîchit les compteurs
+  const realtimeStatus = useRealtimeChannel(
+    "dashboard-stats",
+    ["articles", "stock_movements"],
+    fetchStats,
+  );
+
+  return { stats, isLoading, refresh: fetchStats, realtimeStatus };
 }
