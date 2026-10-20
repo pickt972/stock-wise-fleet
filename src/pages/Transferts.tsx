@@ -12,6 +12,7 @@ import { TransfertEmplacementDialog } from "@/components/transferts/TransfertEmp
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import DashboardLayout from "./DashboardLayout";
+import { useRealtimeChannel } from "@/hooks/useRealtimeChannel";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageSkeleton } from "@/components/ui/skeletons/PageSkeleton";
 

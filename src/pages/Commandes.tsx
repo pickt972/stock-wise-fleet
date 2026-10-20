@@ -29,6 +29,7 @@ import { OrderArticleSearch, stockTone, type OrderSearchContext } from "@/compon
 import { ReceptionCommandeDialog } from "@/components/commandes/ReceptionCommandeDialog";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeChannel } from "@/hooks/useRealtimeChannel";
 import { orderPermissions } from "@/lib/orderPermissions";
 import { XCircle } from "lucide-react";
 import {
@@ -413,6 +414,13 @@ export default function Commandes() {
       });
     }
   };
+
+  // Temps réel : changement de statut ou de ligne de commande → liste à jour
+  useRealtimeChannel(
+    "commandes-realtime",
+    ["commandes", "commande_items"],
+    () => fetchCommandes(),
+  );
 
   const fetchArticles = async () => {
     try {
