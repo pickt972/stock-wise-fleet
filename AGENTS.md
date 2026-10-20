@@ -1,5 +1,7 @@
 # Architecture rules
 
+- Article table ordering uses a pure, Bun-tested three-state sort helper after filtering; desktop tables and existing mobile/card views consume the same result without database writes.
+
 - Stock entry headers and items are saved through an invoker RPC; order receptions use an invoker API wrapper around a private, staff/maintenance-checked transaction so articles, received quantities, stock triggers and order status succeed or roll back together.
 - Entry statistics are queried independently of list filters so period counts and total value remain accurate after refresh.
 - Simple entry price parsing stays in a pure helper with Bun tests so optional prices and invalid input are handled before any stock write.
