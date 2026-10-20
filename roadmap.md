@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Noms de tables Realtime vérifiés contre le schéma Supabase ; collisions de canaux corrigées, erreur reproduite puis testée, 61 tests réussis et compilation OK.
+- [ ] Vérifier les événements Realtime entre deux appareils connectés — session Supabase externe indisponible pour l’essai automatique.
+
 - [x] Articles : tableau triable, filtres conservés et cartes sous 768px ; 7 tests réussis, six cycles de tri et clic de ligne vérifiés sur articles de test, affichage sans erreur.
 - [ ] Vérifier tableau, filtres et retour aux cartes avec les articles réels — session Supabase externe indisponible pour les essais connectés.
 

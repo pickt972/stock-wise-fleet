@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { createPostgresChannel, type RealtimeTable } from "./realtimeSubscription";
 
 export type RealtimeStatus = "connecting" | "connected" | "disconnected";
 
@@ -13,7 +14,7 @@ export type RealtimeStatus = "connecting" | "connected" | "disconnected";
  */
 export function useRealtimeChannel(
   name: string,
-  tables: string[],
+  tables: RealtimeTable[],
   onChange: () => void,
   debounceMs = 500,
 ): RealtimeStatus {
@@ -22,25 +23,24 @@ export function useRealtimeChannel(
   onChangeRef.current = onChange;
 
   const tablesKey = tables.join(",");
+  const tablesRef = useRef(tables);
+  tablesRef.current = tables;
 
   useEffect(() => {
+    let active = true;
+    setStatus("connecting");
     let timer: ReturnType<typeof setTimeout> | null = null;
 
     const schedule = () => {
+      if (!active) return;
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => onChangeRef.current(), debounceMs);
     };
 
-    const channel = supabase.channel(name);
-    tablesKey.split(",").forEach((table) => {
-      channel.on(
-        "postgres_changes",
-        { event: "*", schema: "public", table },
-        schedule,
-      );
-    });
+    const channel = createPostgresChannel(supabase, name, tablesRef.current, schedule);
 
     channel.subscribe((s) => {
+      if (!active) return;
       if (s === "SUBSCRIBED") setStatus("connected");
       else if (s === "CLOSED" || s === "CHANNEL_ERROR" || s === "TIMED_OUT")
         setStatus("disconnected");
@@ -48,6 +48,7 @@ export function useRealtimeChannel(
     });
 
     return () => {
+      active = false;
       if (timer) clearTimeout(timer);
       supabase.removeChannel(channel);
     };
