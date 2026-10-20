@@ -1,10 +1,10 @@
-import { vehicleLabel } from "@/lib/vehicleFormatting";
+import { vehicleLabel, maskSivPlate, isValidSivPlate, vehicleBrand, vehicleModel } from "@/lib/vehicleFormatting";
 import { StockArticleSearch } from "./shared/StockArticleSearch";
 import { QuickArticleFields } from "./shared/QuickArticleFields";
 import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { quickEntryArticle } from "@/lib/simpleEntryInput";
-import { needsVehicleForExit, exitVehicleValid } from "@/lib/vehicleRequirement";
+import { needsVehicleForExit } from "@/lib/vehicleRequirement";
 import { useState, useEffect, useRef } from "react";
 import { PackageMinus, X } from "lucide-react";
 import {
@@ -87,6 +87,8 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
   const quantityRef = useRef<HTMLInputElement>(null);
   const savingRef = useRef(false);
   const [notes, setNotes] = useState("");
+  const [manualVehicle, setManualVehicle] = useState(false);
+  const [manualPlate, setManualPlate] = useState("");
   const [cats, setCats] = useState<{ id: string; nom: string; parent_id: string | null; requires_vehicle: boolean | null }[]>([]);
 
   useEffect(() => {
@@ -99,13 +101,14 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
       setModele("");
       setSelectedVehicule(null);
       setNotes(""); setSearch(""); setFilterCategory(""); setFilterSubcategory(""); setFilterBrand("");
-      setScannedCode(null); setScannerOpen(false); setCreating(false);
+      setScannedCode(null); setScannerOpen(false); setCreating(false); setManualVehicle(false); setManualPlate("");
     }
   }, [open]);
 
   const selectedArt = articles.find((a) => a.id === articleId);
   const needsVehicle = needsVehicleForExit(selectedArt, cats);
-  const vehiculeValid = exitVehicleValid(needsVehicle, selectedVehicule?.id || "", marque, modele);
+  const manualPlateValid = isValidSivPlate(manualPlate);
+  const vehiculeValid = selectedVehicule ? true : manualVehicle ? (manualPlateValid || (!needsVehicle && !manualPlate)) : !needsVehicle;
   const pick = (a: Article) => {
     setArticleId(a.id); setCreating(false);
     setTimeout(() => quantityRef.current?.focus(), 50);
@@ -215,7 +218,8 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
     setIsLoading(true);
     try {
       const finalVehiculeId = selectedVehicule?.id || null;
-      const freeVehicle = !finalVehiculeId ? [marque.trim(), modele.trim()].filter(Boolean).join(" ") : "";
+      const freeName = [vehicleBrand(marque), vehicleModel(modele)].filter(Boolean).join(" ");
+      const freeVehicle = !finalVehiculeId && manualVehicle && manualPlateValid ? [freeName, manualPlate].filter(Boolean).join(" — ") : "";
       const exitNotes = [notes.trim(), freeVehicle ? `Véhicule : ${freeVehicle}` : ""].filter(Boolean).join(" — ");
 
       // exit_number laissé vide → le trigger Supabase (trigger_set_exit_number)
@@ -328,12 +332,31 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
 
           <div className="space-y-3">
             <Label htmlFor="exit-fleet">Véhicule concerné{needsVehicle ? " *" : " (optionnel)"}</Label>
-            <SearchableSelect id="exit-fleet" value={selectedVehicule?.id || ""} options={vehicules.map((v) => ({ value: v.id, label: vehicleLabel(v) }))}
-              placeholder="Véhicule de la flotte" onValueChange={(id) => { setSelectedVehicule(vehicules.find((v) => v.id === id) || null); setMarque(""); setModele(""); }} />
-            {!selectedVehicule && <div className="grid grid-cols-2 gap-3">
-              <div><Label htmlFor="exit-free-brand">Marque libre</Label><AutocompleteInput id="exit-free-brand" value={marque} onValueChange={(v) => setMarque(v.toUpperCase())} suggestions={marqueSuggestions} placeholder="Ex: BYD" /></div>
-              <div><Label htmlFor="exit-free-model">Modèle libre</Label><AutocompleteInput id="exit-free-model" value={modele} onValueChange={(v) => setModele(titleCase(v))} suggestions={modeleSuggestions} placeholder="Ex: Atto 3" /></div>
-            </div>}
+            {!manualVehicle ? (
+              <SearchableSelect id="exit-fleet" value={selectedVehicule?.id || ""} options={vehicules.map((v) => ({ value: v.id, label: vehicleLabel(v), keywords: [v.immatriculation, v.marque, v.modele].filter(Boolean).join(" ") }))}
+                placeholder="Véhicule de la flotte" searchPlaceholder="Immatriculation, marque ou modèle…" emptyMessage="Aucun véhicule trouvé"
+                onValueChange={(id) => { setSelectedVehicule(vehicules.find((v) => v.id === id) || null); }}
+                renderEmptyAction={(q, close) => (
+                  <Button type="button" variant="ghost" className="w-full justify-start text-primary" onClick={() => {
+                    close(); setSelectedVehicule(null); setManualVehicle(true);
+                    const raw = q.toUpperCase().replace(/[^A-Z0-9]/g, "");
+                    setManualPlate(/^[A-Z]{2}\d/.test(raw) ? maskSivPlate(raw) : ""); setMarque(""); setModele("");
+                  }}>🚗 Saisir manuellement l'immatriculation</Button>
+                )} />
+            ) : (
+              <div className="space-y-3 rounded-md border p-3">
+                <div><Label htmlFor="exit-manual-plate">Immatriculation{needsVehicle ? " *" : ""}</Label>
+                  <Input id="exit-manual-plate" value={manualPlate} onChange={(e) => setManualPlate(maskSivPlate(e.target.value))} placeholder="AA-000-AA" maxLength={9} autoCapitalize="characters" />
+                  {manualPlate && !manualPlateValid && <p className="text-xs text-destructive mt-1">Format attendu : AA-000-AA</p>}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label htmlFor="exit-free-brand">Marque (optionnel)</Label><AutocompleteInput id="exit-free-brand" value={marque} onValueChange={(v) => setMarque(v.toUpperCase())} suggestions={marqueSuggestions} placeholder="Ex: KIA" /></div>
+                  <div><Label htmlFor="exit-free-model">Modèle (optionnel)</Label><AutocompleteInput id="exit-free-model" value={modele} onValueChange={(v) => setModele(titleCase(v))} suggestions={modeleSuggestions} placeholder="Ex: Picanto" /></div>
+                </div>
+                <p className="text-xs text-muted-foreground">Ce véhicule ne sera pas ajouté à la flotte</p>
+                <button type="button" className="text-sm text-primary hover:underline" onClick={() => { setManualVehicle(false); setManualPlate(""); setMarque(""); setModele(""); }}>← Rechercher dans la flotte</button>
+              </div>
+            )}
             {needsVehicle && !vehiculeValid && <p role="alert" className="text-xs text-destructive">Véhicule obligatoire pour cette catégorie d'article</p>}
           </div>
 
