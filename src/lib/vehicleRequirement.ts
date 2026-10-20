@@ -28,7 +28,8 @@ export function categoryRequiresVehicle(
   while (node && guard++ < 10) {
     if (node.requires_vehicle === true) return true;
     if (node.requires_vehicle === false && node.parent_id) return false;
-    node = node.parent_id ? cats.find((c) => c.id === node!.parent_id) : undefined;
+    const parentId = node.parent_id;
+    node = parentId ? cats.find((c) => c.id === parentId) : undefined;
   }
   return !!byName(article.categorie)?.requires_vehicle;
 }
@@ -38,4 +39,8 @@ export function needsVehicleForExit(
   cats: VehicleCategoryNode[]
 ): boolean {
   return !!article?.vehicule_required || categoryRequiresVehicle(article, cats);
+}
+
+export function exitVehicleValid(required: boolean, fleetId: string, brand: string, model: string): boolean {
+  return !required || Boolean(fleetId || (brand.trim() && model.trim()));
 }

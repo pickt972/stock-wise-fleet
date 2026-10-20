@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { categoryRequiresVehicle, needsVehicleForExit } from "./vehicleRequirement";
+import { categoryRequiresVehicle, needsVehicleForExit, exitVehicleValid } from "./vehicleRequirement";
 
 const cats = [
   { id: "1", nom: "Batteries", parent_id: null, requires_vehicle: true },
@@ -10,6 +10,15 @@ const cats = [
 ];
 
 describe("needsVehicleForExit", () => {
+  test("véhicule requis : flotte ou marque et modèle libres, sans plaque obligatoire", () => {
+    expect(exitVehicleValid(true, "", "", "")).toBe(false);
+    expect(exitVehicleValid(true, "", "BYD", "")).toBe(false);
+    expect(exitVehicleValid(true, "", "BYD", "Atto 3")).toBe(true);
+    expect(exitVehicleValid(true, "fleet-id", "", "")).toBe(true);
+  });
+  test("véhicule facultatif : validation sans véhicule", () => {
+    expect(exitVehicleValid(false, "", "", "")).toBe(true);
+  });
   test("catégorie requires_vehicle=true → véhicule obligatoire", () => {
     expect(needsVehicleForExit({ categorie: "Batteries" }, cats)).toBe(true);
   });

@@ -6,7 +6,8 @@
 - Entry statistics are queried independently of list filters so period counts and total value remain accurate after refresh.
 - Simple entry price parsing stays in a pure helper with Bun tests so optional prices and invalid input are handled before any stock write.
 - Quick creation in simple entries inserts an authenticated, RLS-protected zero-stock article and selects its returned row before the user validates the entry; draft completion stays in the existing private checked transaction. Only entry triggers add stock, preventing duplicate quantities.
-- Simple entry funnel options, combined filtering and stock states use a pure Bun-tested helper so all search paths apply the same rules.
+- Entries and exits share StockArticleSearch and QuickArticleFields, with pure Bun-tested funnel and stock-state helpers, so filtering, creation fields and result rendering stay consistent.
+- Manual exits use the shared vehicle requirement helper and accept a fleet ID or free brand/model stored in exit notes without creating a fleet vehicle; this preserves optional vehicle selection and traceability.
 
 - Operation lists and details share UserAttribution and userDisplayName so missing creators and alternate user relationships resolve consistently without extra requests.
 
