@@ -35,3 +35,9 @@ test("création rapide : les champs essentiels et la référence définitive son
   expect(() => quickEntryArticle({ ...article, designation: " " })).toThrow();
   expect(() => quickEntryArticle({ ...article, categorie: "" })).toThrow();
 });
+test("création rapide : conserve la marque et ne compte pas la quantité avant validation de l’entrée", () => {
+  const result = quickEntryArticle({ ...article, marque: " VARTA " });
+  expect(result.marque).toBe("VARTA");
+  expect(result.stock).toBe(0);
+  expect(result.is_draft).toBe(false);
+});
