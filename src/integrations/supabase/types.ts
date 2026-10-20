@@ -1529,6 +1529,10 @@ export type Database = {
         Args: { p_inventaire_id: string; p_reason: string }
         Returns: undefined
       }
+      add_inventory_article: {
+        Args: { p_article_id: string; p_inventaire_id: string; p_qty: number }
+        Returns: string
+      }
       close_inventory: { Args: { p_inventaire_id: string }; Returns: undefined }
       close_inventory_session: {
         Args: { p_apply_to_stock: boolean; p_inventaire_id: string }
