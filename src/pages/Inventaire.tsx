@@ -15,6 +15,7 @@ import { InventoryDetailDialog } from "@/components/inventaire/InventoryDetailDi
 import { fetchNames, fmtDateTime, type InventoryRow } from "@/components/inventaire/inventoryData";
 import { statusLabel } from "@/lib/inventory";
 import { useToast } from "@/hooks/use-toast";
+import { inventoryPlaceLabel } from "@/components/inventaire/newInventoryArticle";
 
 export default function Inventaire() {
   const qc = useQueryClient();
@@ -99,7 +100,8 @@ export default function Inventaire() {
         </div>
 
         {active && (
-          <InventoryCounting inventory={active} openerName={name(active.created_by)} onFinished={refresh} />
+          <InventoryCounting inventory={active} openerName={name(active.created_by)}
+            placeLabel={inventoryPlaceLabel(active.scope_type, data?.scopeNames[active.scope_id ?? ""])} onFinished={refresh} />
         )}
 
         <Card>
