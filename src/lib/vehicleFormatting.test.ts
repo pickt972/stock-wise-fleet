@@ -19,4 +19,10 @@ test("plaques existantes normalisées sans mutation ni invention", () => {
   expect(vehicle.immatriculation).toBe("df876hh");
   expect(displayPlate("1234 ab 972")).toBe("1234 AB 972");
   expect(displayPlate(null)).toBe("—");
+});import { matchesVehicleSearch } from "./vehicleFormatting";
+test("recherche véhicule insensible aux tirets et à la casse", () => {
+  const label = "KIA Picanto — FW-690-BY";
+  for (const q of ["fw690", "fw-690", "FW690BY", "kia", "picanto", "kia picanto"]) expect(matchesVehicleSearch(q, label)).toBe(true);
+  expect(matchesVehicleSearch("fw691", label)).toBe(false);
+  expect(matchesVehicleSearch("fw690", "kia", "picanto", "fw690by")).toBe(true);
 });

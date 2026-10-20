@@ -1,3 +1,4 @@
+import { matchesVehicleSearch } from "@/lib/vehicleFormatting";
 import { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
@@ -91,7 +92,7 @@ export default function Sorties() {
         filteredData = filteredData.filter(
           (exit) =>
             exit.exit_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            exit.vehicules?.immatriculation?.toLowerCase().includes(searchTerm.toLowerCase())
+            (!!exit.vehicules?.immatriculation && matchesVehicleSearch(searchTerm, exit.vehicules.immatriculation))
         );
       }
 

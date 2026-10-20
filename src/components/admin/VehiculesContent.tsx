@@ -1,3 +1,4 @@
+import { matchesVehicleSearch } from "@/lib/vehicleFormatting";
 import { vehicleLabel } from "@/lib/vehicleFormatting";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,9 +67,7 @@ export function VehiculesContent() {
   };
 
   const filteredVehicules = vehicules.filter(vehicule =>
-    vehicule.marque.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    vehicule.modele.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    vehicule.immatriculation.toLowerCase().includes(searchTerm.toLowerCase())
+    matchesVehicleSearch(searchTerm, vehicule.marque, vehicule.modele, vehicule.immatriculation)
   );
 
   if (isLoading) {
