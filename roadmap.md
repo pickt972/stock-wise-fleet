@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Nouvelle entrée : filtres progressifs, résultats avec badges de stock et création rapide avec marque puis sélection immédiate.
+
 - [x] Noms de tables Realtime vérifiés contre le schéma Supabase ; collisions de canaux corrigées, erreur reproduite puis testée, 61 tests réussis et compilation OK.
 - [ ] Vérifier les événements Realtime entre deux appareils connectés — session Supabase externe indisponible pour l’essai automatique.
 
