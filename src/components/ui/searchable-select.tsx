@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Check, ChevronsUpDown, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { matchesVehicleSearch } from "@/lib/vehicleFormatting";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -59,12 +60,7 @@ export function SearchableSelect({
 
   const filtered = React.useMemo(() => {
     if (!search.trim()) return options;
-    const q = search.toLowerCase();
-    return options.filter(
-      (o) =>
-        o.label.toLowerCase().includes(q) ||
-        (o.description || "").toLowerCase().includes(q)
-    );
+    return options.filter((o) => matchesVehicleSearch(search, o.label, o.description));
   }, [options, search]);
 
   const selectedLabel = React.useMemo(

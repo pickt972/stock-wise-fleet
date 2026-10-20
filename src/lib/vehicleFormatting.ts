@@ -30,3 +30,13 @@ export function vehicleLabel(vehicle: { marque?: string | null; modele?: string 
   const name = [vehicleBrand(vehicle.marque), vehicleModel(vehicle.modele)].filter(Boolean).join(" ");
   return `${name || "Véhicule"} — ${displayPlate(vehicle.immatriculation)}`;
 }
+/** Search key: uppercase, without dashes/spaces/punctuation, so "fw-690" matches "FW690BY". */
+export function vehicleSearchKey(value?: string | null): string {
+  return (value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+export function matchesVehicleSearch(query: string, ...fields: (string | null | undefined)[]): boolean {
+  const q = vehicleSearchKey(query);
+  if (!q) return true;
+  return fields.some((f) => vehicleSearchKey(f).includes(q)) || vehicleSearchKey(fields.join("")).includes(q);
+}
