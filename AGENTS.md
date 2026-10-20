@@ -1,5 +1,7 @@
 # Architecture rules
 
+- Vehicle forms and displays use the pure Bun-tested vehicleFormatting helpers for SIV masking, validation and fleet labels; presentation normalization never rewrites existing records.
+
 - Article table ordering uses a pure, Bun-tested three-state sort helper after filtering; desktop tables and existing mobile/card views consume the same result without database writes.
 
 - Stock entry headers and items are saved through an invoker RPC; order receptions use an invoker API wrapper around a private, staff/maintenance-checked transaction so articles, received quantities, stock triggers and order status succeed or roll back together.
