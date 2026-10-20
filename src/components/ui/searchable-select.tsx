@@ -151,7 +151,6 @@ export function SearchableSelect({
           ) : null}
           {filtered.length === 0 && renderEmptyAction ? (
             <div className="border-t p-1">{renderEmptyAction(search, () => setOpen(false))}</div>
-          ) : filtered.length === 0 ? null : (<>
           ) : (
             filtered.map((option) => (
               <button
@@ -177,7 +176,7 @@ export function SearchableSelect({
                   </span>
                 )}
               </button>
-            ))}</>
+            ))
           )}
         </div>
       </PopoverContent>
