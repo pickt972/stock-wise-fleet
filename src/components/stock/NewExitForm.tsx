@@ -1,4 +1,6 @@
-import { vehicleLabel, maskSivPlate, isValidSivPlate, vehicleBrand, vehicleModel } from "@/lib/vehicleFormatting";
+import { vehicleLabel, maskSivPlate, isValidSivPlate } from "@/lib/vehicleFormatting";
+import { exitVehicleInput } from "@/lib/exitVehicleInput";
+import { StockQuantitySelector } from "./shared/StockQuantitySelector";
 import { StockArticleSearch } from "./shared/StockArticleSearch";
 import { QuickArticleFields } from "./shared/QuickArticleFields";
 import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
@@ -64,7 +66,7 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
   const [isLoading, setIsLoading] = useState(false);
 
   const [articleId, setArticleId] = useState("");
-  const [quantity, setQuantity] = useState("");
+  const [quantity, setQuantity] = useState(1);
   const [exitType, setExitType] = useState("consommation");
   const [marque, setMarque] = useState("");
   const [modele, setModele] = useState("");
@@ -95,7 +97,7 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
     if (open) {
       fetchData();
       setArticleId("");
-      setQuantity("");
+      setQuantity(1);
       setExitType("consommation");
       setMarque("");
       setModele("");
@@ -110,7 +112,7 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
   const manualPlateValid = isValidSivPlate(manualPlate);
   const vehiculeValid = selectedVehicule ? true : manualVehicle ? (manualPlateValid || (!needsVehicle && !manualPlate)) : !needsVehicle;
   const pick = (a: Article) => {
-    setArticleId(a.id); setCreating(false);
+    setArticleId(a.id); setCreating(false); setQuantity(1);
     setTimeout(() => quantityRef.current?.focus(), 50);
   };
   const beginCreate = () => {
@@ -193,19 +195,9 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
       toast({ title: "Erreur", description: "Sélectionnez un article", variant: "destructive" });
       return;
     }
-    const qty = parseInt(quantity);
-    if (!qty || qty <= 0) {
+    const qty = quantity;
+    if (!Number.isSafeInteger(qty) || qty < 1) {
       toast({ title: "Erreur", description: "Quantité invalide", variant: "destructive" });
-      return;
-    }
-
-    const selectedArticle = articles.find((a) => a.id === articleId);
-    if (selectedArticle && qty > selectedArticle.stock) {
-      toast({
-        title: "Stock insuffisant",
-        description: `Disponible : ${selectedArticle.stock} unité(s)`,
-        variant: "destructive",
-      });
       return;
     }
 
@@ -217,10 +209,9 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
     savingRef.current = true;
     setIsLoading(true);
     try {
-      const finalVehiculeId = selectedVehicule?.id || null;
-      const freeName = [vehicleBrand(marque), vehicleModel(modele)].filter(Boolean).join(" ");
-      const freeVehicle = !finalVehiculeId && manualVehicle && manualPlateValid ? [freeName, manualPlate].filter(Boolean).join(" — ") : "";
-      const exitNotes = [notes.trim(), freeVehicle ? `Véhicule : ${freeVehicle}` : ""].filter(Boolean).join(" — ");
+      // Existing notes are the schema's free-text equivalent of vehicle_info.
+      // Manual mode never resolves or checks a fleet vehicle, even with a stale selection.
+      const vehicleFields = exitVehicleInput({ manual: manualVehicle, fleetId: selectedVehicule?.id, plate: manualPlate, brand: marque, model: modele, notes });
 
       // exit_number laissé vide → le trigger Supabase (trigger_set_exit_number)
       // génère automatiquement le numéro séquentiel SOR-YYYY-XXXXXX avant l'INSERT.
@@ -231,14 +222,14 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
         .insert([{
           exit_number: "",        // sera remplacé par le trigger BEFORE INSERT
           exit_type: exitType,
-          vehicule_id: finalVehiculeId,
-          notes: exitNotes || null,
+          ...vehicleFields,
           created_by: user?.id,
         }])
         .select()
         .single();
 
       if (exitError) throw exitError;
+      if (!exit) throw new Error("La sortie n’a pas été confirmée");
 
       // L'INSERT dans stock_exit_items déclenche trigger_decrease_stock_on_exit
       // qui décrémente articles.stock et insère un mouvement dans stock_movements.
@@ -258,13 +249,13 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
       });
       onOpenChange(false);
       onSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Erreur création sortie:", error);
       // Le trigger Supabase lève une exception si stock insuffisant côté DB —
       // on affiche le message exact pour que l'utilisateur comprenne.
       toast({
         title: "Erreur",
-        description: error.message || "Impossible de créer la sortie",
+        description: error && typeof error === "object" && "message" in error ? String(error.message) : "Impossible de créer la sortie",
         variant: "destructive",
       });
     } finally {
@@ -303,14 +294,13 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
 
           <div>
             <Label htmlFor="quantity">Quantité *</Label>
-            <Input
+            <StockQuantitySelector
               ref={quantityRef}
               id="quantity"
-              type="number"
-              min="1"
               value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              placeholder="0"
+              onChange={setQuantity}
+              available={selectedArt.stock}
+              disabled={isLoading}
             />
           </div>
 
@@ -354,7 +344,7 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
                   <div><Label htmlFor="exit-free-model">Modèle (optionnel)</Label><AutocompleteInput id="exit-free-model" value={modele} onValueChange={(v) => setModele(titleCase(v))} suggestions={modeleSuggestions} placeholder="Ex: Picanto" /></div>
                 </div>
                 <p className="text-xs text-muted-foreground">Ce véhicule ne sera pas ajouté à la flotte</p>
-                <button type="button" className="text-sm text-primary hover:underline" onClick={() => { setManualVehicle(false); setManualPlate(""); setMarque(""); setModele(""); }}>← Rechercher dans la flotte</button>
+                <Button type="button" variant="link" className="h-auto px-0 text-sm" onClick={() => { setManualVehicle(false); setManualPlate(""); setMarque(""); setModele(""); }}>← Rechercher dans la flotte</Button>
               </div>
             )}
             {needsVehicle && !vehiculeValid && <p role="alert" className="text-xs text-destructive">Véhicule obligatoire pour cette catégorie d'article</p>}
