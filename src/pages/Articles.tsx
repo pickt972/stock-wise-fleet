@@ -23,6 +23,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeChannel } from "@/hooks/useRealtimeChannel";
 import { useToast } from "@/hooks/use-toast";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -122,17 +123,15 @@ export default function Articles() {
       if (document.visibilityState === "visible") handleFocus();
     });
 
-    const channel = supabase
-      .channel("categories-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, () => fetchCategories())
-      .on("postgres_changes", { event: "*", schema: "public", table: "articles" }, () => fetchArticles())
-      .subscribe();
-
     return () => {
       window.removeEventListener("focus", handleFocus);
-      supabase.removeChannel(channel);
     };
   }, []);
+
+  useRealtimeChannel("articles-realtime", ["categories", "articles"], () => {
+    fetchCategories();
+    fetchArticles();
+  });
 
   const fetchArticles = async () => {
     try {

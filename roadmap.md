@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Vérifier tous les noms de tables Realtime et corriger les collisions de canaux, avec tests de régression.
+
 - [x] Articles : tableau triable, filtres conservés et cartes sous 768px ; 7 tests réussis, six cycles de tri et clic de ligne vérifiés sur articles de test, affichage sans erreur.
 - [ ] Vérifier tableau, filtres et retour aux cartes avec les articles réels — session Supabase externe indisponible pour les essais connectés.
 

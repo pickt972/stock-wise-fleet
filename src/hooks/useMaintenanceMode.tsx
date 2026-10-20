@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { createPostgresChannel } from "./realtimeSubscription";
 
 export interface MaintenanceState {
   active: boolean;
@@ -39,21 +40,19 @@ export function useMaintenanceMode() {
   useEffect(() => {
     fetchState();
 
-    const channel = supabase
-      .channel("app_settings_maintenance")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "app_settings" },
+    const channel = createPostgresChannel(
+        supabase,
+        "app_settings_maintenance",
+        ["app_settings"],
         (payload) => {
-          const row = payload.new as { key?: string; value?: unknown } | null;
+          const row = (payload as { new: { key?: string; value?: unknown } | null }).new;
           if (row?.key === "maintenance") {
             setState(parseValue(row.value));
           } else {
             fetchState();
           }
         }
-      )
-      .subscribe();
+      ).subscribe();
 
     return () => {
       supabase.removeChannel(channel);
