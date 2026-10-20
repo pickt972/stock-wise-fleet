@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useRealtimeChannel } from "@/hooks/useRealtimeChannel";
 import {
   fetchAggregatedStockGroups,
   AggregatedGroup,
@@ -71,6 +72,9 @@ export const useAlerts = () => {
     staleTime: 1000 * 60 * 2,   // 2 min de cache — évite les requêtes répétées
     refetchOnWindowFocus: false, // pas de rechargement au focus (coûteux sur mobile)
   });
+
+  // Temps réel : tout changement de stock recalcule les alertes (badge du menu inclus)
+  useRealtimeChannel("alerts-realtime", ["articles"], () => refetch());
 
   const subcategoryAlerts = data ? buildAlerts(data) : [];
   const totalRupture = subcategoryAlerts.filter((s) => s.totalStock === 0).length;

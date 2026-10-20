@@ -19,6 +19,7 @@ import { EntryStats } from "@/components/stock/EntryStats";
 import { PendingDraftReceptions } from "@/components/stock/PendingDraftReceptions";
 import { SimpleEntryDialog } from "@/components/stock/SimpleEntryDialog";
 import DashboardLayout from "./DashboardLayout";
+import { useRealtimeChannel } from "@/hooks/useRealtimeChannel";
 import { cn } from "@/lib/utils";
 
 const PERIODS = [
@@ -57,6 +58,13 @@ export default function Entrees() {
   useEffect(() => {
     fetchEntries();
   }, [searchTerm, entryTypeFilter, dateRange]);
+
+  // Temps réel : nouvelle entrée ou ligne d'entrée → liste et compteurs à jour
+  useRealtimeChannel(
+    "entrees-realtime",
+    ["stock_entries", "stock_entry_items"],
+    () => fetchEntries(),
+  );
 
   const fetchEntries = async () => {
     setIsLoading(true);

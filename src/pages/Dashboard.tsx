@@ -87,7 +87,7 @@ const QUICK_ACTIONS = (navigate: ReturnType<typeof useNavigate>, totalAlerts: nu
 ];
 
 export default function Dashboard() {
-  const { stats, isLoading } = useRealTimeStats();
+  const { stats, isLoading, realtimeStatus } = useRealTimeStats();
   const { totalAlerts } = useAlerts();
   const { profile } = useAuth();
   const { isMagasinier } = useRoleAccess();
@@ -215,6 +215,33 @@ export default function Dashboard() {
             )}
           </h1>
           <p className="text-[13px] text-muted-foreground mt-0.5">Que voulez-vous faire ?</p>
+        </div>
+
+        {/* Badge connexion temps réel */}
+        <div
+          className={cn(
+            "flex items-center gap-1.5 self-start rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wide",
+            realtimeStatus === "connected"
+              ? "bg-success/10 text-success"
+              : realtimeStatus === "connecting"
+                ? "bg-muted text-muted-foreground"
+                : "bg-muted text-muted-foreground",
+          )}
+          title={
+            realtimeStatus === "connected"
+              ? "Mises à jour en temps réel actives"
+              : realtimeStatus === "connecting"
+                ? "Connexion au temps réel…"
+                : "Temps réel déconnecté — les données se rafraîchissent périodiquement"
+          }
+        >
+          <span
+            className={cn(
+              "h-1.5 w-1.5 rounded-full",
+              realtimeStatus === "connected" ? "bg-success animate-pulse" : "bg-muted-foreground/50",
+            )}
+          />
+          {realtimeStatus === "connected" ? "LIVE" : realtimeStatus === "connecting" ? "CONNEXION…" : "HORS LIGNE"}
         </div>
 
         {/* SCAN PILL — glassmorphism orange */}
