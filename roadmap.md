@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Articles : tableau triable, filtres conservés et cartes sous 768px ; 7 tests réussis, six cycles de tri et clic de ligne vérifiés sur articles de test, affichage sans erreur.
+- [ ] Vérifier tableau, filtres et retour aux cartes avec les articles réels — session Supabase externe indisponible pour les essais connectés.
+
 - [x] Nouvelle entrée : création d’article inconnu et complétion d’un brouillon avec entrée atomique et erreurs exactes ; 8 tests réussis, affichage compilé sans erreur.
 - [ ] Vérifier création rapide et complétion en session réelle — Supabase externe ne permet pas d’essai connecté automatique.
 
