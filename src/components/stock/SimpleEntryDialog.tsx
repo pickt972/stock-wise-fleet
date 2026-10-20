@@ -12,6 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { createStockEntry } from "@/lib/stockEntries";
 import { parseSimpleEntryPrice, quickEntryArticle } from "@/lib/simpleEntryInput";
 import { isDraftReference } from "@/lib/draftReference";
+import { AutocompleteInput } from "@/components/ui/autocomplete-input";
+import { entryFilterOptions, entryStockStatus, filterEntryArticles } from "@/lib/entryArticleSearch";
 
 interface Article {
   id: string;
@@ -21,6 +23,8 @@ interface Article {
   sous_categorie: string | null;
   code_barre: string | null;
   stock: number;
+  stock_min: number;
+  marque: string | null;
   prix_achat: number;
   fournisseur_id: string | null;
   is_draft: boolean;
@@ -40,7 +44,7 @@ async function loadEntryArticles(): Promise<Article[]> {
   const all: Article[] = [];
   for (let offset = 0; ; offset += 1000) {
     const { data, error } = await supabase.from("articles")
-      .select("id, reference, designation, categorie, sous_categorie, code_barre, stock, prix_achat, fournisseur_id, is_draft")
+      .select("id, reference, designation, categorie, sous_categorie, marque, code_barre, stock, stock_min, prix_achat, fournisseur_id, is_draft")
       .is("archived_at", null).order("designation").order("id").range(offset, offset + 999);
     if (error) throw error;
     all.push(...(data || []));
@@ -68,6 +72,10 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
   const [designation, setDesignation] = useState("");
   const [category, setCategory] = useState("");
   const [subcategory, setSubcategory] = useState("");
+  const [brand, setBrand] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+  const [filterSubcategory, setFilterSubcategory] = useState("");
+  const [filterBrand, setFilterBrand] = useState("");
   const [scannedCode, setScannedCode] = useState<string | null>(null);
   const [categories, setCategories] = useState<{ id: string; nom: string; parent_id: string | null }[]>([]);
   const qtyRef = useRef<HTMLInputElement>(null);
@@ -83,6 +91,7 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
     setDesignation(a.designation);
     setCategory(a.categorie === "À classer" ? "" : a.categorie);
     setSubcategory(a.sous_categorie || "");
+    setBrand(a.marque || "");
     setTimeout(() => qtyRef.current?.select(), 50);
   };
 
@@ -94,6 +103,7 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
     setArticles([]); setFournisseurs([]); setScannerOpen(false);
     setSearch(prefilledArticleId ? "" : (initialSearch || "")); setScannedCode(!prefilledArticleId && initialSearch ? initialSearch : null);
     setSelected(null); setQuantity(1); setPrice(""); setSupplierId(NONE); setNotes("");
+    setFilterCategory(""); setFilterSubcategory(""); setFilterBrand(""); setBrand("");
     (async () => {
       try {
         const [a, f, c] = await Promise.all([
@@ -126,15 +136,8 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
     return () => { cancelled = true; };
   }, [open, prefilledArticleId, initialSearch, toast]);
 
-  const results = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return [];
-    if (scannedCode) return articles.filter((a) => a.reference === scannedCode || a.code_barre === scannedCode);
-    return articles.filter((a) =>
-      [a.reference, a.designation, a.categorie, a.sous_categorie, a.code_barre]
-        .some((v) => v?.toLowerCase().includes(q)),
-    ).slice(0, 8);
-  }, [search, articles, scannedCode]);
+  const options = useMemo(() => entryFilterOptions(articles, filterCategory, filterSubcategory), [articles, filterCategory, filterSubcategory]);
+  const results = useMemo(() => filterEntryArticles(articles, { category: filterCategory, subcategory: filterSubcategory, brand: filterBrand }, search, scannedCode), [search, articles, scannedCode, filterCategory, filterSubcategory, filterBrand]);
 
   const handleScan = (code: string) => {
     setScannerOpen(false);
@@ -144,7 +147,7 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
   };
 
   const beginCreate = () => {
-    setReference(search.trim()); setDesignation(""); setCategory(""); setSubcategory("");
+    setReference(search.trim()); setDesignation(""); setCategory(filterCategory); setSubcategory(filterSubcategory); setBrand(filterBrand);
     setEditingArticle(true); setPrice("");
   };
 
@@ -186,7 +189,7 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
   return (
     <>
       <Dialog open={open && !scannerOpen} onOpenChange={(nextOpen) => { if (!savingRef.current) onOpenChange(nextOpen); }}>
-        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <PackagePlus className="h-5 w-5 text-success" /> Nouvelle entrée
@@ -195,6 +198,26 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
 
           {!selected && !editingArticle ? (
             <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1 min-w-0"><Label className="text-xs">Catégorie</Label>
+                  <Select value={filterCategory || NONE} disabled={loading || loadFailed} onValueChange={(v) => { setFilterCategory(v === NONE ? "" : v); setFilterSubcategory(""); setFilterBrand(""); setScannedCode(null); }}>
+                    <SelectTrigger aria-label="Filtrer par catégorie"><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value={NONE}>Toutes</SelectItem>{options.categories.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1 min-w-0"><Label className="text-xs">Sous-catégorie</Label>
+                  <Select value={filterSubcategory || NONE} disabled={loading || !filterCategory} onValueChange={(v) => { setFilterSubcategory(v === NONE ? "" : v); setFilterBrand(""); setScannedCode(null); }}>
+                    <SelectTrigger aria-label="Filtrer par sous-catégorie"><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value={NONE}>Toutes</SelectItem>{options.subcategories.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1 min-w-0"><Label className="text-xs">Marque</Label>
+                  <Select value={filterBrand || NONE} disabled={loading || !filterCategory} onValueChange={(v) => { setFilterBrand(v === NONE ? "" : v); setScannedCode(null); }}>
+                    <SelectTrigger aria-label="Filtrer par marque"><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value={NONE}>Toutes</SelectItem>{options.brands.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </div>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -209,23 +232,26 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
                   <Camera className="h-5 w-5" />
                 </Button>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 max-h-72 overflow-y-auto">
                 {loading && <p role="status" className="text-sm text-muted-foreground text-center py-4">Chargement des articles…</p>}
                 {results.map((a) => (
                   <Button key={a.id} type="button" variant="outline" onClick={() => { pick(a); if (!fournisseurs.some((f) => f.id === a.fournisseur_id)) setSupplierId(NONE); }}
-                    className="w-full h-auto flex-col items-start text-left p-3">
-                    <div className="font-medium text-sm truncate">{a.designation}</div>
-                    <div className="text-xs text-muted-foreground font-mono truncate">
-                      {a.reference} · {a.categorie} · stock {a.stock}
+                    className="w-full h-auto justify-between gap-3 text-left p-3 whitespace-normal">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold text-sm break-words">{a.designation}</div>
+                      <div className="text-xs text-muted-foreground break-words">{a.reference} · {a.marque || "Sans marque"} · Stock : {a.stock}</div>
                     </div>
+                    <span className={`shrink-0 rounded px-2 py-1 text-xs font-semibold ${entryStockStatus(a.stock, a.stock_min) === "empty" ? "bg-destructive/10 text-destructive" : entryStockStatus(a.stock, a.stock_min) === "low" ? "bg-warning/10 text-warning" : "bg-success/10 text-success"}`}>
+                      {entryStockStatus(a.stock, a.stock_min) === "empty" ? "Rupture" : entryStockStatus(a.stock, a.stock_min) === "low" ? "Bas" : "OK"}
+                    </span>
                   </Button>
                 ))}
-                {!loading && !loadFailed && search.trim() && results.length === 0 && (
+                {!loading && !loadFailed && results.length === 0 && (
                   <div className="space-y-3 py-4">
-                    <p className="text-sm">Cet article n'existe pas encore. Voulez-vous le créer ?</p>
-                    <div className="flex gap-2">
-                      <Button onClick={beginCreate}>Créer l'article</Button>
-                      <Button variant="outline" onClick={() => { setSearch(""); setScannedCode(null); }}>Annuler</Button>
+                    <p className="text-sm text-muted-foreground">Aucun article trouvé.{search.trim() ? " Cet article n'existe pas encore. Voulez-vous le créer ?" : ""}</p>
+                    <div className="flex flex-col gap-2">
+                      <Button variant="outline" onClick={beginCreate} className="h-auto min-h-11 whitespace-normal justify-start"><Plus className="h-4 w-4 shrink-0 mr-2" />Créer un nouvel article avec cette référence</Button>
+                      <Button variant="ghost" onClick={() => { setSearch(""); setScannedCode(null); setFilterCategory(""); setFilterSubcategory(""); setFilterBrand(""); }}>Annuler</Button>
                     </div>
                   </div>
                 )}
@@ -257,6 +283,7 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
                       </Select>
                     </div>
                   </div>
+                  <div className="space-y-1"><Label htmlFor="quick-entry-brand">Marque</Label><AutocompleteInput id="quick-entry-brand" value={brand} onValueChange={setBrand} suggestions={entryFilterOptions(articles, category, subcategory).brands} placeholder="Marque de l’article" /></div>
                 </div>
               ) : selected && (
               <div className="flex items-start justify-between gap-2 rounded-md border bg-muted/30 p-3">
