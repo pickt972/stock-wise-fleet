@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Nouvelle entrée : filtres progressifs, résultats avec badges de stock et création rapide avec marque puis sélection immédiate.
+- [x] Nouvelle entrée : filtres progressifs, badges de stock, création rapide avec marque puis sélection immédiate ; 12 tests réussis et parcours visuel sur données de test vérifié. L’enregistrement réel reste à vérifier sur Supabase externe.
 
 - [x] Noms de tables Realtime vérifiés contre le schéma Supabase ; collisions de canaux corrigées, erreur reproduite puis testée, 61 tests réussis et compilation OK.
 - [ ] Vérifier les événements Realtime entre deux appareils connectés — session Supabase externe indisponible pour l’essai automatique.
