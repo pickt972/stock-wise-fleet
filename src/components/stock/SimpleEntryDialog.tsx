@@ -273,13 +273,25 @@ export function SimpleEntryDialog({ open, onOpenChange, onSuccess, prefilledArti
                   </Button>
                 ))}
                 {!loading && !loadFailed && results.length === 0 && (
-                  <div className="space-y-3 py-4">
-                    <p className="text-sm text-muted-foreground">Aucun article trouvé.{search.trim() ? " Cet article n'existe pas encore. Voulez-vous le créer ?" : ""}</p>
-                    <div className="flex flex-col gap-2">
-                      <Button variant="outline" onClick={beginCreate} className="h-auto min-h-11 whitespace-normal justify-start"><Plus className="h-4 w-4 shrink-0 mr-2" />Créer un nouvel article avec cette référence</Button>
-                      <Button variant="ghost" onClick={() => { setSearch(""); setScannedCode(null); setFilterCategory(""); setFilterSubcategory(""); setFilterBrand(""); }}>Annuler</Button>
-                    </div>
-                  </div>
+                  <p className="text-sm text-muted-foreground py-2">
+                    Aucun article trouvé.{search.trim() ? " Cet article n'existe pas encore. Voulez-vous le créer ?" : ""}
+                  </p>
+                )}
+                {!loading && !loadFailed && (
+                  <>
+                    {results.length > 0 && <div className="border-t" />}
+                    {results.length === 0 && search.trim() ? (
+                      <button type="button" onClick={beginCreate}
+                        className="w-full flex items-center justify-center gap-2 rounded-md border border-warning/40 bg-warning/5 py-3 text-sm font-semibold text-warning hover:bg-warning/10">
+                        <Plus className="h-4 w-4 shrink-0" />+ Créer l'article « {search.trim()} »
+                      </button>
+                    ) : (
+                      <button type="button" onClick={beginCreate}
+                        className="w-full flex items-center gap-2 py-2.5 text-sm font-medium text-warning hover:underline">
+                        <Plus className="h-4 w-4 shrink-0" />+ Créer un nouvel article
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
