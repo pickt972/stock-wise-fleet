@@ -13,6 +13,7 @@ export interface SearchableSelectOption {
   value: string;
   label: string;
   description?: string;
+  keywords?: string;
 }
 
 interface SearchableSelectProps {
@@ -26,6 +27,7 @@ interface SearchableSelectProps {
   triggerClassName?: string;
   disabled?: boolean;
   id?: string;
+  renderEmptyAction?: (search: string, close: () => void) => React.ReactNode;
 }
 
 export function SearchableSelect({
@@ -39,6 +41,7 @@ export function SearchableSelect({
   triggerClassName,
   disabled = false,
   id,
+  renderEmptyAction,
 }: SearchableSelectProps) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
@@ -60,7 +63,7 @@ export function SearchableSelect({
 
   const filtered = React.useMemo(() => {
     if (!search.trim()) return options;
-    return options.filter((o) => matchesVehicleSearch(search, o.label, o.description));
+    return options.filter((o) => matchesVehicleSearch(search, o.label, o.description, o.keywords));
   }, [options, search]);
 
   const selectedLabel = React.useMemo(
@@ -145,6 +148,9 @@ export function SearchableSelect({
             <p className="py-6 text-center text-sm text-muted-foreground">
               {emptyMessage}
             </p>
+          ) : null}
+          {filtered.length === 0 && renderEmptyAction ? (
+            <div className="border-t p-1">{renderEmptyAction(search, () => setOpen(false))}</div>
           ) : (
             filtered.map((option) => (
               <button
