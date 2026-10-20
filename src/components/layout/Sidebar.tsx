@@ -10,7 +10,7 @@ import {
   Settings,
   ChevronLeft,
   ShoppingCart,
-  History,
+  ScrollText,
   ScanLine,
   Wrench,
   ShieldCheck,
@@ -89,7 +89,7 @@ const getSections = (permissions: any, userRole: string | null): NavSection[] =>
     items: [
       { name: "Commandes", href: "/commandes", icon: ShoppingCart, show: permissions.createOrders },
       { name: "Inventaire", href: "/inventaire", icon: ClipboardList, show: permissions.manageStock },
-      { name: "Historique", href: "/historique", icon: History, show: permissions.viewReports },
+      { name: "Historique", href: "/historique", icon: ScrollText, show: permissions.viewReports },
       { name: "Rapports", href: "/rapports", icon: FileText, show: permissions.viewReports },
     ],
   },
