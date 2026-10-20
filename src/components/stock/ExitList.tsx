@@ -1,3 +1,4 @@
+import { vehicleLabel } from "@/lib/vehicleFormatting";
 import { useState } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -159,7 +160,7 @@ export function ExitList({ exits, onRefresh }: ExitListProps) {
                   <TableCell>{getExitTypeBadge(exit.exit_type)}</TableCell>
                   <TableCell>
                     {exit.vehicules
-                      ? `${(exit.vehicules.marque || "").toUpperCase()} ${exit.vehicules.modele || ""} - ${exit.vehicules.immatriculation}`.trim()
+                      ? vehicleLabel(exit.vehicules)
                       : "-"}
                   </TableCell>
                   <TableCell>

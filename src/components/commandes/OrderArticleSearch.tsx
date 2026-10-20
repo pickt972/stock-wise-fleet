@@ -1,3 +1,4 @@
+import { vehicleLabel } from "@/lib/vehicleFormatting";
 import { useEffect, useMemo, useState } from "react";
 import { Search, Camera, Car, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -22,8 +23,7 @@ export interface OrderSearchArticle {
 export interface OrderVehicle { id: string; immatriculation: string; marque: string; modele: string; annee?: number | null }
 export interface OrderSearchContext { vehicule: OrderVehicle | null; categorie: string | null; sous_categorie: string | null }
 
-export const vehicleLabel = (v: OrderVehicle) =>
-  `${v.immatriculation} — ${v.marque} ${v.modele}${v.annee ? ` ${v.annee}` : ""}`;
+export { vehicleLabel } from "@/lib/vehicleFormatting";
 
 const ALL = "__all__";
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -263,7 +263,7 @@ export function OrderArticleSearch({
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
             <p>Catégorie : <span className="font-medium text-foreground">{ctx.categorie ? `${ctx.categorie}${ctx.sous_categorie ? ` › ${ctx.sous_categorie}` : ""}` : "—"}</span></p>
-            <p>Véhicule : <span className="font-medium text-foreground">{ctx.vehicule ? ctx.vehicule.immatriculation : "—"}</span></p>
+            <p>Véhicule : <span className="font-medium text-foreground">{ctx.vehicule ? vehicleLabel(ctx.vehicule) : "—"}</span></p>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>

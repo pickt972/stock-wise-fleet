@@ -1,3 +1,4 @@
+import { vehicleLabel } from "@/lib/vehicleFormatting";
 import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import { PageHeader } from "@/components/ui/page-header";
@@ -342,7 +343,7 @@ export default function HistoriqueMouvements() {
                       {movement.type === "sortie" && (movement.vehicules || movement.articles?.vehicule_required) && (
                         <p className={`text-sm mb-1 ${movement.vehicules ? "" : "text-muted-foreground"}`}>
                           🚗 {movement.vehicules
-                            ? <><span className="font-mono font-semibold">{movement.vehicules.immatriculation}</span>{(movement.vehicules.marque || movement.vehicules.modele) && ` • ${movement.vehicules.marque ?? ""} ${movement.vehicules.modele ?? ""}`.trimEnd()}</>
+                            ? <span className="font-semibold">{vehicleLabel(movement.vehicules)}</span>
                             : "Véhicule non renseigné"}
                         </p>
                       )}

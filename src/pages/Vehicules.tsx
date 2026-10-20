@@ -1,3 +1,4 @@
+import { vehicleLabel, vehicleBrand, vehicleModel, displayPlate } from "@/lib/vehicleFormatting";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -111,10 +112,10 @@ export default function Vehicules() {
               <TableBody>
                 {vehicules.map((vehicule) => (
                   <TableRow key={vehicule.id}>
-                    <TableCell className="font-medium">{vehicule.marque}</TableCell>
-                    <TableCell>{vehicule.modele}</TableCell>
+                    <TableCell className="font-medium">{vehicleBrand(vehicule.marque)}</TableCell>
+                    <TableCell>{vehicleModel(vehicule.modele)}</TableCell>
                     <TableCell>{vehicule.motorisation || "-"}</TableCell>
-                    <TableCell>{vehicule.immatriculation}</TableCell>
+                    <TableCell>{displayPlate(vehicule.immatriculation)}</TableCell>
                     <TableCell>{vehicule.annee || "-"}</TableCell>
                     <TableCell>
                       <Badge variant={vehicule.actif ? "default" : "secondary"}>
@@ -185,7 +186,7 @@ export default function Vehicules() {
               {viewingVehiculeId && (() => {
                 const vehicule = vehicules.find((v) => v.id === viewingVehiculeId);
                 return vehicule
-                  ? `${vehicule.marque} ${vehicule.modele} ${vehicule.motorisation ? `(${vehicule.motorisation})` : ""} - ${vehicule.immatriculation}`
+                  ? vehicleLabel(vehicule)
                   : "";
               })()}
             </DialogDescription>

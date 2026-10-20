@@ -1,3 +1,4 @@
+import { maskSivPlate } from "@/lib/vehicleFormatting";
 import { useState, useRef, useCallback } from "react";
 import { Camera, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,21 +15,6 @@ interface LicensePlateScannerProps {
   onPlateDetected: (plate: string) => void;
   disabled?: boolean;
 }
-
-const formatDetectedPlate = (raw: string): string => {
-  // Nettoyer: garder uniquement lettres et chiffres
-  const cleaned = raw.replace(/[^A-Z0-9]/gi, "").toUpperCase();
-  // Tenter le format AA-000-AA (7 caractères)
-  if (cleaned.length >= 7) {
-    const letters1 = cleaned.slice(0, 2);
-    const digits = cleaned.slice(2, 5);
-    const letters2 = cleaned.slice(5, 7);
-    if (/^[A-Z]{2}$/.test(letters1) && /^[0-9]{3}$/.test(digits) && /^[A-Z]{2}$/.test(letters2)) {
-      return `${letters1}-${digits}-${letters2}`;
-    }
-  }
-  return cleaned;
-};
 
 export function LicensePlateScanner({ onPlateDetected, disabled }: LicensePlateScannerProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -112,7 +98,7 @@ export function LicensePlateScanner({ onPlateDetected, disabled }: LicensePlateS
       const match = text.match(plateRegex);
 
       if (match) {
-        const plate = formatDetectedPlate(match[0]);
+        const plate = maskSivPlate(match[0]);
         onPlateDetected(plate);
         toast({ title: "✅ Plaque détectée", description: plate });
         stopCamera();

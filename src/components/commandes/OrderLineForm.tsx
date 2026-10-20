@@ -1,3 +1,4 @@
+import { vehicleLabel } from "@/lib/vehicleFormatting";
 import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,7 @@ export interface NewOrderLine { categorie: string; sous_categorie: string | null
 
 const NONE = "__none__";
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
-export const vehicleShort = (v: OrderVehicle) => `${v.immatriculation} — ${v.marque} ${v.modele}`;
+export const vehicleShort = vehicleLabel;
 
 /** Format d'un véhicule saisi librement : MARQUE en majuscules, modèle en Title Case. */
 export const formatFreeVehicle = (raw: string) => {

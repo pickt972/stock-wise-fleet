@@ -1,3 +1,4 @@
+import { vehicleLabel } from "@/lib/vehicleFormatting";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -105,8 +106,8 @@ export function VehiculesContent() {
                   <Car className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-medium">{vehicule.marque} {vehicule.modele}</h3>
-                  <p className="text-sm text-muted-foreground">{vehicule.immatriculation}</p>
+                  <h3 className="font-medium">{vehicleLabel(vehicule)}</h3>
+
                   <div className="flex items-center gap-2 mt-1">
                     {vehicule.motorisation && <Badge variant="outline">{vehicule.motorisation}</Badge>}
                     {vehicule.annee && <Badge variant="secondary">Année {vehicule.annee}</Badge>}

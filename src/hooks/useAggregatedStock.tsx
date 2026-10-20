@@ -1,3 +1,4 @@
+import { vehicleLabel } from "@/lib/vehicleFormatting";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface AggregatedGroup {
@@ -63,7 +64,7 @@ export async function fetchAggregatedStockGroups(
       .select("id, marque, modele, immatriculation")
       .in("id", vehiculeIds);
     (vehs || []).forEach((v: any) => {
-      vehiculesMap[v.id] = `${v.marque} ${v.modele}${v.immatriculation ? ` (${v.immatriculation})` : ""}`;
+      vehiculesMap[v.id] = vehicleLabel(v);
     });
   }
 

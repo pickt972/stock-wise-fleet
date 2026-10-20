@@ -1,3 +1,4 @@
+import { vehicleLabel } from "@/lib/vehicleFormatting";
 import { useState, useEffect } from "react";
 import { Minus, Plus, PackageMinus, Car } from "lucide-react";
 import {
@@ -71,7 +72,7 @@ export function QuickExitDialog({ article, open, onOpenChange, onDone }: QuickEx
       setVehicules(
         (vehRes.data || []).map((v) => ({
           id: v.id,
-          label: `${v.immatriculation || "—"} · ${v.marque} ${v.modele}`,
+          label: vehicleLabel(v),
         }))
       );
       if (artRes.data) {
