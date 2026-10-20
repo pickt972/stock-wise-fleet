@@ -1,6 +1,11 @@
-import { ArticlePickerField } from "@/components/shared/CategoryPicker";
-import { useState, useEffect } from "react";
-import { PackageMinus } from "lucide-react";
+import { StockArticleSearch } from "./shared/StockArticleSearch";
+import { QuickArticleFields } from "./shared/QuickArticleFields";
+import { BarcodeScanner } from "@/components/scanner/BarcodeScanner";
+import { AutocompleteInput } from "@/components/ui/autocomplete-input";
+import { quickEntryArticle } from "@/lib/simpleEntryInput";
+import { needsVehicleForExit, exitVehicleValid } from "@/lib/vehicleRequirement";
+import { useState, useEffect, useRef } from "react";
+import { PackageMinus, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -30,8 +35,11 @@ interface Article {
   designation: string;
   stock: number;
   vehicule_required?: boolean;
-  categorie?: string | null;
-  sous_categorie?: string | null;
+  categorie: string;
+  sous_categorie: string | null;
+  marque: string | null;
+  code_barre: string | null;
+  stock_min: number;
 }
 
 interface Vehicule {
@@ -57,12 +65,26 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
   const [articleId, setArticleId] = useState("");
   const [quantity, setQuantity] = useState("");
   const [exitType, setExitType] = useState("consommation");
-  const [plate, setPlate] = useState("");
   const [marque, setMarque] = useState("");
   const [modele, setModele] = useState("");
   const [selectedVehicule, setSelectedVehicule] = useState<Vehicule | null>(null);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [openField, setOpenField] = useState<"marque" | "modele" | null>(null);
+  const [search, setSearch] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+  const [filterSubcategory, setFilterSubcategory] = useState("");
+  const [filterBrand, setFilterBrand] = useState("");
+  const [scannedCode, setScannedCode] = useState<string | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [reference, setReference] = useState("");
+  const [designation, setDesignation] = useState("");
+  const [category, setCategory] = useState("");
+  const [subcategory, setSubcategory] = useState("");
+  const [brand, setBrand] = useState("");
+  const [price, setPrice] = useState("");
+  const quantityRef = useRef<HTMLInputElement>(null);
+  const savingRef = useRef(false);
   const [notes, setNotes] = useState("");
   const [cats, setCats] = useState<{ id: string; nom: string; parent_id: string | null; requires_vehicle: boolean | null }[]>([]);
 
@@ -72,44 +94,49 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
       setArticleId("");
       setQuantity("");
       setExitType("consommation");
-      setPlate("");
       setMarque("");
       setModele("");
       setSelectedVehicule(null);
-      setNotes("");
+      setNotes(""); setSearch(""); setFilterCategory(""); setFilterSubcategory(""); setFilterBrand("");
+      setScannedCode(null); setScannerOpen(false); setCreating(false);
     }
   }, [open]);
 
-  const normalizePlate = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, "");
-  // Format SIV AA-000-AA ; sinon (anciens formats / DOM) : majuscules telles quelles
-  const formatPlate = (input: string) => {
-    const raw = normalizePlate(input);
-    const m = raw.match(/^([A-Z]{0,2})(\d{0,3})([A-Z]{0,2})$/);
-    const isSiv = m && (raw.length <= 2 ? /^[A-Z]*$/.test(raw) : /^[A-Z]{2}/.test(raw)) && (!m[3] || m[2].length === 3);
-    if (!isSiv) return input.toUpperCase().replace(/[^A-Z0-9 ]/g, "").replace(/\s+/g, " ");
-    return [m![1], m![2], m![3]].filter(Boolean).join("-");
-  };
-  const plateKey = normalizePlate(plate);
-  const suggestions = plateKey && !selectedVehicule
-    ? vehicules.filter((v) => normalizePlate(v.immatriculation).startsWith(plateKey)).slice(0, 8)
-    : [];
   const selectedArt = articles.find((a) => a.id === articleId);
-  const categoryRequiresVehicle = (() => {
-    if (!selectedArt) return false;
-    const byName = (n?: string | null) => n ? cats.find((c) => c.nom.trim().toLowerCase() === n.trim().toLowerCase()) : undefined;
-    // Sous-catégorie : surcharge si non null, sinon on remonte les parents
-    let node = byName(selectedArt.sous_categorie) ?? byName(selectedArt.categorie);
-    let guard = 0;
-    while (node && guard++ < 10) {
-      if (node.requires_vehicle === true) return true;
-      if (node.requires_vehicle === false && node.parent_id) return false;
-      node = node.parent_id ? cats.find((c) => c.id === node!.parent_id) : undefined;
-    }
-    // Catégorie de l'article si la sous-catégorie n'est pas rattachée
-    return !!byName(selectedArt.categorie)?.requires_vehicle;
-  })();
-  const needsVehicle = !!selectedArt?.vehicule_required || categoryRequiresVehicle;
-  const vehiculeValid = !needsVehicle || !!plate.trim() && (!!selectedVehicule || (!!marque.trim() && !!modele.trim()));
+  const needsVehicle = needsVehicleForExit(selectedArt, cats);
+  const vehiculeValid = exitVehicleValid(needsVehicle, selectedVehicule?.id || "", marque, modele);
+  const pick = (a: Article) => {
+    setArticleId(a.id); setCreating(false);
+    setTimeout(() => quantityRef.current?.focus(), 50);
+  };
+  const beginCreate = () => {
+    setReference(search.trim()); setDesignation(""); setCategory(filterCategory);
+    setSubcategory(filterSubcategory); setBrand(filterBrand); setPrice(""); setCreating(true);
+  };
+  const handleScan = (code: string) => {
+    setScannerOpen(false);
+    const article = articles.find((a) => a.code_barre === code || a.reference === code);
+    if (article) pick(article);
+    else { setSearch(code); setScannedCode(code); }
+  };
+  const createAndSelect = async () => {
+    if (savingRef.current) return;
+    savingRef.current = true; setIsLoading(true);
+    try {
+      const article = quickEntryArticle({ reference, designation, categorie: category, sous_categorie: subcategory, marque: brand, code_barre: scannedCode, price });
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!auth.user) throw new Error("Veuillez vous connecter pour créer un article");
+      const { data, error } = await supabase.from("articles").insert({ ...article, user_id: auth.user.id })
+        .select("id, reference, designation, categorie, sous_categorie, marque, code_barre, stock, stock_min, vehicule_required").single();
+      if (error) throw error;
+      if (!data) throw new Error("La création de l’article n’a pas été confirmée");
+      setArticles((list) => [...list, data]); pick(data);
+      toast({ title: "Article créé", description: "Stock initial : 0", className: "bg-success text-success-foreground border-success" });
+    } catch (error: unknown) {
+      toast({ title: "Erreur", description: error && typeof error === "object" && "message" in error ? String(error.message) : "Impossible de créer l’article", variant: "destructive" });
+    } finally { savingRef.current = false; setIsLoading(false); }
+  };
 
   const titleCase = (v: string) => v.toLowerCase().replace(/(^|[\s-])(\S)/g, (_m, a, b) => a + b.toUpperCase());
   const uniq = (arr: string[]) => {
@@ -128,42 +155,36 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
     .filter((m) => m.toLowerCase().includes(modele.trim().toLowerCase()) && m.toLowerCase() !== modele.trim().toLowerCase())
     .slice(0, 8);
 
-  const handlePlateChange = (value: string) => {
-    setPlate(formatPlate(value));
-    setShowSuggestions(true);
-    if (selectedVehicule) {
-      setSelectedVehicule(null);
-      setMarque("");
-      setModele("");
-    }
-  };
-
-  const selectVehicule = (v: Vehicule) => {
-    setSelectedVehicule(v);
-    setPlate(v.immatriculation);
-    setMarque(v.marque || "");
-    setModele(v.modele || "");
-    setShowSuggestions(false);
-  };
-
   const fetchData = async () => {
+    setLoading(true); setLoadFailed(false);
     try {
       const [articlesRes, vehiculesRes, catsRes] = await Promise.all([
-        supabase.from("articles").select("id, reference, designation, stock, vehicule_required, categorie, sous_categorie").order("designation"),
+        (async () => {
+          const all: Article[] = [];
+          for (let offset = 0; ; offset += 1000) {
+            const { data, error } = await supabase.from("articles").select("id, reference, designation, stock, stock_min, marque, code_barre, vehicule_required, categorie, sous_categorie")
+              .is("archived_at", null).order("designation").order("id").range(offset, offset + 999);
+            if (error) throw error;
+            all.push(...(data || []));
+            if ((data || []).length < 1000) return all;
+          }
+        })(),
         supabase.from("vehicules").select("id, immatriculation, marque, modele").order("immatriculation"),
         supabase.from("categories").select("id, nom, parent_id, requires_vehicle"),
       ]);
-      setCats((catsRes.data as any) || []);
-      if (articlesRes.error) throw articlesRes.error;
+      if (catsRes.error) throw catsRes.error;
+      setCats(catsRes.data || []);
       if (vehiculesRes.error) throw vehiculesRes.error;
-      setArticles(articlesRes.data || []);
+      setArticles(articlesRes);
       setVehicules(vehiculesRes.data || []);
-    } catch {
-      toast({ title: "Erreur", description: "Impossible de charger les données", variant: "destructive" });
-    }
+    } catch (error: unknown) {
+      setLoadFailed(true);
+      toast({ title: "Erreur", description: error && typeof error === "object" && "message" in error ? String(error.message) : "Impossible de charger les données", variant: "destructive" });
+    } finally { setLoading(false); }
   };
 
   const handleSubmit = async () => {
+    if (savingRef.current || loading || loadFailed) return;
     if (!articleId) {
       toast({ title: "Erreur", description: "Sélectionnez un article", variant: "destructive" });
       return;
@@ -189,23 +210,12 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
       return;
     }
 
+    savingRef.current = true;
     setIsLoading(true);
     try {
-      let finalVehiculeId = needsVehicle ? selectedVehicule?.id ?? null : null;
-      if (needsVehicle && !finalVehiculeId) {
-        const existing = vehicules.find((v) => normalizePlate(v.immatriculation) === normalizePlate(plate));
-        if (existing) {
-          finalVehiculeId = existing.id;
-        } else {
-          const { data: created, error: vErr } = await supabase
-            .from("vehicules")
-            .insert([{ immatriculation: plate.trim().toUpperCase(), marque: marque.trim(), modele: modele.trim(), user_id: user?.id }])
-            .select("id")
-            .single();
-          if (vErr) throw vErr;
-          finalVehiculeId = created.id;
-        }
-      }
+      const finalVehiculeId = selectedVehicule?.id || null;
+      const freeVehicle = !finalVehiculeId ? [marque.trim(), modele.trim()].filter(Boolean).join(" ") : "";
+      const exitNotes = [notes.trim(), freeVehicle ? `Véhicule : ${freeVehicle}` : ""].filter(Boolean).join(" — ");
 
       // exit_number laissé vide → le trigger Supabase (trigger_set_exit_number)
       // génère automatiquement le numéro séquentiel SOR-YYYY-XXXXXX avant l'INSERT.
@@ -217,7 +227,7 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
           exit_number: "",        // sera remplacé par le trigger BEFORE INSERT
           exit_type: exitType,
           vehicule_id: finalVehiculeId,
-          notes: notes || null,
+          notes: exitNotes || null,
           created_by: user?.id,
         }])
         .select()
@@ -253,26 +263,43 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
         variant: "destructive",
       });
     } finally {
+      savingRef.current = false;
       setIsLoading(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+    <Dialog open={open && !scannerOpen} onOpenChange={(v) => { if (!savingRef.current) onOpenChange(v); }}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>📤 Nouvelle sortie de stock</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          <div>
-            <Label>Article *</Label>
-            <ArticlePickerField value={articleId} onChange={setArticleId} showStock />
-          </div>
+          {!selectedArt && !creating ? (
+            <StockArticleSearch {...{ articles, loading, loadFailed, search, setSearch, filterCategory, setFilterCategory, filterSubcategory, setFilterSubcategory, filterBrand, setFilterBrand, scannedCode, setScannedCode }} onPick={pick} onCreate={beginCreate} onScan={() => setScannerOpen(true)} />
+          ) : creating ? (
+            <fieldset disabled={isLoading} className="space-y-3">
+              <QuickArticleFields {...{ reference, setReference, designation, setDesignation, category, setCategory, subcategory, setSubcategory, brand, setBrand, articles }} categories={cats} showBrand />
+              <Label htmlFor="exit-create-price">Prix unitaire (optionnel)</Label>
+              <Input id="exit-create-price" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} />
+              <Button onClick={createAndSelect} className="w-full">{isLoading ? "Création…" : "Créer l’article et continuer"}</Button>
+              <Button variant="outline" onClick={() => setCreating(false)} className="w-full">Annuler</Button>
+            </fieldset>
+          ) : selectedArt && (
+            <div className="flex items-start justify-between gap-2 rounded-md border bg-muted/30 p-3">
+              <div className="min-w-0"><div className="font-bold break-words">{selectedArt.designation}</div><div className="text-xs text-muted-foreground break-words">{selectedArt.reference} · {selectedArt.marque || "Sans marque"} · Stock : {selectedArt.stock}</div></div>
+              <Button variant="ghost" size="icon" aria-label="Changer d’article" disabled={isLoading} onClick={() => setArticleId("")}><X className="h-4 w-4" /></Button>
+            </div>
+          )}
+
+          {selectedArt && !creating && <>
 
           <div>
             <Label htmlFor="quantity">Quantité *</Label>
             <Input
+              ref={quantityRef}
               id="quantity"
               type="number"
               min="1"
@@ -298,67 +325,16 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
             </Select>
           </div>
 
-          {needsVehicle && (<div className="space-y-3">
-            <div className="relative">
-              <Label htmlFor="plate">Immatriculation *</Label>
-              <Input
-                id="plate"
-                value={plate}
-                autoComplete="off"
-                onChange={(e) => handlePlateChange(e.target.value)}
-                onFocus={() => setShowSuggestions(true)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-                placeholder="AB-123-CD"
-                className="uppercase"
-              />
-              {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md max-h-56 overflow-y-auto">
-                  {suggestions.map((v) => (
-                    <button
-                      key={v.id}
-                      type="button"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => selectVehicule(v)}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-muted"
-                    >
-                      <span className="font-mono font-semibold">{v.immatriculation}</span>
-                      <span className="text-muted-foreground"> — {v.marque} {v.modele}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="relative">
-                <Label htmlFor="marque">Marque{selectedVehicule ? "" : " *"}</Label>
-                <Input id="marque" value={marque} readOnly={!!selectedVehicule} autoComplete="off"
-                  disabled={!!selectedVehicule}
-                  onChange={(e) => { setMarque(e.target.value.toUpperCase()); setOpenField("marque"); }}
-                  onFocus={() => setOpenField("marque")}
-                  onBlur={() => setTimeout(() => setOpenField(null), 150)} />
-                {openField === "marque" && !selectedVehicule && marqueSuggestions.length > 0 && (
-                  <SuggestList items={marqueSuggestions} onPick={(v) => { setMarque(v.toUpperCase()); setOpenField(null); }} />
-                )}
-              </div>
-              <div className="relative">
-                <Label htmlFor="modele">Modèle{selectedVehicule ? "" : " *"}</Label>
-                <Input id="modele" value={modele} readOnly={!!selectedVehicule} autoComplete="off"
-                  disabled={!!selectedVehicule}
-                  onChange={(e) => { setModele(titleCase(e.target.value)); setOpenField("modele"); }}
-                  onFocus={() => setOpenField("modele")}
-                  onBlur={() => setTimeout(() => setOpenField(null), 150)} />
-                {openField === "modele" && !selectedVehicule && modeleSuggestions.length > 0 && (
-                  <SuggestList items={modeleSuggestions} onPick={(v) => { setModele(v); setOpenField(null); }} />
-                )}
-              </div>
-            </div>
-            {selectedVehicule && (
-              <p className="text-xs font-medium text-success">✓ Véhicule existant</p>
-            )}
-            {!selectedVehicule && plate.trim() && marque.trim() && modele.trim() && (
-              <p className="text-xs font-medium text-accent">＋ Sera ajouté à la liste Duparc</p>
-            )}
-          </div>)}
+          <div className="space-y-3">
+            <Label htmlFor="exit-fleet">Véhicule concerné{needsVehicle ? " *" : " (optionnel)"}</Label>
+            <SearchableSelect id="exit-fleet" value={selectedVehicule?.id || ""} options={vehicules.map((v) => ({ value: v.id, label: `${v.marque || ""} ${v.modele || ""} — ${v.immatriculation || "—"}` }))}
+              placeholder="Véhicule de la flotte" onValueChange={(id) => { setSelectedVehicule(vehicules.find((v) => v.id === id) || null); setMarque(""); setModele(""); }} />
+            {!selectedVehicule && <div className="grid grid-cols-2 gap-3">
+              <div><Label htmlFor="exit-free-brand">Marque libre</Label><AutocompleteInput id="exit-free-brand" value={marque} onValueChange={(v) => setMarque(v.toUpperCase())} suggestions={marqueSuggestions} placeholder="Ex: BYD" /></div>
+              <div><Label htmlFor="exit-free-model">Modèle libre</Label><AutocompleteInput id="exit-free-model" value={modele} onValueChange={(v) => setModele(titleCase(v))} suggestions={modeleSuggestions} placeholder="Ex: Atto 3" /></div>
+            </div>}
+            {needsVehicle && !vehiculeValid && <p role="alert" className="text-xs text-destructive">Véhicule obligatoire pour cette catégorie d'article</p>}
+          </div>
 
           <div>
             <Label htmlFor="notes">Note (optionnel)</Label>
@@ -370,31 +346,21 @@ export function NewExitForm({ open, onOpenChange, onSuccess }: NewExitFormProps)
               rows={3}
             />
           </div>
+          </>}
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
             Annuler
           </Button>
-          <Button onClick={handleSubmit} disabled={isLoading || !vehiculeValid}>
+          <Button onClick={handleSubmit} disabled={isLoading || loading || loadFailed || !selectedArt || creating || !vehiculeValid}>
             <PackageMinus className="mr-2 h-4 w-4" />
-            {isLoading ? "Enregistrement..." : "Confirmer la sortie"}
+            {isLoading ? "Enregistrement..." : "Valider la sortie"}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function SuggestList({ items, onPick }: { items: string[]; onPick: (v: string) => void }) {
-  return (
-    <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md max-h-56 overflow-y-auto">
-      {items.map((it) => (
-        <button key={it} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => onPick(it)}
-          className="w-full text-left px-3 py-2 text-sm hover:bg-muted">
-          {it}
-        </button>
-      ))}
-    </div>
+    <BarcodeScanner isOpen={scannerOpen} onScanResult={handleScan} onClose={() => setScannerOpen(false)} />
+    </>
   );
 }
