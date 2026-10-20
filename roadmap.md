@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Nouvelle sortie : véhicule manuel enregistré en texte sans résolution flotte ; sélecteur −/+ partagé avec Nouvelle entrée et avertissement de dépassement.
+
 - [x] Véhicules : masque et validation SIV partagés, affichage uniforme sans migration des données ; 72 tests réussis, libellé Sorties et saisie de création vérifiés sur données de test.
 - [ ] Vérifier création/modification de véhicule sur la base réelle — session Supabase externe indisponible pour l’essai connecté automatique.
 
