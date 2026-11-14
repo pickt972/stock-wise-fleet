@@ -20,3 +20,4 @@
 - Realtime listeners use createPostgresChannel with schema-typed table names and a unique channel per subscription, registering callbacks before subscribe to avoid collisions between hook instances; useRealtimeChannel handles debounced refetch/status/cleanup, while maintenance keeps its payload handler. Tables must be in the supabase_realtime publication to receive events.
 
 - Inventory scans pass raw codes (SearchWithScanner rawScan); unknown or out-of-scope articles join the open session via the add_inventory_article invoker wrapper around a private staff/maintenance-checked function, keeping counts and totals atomic.
+- Version: src/version.ts holds APP_VERSION (semver: fix→patch, feature→minor, redesign→major) and src/changelog.ts lists entries newest-first; bump both on every change.
