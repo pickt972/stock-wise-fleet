@@ -18,6 +18,7 @@ import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { ColorPreferencesSettings } from "@/components/settings/ColorPreferencesSettings";
 import { AdminResetPasswordForm } from "@/components/settings/AdminResetPasswordForm";
 import { AdminMailSettingsForm } from "@/components/settings/AdminMailSettingsForm";
+import { AboutSection } from "@/components/settings/AboutSection";
 import { MaintenanceModeSettings } from "@/components/settings/MaintenanceModeSettings";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { supabase } from "@/integrations/supabase/client";
@@ -401,6 +402,7 @@ export default function Parametres() {
             </div>
           </section>
         )}
+        <AboutSection />
       </main>
 
       <Dialog open={showCompanySettings} onOpenChange={setShowCompanySettings}>
